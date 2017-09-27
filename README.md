@@ -13,7 +13,7 @@ As much as possible, information is encoded into the graph itself, rather than c
 
 A 'property' refers to a property of a material, such as its lattice parameter, band gap or bulk modulus.
 
-In Propnet, properties are rigorously defined to ensure consistent intepretations between different models, and this crucially includes explicit units and uncertainties. Where uncertainties are unknown, we apply rule-of-thumb uncertainties derived from statistical analysis of similar data to give a first-approximation of our confidence in a property.
+In Propnet, properties are rigorously defined to ensure consistent interpretations between different models, and this crucially includes explicit units and uncertainties. Where uncertainties are unknown, we apply rule-of-thumb uncertainties derived from statistical analysis of similar data to give a first-approximation of our confidence in a property.
 
 In terms of implementation, a `Property` provides information on the property itself (e.g. lattice parameter has units of length), and a `PropertyInstance` is an object that combines a `Property` with a value (e.g. 5Å), a reference for where the property came from, and edges to the materials it is associated with.
 
@@ -23,11 +23,11 @@ There is a necessary distinction between a real 'material' vs. an ideal, perfect
 
 Propnet attempts to gracefully handled this distinction. A `PropertyInstance` can have edges to the material it's associated with. In the simplest case, this could be an edge to a material defined simply by its chemical formula. If the structure is known, it is represented by a [pymatgen](https://github.com/materialsproject/pymatgen) `Structure` object.
 
-To illustrate, a `PropertyInstance` of a lattice parameter calculated using DFT, would have an edge to a `PropertyInstance` representing a temperature of 0 K, and an edge to the `Structure` associated with it. In this caes, the edge weight to the `Structure` would be 1.0, since this is an ideal, perfect material.
+To illustrate, a `PropertyInstance` of a lattice parameter calculated using DFT, would have an edge to a `PropertyInstance` representing a temperature of 0 K, and an edge to the `Structure` associated with it. In this case, the edge weight to the `Structure` would be 1.0, since this is an ideal, perfect material.
 
 However, if the `PropertyInstance` came from experimental data and a second impurity phase is present, it would have edges to *two* `Structure` objects, with the edge for the majority phase given a weight of, e.g., 0.99 (if it was 99% pure), and the second edge with a weight of 0.01 for the impurity phase.
 
-In the case of a property where there is a *relationship* between `Structure` objects, such as a lattice misfit, then an edge is added between the two `Structure` objects specifiying this relationship, i.e. the orientation relationship.
+In the case of a property where there is a *relationship* between `Structure` objects, such as a lattice misfit, then an edge is added between the two `Structure` objects specifying this relationship, i.e. the orientation relationship.
 
 ## Models
 
@@ -37,7 +37,7 @@ A model specifies:
 * A list of Properties it can output
 * A master equation, specified symbolically using [SymPy](http://www.sympy.org)
 * A mapping of symbols in the master equation to their canonical Property names
-* A list of `Conditions` for each sympol
+* A list of `Conditions` for each symbol
 * A list of `Assumptions` associated with the model output
 
 Initially, we are supporting analytical models only. However, as the project progresses we expect to support the following machine learning models:
@@ -51,14 +51,14 @@ Models must be serialized to an appropriate format and provide a consistent inte
 
 The specific implementation here will likely change.
 
-An `Assumption` can be something like:
+An `Assumption` is associated with a property and can be something like:
 
 * An `IsotropicAssumption`, assumes a material is isotropic
-* A `Temperature(300)`, assumes an experimental measurement was taken at room temperature
+* A `Temperature(300)` assumption, assumes an experimental measurement was taken at room temperature
 
-A `Condition` can be something like:
+A `Condition` is a model requirement and can be something like:
 
-* A Property might require a `Temperature(0)` condition, e.g. a model will expect a lattice parameter defined at 0 K.
+* A model could expect a lattice parameter `PropertyInstance` with the condition that the `PropertyInstance` has an edge to ` Temperature(0K)` condition, i.e. the lattice parameter is measured at 0 K.
 
 If a model has inputs where it is unknown if they satisfy its conditions (e.g. a lattice parameter property exists in the graph, but the temperature it was measured at is not specified), then it becomes an `Assumption` in the model output.
 
@@ -88,6 +88,15 @@ Key fields are as follows:
 
 Please copy an existing model and submit a pull request, its filename should match the canonical name of the property. Any additional code/resources necessary for the model to work should go in the folder `../supplementary/model_name/`.
 
+## Submitting a code contribution
+
+We only have a few guidelines at present:
+
+* Please be [PEP8](https://www.python.org/dev/peps/pep-0008/) compliant (docstrings limited to 72 characters, code to 100)
+* We're targeting Python 3.6+ only
+* Type hints are preferred
+* If a function or method returns multiple values, return a `namedtuple`, and should always return the same types (with the possible exception of `None`).
+
 # Web Interface
 
 Each model and property will have an auto-generated page associated with them. This page will allow manual input of model parameters and calculation of model outputs, and will also provide documentation/explanations of how the model works. On a technological level, this will make use of the [Dash library by plot.ly](https://plot.ly/products/dash/).
@@ -99,4 +108,5 @@ When contributing a model, to add additional documentation please place a Markdo
 All this is subject to change, since we're still at the design stage. Until documentation is written, please find some answers to common questions:
 
 Q. How does this differ to tensor graph libraries such as PyTorch and Tensorflow?
-A. These libraries are excellent tools for creating tensor graphs, but have different design goals and are only superficially similar. Whereas a single node in these tensor graph libraries is a mathematical operation, in our graph a node contains an entire mathematical model and associated metadata, including references. It also gracefully handles propagation of units and uncertainties. As such, Propnet is designed at a much higher-level than these other libraries: a single node in propnet could itself be an entire Tensorflow neural network. Due to this design, Propnet will also have an order of magnitude fewer nodes than a typical Tensorflow graph, so allows for a simpler implementation.
+
+A. These libraries are excellent tools for creating tensor graphs, but have different design goals and are only superficially similar. Whereas a single node in these tensor graph libraries is a mathematical operation, in our graph a node contains an entire mathematical model and associated metadata, including references. It also gracefully handles propagation of units and uncertainties. As such, Propnet is designed at a much higher-level than these other libraries: a single node in Propnet could itself be an entire Tensorflow neural network. Due to this design, Propnet will also have an order of magnitude fewer nodes than a typical Tensorflow graph, so allows for a simpler implementation.
