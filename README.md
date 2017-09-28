@@ -161,6 +161,19 @@ Each model and property will have an auto-generated page associated with them. T
 
 When contributing a model, to add additional documentation please place a Markdown file with the canonical model name in the `../models/docs/` directory.
 
+# Glossary
+
+**Material:** Can be a formula, crystallographic structure, or more complex material
+
+**PropertyType:** (or "Property") A distinct physical *Quantity,* such as lattice parameter or temperature
+
+**PropertyInstance:** Refers to a *Quantity* and its associated *PropertyType*, as well as any associated metadata such as references, that is typically associated with a *Material* (this may be renamed later)
+
+**Quantity:** Refers to a *value* which can be a scalar/vector/matrix/tensor and its associated *unit*
+
+**Model:** Something that relates one set of properties to another set of properties
+
+
 # FAQ
 
 All this is subject to change, since we're still at the design stage. Until documentation is written, please find some answers to common questions:
