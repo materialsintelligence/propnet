@@ -1,0 +1,8 @@
+name: shear_modulus
+units:
+- [gigapascal, 1.0]
+display_names: [Shear modulus]
+display_symbols: [\mu]
+dimension: 1
+test_value: 65.0
+comment: ''

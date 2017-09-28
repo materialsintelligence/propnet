@@ -1,0 +1,8 @@
+name: poisson_ratio
+units:
+- []
+display_names: [Poisson ratio]
+display_symbols: [\nu]
+dimension: 1
+test_value: 0.25
+comment: ''

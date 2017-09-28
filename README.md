@@ -1,13 +1,12 @@
 **This is not ready for public use yet, please wait for a formal release announcement/publication! Thank you.**
 
-# Design Overview
+# Propnet Design Overview
 
 Propnet is designed to synthesize all current materials science knowledge into a graph, that can be traversed to calculate additional properties when provided with some initial information.
 
 ## The Graph
 
 As much as possible, information is encoded into the graph itself, rather than creating additional data structures. Rather than re-invent the wheel, we are using the popular and well-tested [networkx 2.0](https://networkx.github.io) graph library to provide the necessary data structures and graph algorithms that form the foundation of Propnet.
-
 
 ## Property
 
@@ -90,7 +89,7 @@ At this stage, none of the materials in Propnet will be this complex. This examp
 
 ![Simple property](docs/images/readme_property_simple.png)
 
-Once a material has been specified, we can define a property of that material, such as its lattice parameter. Here, the `PropertyInstance` node contains the value of that property, and it points to the graph's canonical `PropertyType` node that the value describes.
+Once a material has been specified, we can define a property of that material, such as its lattice parameter. Above, the `PropertyInstance` node contains the value of that property, and it points to the graph's canonical `PropertyType` node that the value describes.
 
 ![Dependent property](docs/images/readme_property_dependent.png)
 
@@ -121,7 +120,7 @@ Please copy an existing property and submit a pull request, its filename should 
 
 Key fields are as follows:
 
-* `canonical_name`: A unique name for the property, lowercase, must be a valid Python identifier (no spaces)
+* `name`: A unique, canonical name for the property, lowercase, must be a valid Python identifier (no spaces)
 * `unit`: A list of of lists, from [pint's serialization format](http://pint.readthedocs.io/en/latest/serialization.html), with an implicit value of 1.0 (see example below)
 * `display_names`: List of human-readable name(s), LaTeX syntax allowed, first name will be the preferred name
 * `display_symbols`: As above, but for symbols
@@ -150,10 +149,11 @@ Please copy an existing model and submit a pull request, its filename should mat
 
 We only have a few guidelines at present:
 
-* Please be [PEP8](https://www.python.org/dev/peps/pep-0008/) compliant (docstrings limited to 72 characters, code to 100)
+* Please be [PEP8](https://www.python.org/dev/peps/pep-0008/) compliant (not strict about line length, but try to keep docstrings to 72 characters, code to 100)
 * We're targeting Python 3.6+ only
 * [Type hints](https://www.python.org/dev/peps/pep-0484/) are preferred
 * If a function or method returns multiple values, return a `namedtuple`, this allows easier refactoring later and more readable code. Functions and methods should also always consistently return the same types (with the possible exception of `None`).
+* If you spot a bad practice / anti-pattern in the code, you're honor bound to report it :-)
 
 # Web Interface
 
