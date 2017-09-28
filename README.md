@@ -66,6 +66,50 @@ If a model has inputs where it is unknown if they satisfy its conditions (e.g. a
 
 Any reference or `Assumption` associated with a `PropertyInstance` is propagated through the model and through the graph, so that when the graph is queried for the specific value of a property, the assumptions and a list of references are also supplied, in addition to the value of the property itself.
 
+## Node types and edges
+
+Our graph has the following types of *node* corresponding to the concepts above:
+
+![Node types](docs/images/readme_node_types.png)
+
+*Edges* between these nodes describe the relationships between them. To illustrate these relationships, consider our definition of a material:
+
+![Simple materials](docs/images/readme_materials_simple.png)
+
+This shows the simplest definition of a material, either known by its chemical formula, or by its crystallographic structure.
+
+![Compound materials](docs/images/readme_materials_compound.png)
+
+We can also represent compound materials. On the left, the edge attribute *x* gives the proportion of each structure that makes up the material. On the right, we use an edge attribute to define an orientation relationship between structures.
+
+![Complex materials](docs/images/readme_materials_complex.png)
+
+In principle, we can construct materials of arbitrary complexity: here we represent a multi-layer material with film thicknessness specified by the edge attribute *t*, with one component of the multi-layer being doped.
+
+At this stage, none of the materials in Propnet will be this complex. This example is simply included as an illustration that the design should be forward-looking and transferrable.
+
+![Simple property](docs/images/readme_property_simple.png)
+
+Once a material has been specified, we can define a property of that material, such as its lattice parameter. Here, the `PropertyInstance` node contains the value of that property, and it points to the graph's canonical `PropertyType` node that the value describes.
+
+![Dependent property](docs/images/readme_property_dependent.png)
+
+A `PropertyInstance` with an edge to another `PropertyInstance` describes a dependent property: in this case, it could be the temperature at which that measurement was taken. For the first version of Propnet, all measurements are derived from 0 K DFT simulations.
+
+![Multiple properties](docs/images/readme_property_multiple.png)
+
+It is also possible to define multiple `PropertyInstances` for the same material, for example an experimental and DFT value. When evaluating the graph, the user can choose a strategy which will select the most appropriate `PropertyInstance`: for example, the user might select to always prefer DFT data, or to always prefer the `PropertyInstance` with the smallest uncertainty.
+
+![Model node](docs/images/readme_model_simple.png)
+
+The simplest `Model` relates one `PropertyType` to another `PropertyType`, as shown above.
+
+![Full graph](docs/images/readme_full_graph.png)
+
+Incorporating all these node types into the full graph, we can see a clear separation between data (`Materials` and their associated `PropertyInstances`), and logic (`Models` and their associated `PropertyTypes`, which form the input and output of `Models`).
+
+To 'solve' the graph, we look for `PropertyType` nodes that do not have any associated `PropertyInstances`, and then from the graph topology see if there is a route to calculate this property. If a route exists, the property is calculated, and a new `PropertyInstance` inserted into the graph.
+
 
 # Guidelines for Contributions
 
@@ -78,15 +122,29 @@ Please copy an existing property and submit a pull request, its filename should 
 Key fields are as follows:
 
 * `canonical_name`: A unique name for the property, lowercase, must be a valid Python identifier (no spaces)
-* `unit`: A list of of lists, from [pint's serialization format](http://pint.readthedocs.io/en/latest/serialization.html), with an implicit value of 1.0 (see examples)
+* `unit`: A list of of lists, from [pint's serialization format](http://pint.readthedocs.io/en/latest/serialization.html), with an implicit value of 1.0 (see example below)
 * `display_names`: List of human-readable name(s), LaTeX syntax allowed, first name will be the preferred name
 * `display_symbols`: As above, but for symbols
 * `dimension`: The expected dimension (using the same definition as [numpy ndarray shape](https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.ndarray.shape.html)) of the property. If there are multiple ways to define the property (e.g. vector, scalar), define multiple properties with a simple model to convert between them.
-* `test_value`: A physically-plausible test value in the units specified above, 
+* `test_value`: A physically-plausible test value in the units specified above, will be used to populate the graph with test data.
+* `comment`: Optional string with additional information.
+
+The easiest way to get a valid unit is simply:
+
+```
+from pint import UnitRegistry
+ureg = UnitRegistry()
+# replace "..." with your units here
+my_units = ureg.parse_expression("...")
+# check units look correct
+print(my_units)
+# and convert to tuple, assuming value of 1.0
+my_units = my_units.to_tuple()[1]
+```
 
 ## Submitting a Model
 
-Please copy an existing model and submit a pull request, its filename should match the canonical name of the property. Any additional code/resources necessary for the model to work should go in the folder `../supplementary/model_name/`.
+Please copy an existing model and submit a pull request, its filename should match the canonical name of the model. Any additional code/resources necessary for the model to work should go in the folder `../supplementary/model_name/`.
 
 ## Submitting a code contribution
 
@@ -94,8 +152,8 @@ We only have a few guidelines at present:
 
 * Please be [PEP8](https://www.python.org/dev/peps/pep-0008/) compliant (docstrings limited to 72 characters, code to 100)
 * We're targeting Python 3.6+ only
-* Type hints are preferred
-* If a function or method returns multiple values, return a `namedtuple`, and should always return the same types (with the possible exception of `None`).
+* [Type hints](https://www.python.org/dev/peps/pep-0484/) are preferred
+* If a function or method returns multiple values, return a `namedtuple`, this allows easier refactoring later and more readable code. Functions and methods should also always consistently return the same types (with the possible exception of `None`).
 
 # Web Interface
 
@@ -110,3 +168,5 @@ All this is subject to change, since we're still at the design stage. Until docu
 Q. How does this differ to tensor graph libraries such as PyTorch and Tensorflow?
 
 A. These libraries are excellent tools for creating tensor graphs, but have different design goals and are only superficially similar. Whereas a single node in these tensor graph libraries is a mathematical operation, in our graph a node contains an entire mathematical model and associated metadata, including references. It also gracefully handles propagation of units and uncertainties. As such, Propnet is designed at a much higher-level than these other libraries: a single node in Propnet could itself be an entire Tensorflow neural network. Due to this design, Propnet will also have an order of magnitude fewer nodes than a typical Tensorflow graph, so allows for a simpler implementation.
+
+Hat tip to @jdagdelen for the Propnet name.
