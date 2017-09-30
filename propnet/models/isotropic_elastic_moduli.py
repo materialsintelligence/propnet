@@ -1,8 +1,5 @@
 from propnet.core.models import AbstractModel
-import sympy as sp
 
-# TODO: this needs to handle conversion between *all* isotropic elastic moduli
-# This is a design goal! No new models until we've figured this one out
 
 class YoungsModulus(AbstractModel):
 
@@ -21,14 +18,7 @@ class YoungsModulus(AbstractModel):
     def valid_outputs(self):
         return ['E', 'G', 'n', 'K', 'l', 'M']
 
-    def master_equations(self, values, output_symbol):
-
-        # TODO: maybe symbol definitions should be handled by the base class?
-        # unit wrapping will happen then anyway
-        # perhaps need an AbstractAnalyticalModel base class?
-        E, G, n, K, l, M = sp.symbols('E, G, n, K, l, M')
-
-    def master_equations(self, E, G, n, K, l, M):
+    def equations(self, E, G, n, K, l, M):
         return [
             ((3 * K * (3 * K - E)) / (9 * K - E)) - l,
             ((3 * K * E) / (9 * K - E)) - G,
@@ -36,7 +26,10 @@ class YoungsModulus(AbstractModel):
             ((3 * K) * (3 * K + E) / (9 * K - E)) - M
         ]
 
-        sp.linsolve(equations, ...)
+    @property
+    def test_sets(self):
+        return [{'K': 0, 'E': 0, 'G': 0}]
 
-    def assumptions(self):
-        return [None] # change to Isotropic
+    @property
+    def references(self):
+        return []
