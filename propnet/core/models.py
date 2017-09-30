@@ -1,12 +1,15 @@
 from abc import ABCMeta, abstractmethod
-from typing import List, Dict, Optional, Union, Tuple
+from typing import List, Dict, Optional, Union, Tuple, Callable
 from propnet.core.properties import PropertyName
 from propnet.core.conditions import Condition
-from propnet import ureg
+from propnet import ureg, QuantityLike
+import sympy as sp
 
 class AbstractModel(metaclass=ABCMeta):
 
-    # __slots__ = ...
+    #__slots__ = ('equations', 'symbol_mapping', 'conditions',
+    #             'assumptions', 'references', 'test_sets',
+    #             'sympy_equations', 'evaluate')
 
     def __init__(self):
 
@@ -16,19 +19,41 @@ class AbstractModel(metaclass=ABCMeta):
 
         # wrap symbols with units
 
-        self.symbols = self.symbol_mapping.values()
+        # list sympy constraints as reserved words
+        # we can add our own additional constraints to this list
+        self._reserved_sympy_constraints = ('commutative',
+                                            'complex',
+                                            'imaginary',
+                                            'real',
+                                            'integer',
+                                            'odd',
+                                            'even',
+                                            'prime',
+                                            'composite',
+                                            'zero',
+                                            'nonzero',
+                                            'algebraic',
+                                            'trascendental',
+                                            'irrational',
+                                            'finite',
+                                            'infinite',
+                                            'negative',
+                                            'nonnegative',
+                                            'positive',
+                                            'nonpositive',
+                                            'hermitian',
+                                            'antihermitian'
+                                            )
+        self.default_constraints = {
+            'finite': True,
+            'nonzero': True,
+            'real': True
+        }
 
         pass
 
-
-    # TODO: wrap this so that output_symbol is checked against valid outputs
-    # TODO: wrap this so that input str are automatically converted to quantities
-    # or just add additional method to define using strings?/np arrays?
-    # this is probably in the pint documentation ...
     @abstractmethod
-    def master_equations(self,
-                         values: Dict[str, Union[ureg.Quantity, str, Tuple]],
-                         output_symbol) -> ureg.Quantity:
+    def equations(self, **kwargs) -> List[Callable]:
         """
         A general method which, when provided with a collection of
         values and a desired output, will try to return that output.
@@ -40,6 +65,25 @@ class AbstractModel(metaclass=ABCMeta):
         :return:
         """
         pass
+
+    def _sympy_equations(self):
+        """
+        Converted user-provided equations into Sympy equations that
+        can be solved. Uses user-provided symbol mapping.
+        :return:
+        """
+        #symbols = sp.symbols(self.symbol_mapping.values())
+        return NotImplementedError
+
+    def _enforce_units(self, f: Callable) -> Callable:
+        """
+        Takes the solution from sympy, lambdaifies it,
+        and wraps it with the appropriate units.
+
+        :param f: Equation (Python or NumPy)
+        :return: f wrapped with appropriate units
+        """
+        return NotImplementedError
 
     @property
     @abstractmethod
@@ -80,7 +124,7 @@ class AbstractModel(metaclass=ABCMeta):
     @property
     @abstractmethod
     def assumptions(self) -> List[Condition]:
-        pass
+        return []
 
     @property
     @abstractmethod
@@ -92,8 +136,7 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    # TODO: add wrapped to convert str to ureg.Quantity
-    def test_sets(self) -> Dict[str, Union[str, ureg.Quantity, Tuple]]:
+    def test_sets(self) -> Dict[str, QuantityLike]:
         """
         Integrated test values. These are used by unit testing,
         and also when testing the model interactively
@@ -102,7 +145,7 @@ class AbstractModel(metaclass=ABCMeta):
         """
         return
 
-    # TODO: will need an internal function here to wrap model outputs as PropertyInstances
-    # (this will be clearer once we have the graph set up)
-    #def _get_output(self, property_instances) -> List[PropertyInstances]:
-    #    pass
+    def evaluate(self,
+                 values: Dict[str, QuantityLike],
+                 desired_output: str):
+        return NotImplementedError

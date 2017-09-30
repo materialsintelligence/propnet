@@ -28,8 +28,17 @@ class YoungsModulus(AbstractModel):
 
     @property
     def test_sets(self):
-        return [{'K': 0, 'E': 0, 'G': 0}]
+        return [
+            {'K': (0, "GPa"), 'E': (0, "GPa"), 'G': (0, "GPa")}
+        ]
 
     @property
     def references(self):
-        return []
+        return {}
+
+    @property
+    def constraints(self):
+        return {
+            # '*': {'positive': True}, # add a special 'all' operator?
+            'E': {'positive': True, 'rational': True, 'finite': True}  # add some of these to defaults...
+        }
