@@ -14,17 +14,17 @@ A 'property' refers to a property of a material, such as its lattice parameter, 
 
 In Propnet, properties are rigorously defined to ensure consistent interpretations between different models, and this crucially includes explicit units and uncertainties. Where uncertainties are unknown, we apply rule-of-thumb uncertainties derived from statistical analysis of similar data to give a first-approximation of our confidence in a property.
 
-In terms of implementation, a `Property` provides information on the property itself (e.g. lattice parameter has units of length), and a `PropertyInstance` is an object that combines a `Property` with a value (e.g. 5Å), a reference for where the property came from, and edges to the materials it is associated with.
+In terms of implementation, a `Property` provides information on the property itself (e.g. lattice parameter has units of length), and a `PropertyQuantity` is an object that combines a `Property` with a value (e.g. 5Å), a reference for where the property came from, and edges to the materials it is associated with.
 
 ## Material
 
 There is a necessary distinction between a real 'material' vs. an ideal, perfect crystal. In the [Materials Project](http://materialsproject.org/)  a 'material' typically refers to the latter. However, properties can come from many sources, including experiment data where additional phases or impurities might be present.
 
-Propnet attempts to gracefully handled this distinction. A `PropertyInstance` can have edges to the material it's associated with. In the simplest case, this could be an edge to a material defined simply by its chemical formula. If the structure is known, it is represented by a [pymatgen](https://github.com/materialsproject/pymatgen) `Structure` object.
+Propnet attempts to gracefully handled this distinction. A `PropertyQuantity` can have edges to the material it's associated with. In the simplest case, this could be an edge to a material defined simply by its chemical formula. If the structure is known, it is represented by a [pymatgen](https://github.com/materialsproject/pymatgen) `Structure` object.
 
-To illustrate, a `PropertyInstance` of a lattice parameter calculated using DFT, would have an edge to a `PropertyInstance` representing a temperature of 0 K, and an edge to the `Structure` associated with it. In this case, the edge weight to the `Structure` would be 1.0, since this is an ideal, perfect material.
+To illustrate, a `PropertyQuantity` of a lattice parameter calculated using DFT, would have an edge to a `PropertyQuantity` representing a temperature of 0 K, and an edge to the `Structure` associated with it. In this case, the edge weight to the `Structure` would be 1.0, since this is an ideal, perfect material.
 
-However, if the `PropertyInstance` came from experimental data and a second impurity phase is present, it would have edges to *two* `Structure` objects, with the edge for the majority phase given a weight of, e.g., 0.99 (if it was 99% pure), and the second edge with a weight of 0.01 for the impurity phase.
+However, if the `PropertyQuantity` came from experimental data and a second impurity phase is present, it would have edges to *two* `Structure` objects, with the edge for the majority phase given a weight of, e.g., 0.99 (if it was 99% pure), and the second edge with a weight of 0.01 for the impurity phase.
 
 In the case of a property where there is a *relationship* between `Structure` objects, such as a lattice misfit, then an edge is added between the two `Structure` objects specifying this relationship, i.e. the orientation relationship.
 
@@ -57,13 +57,13 @@ An `Assumption` is associated with a property and can be something like:
 
 A `Condition` is a model requirement and can be something like:
 
-* A model could expect a lattice parameter `PropertyInstance` with the condition that the `PropertyInstance` has an edge to ` Temperature(0K)` condition, i.e. the lattice parameter is measured at 0 K.
+* A model could expect a lattice parameter `PropertyQuantity` with the condition that the `PropertyQuantity` has an edge to ` Temperature(0K)` condition, i.e. the lattice parameter is measured at 0 K.
 
 If a model has inputs where it is unknown if they satisfy its conditions (e.g. a lattice parameter property exists in the graph, but the temperature it was measured at is not specified), then it becomes an `Assumption` in the model output.
 
 ## Propagation of references and assumptions
 
-Any reference or `Assumption` associated with a `PropertyInstance` is propagated through the model and through the graph, so that when the graph is queried for the specific value of a property, the assumptions and a list of references are also supplied, in addition to the value of the property itself.
+Any reference or `Assumption` associated with a `PropertyQuantity` is propagated through the model and through the graph, so that when the graph is queried for the specific value of a property, the assumptions and a list of references are also supplied, in addition to the value of the property itself.
 
 ## Node types and edges
 
@@ -89,15 +89,15 @@ At this stage, none of the materials in Propnet will be this complex. This examp
 
 ![Simple property](docs/images/readme_property_simple.png)
 
-Once a material has been specified, we can define a property of that material, such as its lattice parameter. Above, the `PropertyInstance` node contains the value of that property, and it points to the graph's canonical `PropertyType` node that the value describes.
+Once a material has been specified, we can define a property of that material, such as its lattice parameter. Above, the `PropertyQuantity` node contains the value of that property, and it points to the graph's canonical `PropertyType` node that the value describes.
 
 ![Dependent property](docs/images/readme_property_dependent.png)
 
-A `PropertyInstance` with an edge to another `PropertyInstance` describes a dependent property: in this case, it could be the temperature at which that measurement was taken. For the first version of Propnet, all measurements are derived from 0 K DFT simulations.
+A `PropertyQuantity` with an edge to another `PropertyQuantity` describes a dependent property: in this case, it could be the temperature at which that measurement was taken. For the first version of Propnet, all measurements are derived from 0 K DFT simulations.
 
 ![Multiple properties](docs/images/readme_property_multiple.png)
 
-It is also possible to define multiple `PropertyInstances` for the same material, for example an experimental and DFT value. When evaluating the graph, the user can choose a strategy which will select the most appropriate `PropertyInstance`: for example, the user might select to always prefer DFT data, or to always prefer the `PropertyInstance` with the smallest uncertainty.
+It is also possible to define multiple `PropertyQuantitys` for the same material, for example an experimental and DFT value. When evaluating the graph, the user can choose a strategy which will select the most appropriate `PropertyQuantity`: for example, the user might select to always prefer DFT data, or to always prefer the `PropertyQuantity` with the smallest uncertainty.
 
 ![Model node](docs/images/readme_model_simple.png)
 
@@ -105,9 +105,9 @@ The simplest `Model` relates one `PropertyType` to another `PropertyType`, as sh
 
 ![Full graph](docs/images/readme_full_graph.png)
 
-Incorporating all these node types into the full graph, we can see a clear separation between data (`Materials` and their associated `PropertyInstances`), and logic (`Models` and their associated `PropertyTypes`, which form the input and output of `Models`).
+Incorporating all these node types into the full graph, we can see a clear separation between data (`Materials` and their associated `PropertyQuantitys`), and logic (`Models` and their associated `PropertyTypes`, which form the input and output of `Models`).
 
-To 'solve' the graph, we look for `PropertyType` nodes that do not have any associated `PropertyInstances`, and then from the graph topology see if there is a route to calculate this property. If a route exists, the property is calculated, and a new `PropertyInstance` inserted into the graph.
+To 'solve' the graph, we look for `PropertyType` nodes that do not have any associated `PropertyQuantitys`, and then from the graph topology see if there is a route to calculate this property. If a route exists, the property is calculated, and a new `PropertyQuantity` inserted into the graph.
 
 
 # Guidelines for Contributions
@@ -167,7 +167,7 @@ When contributing a model, to add additional documentation please place a Markdo
 
 **PropertyType:** (or "Property") A distinct physical *Quantity,* such as lattice parameter or temperature
 
-**PropertyInstance:** Refers to a *Quantity* and its associated *PropertyType*, as well as any associated metadata such as references, that is typically associated with a *Material* (this may be renamed later)
+**PropertyQuantity:** Refers to a *Quantity* and its associated *PropertyType*, as well as any associated metadata such as references, that is typically associated with a *Material* (this may be renamed later)
 
 **Quantity:** Refers to a *value* which can be a scalar/vector/matrix/tensor and its associated *unit*
 
