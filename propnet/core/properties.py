@@ -6,6 +6,7 @@ from glob import glob
 from enum import Enum
 from monty.serialization import loadfn
 from pybtex.database.input.bibtex import Parser
+from os import path
 
 PropertyType = NamedTuple('PropertyType', [('units', ureg.Quantity),
                                            ('display_names', List[str]),
@@ -14,75 +15,61 @@ PropertyType = NamedTuple('PropertyType', [('units', ureg.Quantity),
                                            ('test_value', np.ndarray),
                                            ('comment', str)])
 
-class PropertyLoader():
+def parse_property(property: dict) -> PropertyType:
+    """
 
-    def __init__(self, properties: List[Dict]):
-        """
+    :param property:
+    :return:
+    """
 
-        :param properties:
-        """
+    name = property['name']
+    del property['name']
 
-        self.properties = Enum('Properties',
-                               [self.parse_property(p) for p in properties])
+    # check canonical name
+    if not name.isidentifier() or \
+            not name.islower():
+        raise ValueError("The canonical name ({}) is not valid."
+                         .format(name))
 
+    # using name for Enum case, conventional to have all upper case
+    name = name.upper()
 
-    @classmethod
-    def from_path(cls, path: str):
-        """
-
-        :param path:
-        :return:
-        """
-
-        files = glob("{}/*.yaml".format(path))
-        properties = [loadfn(f) for f in files]
-
-        return cls(properties)
-
-    def parse_property(self, property: dict) -> PropertyType:
-        """
-
-        :param property:
-        :return:
-        """
-
-        name = property['name']
-        del property['name']
-
-        # check canonical name
-        if not name.isidentifier() or \
-           not name.islower():
-            raise ValueError("The canonical name ({}) is not valid."
-                             .format(name))
-
-        # using name for Enum case, conventional to have all upper case
-        name = name.upper()
-
-        # check units supported by pint
+    # check units supported by pint
+    if property['units'] != [[]]:
         units = ureg.Quantity.from_tuple((1, tuple(tuple(x) for x in property['units'])))
-        property['units'] = units
+    else:
+        units = ureg.parse_expression("")  # unitless, TODO: handle this better
+    property['units'] = units
 
-        # check required fields
-        if len(property['display_names']) == 0:
-            raise ValueError("Please provide at least one display name for {}."
-                             .format(name))
-        if len(property['display_symbols']) == 0:
-            raise ValueError("Please provide at least one display symbol for {}."
-                             .format(name))
+    # check required fields
+    if len(property['display_names']) == 0:
+        raise ValueError("Please provide at least one display name for {}."
+                         .format(name))
+    if len(property['display_symbols']) == 0:
+        raise ValueError("Please provide at least one display symbol for {}."
+                         .format(name))
 
-        # check test value is valid
-        test_value = np.array(property['test_value'])
-        if test_value == 0:
-            logger.warn("Test value for {} is 0, is there a more appropriate test value?"
-                        .format(name))
+    # check test value is valid
+    test_value = np.array(property['test_value'])
+    if test_value == 0:
+        logger.warn("Test value for {} is 0, is there a more appropriate test value?"
+                    .format(name))
 
-        # check dimensions are valid
-        try:
-            empty_array = np.zeros(property['dimension'])
-        except:
-            raise ValueError("Invalid dimensions for {}.".format(name))
+    # check dimensions are valid
+    try:
+        empty_array = np.zeros(property['dimension'])
+    except:
+        raise ValueError("Invalid dimensions for {}.".format(name))
 
-        return (name, PropertyType(**property))
+    return (name, PropertyType(**property))
+
+files = glob(path.join(path.dirname(__file__), '../properties/*.yaml'))
+properties = [loadfn(f) for f in files]
+print(properties)
+
+PROPERTIES = Enum('Properties',
+                  [parse_property(p) for p in properties])
+
 
 
 class PropertyQuantity:

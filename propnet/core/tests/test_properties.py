@@ -24,6 +24,7 @@ class PropertiesTest(unittest.TestCase):
             comment=""
         )
 
-        loader = PropertyLoader([sample_property_type_dict])
+        self.assertEqual(('YOUNGS_MODULUS', sample_property_type),
+                         parse_property(sample_property_type_dict))
 
-        self.assertEqual(sample_property_type, loader.properties.YOUNGS_MODULUS.value)
+        self.assertEqual(PROPERTIES.YOUNGS_MODULUS.value, sample_property_type)
