@@ -28,11 +28,12 @@ class YoungsModulus(AbstractModel):
         # perhaps need an AbstractAnalyticalModel base class?
         E, G, n, K, l, M = sp.symbols('E, G, n, K, l, M')
 
-        equations = [
-            ((3*K * (3*K - E)) / (9*K - E)) - l,
-            ((3*K*E)/(9*K - E)) - G,
-            ((3*K - E)/(6*K)) - n,
-            ((3*K)*(3*K + E)/(9*K - E)) - M
+    def master_equations(self, E, G, n, K, l, M):
+        return [
+            ((3 * K * (3 * K - E)) / (9 * K - E)) - l,
+            ((3 * K * E) / (9 * K - E)) - G,
+            ((3 * K - E) / (6 * K)) - n,
+            ((3 * K) * (3 * K + E) / (9 * K - E)) - M
         ]
 
         sp.linsolve(equations, ...)

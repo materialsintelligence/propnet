@@ -5,7 +5,7 @@ from enum import Enum
 
 NodeType = Enum('NodeType', ['Material',
                              'PropertyType',
-                             'PropertyInstance',
+                             'PropertyQuantity',
                              'PymatgenObject',
                              'String',
                              'Model'])
