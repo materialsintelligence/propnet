@@ -6,7 +6,7 @@ class PropertiesTest(unittest.TestCase):
     def testLoader(self):
 
         sample_property_type_dict = {
-            'name': "youngs_modulus",
+            'name': 'youngs_modulus',
             'units': [["gigapascal", 1.0]],
             'display_names': ["Young's modulus", "Elastic modulus"],
             'display_symbols': ["E"],
@@ -16,7 +16,6 @@ class PropertiesTest(unittest.TestCase):
         }
 
         sample_property_type = PropertyType(
-            name='youngs_modulus',
             units=ureg.parse_expression("GPa"),
             display_names=["Young's modulus", "Elastic modulus"],
             display_symbols=["E"],
@@ -27,4 +26,4 @@ class PropertiesTest(unittest.TestCase):
 
         loader = PropertyLoader([sample_property_type_dict])
 
-        self.assertEqual(sample_property_type, loader.properties[0])
+        self.assertEqual(sample_property_type, loader.properties.YOUNGS_MODULUS.value)
