@@ -8,14 +8,14 @@ from monty.serialization import loadfn
 from pybtex.database.input.bibtex import Parser
 from os import path
 
-PropertyType = NamedTuple('PropertyType', [('units', ureg.Quantity),
-                                           ('display_names', List[str]),
-                                           ('display_symbols', List[str]),
-                                           ('dimension', List),
-                                           ('test_value', np.ndarray),
-                                           ('comment', str)])
+PropertyMetadata = NamedTuple('PropertyMetadata', [('units', ureg.Quantity),
+                                                   ('display_names', List[str]),
+                                                   ('display_symbols', List[str]),
+                                                   ('dimension', List),
+                                                   ('test_value', np.ndarray),
+                                                   ('comment', str)])
 
-def parse_property(property: dict) -> PropertyType:
+def parse_property(property: dict) -> (str, PropertyMetadata):
     """
 
     :param property:
@@ -61,14 +61,14 @@ def parse_property(property: dict) -> PropertyType:
     except:
         raise ValueError("Invalid dimensions for {}.".format(name))
 
-    return (name, PropertyType(**property))
+    return (name, PropertyMetadata(**property))
 
 files = glob(path.join(path.dirname(__file__), '../properties/*.yaml'))
 properties = [loadfn(f) for f in files]
 print(properties)
 
-PROPERTIES = Enum('Properties',
-                  [parse_property(p) for p in properties])
+Property = Enum('Property',
+                [parse_property(p) for p in properties])
 
 
 

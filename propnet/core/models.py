@@ -1,111 +1,84 @@
 from abc import ABCMeta, abstractmethod
 from typing import List, Dict, Optional, Union, Tuple, Callable
-from propnet.core.properties import PropertyName
-from propnet.core.conditions import Condition
+from propnet.core.properties import Property
 from propnet import ureg, QuantityLike
 import sympy as sp
 
-class AbstractModel(metaclass=ABCMeta):
+class AbstractAnalyticalModel(metaclass=ABCMeta):
 
-    #__slots__ = ('equations', 'symbol_mapping', 'conditions',
-    #             'assumptions', 'references', 'test_sets',
-    #             'sympy_equations', 'evaluate')
+    __slots__ = ('title', 'description', 'tags', 'references',
+                 'symbol_mapping', 'unit_mapping', 'equations',
+                 'test_sets', 'evaluate', 'valid_outputs')
 
     def __init__(self):
 
-        # validate conditions
+        # retrieve units for each symbol
+        try:
+            self.unit_mapping = {symbol:Property(name.upper())
+                                 for symbol, name in self.symbol_mapping.items()}
+        except:
+            raise ValueError("Please check your property names in your symbol mapping, "
+                             "are they all valid?")
 
-        # test symbol mapping, if symbol not in properties suggest adding it
+    @property
+    def title(self) -> str:
+        """
+        Add a title to your model.
+        """
+        pass
 
-        # wrap symbols with units
+    @property
+    def tags(self) -> List[str]:
+        """
+        Add tags to your model as a list of strings.
+        """
+        pass
 
-        # list sympy constraints as reserved words
-        # we can add our own additional constraints to this list
-        self._reserved_sympy_constraints = ('commutative',
-                                            'complex',
-                                            'imaginary',
-                                            'real',
-                                            'integer',
-                                            'odd',
-                                            'even',
-                                            'prime',
-                                            'composite',
-                                            'zero',
-                                            'nonzero',
-                                            'algebraic',
-                                            'trascendental',
-                                            'irrational',
-                                            'finite',
-                                            'infinite',
-                                            'negative',
-                                            'nonnegative',
-                                            'positive',
-                                            'nonpositive',
-                                            'hermitian',
-                                            'antihermitian'
-                                            )
-        self.default_constraints = {
-            'finite': True,
-            'nonzero': True,
-            'real': True
-        }
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        """
+        Add a description to your model as a multi-line string.
+        """
+        pass
 
+    @property
+    @abstractmethod
+    def references(self) -> Optional[List[str]]:
+        """
+        :return: A list of references as BibTeX strings
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def symbol_mapping(self) -> Dict[str, Property]:
+        """
+        Map the symbols used in your model to their canonical property
+        names.
+        """
         pass
 
     @abstractmethod
     def equations(self, **kwargs) -> List[Callable]:
         """
-        A general method which, when provided with a collection of
-        values and a desired output, will try to return that output.
-
-        For analytical models, this should use sympy's solveset.
-
-        :param values: symbols and their associated physical quantites
+        :param values: symbols and their associated physical quantities
         :param output_symbol: symbol for desired output
         :return:
         """
         pass
 
-    def _sympy_equations(self):
-        """
-        Converted user-provided equations into Sympy equations that
-        can be solved. Uses user-provided symbol mapping.
-        :return:
-        """
-        #symbols = sp.symbols(self.symbol_mapping.values())
-        return NotImplementedError
-
-    def _enforce_units(self, f: Callable) -> Callable:
-        """
-        Takes the solution from sympy, lambdaifies it,
-        and wraps it with the appropriate units.
-
-        :param f: Equation (Python or NumPy)
-        :return: f wrapped with appropriate units
-        """
-        return NotImplementedError
-
     @property
-    @abstractmethod
-    def symbol_mapping(self) -> Dict[str, PropertyName]:
-        """
-        Maps symbols used to their canonical property names.
-        :return:
-        """
-        pass
-
-    @property
-    @abstractmethod
     def valid_outputs(self) -> List[str]:
         """
-        Model will not attempt to solve for a symbol that
-        is not a valid output. This is useful for models
-        that are known to be many-to-one functions that are
-        not invertible.
+        Define your valid outputs. The model will not attempt
+        to solve for a symbol that is not a valid output. This
+        is useful for models that are known to be many-to-one
+        functions that are not invertible.
 
         :return: a list of symbols that are valid outputs
         """
-        pass
+        return self.symbol_mapping.items()
 
     @property
     @abstractmethod
@@ -128,22 +101,14 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def references(self) -> Optional[List[str]]:
-        """
-        :return: A list of references as BibTeX strings
-        """
-        pass
-
-    @property
-    @abstractmethod
     def test_sets(self) -> Dict[str, QuantityLike]:
         """
-        Integrated test values. These are used by unit testing,
-        and also when testing the model interactively
-
-        :return:
+        Add test sets to your model. These are used by unit testing,
+        and also when testing the model interactively. A test set is
+        a dict with keys that correspond to your symbols and values
+        that are a (value, unit) tuple.
         """
-        return
+        pass
 
     def evaluate(self,
                  values: Dict[str, QuantityLike],

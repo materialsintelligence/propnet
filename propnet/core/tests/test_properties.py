@@ -15,7 +15,7 @@ class PropertiesTest(unittest.TestCase):
             'comment': ""
         }
 
-        sample_property_type = PropertyType(
+        sample_property_type = PropertyMetadata(
             units=ureg.parse_expression("GPa"),
             display_names=["Young's modulus", "Elastic modulus"],
             display_symbols=["E"],

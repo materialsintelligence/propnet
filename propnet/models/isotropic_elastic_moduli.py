@@ -1,7 +1,25 @@
-from propnet.core.models import AbstractModel
+from propnet.core.models import AbstractAnalyticalModel
 
 
-class YoungsModulus(AbstractModel):
+class IsotropicElasticModuli(AbstractAnalyticalModel):
+
+    @property
+    def title(self):
+        return "Convert between isotropic elastic moduli"
+
+    @property
+    def tags(self):
+        return ["mechanical"]
+
+    @property
+    def description(self):
+        return """
+        The isotropic elastic moduli are ...
+        """
+
+    @property
+    def references(self):
+        return {}
 
     @property
     def symbol_mapping(self):
@@ -29,12 +47,10 @@ class YoungsModulus(AbstractModel):
     @property
     def test_sets(self):
         return [
-            {'K': (0, "GPa"), 'E': (0, "GPa"), 'G': (0, "GPa")}
+            {'K': (0, "GPa"),
+             'E': (0, "GPa"),
+             'G': (0, "GPa")}
         ]
-
-    @property
-    def references(self):
-        return {}
 
     @property
     def constraints(self):
