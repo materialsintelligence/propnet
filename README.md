@@ -39,7 +39,7 @@ Please copy an existing property and submit a pull request, its filename should 
 Key fields are as follows:
 
 * `name`: A unique, canonical name for the property, lowercase, must be a valid Python identifier (no spaces)
-* `unit`: A list of of lists, from [pint's serialization format](http://pint.readthedocs.io/en/latest/serialization.html), with an implicit value of 1.0 (see example below)
+* `unit`: A list of of lists, from [pint's serialization format](http://pint.readthedocs.io/en/latest/serialization.html)
 * `display_names`: List of human-readable name(s), LaTeX syntax allowed, first name will be the preferred name
 * `display_symbols`: As above, but for symbols
 * `dimension`: The expected dimension (using the same definition as [numpy ndarray shape](https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.ndarray.shape.html)) of the property. If there are multiple ways to define the property (e.g. vector, scalar), define multiple properties with a simple model to convert between them.
@@ -55,8 +55,8 @@ ureg = UnitRegistry()
 my_units = ureg.parse_expression("...")
 # check units look correct
 print(my_units)
-# and convert to tuple, assuming value of 1.0
-my_units = my_units.to_tuple()[1]
+# and convert to tuple
+my_units = my_units.to_tuple()
 ```
 
 ## Submitting a Model
