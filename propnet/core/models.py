@@ -188,7 +188,7 @@ def validate_evaluate(func):
             logger.error("The {} model does not support this output ({})."
                          "".format(self.name, symbol_out))
         else:
-            if set(self.connections[symbol_out]) != inputs:
+            if not self.connections[symbol_out].issubset(inputs):
                 logger.error("The {} model does not support the output {} "
                              "for this combination of inputs ({}).".format(self.name,
                                                                            symbol_out,

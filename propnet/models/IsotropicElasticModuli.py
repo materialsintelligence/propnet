@@ -38,9 +38,9 @@ class IsotropicElasticModuli(AbstractModel):
     @property
     def connections(self):
         return {
-            'n': ('E', 'G'),
-            'G': ('E', 'n'),
-            'E': ('G', 'n')
+            'n': {'E', 'G'},
+            'G': {'E', 'n'},
+            'E': {'G', 'n'}
         }
 
     @validate_evaluate

@@ -37,7 +37,7 @@ class IsotropicElasticModuliFromTensor(AbstractModel):
     @property
     def connections(self):
         return {
-            'E': ('Sij', )
+            'E': {'Sij'}
         }
 
     @property

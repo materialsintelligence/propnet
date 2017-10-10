@@ -31,8 +31,8 @@ class ElasticComplianceVoigtConverter(AbstractModel):
     @property
     def connections(self):
         return {
-            'Sij': ('Cij', ),
-            'Cij': ('Sij', )
+            'Sij': {'Cij'},
+            'Cij': {'Sij'}
         }
 
     @validate_evaluate

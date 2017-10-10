@@ -42,13 +42,6 @@ class Propnet:
             model = model_cls()
             for idx, (output, inputs) in enumerate(model.connections.items()):
 
-                if isinstance(inputs, str):
-                    inputs = tuple(inputs)
-                    logger.warn("{} has not been specified correctly, "
-                                "please make sure all connection inputs "
-                                "are specified as tuples even if it "
-                                "only takes a single input.".format(model.__name__))
-
                 for input in inputs:
                     input = PropertyType[model.symbol_mapping[input]]
                     g.add_edge(input, model_cls, route=idx)
