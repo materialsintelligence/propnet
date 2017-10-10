@@ -1,5 +1,7 @@
 # Propnet
 
+![Propnet logo](docs/images/propnet_logo.png)
+
 Propnet is a knowledge graph for materials science. Given a set of *properties* about a given material, it can try to derive additional properties of that material using *models*. It is intended to integrated closely with the [Materials Project](http://materialsproject.org) and its large database of materials properties.
 
 [![Build Status](https://travis-ci.org/materialsintelligence/propnet.svg?branch=master)](https://travis-ci.org/materialsintelligence/propnet) [![Heroku](https://heroku-badge.herokuapp.com/?app=propnet&svg=1)](https://propnet.herokuapp.com)
@@ -22,6 +24,7 @@ Propnet is a knowledge graph for materials science. Given a set of *properties* 
     * [TODO: Constraints and Assumptions](#constraints-and-assumptions)
     * [Solving the Graph](#solving-the-graph)
 * [FAQ](#faq)
+* [Acknowledgements](#acknowledgements)
 
 # Guidelines for Contributions
 
@@ -200,4 +203,9 @@ Q. How does this differ to tensor graph libraries such as PyTorch and Tensorflow
 
 A. These libraries are excellent tools for creating tensor graphs, but have very different design goals and are only superficially similar. Whereas a single node in these tensor graph libraries is a mathematical operation, in our graph a node contains an entire mathematical model and associated metadata, including references. As such, Propnet has a completely different use-case: a single node in Propnet could itself be an entire Tensorflow neural network. Propnet is also much, much simpler than these other libraries -- it's intended as a tool for material scientists, not a platform in its own right.
 
+
+# Acknowledgements
+
 Hat tip to @jdagdelen for the Propnet name.
+
+Logo incorporates "Network by TNS" from the Noun Project (CC BY 3.0 license).
