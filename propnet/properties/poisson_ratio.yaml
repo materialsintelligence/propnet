@@ -1,7 +1,7 @@
 name: poisson_ratio
 units:
 - 1.0
-- - []
+- []
 display_names: [Poisson ratio]
 display_symbols: [\nu]
 dimension: 1

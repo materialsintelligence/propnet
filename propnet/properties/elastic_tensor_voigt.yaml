@@ -2,8 +2,8 @@ name: elastic_tensor_voigt
 units:
 - 1.0
 - - [gigapascal, 1.0]
-display_names: [Elastic tensor (in Voigt notation)]
-display_symbols: [C_{ij}]
+display_names: ['Elastic tensor (in Voigt notation)']
+display_symbols: ['C_{ij}']
 dimension: [6, 6]
 test_value:
 - [325.0, 112.0, 78.0, 0.0, 0.0, 0.0]

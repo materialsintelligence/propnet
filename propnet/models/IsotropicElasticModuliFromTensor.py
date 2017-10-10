@@ -1,7 +1,9 @@
 from propnet.core.models import AbstractModel, validate_evaluate
 from pymatgen.analysis.elasticity import ElasticTensor
 
-class IsotropicElasticModuli(AbstractModel):
+class IsotropicElasticModuliFromTensor(AbstractModel):
+
+    # This is just a placeholder at present...
 
     @property
     def title(self):
@@ -13,12 +15,17 @@ class IsotropicElasticModuli(AbstractModel):
 
     @property
     def description(self):
-        return "Description here."
+        return """Elastic moduli assuming isotropic elasticity can be derived from
+        the full elastic tensor, under certain assumptions."""
+
+    @property
+    def references(self):
+        return []
 
     @property
     def symbol_mapping(self):
         return {
-            'Eij': 'elastic_tensor_voigt',
+            'Sij': 'elastic_tensor_voigt',
             'E': 'youngs_modulus',
             #'G': 'shear_modulus',
             #'n': 'poisson_ratio',
@@ -28,12 +35,14 @@ class IsotropicElasticModuli(AbstractModel):
         }
 
     @property
-    def valid_inputs(self):
-        return ['Eij']
+    def connections(self):
+        return {
+            'E': ('Sij', )
+        }
 
     @property
-    def valid_outputs(self):
-        return ['E']
+    def test_sets(self):
+        return {}
 
     @validate_evaluate
     def evaluate(self, symbols_and_values_in, symbol_out):

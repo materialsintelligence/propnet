@@ -1,15 +1,18 @@
 import dash_html_components as html
 import dash_core_components as dcc
 
-# using example from plot.ly docs
-
-import plotly.plotly as py
+from propnet.core.graph import Propnet
+from propnet.properties import PropertyType
+from propnet.core.models import AbstractModel
 from plotly.graph_objs import *
 
 import networkx as nx
 
-G=nx.random_geometric_graph(200,0.125)
-pos=nx.get_node_attributes(G,'pos')
+# adapted from plot.ly documentation
+# needs heavy refactoring
+
+g = Propnet().graph
+pos = nx.spring_layout(g)
 
 dmin=1
 ncenter=0
@@ -20,7 +23,7 @@ for n in pos:
         ncenter=n
         dmin=d
 
-p=nx.single_source_shortest_path_length(G,ncenter)
+p=nx.single_source_shortest_path_length(g,ncenter)
 
 edge_trace = Scatter(
     x=[],
@@ -29,9 +32,9 @@ edge_trace = Scatter(
     hoverinfo='none',
     mode='lines')
 
-for edge in G.edges():
-    x0, y0 = G.node[edge[0]]['pos']
-    x1, y1 = G.node[edge[1]]['pos']
+for edge in g.edges():
+    x0, y0 = pos[edge[0]]
+    x1, y1 = pos[edge[1]]
     edge_trace['x'] += [x0, x1, None]
     edge_trace['y'] += [y0, y1, None]
 
@@ -42,7 +45,7 @@ node_trace = Scatter(
     mode='markers',
     hoverinfo='text',
     marker=Marker(
-        showscale=True,
+        showscale=False,
         # colorscale options
         # 'Greys' | 'Greens' | 'Bluered' | 'Hot' | 'Picnic' | 'Portland' |
         # Jet' | 'RdBu' | 'Blackbody' | 'Earth' | 'Electric' | 'YIOrRd' | 'YIGnBu'
@@ -58,15 +61,18 @@ node_trace = Scatter(
         ),
         line=dict(width=2)))
 
-for node in G.nodes():
-    x, y = G.node[node]['pos']
+for node in g.nodes():
+    x, y = pos[node]
     node_trace['x'].append(x)
     node_trace['y'].append(y)
-
-#for node, adjacencies in enumerate(G.adjacency_list()):
-    #node_trace['marker']['color'].append(len(adjacencies))
-    #node_info = '# of connections: '+str(len(adjacencies))
-    #node_trace['text'].append(node_info)
+    model_color = "#8F67CA"
+    property_type_color = "#4F8EE6"
+    if isinstance(node, PropertyType):
+        node_trace['marker']['color'].append(property_type_color)
+        node_trace['text'].append(node.value.display_names[0])
+    elif issubclass(node, AbstractModel):
+        node_trace['marker']['color'].append(model_color)
+        node_trace['text'].append(node().title)
 
 fig = Figure(data=Data([edge_trace, node_trace]),
              layout=Layout(
@@ -83,4 +89,11 @@ fig = Figure(data=Data([edge_trace, node_trace]),
              xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
              yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False)))
 
-graph_component = dcc.Graph(figure=fig, style={'height':450, 'width':450}, id='my-graph')
+graph_component = dcc.Graph(figure=fig,
+                            style={'height':300,
+                                   'width':600,
+                                   'display': 'block',
+                                   'margin-left': 'auto',
+                                   'margin-right': 'auto'},
+                            id='propnet-graph',
+                            config={'displayModeBar': False})

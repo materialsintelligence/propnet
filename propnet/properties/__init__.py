@@ -23,4 +23,4 @@ for f in files:
 PropertyType: Enum = Enum('PropertyType', property_metadata)
 
 # for convenience
-all_property_names: Tuple[str] = (p.name for p in PropertyType)
+all_property_names: Tuple[str] = tuple(p.name for p in PropertyType)

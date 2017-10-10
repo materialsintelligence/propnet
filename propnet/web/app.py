@@ -17,27 +17,37 @@ app.config.supress_callback_exceptions = True
 d3 = "https://d3js.org/d3.v4.min.js"
 app.scripts.append_script({"external_url": d3})
 
-app.layout = html.Div(children=[
-    html.H1(children='Propnet'),
-    html.H3(children='A knowledge graph for materials science'),
-    html.Br(),
+index = html.Div([
     graph_component,
-    html.Br(),
-    dcc.Link('All Models', href='/model'),
     html.Br(),
     dcc.Link('All Properties', href='/property'),
     html.Br(),
-    dcc.Location(id='url', refresh=False),
+    dcc.Link('All Models', href='/model'),
+    html.Br(),
     dcc.Markdown('''```
-Log:
+Propnet initialization log:
 {}
 ```'''.format(log_stream.getvalue()))
 ])
 
+app.layout = html.Div(children=[
+    dcc.Location(id='url', refresh=False),
+    html.H1(children='Propnet'),
+    html.H3(children='A knowledge graph for materials science'),
+    html.Br(),
+    html.Div(id='page-content')
+], style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 50})
+
+app.css.append_css({
+    'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
+})
+
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
-    if pathname == '/model':
+    if pathname == '/' or pathname is None:
+        return index
+    elif pathname == '/model':
         return list_models
     elif pathname.startswith('/model'):
         for model in all_model_names:

@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import List, NamedTuple, Optional
+from typing import *
 from propnet import logger, ureg
 from pybtex.database.input.bibtex import Parser
 
@@ -43,8 +43,8 @@ def parse_property(property: dict) -> (str, PropertyMetadata):
 
     # check test value is valid
     test_value = np.array(property['test_value'])
-    if test_value == 0:
-        logger.warn("Test value for {} is 0, please change to a more appropriate test value."
+    if not np.any(test_value):
+        logger.warn("Test value for {} is zero, please change to a more appropriate test value."
                     .format(name))
 
     # check dimensions are valid
@@ -55,34 +55,36 @@ def parse_property(property: dict) -> (str, PropertyMetadata):
 
     return (name, PropertyMetadata(**property))
 
-class Property:
+# Placeholder
+Property = NamedTuple('Property', [('property_type', str),
+                                   ('value', Any)])
 
-    def __init__(self,
-                 name: str,
-                 quantity: ureg.Quantity,
-                 sources: Optional[List] = None,
-                 references: Optional[List[str]] = None):
-
-        self.name = name
-        self.quantity = quantity
-        self.sources = sources
-
-        parser = Parser()
-        self.references = [parser.parse_string(s) for s in references]
-
-    @classmethod
-    def with_unit_string(cls,
-                         name: str,
-                         value: np.ndarray,
-                         units: str,
-                         sources: Optional[List] = None,
-                         references: Optional[List[str]] = None,
-                         assumptions: Optional[List] = None):
-
-        units = ureg.parse_expression(units)
-        quantity = value * units
-
-        return cls(name, quantity,
-                   sources=sources,
-                   references=references,
-                   assumptions=assumptions)
+# TODO: proper Property class
+#class Property:
+#
+#    def __init__(self,
+#                 name: str,
+#                 quantity: ureg.Quantity,
+#                 references: Optional[List[str]] = None):
+#
+#        self.name = name
+#        self.quantity = quantity
+#        self.sources = sources
+#
+#        parser = Parser()
+#        self.references = [parser.parse_string(s) for s in references]
+#
+#    @classmethod
+#    def with_unit_string(cls,
+#                         name: str,
+#                         value: np.ndarray,
+#                         units: str,
+#                         references: Optional[List[str]] = None,
+#                         assumptions: Optional[List] = None):
+#
+#        units = ureg.parse_expression(units)
+#        quantity = value * units
+#
+#        return cls(name, quantity,
+#                   references=references,
+#                   assumptions=assumptions)

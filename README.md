@@ -19,7 +19,7 @@ Propnet is a knowledge graph for materials science. Given a set of *properties* 
     * [The Graph](#the-graph)
     * [Property](#property)
     * [Material](#material)
-    * [TODO: Constraints and Assumptions](#todo-constraints-and-assumptions)
+    * [TODO: Constraints and Assumptions](#constraints-and-assumptions)
     * [Solving the Graph](#solving-the-graph)
 * [FAQ](#faq)
 
@@ -100,7 +100,7 @@ Propnet is designed to synthesize all current materials science knowledge into a
 
 **Material:** Can be a formula, crystallographic structure, or more complex material
 
-**PropertyType:** (or "Property") A distinct physical *Quantity,* such as lattice parameter or temperature
+**PropertyType:** A distinct physical *Quantity,* such as lattice parameter or temperature
 
 **Property:** A class containing a *Quantity* and its associated *PropertyType*, as well as any associated metadata such as references, that is typically associated with a *Material* (this may be renamed later)
 
@@ -154,7 +154,6 @@ This shows the simplest definition of a material, either known by its chemical f
 
 We can also represent compound materials. On the left, the edge attribute *x* gives the proportion of each structure that makes up the material. On the right, we use an edge attribute to define an orientation relationship between structures.
 
-
 ![Complex materials](docs/images/readme_materials_complex.svg)
 
 In principle, we can construct materials of arbitrary complexity: here we represent a multi-layer material with film thicknessness specified by the edge attribute *t*, with one component of the multi-layer being doped.
@@ -187,6 +186,8 @@ The simplest `Model` relates one `PropertyType` to another `PropertyType`, as sh
 ![Full graph](docs/images/readme_full_graph.svg)
 
 Incorporating all the models and node types into the full graph, we can see a clear separation between data (`Materials` and their associated `Properties`), and logic (`Models` and their associated `PropertyTypes`, which form the input and output of `Models`).
+
+In practice, the 'logic layer' is the same for all Propnet instances, while the 'data layer' usually comes from a `Material` graph, which can be composed into the Propnet graph.
 
 To 'solve' the graph, we look for `PropertyType` nodes that do not have any associated `Properties`, and then from the graph topology see if there is a route to calculate this property. If a route exists, the property is calculated, and a new `Property` inserted into the graph. The direction of the edge indicates whether the property is an input or output from a given model.
 

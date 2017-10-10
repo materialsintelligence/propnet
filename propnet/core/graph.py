@@ -1,73 +1,95 @@
+from typing import *
+
 import networkx as nx
 
-from propnet.core.properties import Property, PropertyQuantity
-from typing import NamedTuple, Any
+from propnet import logger
+from propnet.models import *
+from propnet.properties import PropertyType, all_property_names
+
+from propnet.core.properties import Property
+from propnet.core.models import AbstractModel
+
 from enum import Enum
 
-NodeType = Enum('NodeType', ['Material',
-                             'PropertyType',
-                             'PropertyQuantity',
-                             'PymatgenObject',
-                             'Generic',
-                             'Tag',
-                             'Model'])
-
-Node = NamedTuple('Node', [('type', NodeType)
-                           ('value', Any)])
-
+# TODO: add more node types as appropriate
+NodeType = Enum('NodeType', ['Material'])
 
 class Propnet:
 
-    def __init__(self):
+    # clumsy implementation at present, storing classes directly
+    # on graph ... this may be fine, but more investigation required!
 
-        pass
+    def __init__(self):
+        """
+        Create a Propnet instance. This will contain all models
+        and all property types. A Material graph, with material-specific
+        properties, can be composed into it to solve for new material
+        properties.
+        """
+
+        g = nx.MultiDiGraph()
+
+        # add all our property types
+        g.add_nodes_from(PropertyType)
+
+        # add all our models
+        # filter out abstract base classes
+        models = [model for model in AbstractModel.__subclasses__()
+                  if not model.__module__.startswith('propnet.core')]
+        g.add_nodes_from(models)
+
+        for model_cls in models:
+            model = model_cls()
+            for idx, (output, inputs) in enumerate(model.connections.items()):
+
+                if isinstance(inputs, str):
+                    inputs = tuple(inputs)
+                    logger.warn("{} has not been specified correctly, "
+                                "please make sure all connection inputs "
+                                "are specified as tuples even if it "
+                                "only takes a single input.".format(model.__name__))
+
+                for input in inputs:
+                    input = PropertyType[model.symbol_mapping[input]]
+                    g.add_edge(input, model_cls, route=idx)
+
+                output = PropertyType[model.symbol_mapping[output]]
+
+                # there are multiple routes for multiple sets of inputs/outputs
+                g.add_edge(model_cls, output, route=idx)
+
+        self.graph = g
+
+    def add_material(self, material):
+        """
+        Add a material and its associated properties to the
+        Propnet graph.
+
+        :param material: an instance of a Material
+        :return:
+        """
+
+        self.graph = nx.compose(material.graph, self.graph)
 
     def evaluate(self, material=None, property_type=None):
-        pass
+        # return as pandas data frame
+        return NotImplementedError
 
-    def to_json(self):
-        pass
+    def populate_with_test_values(self):
+        # takes test values from the property definitions
+        return NotImplementedError
 
-PROPNET = Propnet()
+    @property
+    def property_type_nodes(self):
+        return list(filter(lambda x: isinstance(x, PropertyType), self.graph.nodes))
 
-class Material:
+    @property
+    def model_nodes(self):
+        return list(filter(lambda x: issubclass(x, AbstractModel), self.graph.nodes))
 
-    def __init__(self,
-                 formula=None,
-                 structure=None,
-                 tags=None,
-                 propnet=None):
-
-        self.propnet = propnet if propnet else PROPNET
-
-        self.root = Node(type=NodeType.Material,
-                        value=None)
-
-        self.propnet.add_node(self.root)
-
-    def add_formula(self, formula, weight=1.0):
-
-        self.formula = Node(type=NodeType.Generic,
-                       value=formula)
-
-        self.propnet.add_edge(self.root_node,
-                              self.formula,
-                              weight=weight)
-
-    def add_structure(self, structure, weight=1.0):
-        self.add_pymatgen_object(structure, weight=weight)
-
-    def add_pymatgen_object(self, object, weight=1.0):
-
-        structure = Node(type=NodeType.PymatgenObject,
-                         value=object)
-
-        self.propnet.add_edge(self.root_node,
-                              structure,
-                              weight=weight)
-
-    def add_property(self, property_type, quantity):
-        pass
-
-    def retrieve_property(self, property_type):
-        pass
+    def __str__(self):
+        summary = ["Propnet Graph", "", "Property Types:"]
+        summary += ["\t "+n.value.display_names[0] for n in self.property_type_nodes]
+        summary += ["Models:"]
+        summary += ["\t "+n().title for n in self.model_nodes]
+        return "\n".join(summary)
