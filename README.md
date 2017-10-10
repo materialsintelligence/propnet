@@ -118,7 +118,7 @@ As much as possible, information is encoded into the graph itself, rather than c
 
 Our graph has the following types of node:
 
-![Node types](docs/images/readme_node_types.png)
+![Node types](docs/images/readme_node_types.svg)
 
 ## Property
 
@@ -188,7 +188,7 @@ The simplest `Model` relates one `PropertyType` to another `PropertyType`, as sh
 
 Incorporating all the models and node types into the full graph, we can see a clear separation between data (`Materials` and their associated `Properties`), and logic (`Models` and their associated `PropertyTypes`, which form the input and output of `Models`).
 
-To 'solve' the graph, we look for `PropertyType` nodes that do not have any associated `Properties`, and then from the graph topology see if there is a route to calculate this property. If a route exists, the property is calculated, and a new `Property` inserted into the graph.
+To 'solve' the graph, we look for `PropertyType` nodes that do not have any associated `Properties`, and then from the graph topology see if there is a route to calculate this property. If a route exists, the property is calculated, and a new `Property` inserted into the graph. The direction of the edge indicates whether the property is an input or output from a given model.
 
 
 # FAQ
