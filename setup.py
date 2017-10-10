@@ -1,10 +1,10 @@
 # !/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(
-    name='PropNet',
+    name='propnet',
     version='0.0',
-    author='PropNet Development Team',
-    packages=['propnet'],
+    author='Propnet Development Team',
+    packages=[],
 )

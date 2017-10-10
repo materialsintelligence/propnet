@@ -1,26 +1,38 @@
 from abc import ABCMeta, abstractmethod
-from typing import List, Dict, Optional, Union, Tuple, Callable
-from propnet.core.properties import Property
-from propnet import ureg, QuantityLike
+from functools import wraps
+from propnet.properties import PropertyType
+from propnet import logger
 import sympy as sp
 
-class AbstractAnalyticalModel(metaclass=ABCMeta):
+# typing information, for type hinting only
+from typing import *
+from propnet import ureg
 
-    __slots__ = ('title', 'description', 'tags', 'references',
-                 'symbol_mapping', 'unit_mapping', 'equations',
-                 'test_sets', 'evaluate', 'valid_outputs')
+# TODO: add pint integration
+# TODO: decide on interface for conditions, assumptions etc.
 
-    def __init__(self):
+class AbstractModel(metaclass=ABCMeta):
+
+    def __init__(self,
+                 strict: bool = False):
+        """
+        Initialize a model, will retrieve/validate
+        properties.
+
+        :param strict: If strict, enforce input and output
+        units (should be True for production).
+        """
 
         # retrieve units for each symbol
         try:
-            self.unit_mapping = {symbol:Property(name.upper())
+            self.unit_mapping = {symbol:PropertyType(name)
                                  for symbol, name in self.symbol_mapping.items()}
         except:
             raise ValueError("Please check your property names in your symbol mapping, "
                              "are they all valid?")
 
     @property
+    @abstractmethod
     def title(self) -> str:
         """
         Add a title to your model.
@@ -28,6 +40,7 @@ class AbstractAnalyticalModel(metaclass=ABCMeta):
         pass
 
     @property
+    @abstractmethod
     def tags(self) -> List[str]:
         """
         Add tags to your model as a list of strings.
@@ -52,24 +65,15 @@ class AbstractAnalyticalModel(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def symbol_mapping(self) -> Dict[str, Property]:
+    def symbol_mapping(self) -> Dict[str, PropertyType]:
         """
         Map the symbols used in your model to their canonical property
         names.
         """
         pass
 
-    @abstractmethod
-    def equations(self, **kwargs) -> List[Callable]:
-        """
-        :param values: symbols and their associated physical quantities
-        :param output_symbol: symbol for desired output
-        :return:
-        """
-        pass
-
     @property
-    def valid_outputs(self) -> List[str]:
+    def connections(self) -> Dict[Tuple[str], Tuple[str]]:
         """
         Define your valid outputs. The model will not attempt
         to solve for a symbol that is not a valid output. This
@@ -78,30 +82,11 @@ class AbstractAnalyticalModel(metaclass=ABCMeta):
 
         :return: a list of symbols that are valid outputs
         """
-        return self.symbol_mapping.items()
+        pass
 
     @property
     @abstractmethod
-    def conditions(self) -> Dict[str: List[Condition]]:
-        """
-        Required conditions that the model inputs should satisfy. If
-        inputs are known not to satisfy a condition, the model will not
-        run. If it is unknown if inputs satisfy a condition, then the
-        condition will be added to the list of assumptions of the
-        model output.
-
-        :return: a mapping of symbols to a list of their conditions
-        """
-        return {}
-
-    @property
-    @abstractmethod
-    def assumptions(self) -> List[Condition]:
-        return []
-
-    @property
-    @abstractmethod
-    def test_sets(self) -> Dict[str, QuantityLike]:
+    def test_sets(self) -> Dict[str, Tuple[Any, str]]:
         """
         Add test sets to your model. These are used by unit testing,
         and also when testing the model interactively. A test set is
@@ -110,7 +95,95 @@ class AbstractAnalyticalModel(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
     def evaluate(self,
-                 values: Dict[str, QuantityLike],
-                 desired_output: str):
+                 symbols_and_values_in: Dict[str, ureg.Quantity],
+                 symbol_out: str) -> Optional[ureg.Quantity]:
+        """
+        Evaluate the model.
+
+        :param symbols_and_values_in: dict of symbols and their
+        associated values used as inputs
+        :param symbol_out: symbol for your desired output
+        :return:
+        """
+        pass
+
+    #def test(self) -> bool:
+    #    """
+    #    Test the model using values in test_sets. Used by unit tests.
+    #
+    #    :return: True if tests pass.
+    #    """
+#
+    #    for test_set in self.test_sets:
+#
+    #        for output in self.valid_outputs:
+#
+    #            if output in test_set.keys():
+#
+    #                correct_output = ureg.Quantity(test_set[output][0],
+    #                                               test_set[output][1])
+#
+    #                symbols_and_values_in = test_set.copy()
+    #                del symbols_and_values_in[output]
+    #                for k, v in symbols_and_values_in.items():
+    #                    symbols_and_values_in[k] = ureg.Quantity(v[0], v[1])
+#
+    #                calculated_output = self.evaluate(symbols_and_values_in, output)
+#
+    #                assert correct_output==calculated_output,\
+    #                    "Test failed for test set: {}".format(test_set)
+    #    return True
+
+
+
+class AbstractAnalyticalModel(AbstractModel):
+    """
+    A Model for which we define all equations inside Propnet,
+    and can solve them symbolically using SymPy.
+    """
+
+    @abstractmethod
+    def equations(self, **kwargs) -> List[Callable]:
+        """
+        List of equations to solve with SymPy.
+        :param kwargs: one kwarg for each symbol
+        :return:
+        """
+        # defined for each Model
+        pass
+
+    def evaluate(self,
+                 symbols_and_values_in: Dict[str, ureg.Quantity],
+                 symbol_out: str) -> Optional[ureg.Quantity]:
+        """
+        Solve provided equations using SymPy.
+        :param symbols_and_values_in: mapping of known values to
+        their symbols
+        :param symbol_out: desired output
+        :return:
+        """
+        # common implementation for all analytical models
         return NotImplementedError
+
+
+def validate_evaluate(func):
+    """
+    A wrapper function to check that models conform to spec.
+    :param func: an `evaluate` method
+    :return:
+    """
+    @wraps(func)
+    def validate_evaluate_wrapper(self, symbols_and_values_in, symbol_out):
+        inputs = tuple(symbols_and_values_in.keys())
+        if inputs not in self.connections:
+            logger.error("The {} model does not support this combination "
+                         "of inputs ({}).".format(self.name, inputs))
+        else:
+            if self.connections[inputs] != symbol_out:
+                logger.error("The {} model does not support the output {} "
+                             "for this combination of inputs ({}).".format(self.name,
+                                                                           symbol_out,
+                                                                           inputs))
+    return validate_evaluate_wrapper

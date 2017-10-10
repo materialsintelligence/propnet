@@ -1,13 +1,10 @@
 import numpy as np
 
-from typing import List, Dict, SupportsFloat, NamedTuple, Optional, Union
+from typing import List, NamedTuple, Optional
 from propnet import logger, ureg
-from glob import glob
-from enum import Enum
-from monty.serialization import loadfn
 from pybtex.database.input.bibtex import Parser
-from os import path
 
+# metadata associated with each PropertyType
 PropertyMetadata = NamedTuple('PropertyMetadata', [('units', ureg.Quantity),
                                                    ('display_names', List[str]),
                                                    ('display_symbols', List[str]),
@@ -23,6 +20,7 @@ def parse_property(property: dict) -> (str, PropertyMetadata):
     """
 
     name = property['name']
+    # using the name as a key, no need to keep it in metadata too
     del property['name']
 
     # check canonical name
@@ -31,14 +29,8 @@ def parse_property(property: dict) -> (str, PropertyMetadata):
         raise ValueError("The canonical name ({}) is not valid."
                          .format(name))
 
-    # using name for Enum case, conventional to have all upper case
-    name = name.upper()
-
     # check units supported by pint
-    if property['units'] != [[]]:
-        units = ureg.Quantity.from_tuple((1, tuple(tuple(x) for x in property['units'])))
-    else:
-        units = ureg.parse_expression("")  # unitless, TODO: handle this better
+    units = ureg.Quantity.from_tuple(property['units'])
     property['units'] = units
 
     # check required fields
@@ -52,7 +44,7 @@ def parse_property(property: dict) -> (str, PropertyMetadata):
     # check test value is valid
     test_value = np.array(property['test_value'])
     if test_value == 0:
-        logger.warn("Test value for {} is 0, is there a more appropriate test value?"
+        logger.warn("Test value for {} is 0, please change to a more appropriate test value."
                     .format(name))
 
     # check dimensions are valid
@@ -63,23 +55,13 @@ def parse_property(property: dict) -> (str, PropertyMetadata):
 
     return (name, PropertyMetadata(**property))
 
-files = glob(path.join(path.dirname(__file__), '../properties/*.yaml'))
-properties = [loadfn(f) for f in files]
-print(properties)
-
-Property = Enum('Property',
-                [parse_property(p) for p in properties])
-
-
-
-class PropertyQuantity:
+class Property:
 
     def __init__(self,
                  name: str,
                  quantity: ureg.Quantity,
                  sources: Optional[List] = None,
-                 references: Optional[List[str]] = None,
-                 assumptions: Optional[List] = None):
+                 references: Optional[List[str]] = None):
 
         self.name = name
         self.quantity = quantity
@@ -87,9 +69,6 @@ class PropertyQuantity:
 
         parser = Parser()
         self.references = [parser.parse_string(s) for s in references]
-
-        self.assumptions = assumptions
-
 
     @classmethod
     def with_unit_string(cls,
@@ -107,9 +86,3 @@ class PropertyQuantity:
                    sources=sources,
                    references=references,
                    assumptions=assumptions)
-
-
-# TODO: move this... still sketching out implementation
-#loader = PropertyLoader.from_path()
-#PROPERTIES = loader.properties
-#PropertName = loader.property_name

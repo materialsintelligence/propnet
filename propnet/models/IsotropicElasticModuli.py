@@ -1,4 +1,4 @@
-from propnet.core.models import AbstractAnalyticalModel
+from propnet.core.models import AbstractAnalyticalModel, validate_evaluate
 
 
 class IsotropicElasticModuli(AbstractAnalyticalModel):

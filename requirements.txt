@@ -2,9 +2,13 @@ dash==0.18.3
 dash-core-components==0.12.6
 dash-html-components==0.7.0
 dash-renderer==0.10.0
+gunicorn>=19.7.1
 monty==1.0.1
 networkx==2.0
 Pint==0.8.1
 plotly==2.0.15
 pybtex==0.21
 pylatexenc==1.2
+pymatgen==2017.9.23
+pytest==3.2.3
+-e .

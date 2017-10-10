@@ -1,5 +1,11 @@
 from os.path import dirname, basename, isfile
-import glob
+from glob import glob
 
-files = glob.glob(dirname(__file__)+"/*.py")
-__all__ = [basename(f)[:-3] for f in files if isfile(f) and not f.startswith('_')]
+# auto loading of defined models
+
+files = glob(dirname(__file__)+"/*.py")
+
+all_model_names = tuple(basename(f)[:-3] for f in files
+                        if isfile(f) and f.endswith('.py') and not f.startswith('_'))
+
+__all__ = all_model_names

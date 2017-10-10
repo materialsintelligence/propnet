@@ -7,7 +7,7 @@ class PropertiesTest(unittest.TestCase):
 
         sample_property_type_dict = {
             'name': 'youngs_modulus',
-            'units': [["gigapascal", 1.0]],
+            'units': [1.0, [["gigapascal", 1.0]]],
             'display_names': ["Young's modulus", "Elastic modulus"],
             'display_symbols': ["E"],
             'dimension': 1,
@@ -24,7 +24,5 @@ class PropertiesTest(unittest.TestCase):
             comment=""
         )
 
-        self.assertEqual(('YOUNGS_MODULUS', sample_property_type),
+        self.assertEqual(('youngs_modulus', sample_property_type),
                          parse_property(sample_property_type_dict))
-
-        self.assertEqual(PROPERTIES.YOUNGS_MODULUS.value, sample_property_type)

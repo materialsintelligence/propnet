@@ -1,6 +1,7 @@
 name: shear_modulus
 units:
-- [gigapascal, 1.0]
+- 1.0
+- - [gigapascal, 1.0]
 display_names: [Shear modulus]
 display_symbols: [\mu]
 dimension: 1
