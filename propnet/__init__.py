@@ -1,4 +1,5 @@
 import logging
+import sys
 from pint import UnitRegistry
 from io import StringIO
 
@@ -8,6 +9,9 @@ logger = logging.getLogger(__name__)
 # log to string, useful for web view
 log_stream = StringIO()
 logger.addHandler(logging.StreamHandler(stream=log_stream))
+
+# make sure we see our log messages in Jupyter
+logger.handlers[0].stream = sys.stdout
 
 # module-wide unit registry
 ureg = UnitRegistry()

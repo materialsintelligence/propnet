@@ -200,8 +200,8 @@ def validate_evaluate(func):
         # TODO: make this more robust, check outputs too
         for symbol, value in symbols_and_values_in.items():
             if not isinstance(value, ureg.Quantity):
-                logger.warn("Units are not defined for your inputs, "
-                            "using assumed units from property definition.")
+                logger.warn("Units are not defined for your {}, "
+                            "using assumed units from property definition.".format(symbol))
                 unit = getattr(self, 'unit_mapping')[symbol]
                 symbols_and_values_in[symbol] = ureg.Quantity(value, unit)
 
