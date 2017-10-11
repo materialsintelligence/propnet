@@ -73,15 +73,15 @@ class AbstractModel(metaclass=ABCMeta):
         pass
 
     @property
-    def connections(self) -> Dict[str, Tuple[str]]:
+    @abstractmethod
+    def connections(self) -> Dict[str, Set[str]]:
         """
         Define your model inputs and outputs. The model will
         not attempt to solve for an output unless it is marked
         as a valid output.
 
-        :return: a dict of output symbol to input symbols
+        :return: a dict of output symbol to a set of input symbols
         """
-        # TODO: change dict keys to be Set[str] instead, makes a lot more sense!
         pass
 
     @property
@@ -116,6 +116,8 @@ class AbstractModel(metaclass=ABCMeta):
         :return: True if tests pass.
         """
         return NotImplementedError
+
+        # TODO: add method to test a model interactively, that can also be used in unit tests
 
     #    for test_set in self.test_sets:
 
@@ -152,7 +154,7 @@ class AbstractAnalyticalModel(AbstractModel):
         :param kwargs: one kwarg for each symbol
         :return:
         """
-        # defined for each Model
+        # defined for each analytical model
         pass
 
     def evaluate(self,

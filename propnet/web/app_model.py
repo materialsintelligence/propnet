@@ -3,6 +3,8 @@ import dash_core_components as dcc
 
 from propnet.models import all_model_names
 
+# layouts for model detail pages
+
 def model_layout(model_name):
     return html.Div([
         html.H3(model_name)

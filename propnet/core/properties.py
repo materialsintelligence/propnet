@@ -12,10 +12,12 @@ PropertyMetadata = NamedTuple('PropertyMetadata', [('units', ureg.Quantity),
                                                    ('test_value', np.ndarray),
                                                    ('comment', str)])
 
+
 def parse_property(property: dict) -> (str, PropertyMetadata):
     """
-
-    :param property:
+    Parse and validate a dict (e.g. from a .yaml file) into
+    a named tuple in the format that Propnet expects.
+    :param property: dict containing property information
     :return:
     """
 
@@ -55,36 +57,7 @@ def parse_property(property: dict) -> (str, PropertyMetadata):
 
     return (name, PropertyMetadata(**property))
 
-# Placeholder
+
+# TODO: proper Property class, this is a placeholder
 Property = NamedTuple('Property', [('property_type', str),
                                    ('value', Any)])
-
-# TODO: proper Property class
-#class Property:
-#
-#    def __init__(self,
-#                 name: str,
-#                 quantity: ureg.Quantity,
-#                 references: Optional[List[str]] = None):
-#
-#        self.name = name
-#        self.quantity = quantity
-#        self.sources = sources
-#
-#        parser = Parser()
-#        self.references = [parser.parse_string(s) for s in references]
-#
-#    @classmethod
-#    def with_unit_string(cls,
-#                         name: str,
-#                         value: np.ndarray,
-#                         units: str,
-#                         references: Optional[List[str]] = None,
-#                         assumptions: Optional[List] = None):
-#
-#        units = ureg.parse_expression(units)
-#        quantity = value * units
-#
-#        return cls(name, quantity,
-#                   references=references,
-#                   assumptions=assumptions)

@@ -3,6 +3,8 @@ import dash_core_components as dcc
 
 from propnet.properties import all_property_names, PropertyType
 
+# layouts for property detail pages
+
 def property_layout(property_name):
     property_metadata = PropertyType[property_name].value
     return html.Div([

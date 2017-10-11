@@ -65,7 +65,16 @@ class Propnet:
         self.graph = nx.compose(material.graph, self.graph)
 
     def evaluate(self, material=None, property_type=None):
+        # should be straight-forward to evaluate graph,
+        # filter graph on what material properties have been
+        # defined, create a sub-graph, and traverse this sub-graph
+        # all model edges are directed for inputs and outputs, so
+        # traversal shouldn't require too much logic
         # return as pandas data frame
+        return NotImplementedError
+
+    def shortest_path(self, property_one: str, property_two: str):
+        # very easy to do with networkx, use in-built algo
         return NotImplementedError
 
     def populate_with_test_values(self):
@@ -74,13 +83,22 @@ class Propnet:
 
     @property
     def property_type_nodes(self):
+        """
+        :return: Return a list of nodes of property types.
+        """
         return list(filter(lambda x: isinstance(x, PropertyType), self.graph.nodes))
 
     @property
     def model_nodes(self):
+        """
+        :return: Return a list of nodes of models.
+        """
         return list(filter(lambda x: issubclass(x, AbstractModel), self.graph.nodes))
 
     def __str__(self):
+        """
+        :return:  Return a summary of the graph. Doesn't show any defined materials yet.
+        """
         summary = ["Propnet Graph", "", "Property Types:"]
         summary += ["\t "+n.value.display_names[0] for n in self.property_type_nodes]
         summary += ["Models:"]
