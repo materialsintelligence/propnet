@@ -11,7 +11,7 @@ log_stream = StringIO()
 logger.addHandler(logging.StreamHandler(stream=log_stream))
 
 # make sure we see our log messages in Jupyter
-logger.handlers[0].stream = sys.stdout
+logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 # module-wide unit registry
 ureg = UnitRegistry()
