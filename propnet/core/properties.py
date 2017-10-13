@@ -7,9 +7,9 @@ from pybtex.database.input.bibtex import Parser
 class PropertyMetadata :
 #Class storing the complete description of a property.
 
-    expected_props = ['id', 'units', 'display_names', 'display_symbols', 'dimension', 'test_value', 'comment']
+    expected_props = ['name', 'units', 'display_names', 'display_symbols', 'dimension', 'test_value', 'comment']
 
-    def __init__ (self, id : str, units : ureg.Quantity, display_names : List[str], display_symbols : List[str],
+    def __init__ (self, name : str, units : ureg.Quantity, display_names : List[str], display_symbols : List[str],
                   dimension : List[int], test_value : np.ndarray, comment : str) :
         """
             Parses and validates a series of inputs into a PropertyMetadata tuple, a format that PropNet expects.
@@ -24,9 +24,9 @@ class PropertyMetadata :
             :param comment: any useful information on the property including its definitions and possible citations.
             :return: Properly-initialized PropertyMetadata instance.
         """
-        if not id.isidentifier() or not id.islower():
+        if not name.isidentifier() or not name.islower():
             raise ValueError("The canonical name ({}) is not valid.".format(id))
-        self.id = id
+        self.name = name
         self.units = ureg.Quantity.from_tuple(units)
         if display_names == None or len(display_names) == 0:
             raise ValueError("Insufficient display names for ({}).".format(id))
