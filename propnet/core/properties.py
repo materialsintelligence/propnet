@@ -71,3 +71,4 @@ class Property :
         self.type = type
         self.value = value
         self.comment = comment
+
