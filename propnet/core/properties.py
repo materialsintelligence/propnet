@@ -24,7 +24,7 @@ class PropertyMetadata :
             :param comment: any useful information on the property including its definitions and possible citations.
             :return: Properly-initialized PropertyMetadata instance.
         """
-        if not id.isidentifier() or not id.islower() :
+        if not id.isidentifier() or not id.islower():
             raise ValueError("The canonical name ({}) is not valid.".format(id))
         self.id = id
         self.units = ureg.Quantity.from_tuple(units)
@@ -71,4 +71,3 @@ class Property :
         self.type = type
         self.value = value
         self.comment = comment
-
