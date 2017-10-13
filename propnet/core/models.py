@@ -65,7 +65,7 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def symbol_mapping(self) -> Dict[str, PropertyType]:
+    def symbol_mapping(self) -> Dict[str, str]:
         """
         Map the symbols used in your model to their canonical property
         names.
@@ -86,7 +86,7 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def test_sets(self) -> Dict[str, Tuple[Any, str]]:
+    def test_sets(self) -> List[Tuple[str, ureg.Quantity], List[Tuple[str, ureg.Quantity]]]:
         """
         Add test sets to your model. These are used by unit testing,
         and also when testing the model interactively. A test set is
