@@ -10,6 +10,7 @@ from propnet import ureg
 
 # TODO: add pint integration
 # TODO: decide on interface for conditions, assumptions etc.
+# TODO: decide on interface for multiple-material models.
 
 class AbstractModel(metaclass=ABCMeta):
 
@@ -71,6 +72,21 @@ class AbstractModel(metaclass=ABCMeta):
         names.
         """
         pass
+
+    @property
+    @abstractmethod
+    def assumption_mapping(self) -> Dict[str, [str]]:
+        """
+        Map the symbols used in your model to the assumptions underlying them.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def required_conditions(self) -> Set[str]:
+        """
+        Include any conditions on the material that need to be specified.
+        """
 
     @property
     @abstractmethod
@@ -173,6 +189,25 @@ class AbstractAnalyticalModel(AbstractModel):
     def connections(self):
         # common implementation for all analytical models
         return NotImplementedError
+
+
+
+class ActiveModel :
+#Class representing an abstract model that is applicable in the current context.
+#
+#Mirroring PropertyMetadata vs. Property distinction, this class will indicate mappings of currently available
+#properties, correctly propagating uncertainties, conditions, etc.
+
+    def __init__(self, modelType : AbstractModel, inputs : [Property], outputs : [Property]) :
+        self.modelType = modelType
+        self.inputs = inputs
+        self.outputs = outputs
+
+    def get_output (self) -> Dict[str, ureg.Quantity] :
+        pass
+
+
+
 
 
 def validate_evaluate(func):

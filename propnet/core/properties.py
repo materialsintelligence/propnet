@@ -1,8 +1,13 @@
 import numpy as np
 
 from typing import *
-from propnet import logger, ureg
+from propnet import logger, ureg, Material
 from pybtex.database.input.bibtex import Parser
+
+#Classes storing the metadata and actual values of materials' properties.
+#A dictionary of PropertyMetadata: "property_metadata" is stored in the global scope, hashing on the field: 'name'.
+
+#TODO: A dictionary of Property: "active_props" is stored in the global scope, hashing on the field 'name'.
 
 class PropertyMetadata :
 #Class storing the complete description of a property.
@@ -61,13 +66,20 @@ class PropertyMetadata :
 class Property :
 #Class storing the value of a property in a given context.
 
-    def __init__ (self, type : PropertyMetadata, value : Any, comment : str) :
+    def __init__ (self, type : PropertyMetadata, value : Any, uncertainty : Any,
+                  conditions : Set[Any], source : Set[Any], comment : str) :
         """
         Parses inputs for constructing a Property object.
         :param type: pointer to an existing PropertyMetadata object, identifies the type of data stored in the property.
-        :param value: value of the property
-        :param comment: important information relative to the property, including sourcing.
+        :param value: value of the property.
+        :param uncertainty: uncertainty in the value of the property.
+        :param conditions: relevant conditions under which the property occurs.
+        :param source: graphical origin of the property (ie. a Material or ActiveModel)
+        :param comment: important information relative to the property, including citations / limitations.
         """
         self.type = type
         self.value = value
+        self.uncertainty = uncertainty
+        self.conditions = conditions
+        self.source = source
         self.comment = comment
