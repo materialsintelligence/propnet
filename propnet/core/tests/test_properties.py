@@ -16,7 +16,8 @@ class PropertiesTest(unittest.TestCase):
         }
 
         sample_property_type = PropertyMetadata(
-            units=ureg.parse_expression("GPa"),
+            name='youngs_modulus',
+            units= [1.0, [["gigapascal", 1.0]]], #ureg.parse_expression("GPa"),
             display_names=["Young's modulus", "Elastic modulus"],
             display_symbols=["E"],
             dimension=1,
@@ -24,5 +25,5 @@ class PropertiesTest(unittest.TestCase):
             comment=""
         )
 
-        self.assertEqual(('youngs_modulus', sample_property_type),
-                         parse_property(sample_property_type_dict))
+        self.assertEqual(sample_property_type,
+                         PropertyMetadata.from_dict(sample_property_type_dict))

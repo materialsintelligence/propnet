@@ -86,7 +86,7 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def test_sets(self) -> List[Tuple[str, ureg.Quantity], List[Tuple[str, ureg.Quantity]]]:
+    def test_sets(self) -> List[Tuple[str, ureg.Quantity]]:
         """
         Add test sets to your model. These are used by unit testing,
         and also when testing the model interactively. A test set is
