@@ -1,9 +1,10 @@
 import unittest
 from propnet.core.properties import *
 
+
 class PropertiesTest(unittest.TestCase):
 
-    def testLoader(self):
+    def testPropertyMetadata(self):
 
         sample_property_type_dict = {
             'name': 'youngs_modulus',
