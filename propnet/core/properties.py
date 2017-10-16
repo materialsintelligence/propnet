@@ -3,9 +3,13 @@ import numpy as np
 from typing import *
 from propnet import logger, ureg
 from pybtex.database.input.bibtex import Parser
+from monty.json import MSONable
 
-class PropertyMetadata:
-#Class storing the complete description of a property.
+
+class PropertyMetadata(MSONable):
+    """
+    Class storing the complete description of a property.
+    """
 
     __slots__ = ['name', 'units', 'display_names', 'display_symbols',
                  'dimension', 'test_value', 'comment']
@@ -53,27 +57,20 @@ class PropertyMetadata:
         self.test_value = test_value
         self.comment = comment
 
-    @classmethod
-    def from_dict (cls, d: dict):
-        """
-        Convenience constructor. Creates a PropertyMetadata instance from a dictionary with appropriate
-        key-value pairs.
-        :param d: dict containing the information necessary to construct a PropertyMetadata object.
-        :return: Properly-initialized PropertyMetadata instance.
-        """
-        for key in cls.__slots__:
-            if key not in d.keys() :
-                raise ValueError("Provided Dictionary is missing input argument: " + key)
-        return cls(**d)
+    def __eq__(self, other):
+        return self.name == other.name
 
 
-class Property :
-#Class storing the value of a property in a given context.
+class Property:
+    """
+    Class storing the value of a property in a given context.
+    """
 
-    def __init__ (self, type : PropertyMetadata, value : Any, comment : str) :
+    def __init__ (self, type: PropertyMetadata, value: Any, comment: str) :
         """
         Parses inputs for constructing a Property object.
-        :param type: pointer to an existing PropertyMetadata object, identifies the type of data stored in the property.
+        :param type: pointer to an existing PropertyMetadata object,
+        identifies the type of data stored in the property.
         :param value: value of the property
         :param comment: important information relative to the property, including sourcing.
         """

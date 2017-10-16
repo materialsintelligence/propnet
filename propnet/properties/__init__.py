@@ -24,7 +24,7 @@ for f in property_metadata_files:
 
 # using property names for Enum, conventional to have all upper case
 # but using all lower case here
-PropertyType: Enum = Enum('PropertyType', list(property_metadata.keys()))
+PropertyType: Enum = Enum('PropertyType', [(k, v) for k, v in property_metadata.items()])
 
 # Stores all loaded properties' names in a tuple in the global scope.
 all_property_names: Tuple[str] = tuple(p for p in property_metadata.keys())
