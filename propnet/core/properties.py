@@ -70,8 +70,8 @@ class PropertyMetadata :
 class Property :
 #Class storing the value of a property in a given context.
 
-    def __init__ (self, type : PropertyMetadata, value : Any, uncertainty : Any,
-                  conditions : Set[Any], source : Set[Any], comment : str) :
+    def __init__ (self, type: PropertyMetadata, value: Any, uncertainty: Any,
+                  conditions: Set[Any], source: Set[Any], comment: str):
         """
         Parses inputs for constructing a Property object.
         :param type: pointer to an existing PropertyMetadata object, identifies the type of data stored in the property.
