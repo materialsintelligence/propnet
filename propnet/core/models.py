@@ -68,7 +68,7 @@ class AbstractModel(metaclass=ABCMeta):
     def symbol_mapping(self) -> Dict[str, str]:
         """
         Map the symbols used in your model to their canonical property
-        names.
+        names. Keys are symbols, values are property names.
         """
         pass
 
@@ -78,7 +78,8 @@ class AbstractModel(metaclass=ABCMeta):
         """
         Define your model inputs and outputs. The model will
         not attempt to solve for an output unless it is marked
-        as a valid output.
+        as a valid output. Keys represent potential output symbols,
+        values represent a set of input symbols.
 
         :return: a dict of output symbol to a set of input symbols
         """

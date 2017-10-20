@@ -21,7 +21,7 @@ class PropertyMetadata(MSONable):
         Parses and validates a series of inputs into a PropertyMetadata tuple, a format that PropNet expects.
         Parameters correspond exactly with those of a PropertyMetadata tuple.
         :param id: string ASCII identifying the property uniquely as an internal identifier.
-        :param units: units of the property, supported by the Pint package.
+        :param units: units of the property as a Quantity supported by the Pint package.
         :param display_names: list of strings giving possible human-readable names for the property.
         :param display_symbols: list of strings giving possible human-readable symbols for the property.
         :param dimension: list giving the order of the tensor as the length, and number of dimensions as individual
