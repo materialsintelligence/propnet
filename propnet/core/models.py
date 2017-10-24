@@ -77,7 +77,7 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def assumption_mapping(self) -> Dict[str, Set[str]]:
+    def assumption_mapping(self) -> Optional[Dict[str, Set[str]]]:
         """
         Map the symbols used in your model to the assumptions underlying them.
         """
@@ -85,7 +85,7 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def required_conditions(self) -> Set[str]:
+    def required_conditions(self) -> Optional[Set[str]]:
         """
         Include any conditions on the material that need to be specified.
         """

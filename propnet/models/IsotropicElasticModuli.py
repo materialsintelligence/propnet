@@ -36,6 +36,14 @@ class IsotropicElasticModuli(AbstractModel):
         }
 
     @property
+    def assumption_mapping(self):
+        return None
+
+    @property
+    def required_conditions(self):
+        return None
+
+    @property
     def connections(self):
         return {
             'n': {'E', 'G'},
