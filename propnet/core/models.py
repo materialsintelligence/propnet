@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 from propnet.properties import PropertyType
+from propnet.core.properties import Property
 from propnet import logger
 import sympy as sp
 
@@ -11,6 +12,7 @@ from propnet import ureg
 # TODO: add pint integration
 # TODO: decide on interface for conditions, assumptions etc.
 # TODO: decide on interface for multiple-material models.
+
 
 class AbstractModel(metaclass=ABCMeta):
 
@@ -75,7 +77,7 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def assumption_mapping(self) -> Dict[str, [str]]:
+    def assumption_mapping(self) -> Dict[str, Set[str]]:
         """
         Map the symbols used in your model to the assumptions underlying them.
         """
@@ -87,6 +89,7 @@ class AbstractModel(metaclass=ABCMeta):
         """
         Include any conditions on the material that need to be specified.
         """
+        pass
 
     @property
     @abstractmethod
@@ -97,18 +100,7 @@ class AbstractModel(metaclass=ABCMeta):
         as a valid output. Keys represent potential output symbols,
         values represent a set of input symbols.
 
-        :return: a dict of output symbol to a set of input symbols
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def test_sets(self) -> List[Tuple[str, ureg.Quantity]]:
-        """
-        Add test sets to your model. These are used by unit testing,
-        and also when testing the model interactively. A test set is
-        a dict with keys that correspond to your symbols and values
-        that are a (value, unit) tuple.
+        :return: a dict of output symbols to a set of input symbols
         """
         pass
 
@@ -123,6 +115,17 @@ class AbstractModel(metaclass=ABCMeta):
         associated values used as inputs
         :param symbol_out: symbol for your desired output
         :return:
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def test_sets(self) -> List[Tuple[str, ureg.Quantity]]:
+        """
+        Add test sets to your model. These are used by unit testing,
+        and also when testing the model interactively. A test set is
+        a dict with keys that correspond to your symbols and values
+        that are a (value, unit) tuple.
         """
         pass
 
@@ -157,58 +160,100 @@ class AbstractModel(metaclass=ABCMeta):
     #    return True
 
 
-
 class AbstractAnalyticalModel(AbstractModel):
     """
     A Model for which we define all equations inside Propnet,
     and can solve them symbolically using SymPy.
     """
 
-    @abstractmethod
-    def equations(self, **kwargs) -> List[Callable]:
+    @property
+    def sp_vars(self) -> List[sp.Symbol]:
         """
-        List of equations to solve with SymPy.
-        :param kwargs: one kwarg for each symbol
+        Helper method to convert all symbols of the AbstractAnalyticalModel instnace
+        into SymPy variables.
         :return:
         """
-        # defined for each analytical model
+        return list((sp.Symbol(x) for x in self.symbol_mapping.keys()))
+
+    @property
+    @abstractmethod
+    def equations(self) -> List[str]:
+        """
+        List of equations constituting the abstract model using symbols indicated in
+        the provided symbol_mapping method.
+        Each equation must be formatted as an expression equal to zero. The strings
+        returned must then reflect simply these expressions without an equals sign.
+        :return: List of strings giving valid sympy expressions equal to zero
+                 between the symbols.
+        """
         pass
+
+    @property
+    def connections(self) -> Dict[str, Set[str]]:
+        """
+        Implements the abstract connections method for analytical models assuming that
+        the equations are formulated such that every variable can be solved if all
+        other variables are known.
+        Please override this method in your particular subclass if this is not the case.
+
+        :return: a dict of output symbols to a set of input symbols
+        """
+        symbols = list(self.symbol_mapping.keys())
+        to_return = {}
+        for i in range(0, len(symbols)):
+            inputs = [None]*(len(symbols)-1)
+            k = 0
+            for j in range(0, len(symbols)):
+                if j == i:
+                    continue
+                inputs[k] = symbols[j]
+                k += 1
+            to_return[i] = Set(inputs)
+        return to_return
 
     def evaluate(self,
                  symbols_and_values_in: Dict[str, ureg.Quantity],
                  symbol_out: str) -> Optional[ureg.Quantity]:
         """
         Solve provided equations using SymPy.
-        :param symbols_and_values_in: mapping of known values to
-        their symbols
+        :param symbols_and_values_in: mapping of symbols to known values
         :param symbol_out: desired output
-        :return:
+        :return: Sympy solution for the desired symbol_out
         """
-        # common implementation for all analytical models
-        return NotImplementedError
+        ancillary_eqs = list((f'k-({v})' for (k, v) in symbols_and_values_in))        ###TODO extract float from pint? Discussion req. about pint integration here.
+        vals_out = sp.solve(self.equations + ancillary_eqs)
+        if not isinstance(vals_out, list):
+            vals_out = [vals_out]
+        to_return = []
+        for entry in vals_out:
+            if isinstance(entry, dict):
+                exists = entry.get(symbol_out)
+                if exists is not None:
+                    to_return.append(entry.get(symbol_out))
+        for i in range(0, len(to_return)):
+            if 'evalf' in dir(to_return[i]):
+                to_return[i] = to_return[i].evalf()
+        return to_return
 
-    def connections(self):
-        # common implementation for all analytical models
-        return NotImplementedError
 
+class ActiveModel:
+    """Class representing an abstract model that is applicable in the current context.
 
+    Mirroring PropertyMetadata vs. Property distinction, this class will indicate mappings of currently available
+    properties, correctly propagating uncertainties, conditions, etc.
+    """
 
-class ActiveModel :
-#Class representing an abstract model that is applicable in the current context.
-#
-#Mirroring PropertyMetadata vs. Property distinction, this class will indicate mappings of currently available
-#properties, correctly propagating uncertainties, conditions, etc.
-
-    def __init__(self, modelType : AbstractModel, inputs : [Property], outputs : [Property]) :
-        self.modelType = modelType
+    def __init__(self, model_type: AbstractModel, inputs: List[Property]):
+        self.model_type = model_type
         self.inputs = inputs
-        self.outputs = outputs
+        self.outputs = self._get_output()
 
-    def get_output (self) -> Dict[str, ureg.Quantity] :
+    def _get_output(self) -> Dict[str, ureg.Quantity]:
+        """
+        Method returning the output nodes that this model can produce given the input properties.
+        :return: Dictionary listing output properties that this model returns.
+        """
         pass
-
-
-
 
 
 def validate_evaluate(func):
