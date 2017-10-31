@@ -236,26 +236,6 @@ class AbstractAnalyticalModel(AbstractModel):
         return to_return
 
 
-class ActiveModel:
-    """Class representing an abstract model that is applicable in the current context.
-
-    Mirroring PropertyMetadata vs. Property distinction, this class will indicate mappings of currently available
-    properties, correctly propagating uncertainties, conditions, etc.
-    """
-
-    def __init__(self, model_type: AbstractModel, inputs: List[Property]):
-        self.model_type = model_type
-        self.inputs = inputs
-        self.outputs = self._get_output()
-
-    def _get_output(self) -> Dict[str, ureg.Quantity]:
-        """
-        Method returning the output nodes that this model can produce given the input properties.
-        :return: Dictionary listing output properties that this model returns.
-        """
-        pass
-
-
 def validate_evaluate(func):
     """
     A wrapper function to check that models conform to spec.
