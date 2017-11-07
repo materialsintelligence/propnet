@@ -71,23 +71,12 @@ class AbstractModel(metaclass=ABCMeta):
     def symbol_mapping(self) -> Dict[str, str]:
         """
         Map the symbols used in your model to their canonical property
-        names. Keys are symbols, values are property names.
-        """
-        pass
+        names. Keys are symbols, values are canonical property names.
 
-    @property
-    @abstractmethod
-    def assumption_mapping(self) -> Optional[Dict[str, Set[str]]]:
-        """
-        Map the symbols used in your model to the assumptions underlying them.
-        """
-        pass
+        Include mappings for all required inputs as well as conditions
+        that must be checked for the model to function property.
 
-    @property
-    @abstractmethod
-    def required_conditions(self) -> Optional[Set[str]]:
-        """
-        Include any conditions on the material that need to be specified.
+        Because this is a dictionary, each symbol must be unique.
         """
         pass
 
@@ -95,12 +84,47 @@ class AbstractModel(metaclass=ABCMeta):
     @abstractmethod
     def connections(self) -> Dict[str, Set[str]]:
         """
-        Define your model inputs and outputs. The model will
-        not attempt to solve for an output unless it is marked
-        as a valid output. Keys represent potential output symbols,
+        Define your model inputs and outputs in terms of symbols
+        listed in the symbol_mapping method.
+
+        The model will not attempt to solve for an output
+        unless it is marked as a valid output.
+
+        Keys represent  potential output symbols,
         values represent a set of input symbols.
 
         :return: a dict of output symbols to a set of input symbols
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def constraint_properties(self) -> Set[str]:
+        """
+        Define additional model inputs, not included in connections,
+        that must be examined for the model to ascertain whether it
+        is valid in the given context.
+
+        These inputs should be specified in terms of a set of symbols.
+
+        :return: a set of symbols required for the model to check the
+                 assumptions upon which it is based.
+        """
+        pass
+
+    @abstractmethod
+    def inputs_are_valid(self, input_props: Dict[str, Any]) -> bool:
+        """
+        Given a set of symbols and values (given by input_props) are fed
+        into the model, returns whether the input values meet the assumptions
+        required for the model to be valid.
+
+        These input values include values of inputs specified in the connections
+        method as well as values of inputs specified in the constraint_properties
+        method.
+
+        :return: a boolean value (T/F) signaling whether the combination of
+                 model inputs and constraints are valid for the given model.
         """
         pass
 
@@ -109,12 +133,25 @@ class AbstractModel(metaclass=ABCMeta):
                  symbols_and_values_in: Dict[str, ureg.Quantity],
                  symbol_out: str) -> Optional[ureg.Quantity]:
         """
-        Evaluate the model.
+        Evaluate the model given a set of input values and a desired output.
+        Evaluate will never be called unless the suite of inputs and assumptions
+        passes the inputs_are_valid method.
 
         :param symbols_and_values_in: dict of symbols and their
-        associated values used as inputs
+               associated values used as inputs
         :param symbol_out: symbol for your desired output
-        :return:
+        :return: value the model produces as output.
+        """
+        pass
+
+    @abstractmethod
+    def output_conditions(self, symbol_out: str) -> List[Any]:
+        """
+        Given the model is used to calculate the output symbol, symbol_out,
+        returns a list of conditions that apply to the output object.
+
+        :param symbol_out: symbol for your desired output
+        :return: list of additional conditions that apply to the output
         """
         pass
 

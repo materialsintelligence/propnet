@@ -12,6 +12,10 @@ class Material:
         self.root_node = NodeType.Material
         self.graph.add_node(self.root_node)
 
+    @classmethod
+    def material_from_mpid(cls, mpid):
+        return NotImplementedError
+
     def add_property(self, property_type, value):
 
         property = Property(property_type, value)

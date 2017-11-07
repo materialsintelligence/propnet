@@ -66,14 +66,21 @@ class Property:
     Class storing the value of a property in a given context.
     """
 
-    def __init__ (self, type: PropertyMetadata, value: Any, comment: str) :
+    def __init__(self, type: PropertyMetadata, value: Any, comment: str,
+                 source_ids: List[Tuple[str, str]], conditions: Dict[str, Any]):
         """
         Parses inputs for constructing a Property object.
         :param type: pointer to an existing PropertyMetadata object,
         identifies the type of data stored in the property.
         :param value: value of the property
         :param comment: important information relative to the property, including sourcing.
+        :param source_ids: the mpIDs from which the property value originates.
+        :param conditions: dictionary mapping canonical names of conditions to condition instances.
         """
         self.type = type
         self.value = value
         self.comment = comment
+        self.source_ids = source_ids
+        self.conditions = conditions
+
+###Property enum to go here
