@@ -30,7 +30,6 @@ class GoldchmidtTolerance(AbstractAnalyticalModel):
             'rB': 'radius_B_cation'
         }
 
-
     @property
     def constraint_properties(self):
         return None
@@ -38,7 +37,7 @@ class GoldchmidtTolerance(AbstractAnalyticalModel):
     @property
     def inputs_are_valid(self, input_props: Dict[str, Any]):
         #needs to check if material is perovskite
-        return None
+        return True
 
     @property
     def equations(self):
@@ -46,7 +45,7 @@ class GoldchmidtTolerance(AbstractAnalyticalModel):
 
     @property
     def output_conditions(self, symbol_out: str):
-        return None;
+        return None
 
     @property
     def test_sets(self):

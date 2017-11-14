@@ -15,6 +15,9 @@ from propnet import ureg
 
 
 class AbstractModel(metaclass=ABCMeta):
+    """
+    azx
+    """
 
     def __init__(self,
                  strict: bool = False):
@@ -28,11 +31,11 @@ class AbstractModel(metaclass=ABCMeta):
 
         # retrieve units for each symbol
         try:
-            self.unit_mapping = {symbol:PropertyType[name].value.units
+            self.unit_mapping = {symbol: PropertyType[name].value.units
                                  for symbol, name in self.symbol_mapping.items()}
-        except:
+        except Exception as e:
             raise ValueError("Please check your property names in your symbol mapping, "
-                             "are they all valid?")
+                             "are they all valid? Exception: {}".format(e))
 
     @property
     @abstractmethod

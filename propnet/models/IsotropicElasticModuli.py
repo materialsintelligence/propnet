@@ -36,14 +36,6 @@ class IsotropicElasticModuli(AbstractModel):
         }
 
     @property
-    def assumption_mapping(self):
-        return None
-
-    @property
-    def required_conditions(self):
-        return None
-
-    @property
     def connections(self):
         return {
             'n': {'E', 'G'},
@@ -51,7 +43,13 @@ class IsotropicElasticModuli(AbstractModel):
             'E': {'G', 'n'}
         }
 
-    @validate_evaluate
+    @property
+    def constraint_properties(self):
+        return None
+
+    def inputs_are_valid(self, input_props: Dict[str, Any]):
+        return True
+
     def evaluate(self,
                  symbols_and_values_in,
                  symbol_out):
@@ -80,6 +78,9 @@ class IsotropicElasticModuli(AbstractModel):
             E = symbols_and_values_in.get('E')
 
             return (E/(2*G)) - 1
+
+    def output_conditions(self, symbol_out: str):
+        return None
 
     @property
     def test_sets(self):

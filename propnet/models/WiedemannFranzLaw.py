@@ -38,11 +38,11 @@ class WiedemannFranzLaw(AbstractAnalyticalModel):
     @property
     def inputs_are_valid(self, input_props: Dict[str, Any]):
         #input material must be a metal
-        return None
+        return True
 
     @property
     def output_conditions(self, symbol_out: str):
-        return None;
+        return None
 
     @property
     def test_sets(self):

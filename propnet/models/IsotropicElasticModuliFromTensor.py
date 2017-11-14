@@ -35,24 +35,18 @@ class IsotropicElasticModuliFromTensor(AbstractModel):
         }
 
     @property
-    def assumption_mapping(self):
-        return None
-
-    @property
-    def required_conditions(self):
-        return None
-
-    @property
     def connections(self):
         return {
             'E': {'Sij'}
         }
 
     @property
-    def test_sets(self):
-        return {}
+    def constraint_properties(self):
+        return None
 
-    @validate_evaluate
+    def inputs_are_valid(self, input_props: Dict[str, Any]):
+        return True
+
     def evaluate(self, symbols_and_values_in, symbol_out):
 
         tensor = ElasticTensor.from_voigt(symbols_and_values_in.get('E_ij'))
@@ -61,3 +55,11 @@ class IsotropicElasticModuliFromTensor(AbstractModel):
             return tensor.y_mod
 
         return None
+
+    def output_conditions(self, symbol_out: str):
+        return None
+
+    @property
+    def test_sets(self):
+        return {}
+
