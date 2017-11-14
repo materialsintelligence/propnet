@@ -1,0 +1,9 @@
+name: refractive_index
+units:
+- 1.0
+- []
+display_names: ['Refractive index (aka index of refraction).']
+display_symbols: ['n']
+dimension: 1
+test_value: 1.2
+comment: ''

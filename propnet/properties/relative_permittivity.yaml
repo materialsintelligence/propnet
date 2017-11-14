@@ -1,0 +1,9 @@
+name: relative_permittivity
+units:
+- 1.0
+- []
+display_names: ['Relative permittivity (aka dielectric constant)']
+display_symbols: ['\epsilon_{r}']
+dimension: 1
+test_value: 0.8
+comment: ''

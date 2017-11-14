@@ -1,0 +1,9 @@
+name: electrical_conductivity
+units:
+- 1.0
+- - [1/(ohm * meter), 1.0]
+display_names: ['Electrical conductivity']
+display_symbols: ['\sigma']
+dimension: 1
+test_value: 1.6
+comment: ''

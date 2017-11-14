@@ -1,0 +1,9 @@
+name: interplanar_spacing
+units:
+- 1.0
+- - [angstrom, 1.0]
+display_names: ['Interplanar Spacing']
+display_symbols: ['a']
+dimension: 1
+test_value: 1.2
+comment: ''

@@ -1,0 +1,9 @@
+name: goldchmidt_tolerance_factor
+units:
+- 1.0
+- []
+display_names: ['Goldchmidt Tolerance Factor (for perovskites)']
+display_symbols: ['t']
+dimension: 1
+test_value: 0.8
+comment: ''
