@@ -2,6 +2,7 @@ from propnet.core.models import AbstractModel, validate_evaluate
 from pymatgen.analysis.elasticity import ElasticTensor
 from typing import *
 
+
 class IsotropicElasticModuliFromTensor(AbstractModel):
 
     # This is just a placeholder at present...

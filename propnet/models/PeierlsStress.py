@@ -1,6 +1,7 @@
 from propnet.core.models import AbstractAnalyticalModel
 from typing import *
 
+
 class PeierlsStress(AbstractAnalyticalModel):
 
     @property

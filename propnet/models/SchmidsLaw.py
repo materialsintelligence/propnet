@@ -1,6 +1,7 @@
 from propnet.core.models import AbstractAnalyticalModel, validate_evaluate
 from typing import *
 
+
 class SchmidsLaw(AbstractAnalyticalModel):
 
     @property
