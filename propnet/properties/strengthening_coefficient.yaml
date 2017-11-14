@@ -1,0 +1,9 @@
+name: strengthening_coefficient
+units:
+- 1.0
+- - [gigapascal / (m ** .5), 1.0]
+display_names: [Strengthening Coefficient]
+display_symbols: [k]
+dimension: 1
+test_value: .4
+comment: ''
