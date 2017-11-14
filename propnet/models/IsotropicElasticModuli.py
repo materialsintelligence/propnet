@@ -1,4 +1,5 @@
 from propnet.core.models import AbstractModel, validate_evaluate
+from typing import *
 
 
 class IsotropicElasticModuli(AbstractModel):
@@ -50,6 +51,7 @@ class IsotropicElasticModuli(AbstractModel):
     def inputs_are_valid(self, input_props: Dict[str, Any]):
         return True
 
+    @validate_evaluate
     def evaluate(self,
                  symbols_and_values_in,
                  symbol_out):

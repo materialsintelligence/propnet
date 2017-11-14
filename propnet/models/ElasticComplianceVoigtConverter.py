@@ -1,5 +1,6 @@
 from propnet.core.models import AbstractModel, validate_evaluate
 from pymatgen.analysis.elasticity import ElasticTensor, ComplianceTensor
+from typing import *
 
 class ElasticComplianceVoigtConverter(AbstractModel):
 

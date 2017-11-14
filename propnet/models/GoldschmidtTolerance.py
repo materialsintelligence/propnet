@@ -1,5 +1,5 @@
 from propnet.core.models import AbstractAnalyticalModel
-import sympy as sp
+from typing import *
 
 class GoldchmidtTolerance(AbstractAnalyticalModel):
 

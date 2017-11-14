@@ -1,5 +1,6 @@
 from propnet.core.models import AbstractModel, validate_evaluate
 from pymatgen.analysis.elasticity import ElasticTensor
+from typing import *
 
 class IsotropicElasticModuliFromTensor(AbstractModel):
 
@@ -47,6 +48,7 @@ class IsotropicElasticModuliFromTensor(AbstractModel):
     def inputs_are_valid(self, input_props: Dict[str, Any]):
         return True
 
+    @validate_evaluate
     def evaluate(self, symbols_and_values_in, symbol_out):
 
         tensor = ElasticTensor.from_voigt(symbols_and_values_in.get('E_ij'))

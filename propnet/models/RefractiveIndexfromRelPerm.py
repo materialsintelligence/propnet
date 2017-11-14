@@ -1,4 +1,5 @@
-from propnet.core.models import AbstractAnalyticalModel, validate_evaluate
+from propnet.core.models import AbstractAnalyticalModel
+from typing import *
 
 class RefractiveIndexfromRelPerm(AbstractAnalyticalModel):
 

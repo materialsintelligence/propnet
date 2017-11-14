@@ -1,5 +1,5 @@
 from propnet.core.models import AbstractAnalyticalModel, validate_evaluate
-import sympy as sp
+from typing import *
 
 class HallPetchRelationship(AbstractAnalyticalModel):
 

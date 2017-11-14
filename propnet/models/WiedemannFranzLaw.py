@@ -1,5 +1,5 @@
-from propnet.core.models import AbstractAnalyticalModel, validate_evaluate
-import sympy as sp
+from propnet.core.models import AbstractAnalyticalModel
+from typing import *
 
 class WiedemannFranzLaw(AbstractAnalyticalModel):
 
