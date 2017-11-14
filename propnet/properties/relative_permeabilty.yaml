@@ -1,0 +1,9 @@
+name: relative_permeability
+units:
+- 1.0
+- []
+display_names: ['Relative permeability']
+display_symbols: ['\mu_{r}']
+dimension: 1
+test_value: 0.8
+comment: ''

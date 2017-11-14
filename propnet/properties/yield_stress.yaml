@@ -1,0 +1,9 @@
+name: yield_stress
+units:
+- 1.0
+- - [gigapascal, 1]
+display_names: ['Yield Stress']
+display_symbols: ['/sigma_{y}']
+dimension: 1
+test_value: 34.8
+comment: ''

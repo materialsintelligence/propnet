@@ -1,0 +1,9 @@
+name: peierls_stress
+units:
+- 1.0
+- - [gigapascal, 1]
+display_names: ['Peierls Stress']
+display_symbols: ['/tau_{PN}']
+dimension: 1
+test_value: 1.2
+comment: ''
