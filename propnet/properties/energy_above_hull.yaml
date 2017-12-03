@@ -1,4 +1,4 @@
-name: density
+name: energy_above_hull
 units:
 - 1.0
 - - [eV, 1.0]
