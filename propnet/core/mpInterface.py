@@ -24,7 +24,9 @@ mpPropNames = {
 propnetPropNames = {v:k for k,v in mpPropNames.items()}
 
 def importProps(mpid, propList):
-    m = MPRester("sNxknEySUTz2owRL")
+    #FILL IN API KEY
+    api_key = ''
+    m = MPRester(api_key)
     query = m.query(criteria={"task_id": {'$in':mp_ids}}, properties=propList)
     print(query)
     #properties of all mp-ids inputted; list of lists
