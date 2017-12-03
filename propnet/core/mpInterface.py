@@ -1,6 +1,6 @@
 from pymatgen import MPRester
-#from propnet.core.properties import Property
-
+from propnet.core.properties import Property,
+from propnet.properties import PropertyType, property_metadata
 
 
 #maps propnet property names to mp (mapidoc) property 'location'
@@ -23,7 +23,7 @@ mpPropNames = {
 #inverse of above dict
 propnetPropNames = {v:k for k,v in mpPropNames.items()}
 
-def importProps(mpid = ["mp-1234"], propList = ["final_energy","density"]):
+def importProps(mpid, propList):
     m = MPRester("sNxknEySUTz2owRL")
     query = m.query(criteria={"task_id": {'$in':mp_ids}}, properties=propList)
     print(query)
@@ -36,18 +36,18 @@ def importProps(mpid = ["mp-1234"], propList = ["final_energy","density"]):
             if data[key] != None:
                 propType = property_metadata[propnetPropNames[key]];
                 p = Property(propType, data[key], None, (data['task_id'], ''), None)
-                p = 2
                 matProperties.append(p)
         properties.append(matProperties)
-
     return(properties)
 
 
-
-
+#list of mp-ids whose properties need to be imported
 mpIDs = ["mp-1243","mp-1234"]
+
+#list of properties we want (see dict above)
 mpProplist = list(mpPropNames.values())
 #always want task_id for source_id
 if not 'task_id' in mpProplist:
     mpProplist.append('task_id')
+
 importProps(mpIDs, mpProplist)
