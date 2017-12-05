@@ -28,12 +28,13 @@ class HallPetchRelationship(AbstractAnalyticalModel):
             'd': 'avg_grain_diameter',
             'k': 'strengthening_coefficient',
             'o': 'dislocation_movement_stress',
-            'y': 'yield_stress'
+            'y': 'yield_stress',
+            's': 'structure'
         }
 
     @property
     def constraint_properties(self):
-        return None
+        return ['s']
 
     @property
     def inputs_are_valid(self, input_props: Dict[str, Any]):
@@ -42,7 +43,7 @@ class HallPetchRelationship(AbstractAnalyticalModel):
 
     @property
     def output_conditions(self, symbol_out: str):
-        return None
+        return
 
     @property
     def test_sets(self):

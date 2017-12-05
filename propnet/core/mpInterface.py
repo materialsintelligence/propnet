@@ -4,7 +4,7 @@ from propnet.properties import PropertyType, property_metadata
 
 
 #maps propnet property names to mp (mapidoc) property 'location'
-mpPropNames = {
+mp_from_propnet_name_mapping = {
     'poisson_ratio': 'elasticity.poisson_ratio',
     'bulk_modulus': 'elasticity.K_Voigt_Reuss_Hill',
     'elastic_tensor_voigt': 'elasticity.elastic_tensor',
@@ -19,37 +19,40 @@ mpPropNames = {
     'piezoelectric_tensor': 'piezo.piezoelectric_tensor',
     'volume_unit_cell': 'volume'
 }
+propnet_from_mp_name_mapping = {v:k for k,v in mp_from_propnet_name_mapping.items()}
+mp_prop_list = list(propnet_from_mp_name_mapping.keys()) + ['task_id']
+propnet_prop_list = list(mp_from_propnet_name_mapping.keys())
 
-#inverse of above dict
-propnetPropNames = {v:k for k,v in mpPropNames.items()}
+def import_all_props(mp_ids):
+    """
+    Given a list of materials ids, returns a list of all available properties
+    for each material. One list per material id is stored in a list of lists.
+    :param mp_ids: materials ids for which properties are requested.
+    :return: list of lists containing all possible materials properties by mp_id
+    """
+    return import_props(mp_ids, mp_prop_list)
 
-def importProps(mpid, propList):
-    #FILL IN API KEY
-    api_key = ''
-    m = MPRester(api_key)
-    query = m.query(criteria={"task_id": {'$in':mp_ids}}, properties=propList)
+def import_props(mp_ids, prop_list):
+    """
+    Given a list of materials ids and mp property names returns a list of property
+    instances for each requested material. These lists are stored in an encapsulating
+    list.
+    :param mp_ids: materials ids for which properties are requested.
+    :param prop_list: requested MP properties for materials.
+    :return: list of lists containing requested materials properties by mp_id
+    """
+    m = MPRester()
+    query = m.query(criteria={"task_id": {'$in':mp_ids}}, properties=prop_list)
     print(query)
     #properties of all mp-ids inputted; list of lists
     properties = []
     for data in query:
         #properties of one mp-id
-        matProperties = []
+        mat_properties = []
         for key in data:
-            if data[key] != None:
-                propType = property_metadata[propnetPropNames[key]];
-                p = Property(propType, data[key], None, (data['task_id'], ''), None)
-                matProperties.append(p)
-        properties.append(matProperties)
-    return(properties)
-
-
-#list of mp-ids whose properties need to be imported
-mpIDs = ["mp-1243","mp-1234"]
-
-#list of properties we want (see dict above)
-mpProplist = list(mpPropNames.values())
-#always want task_id for source_id
-if not 'task_id' in mpProplist:
-    mpProplist.append('task_id')
-
-importProps(mpIDs, mpProplist)
+            if not data[key] is None:
+                prop_type = property_metadata[propnet_from_mp_name_mapping[key]]
+                p = Property(prop_type, data[key], None, [(data['task_id'], '')], None)
+                mat_properties.append(p)
+        properties.append(mat_properties)
+    return properties
