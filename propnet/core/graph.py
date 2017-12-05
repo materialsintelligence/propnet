@@ -8,14 +8,15 @@ from propnet.properties import PropertyType, all_property_names
 
 from propnet.core.properties import Property
 from propnet.core.models import AbstractModel
+from propnet.core.models import AbstractAnalyticalModel
 
 from enum import Enum
 
 # TODO: add more node types as appropriate
 NodeType = Enum('NodeType', ['Material'])
 
-class Propnet:
 
+class Propnet:
     # clumsy implementation at present, storing classes directly
     # on graph ... this may be fine, but more investigation required!
 
@@ -32,10 +33,12 @@ class Propnet:
         # add all our property types
         g.add_nodes_from(PropertyType)
 
-        # add all our models
-        # filter out abstract base classes
-        models = [model for model in AbstractModel.__subclasses__()
-                  if not model.__module__.startswith('propnet.core')]
+        # add all our models & filter out abstract base classes.
+        abstract_model_extensions = [model for model in AbstractModel.__subclasses__()
+                                     if not model.__module__.startswith('propnet.core')]
+        abstract_analytical_model_extensions = [model for model in AbstractAnalyticalModel.__subclasses__()
+                                                if not model.__module__.startswith('propnet.core')]
+        models = abstract_model_extensions + abstract_analytical_model_extensions
         g.add_nodes_from(models)
 
         for model_cls in models:
@@ -100,7 +103,7 @@ class Propnet:
         :return:  Return a summary of the graph. Doesn't show any defined materials yet.
         """
         summary = ["Propnet Graph", "", "Property Types:"]
-        summary += ["\t "+n.value.display_names[0] for n in self.property_type_nodes]
+        summary += ["\t " + n.value.display_names[0] for n in self.property_type_nodes]
         summary += ["Models:"]
-        summary += ["\t "+n().title for n in self.model_nodes]
+        summary += ["\t " + n().title for n in self.model_nodes]
         return "\n".join(summary)
