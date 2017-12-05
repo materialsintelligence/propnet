@@ -16,6 +16,9 @@ logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 # module-wide unit registry
 ureg = UnitRegistry()
 
+# add atoms as a unit-less quantity to our unit registry, e.g. for eV/atom
+ureg.define('atom = []')
+
 # convenience imports for user
 from propnet.properties import PropertyType
 from propnet.core.properties import Property
