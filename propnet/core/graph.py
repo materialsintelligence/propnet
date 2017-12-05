@@ -5,6 +5,7 @@ import networkx as nx
 from propnet import logger
 from propnet.models import *
 from propnet.properties import PropertyType, all_property_names
+from propnet.conditions import ConditionType, all_condition_names
 
 from propnet.core.properties import Property
 from propnet.core.models import AbstractModel
@@ -36,9 +37,9 @@ class Propnet:
         # add all our models & filter out abstract base classes.
         abstract_model_extensions = [model for model in AbstractModel.__subclasses__()
                                      if not model.__module__.startswith('propnet.core')]
-        abstract_analytical_model_extensions = [model for model in AbstractAnalyticalModel.__subclasses__()
-                                                if not model.__module__.startswith('propnet.core')]
-        models = abstract_model_extensions + abstract_analytical_model_extensions
+        #abstract_analytical_model_extensions = [model for model in AbstractAnalyticalModel.__subclasses__()
+        #                                        if not model.__module__.startswith('propnet.core')]
+        models = abstract_model_extensions #+ abstract_analytical_model_extensions
         g.add_nodes_from(models)
 
         for model_cls in models:

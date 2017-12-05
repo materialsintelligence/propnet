@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 from propnet.properties import PropertyType
-from propnet.core.properties import Property
+from propnet.conditions import ConditionType
 from propnet import logger
 import sympy as sp
 
@@ -30,12 +30,22 @@ class AbstractModel(metaclass=ABCMeta):
         """
 
         # retrieve units for each symbol
-        try:
-            self.unit_mapping = {symbol: PropertyType[name].value.units
-                                 for symbol, name in self.symbol_mapping.items()}
-        except Exception as e:
-            raise ValueError("Please check your property names in your symbol mapping, "
-                             "are they all valid? Exception: {}".format(e))
+        self.unit_mapping = {}
+        for symbol, name in self.symbol_mapping.items():
+            p_type = PropertyType.get(name)
+            c_type = ConditionType.get(name)
+            if p_type is None and c_type is None:
+                raise ValueError('No Matching Property or Condition found for model input: {}\n'
+                                 'Please check your property names in your symbol mappings, are they all valid?'
+                                 .format(name))
+            elif not (p_type is None) and not (c_type is None):
+                raise ValueError('A Matching Property and a Matching Condition were found for model input: {}\n'
+                                 'Please check your property names in your symbol mappings, are they all valid?'
+                                 .format(name))
+            elif not (p_type is None):
+                self.unit_mapping[symbol] = p_type.get(name).value.units
+            else:
+                self.unit_mapping[symbol] = c_type.get(name).value.units
 
     @property
     @abstractmethod
