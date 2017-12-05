@@ -32,8 +32,14 @@ class AbstractModel(metaclass=ABCMeta):
         # retrieve units for each symbol
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
-            p_type = PropertyType.get(name)
-            c_type = ConditionType.get(name)
+            try:
+                p_type = PropertyType.get(name)
+            except e:
+                p_type = None
+            try:
+                c_type = ConditionType.get(name)
+            except e:
+                c_type = None
             if p_type is None and c_type is None:
                 raise ValueError('No Matching Property or Condition found for model input: {}\n'
                                  'Please check your property names in your symbol mappings, are they all valid?'
