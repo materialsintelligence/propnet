@@ -18,7 +18,7 @@ mp_from_propnet_name_mapping = {
     'piezoelectric_tensor': 'piezo.piezoelectric_tensor',
     'volume_unit_cell': 'volume'
 }
-propnet_from_mp_name_mapping = {v:k for k,v in mp_from_propnet_name_mapping.items()}
+propnet_from_mp_name_mapping = {v: k for k, v in mp_from_propnet_name_mapping.items()}
 mp_prop_list = list(propnet_from_mp_name_mapping.keys()) + ['task_id']
 propnet_prop_list = list(mp_from_propnet_name_mapping.keys())
 
@@ -43,7 +43,7 @@ def import_props(mp_ids, prop_list):
     :return: list of lists containing requested materials properties by mp_id
     """
     m = MPRester()
-    query = m.query(criteria={"task_id": {'$in':mp_ids}}, properties=prop_list)
+    query = m.query(criteria={"task_id": {'$in': mp_ids}}, properties=prop_list)
     print(query)
     # properties of all mp-ids inputted; list of lists
     properties = []
