@@ -2,7 +2,7 @@ name: refractive_index
 units:
 - 1.0
 - []
-display_names: ['Refractive index (aka index of refraction).']
+display_names: ['Refractive index','Index of Refraction']
 display_symbols: ['n']
 dimension: 1
 test_value: 1.2
