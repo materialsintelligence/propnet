@@ -26,9 +26,10 @@ class GoldchmidtTolerance(AbstractAnalyticalModel):
     def symbol_mapping(self):
         return {
             't': 'goldchmidt_tolerance_factor',
-            'r0': 'radius_anion',
-            'rA': 'radius_A_cation',
-            'rB': 'radius_B_cation'
+            'r_anion': 'ionic_radius',
+            'r_cation_A': 'ionic_radius',
+            'r_cation_B': 'ionic_radius',
+            's': 'structure'
         }
 
     @property
@@ -42,7 +43,7 @@ class GoldchmidtTolerance(AbstractAnalyticalModel):
 
     @property
     def equations(self):
-        return ["t - (rA + rB)/(2**.5 * (rB + r0))"]
+        return ["t - (r_cation_A + r_cation_B)/(2**.5 * (rB + r_anion))"]
 
     @property
     def output_conditions(self, symbol_out: str):

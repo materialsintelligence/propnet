@@ -34,11 +34,11 @@ class AbstractModel(metaclass=ABCMeta):
         for symbol, name in self.symbol_mapping.items():
             try:
                 p_type = PropertyType.get(name)
-            except e:
+            except:
                 p_type = None
             try:
                 c_type = ConditionType.get(name)
-            except e:
+            except:
                 c_type = None
             if p_type is None and c_type is None:
                 raise ValueError('No Matching Property or Condition found for model input: {}\n'
