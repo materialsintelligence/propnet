@@ -1,10 +1,7 @@
-from propnet.core.models import AbstractModel, validate_evaluate
-from typing import *
+from propnet.core.models import *
 
 
-class IsotropicElasticModuli(AbstractModel):
-
-    # This is just a placeholder at present...
+class IsotropicElasticModuli(AbstractAnalyticalModel):
 
     @property
     def title(self):
@@ -17,13 +14,13 @@ class IsotropicElasticModuli(AbstractModel):
     @property
     def description(self):
         return """
-        This only supports one-way conversion for E, G and n
-        at present. Working on an analyitcal version!
+        This supports conversion between sets of isotropic elastic moduli.
         """
 
     @property
     def references(self):
-        return []
+        return ["""URL: http://scienceworld.wolfram.com/physics/LameConstants.html""",
+                """URL: https://en.wikipedia.org/wiki/Young%27s_modulus"""]
 
     @property
     def symbol_mapping(self):
@@ -31,71 +28,19 @@ class IsotropicElasticModuli(AbstractModel):
             'E': 'youngs_modulus',
             'G': 'shear_modulus',
             'n': 'poisson_ratio',
-            #'K': 'bulk_modulus',
-            #'l': 'lame_first_parameter',
-            #'M': 'p_wave_modulus'
+            'K': 'bulk_modulus',
+            'l': 'lame_first_parameter',
+            'M': 'p_wave_modulus'
         }
-
-    @property
-    def connections(self):
-        return {
-            'n': {'E', 'G'},
-            'G': {'E', 'n'},
-            'E': {'G', 'n'}
-        }
-
-    @property
-    def constraint_properties(self):
-        return None
-
-    def inputs_are_valid(self, input_props: Dict[str, Any]):
-        return True
-
-    @validate_evaluate
-    def evaluate(self,
-                 symbols_and_values_in,
-                 symbol_out):
-
-        # this is just placeholder for now, SymPy should do this for us
-        # and if not, there's probably a less verbose way to define
-        # this method
-
-        if symbol_out == 'E':
-
-            G = symbols_and_values_in.get('G')
-            n = symbols_and_values_in.get('n')
-
-            return 2*G*(1+n)
-
-        elif symbol_out == 'G':
-
-            E = symbols_and_values_in.get('E')
-            n = symbols_and_values_in.get('n')
-
-            return E / (2*(1+n))
-
-        elif symbol_out == 'n':
-
-            G = symbols_and_values_in.get('G')
-            E = symbols_and_values_in.get('E')
-
-            return (E/(2*G)) - 1
-
-    def output_conditions(self, symbol_out: str):
-        return None
 
     @property
     def test_sets(self):
-        return [
-            {'K': (0, "GPa"),
-             'E': (0, "GPa"),
-             'G': (0, "GPa")}
-        ]
+        return []
 
-    #def equations(self, E, G, n, K, l, M):
-    #    return [
-    #        ((3 * K * (3 * K - E)) / (9 * K - E)) - l,
-    #        ((3 * K * E) / (9 * K - E)) - G,
-    #        ((3 * K - E) / (6 * K)) - n,
-    #        ((3 * K) * (3 * K + E) / (9 * K - E)) - M
-    #    ]
+    def equations(self):
+        return [
+            "((3 * K * (3 * K - E)) / (9 * K - E)) - l",
+            "((3 * K * E) / (9 * K - E)) - G",
+            "((3 * K - E) / (6 * K)) - n",
+            "((3 * K) * (3 * K + E) / (9 * K - E)) - M"
+        ]
