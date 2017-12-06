@@ -1,7 +1,8 @@
 name: formation_energy_per_atom
 units:
 - 1.0
-- - [eV/atom, 1.0]
+- - [electron_volt, 1.0]
+- - [atom, -1.0]
 display_names: [Formation Energy per Atom]
 display_symbols: [E_{a}]
 dimension: 1

@@ -1,7 +1,7 @@
 name: volume_unit_cell
 units:
 - 1.0
-- - [Angstrom, 3.0]
+- - [angstrom, 3.0]
 display_names: [Volume per Unit Cell]
 display_symbols: [V_{cell}]
 dimension: 1
