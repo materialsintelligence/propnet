@@ -33,18 +33,6 @@ class PeierlsStress(AbstractAnalyticalModel):
         }
 
     @property
-    def constraint_properties(self):
-        return None
-
-    @property
-    def inputs_are_valid(self, input_props: Dict[str, Any]):
-        return True
-
-    @property
-    def output_conditions(self, symbol_out: str):
-        return None
-
-    @property
     def test_sets(self):
         return {}
 

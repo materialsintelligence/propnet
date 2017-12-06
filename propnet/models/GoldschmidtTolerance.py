@@ -10,7 +10,7 @@ class GoldchmidtTolerance(AbstractAnalyticalModel):
 
     @property
     def tags(self):
-        return ["stub"]
+        return []
 
     @property
     def description(self):
@@ -32,22 +32,14 @@ class GoldchmidtTolerance(AbstractAnalyticalModel):
             's': 'structure'
         }
 
-    @property
-    def constraint_properties(self):
-        return None
-
-    @property
-    def inputs_are_valid(self, input_props: Dict[str, Any]):
-        #needs to check if material is perovskite
-        return True
+    #@property
+    #def inputs_are_val#id(self, input_props: Dict[str, Any]):
+    #    #needs to check if material is perovskite
+    #    return True
 
     @property
     def equations(self):
         return ["t - (r_cation_A + r_cation_B)/(2**.5 * (rB + r_anion))"]
-
-    @property
-    def output_conditions(self, symbol_out: str):
-        return None
 
     @property
     def test_sets(self):

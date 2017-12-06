@@ -9,7 +9,7 @@ class WiedemannFranzLaw(AbstractAnalyticalModel):
 
     @property
     def tags(self):
-        return ["stub"]
+        return []
 
     @property
     def description(self):
@@ -31,18 +31,10 @@ class WiedemannFranzLaw(AbstractAnalyticalModel):
             'o': 'electrical_conductivity'
         }
 
-    @property
-    def constraint_properties(self):
-        return None
-
-    @property
-    def inputs_are_valid(self, input_props: Dict[str, Any]):
-        #input material must be a metal
-        return True
-
-    @property
-    def output_conditions(self, symbol_out: str):
-        return None
+    #@property
+    #def inputs_are_valid(self, input_props: Dict[str, Any]):
+    #    #input material must be a metal
+    #    return True#
 
     @property
     def test_sets(self):

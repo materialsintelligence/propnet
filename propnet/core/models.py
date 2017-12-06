@@ -13,11 +13,7 @@ from propnet import ureg
 # TODO: decide on interface for conditions, assumptions etc.
 # TODO: decide on interface for multiple-material models.
 
-
 class AbstractModel(metaclass=ABCMeta):
-    """
-    azx
-    """
 
     def __init__(self,
                  strict: bool = False):
@@ -117,7 +113,6 @@ class AbstractModel(metaclass=ABCMeta):
         pass
 
     @property
-    @abstractmethod
     def constraint_properties(self) -> Set[str]:
         """
         Define additional model inputs, not included in connections,
@@ -129,9 +124,8 @@ class AbstractModel(metaclass=ABCMeta):
         :return: a set of symbols required for the model to check the
                  assumptions upon which it is based.
         """
-        pass
+        return set()
 
-    @abstractmethod
     def inputs_are_valid(self, input_props: Dict[str, Any]) -> bool:
         """
         Given a set of symbols and values (given by input_props) are fed
@@ -145,7 +139,7 @@ class AbstractModel(metaclass=ABCMeta):
         :return: a boolean value (T/F) signaling whether the combination of
                  model inputs and constraints are valid for the given model.
         """
-        pass
+        return True
 
     @abstractmethod
     def evaluate(self,
@@ -163,7 +157,6 @@ class AbstractModel(metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     def output_conditions(self, symbol_out: str) -> List[Any]:
         """
         Given the model is used to calculate the output symbol, symbol_out,
@@ -172,10 +165,9 @@ class AbstractModel(metaclass=ABCMeta):
         :param symbol_out: symbol for your desired output
         :return: list of additional conditions that apply to the output
         """
-        pass
+        return []
 
     @property
-    @abstractmethod
     def test_sets(self) -> List[Tuple[str, ureg.Quantity]]:
         """
         Add test sets to your model. These are used by unit testing,
@@ -183,7 +175,7 @@ class AbstractModel(metaclass=ABCMeta):
         a dict with keys that correspond to your symbols and values
         that are a (value, unit) tuple.
         """
-        pass
+        return []
 
     def test(self) -> bool:
         """

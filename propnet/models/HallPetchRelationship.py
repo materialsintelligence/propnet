@@ -32,18 +32,18 @@ class HallPetchRelationship(AbstractAnalyticalModel):
             's': 'structure'
         }
 
-    @property
-    def constraint_properties(self):
-        return ['s']
+   ##@property
+   #def constraint_properties(self):
+   #    return ['s']
 
-    @property
-    def inputs_are_valid(self, input_props: Dict[str, Any]):
-        #needs to be polycrystalline
-        return True
+   #@property
+   #def inputs_are_valid(self, input_props: Dict[str, Any]):
+   #    #needs to be polycrystalline
+   #    return True
 
-    @property
-    def output_conditions(self, symbol_out: str):
-        return
+   #@property
+   #def output_conditions(self, symbol_out: str):
+   #    return
 
     @property
     def test_sets(self):

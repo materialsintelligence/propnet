@@ -31,21 +31,9 @@ class RefractiveIndexfromRelPerm(AbstractAnalyticalModel):
         }
 
     @property
-    def constraint_properties(self):
-        return None
-
-    @property
-    def inputs_are_valid(self, input_props: Dict[str, Any]):
-        return True
-
-    @property
-    def output_conditions(self, symbol_out: str):
-        return None
+    def equations(self):
+        return ["n - sqrt(Ur*Er)"]
 
     @property
     def test_sets(self):
         return {}
-
-    @property
-    def equations(self):
-        return ["n - sqrt(Ur*Er)"]
