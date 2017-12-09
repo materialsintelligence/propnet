@@ -1,0 +1,9 @@
+name: band_gap
+units:
+- 1.0
+- - [electron_volt, 1.0]
+display_names: [Band gap]
+display_symbols: ["E_g"]
+dimension: 1
+test_value: 0.6
+comment: ''

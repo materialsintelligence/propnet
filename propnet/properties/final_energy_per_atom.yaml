@@ -4,7 +4,7 @@ units:
 - - [electron_volt, 1.0]
 - - [atom, -1.0]
 display_names: [Final Energy per Atom]
-display_symbols: [E_{a}]
+display_symbols: ["E_{a}"]
 dimension: 1
 test_value: 4.75
 comment: ''

@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from functools import wraps
+from hashlib import sha256
 from propnet.properties import PropertyType
 from propnet.conditions import ConditionType
 from propnet import logger
@@ -29,25 +30,13 @@ class AbstractModel(metaclass=ABCMeta):
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
             try:
-                p_type = PropertyType.get(name)
-            except:
-                p_type = None
-            try:
-                c_type = ConditionType.get(name)
-            except:
-                c_type = None
-            if p_type is None and c_type is None:
-                raise ValueError('No Matching Property or Condition found for model input: {}\n'
-                                 'Please check your property names in your symbol mappings, are they all valid?'
-                                 .format(name))
-            elif not (p_type is None) and not (c_type is None):
-                raise ValueError('A Matching Property and a Matching Condition were found for model input: {}\n'
-                                 'Please check your property names in your symbol mappings, are they all valid?'
-                                 .format(name))
-            elif not (p_type is None):
-                self.unit_mapping[symbol] = p_type.get(name).value.units
-            else:
-                self.unit_mapping[symbol] = c_type.get(name).value.units
+                self.unit_mapping[symbol] = {symbol: PropertyType[name].value.units
+                                             for symbol, name in self.symbol_mapping.items()}
+            except Exception as e:
+                raise ValueError('Please check your property names in your symbol mapping, '
+                                 'for property {} and model {}, are they all valid? '
+                                 'Exception: {}'
+                                 .format(name, self.__name__, e))
 
     @property
     @abstractmethod
@@ -64,6 +53,10 @@ class AbstractModel(metaclass=ABCMeta):
         Add tags to your model as a list of strings.
         """
         pass
+
+    @property # TODO make abstractmethod
+    def revision(self):
+        return 1
 
     @property
     @abstractmethod
@@ -176,6 +169,13 @@ class AbstractModel(metaclass=ABCMeta):
         that are a (value, unit) tuple.
         """
         return []
+
+    def __hash__(self):
+        """
+        A unique model identifier, function of model class name.
+        :return (str):
+        """
+        return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
 
     def test(self) -> bool:
         """

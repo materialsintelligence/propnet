@@ -5,8 +5,6 @@ from typing import *
 
 class IsotropicElasticModuliFromTensor(AbstractModel):
 
-    # This is just a placeholder at present...
-
     @property
     def title(self):
         return "Calculate isotropic elastic moduli from elastic tensor"
@@ -29,11 +27,11 @@ class IsotropicElasticModuliFromTensor(AbstractModel):
         return {
             'Sij': 'elastic_tensor_voigt',
             'E': 'youngs_modulus',
-            #'G': 'shear_modulus',
-            #'n': 'poisson_ratio',
-            #'K': 'bulk_modulus',
-            #'l': 'lame_first_parameter',
-            #'M': 'p_wave_modulus'
+            'G': 'shear_modulus',
+            'n': 'poisson_ratio',
+            'K': 'bulk_modulus',
+            'l': 'lame_first_parameter',
+            'M': 'p_wave_modulus'
         }
 
     @property
@@ -41,13 +39,6 @@ class IsotropicElasticModuliFromTensor(AbstractModel):
         return {
             'E': {'Sij'}
         }
-
-    @property
-    def constraint_properties(self):
-        return None
-
-    def inputs_are_valid(self, input_props: Dict[str, Any]):
-        return True
 
     @validate_evaluate
     def evaluate(self, symbols_and_values_in, symbol_out):
@@ -59,10 +50,7 @@ class IsotropicElasticModuliFromTensor(AbstractModel):
 
         return None
 
-    def output_conditions(self, symbol_out: str):
-        return None
-
     @property
     def test_sets(self):
-        return {}
+        return []
 

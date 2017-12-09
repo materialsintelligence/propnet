@@ -34,7 +34,7 @@ class PeierlsStress(AbstractAnalyticalModel):
 
     @property
     def test_sets(self):
-        return {}
+        return []
 
     @property
     def equations(self):

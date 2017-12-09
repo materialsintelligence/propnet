@@ -12,6 +12,7 @@ from propnet.core.models import AbstractModel
 from propnet.core.models import AbstractAnalyticalModel
 
 from enum import Enum
+from collections import Counter
 
 # TODO: add more node types as appropriate
 NodeType = Enum('NodeType', ['Material'])
@@ -93,11 +94,21 @@ class Propnet:
         return list(filter(lambda x: isinstance(x, PropertyType), self.graph.nodes))
 
     @property
-    def model_nodes(self):
+    def all_models(self):
         """
         :return: Return a list of nodes of models.
         """
         return list(filter(lambda x: issubclass(x, AbstractModel), self.graph.nodes))
+
+    @property
+    def model_tags(self):
+        """
+        Collates tags present in models.
+        :return: Returns list of tags
+        """
+        all_tags = [tag for tags in self.all_models for tag in tags]
+        unique_tags = sorted(list(set(all_tags)))
+        return Counter(all_tags)
 
     def __str__(self):
         """
@@ -106,5 +117,5 @@ class Propnet:
         summary = ["Propnet Graph", "", "Property Types:"]
         summary += ["\t " + n.value.display_names[0] for n in self.property_type_nodes]
         summary += ["Models:"]
-        summary += ["\t " + n().title for n in self.model_nodes]
+        summary += ["\t " + n().title for n in self.all_models]
         return "\n".join(summary)
