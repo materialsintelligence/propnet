@@ -2,7 +2,6 @@ from abc import ABCMeta, abstractmethod
 from functools import wraps
 from hashlib import sha256
 from propnet.properties import PropertyType
-from propnet.conditions import ConditionType
 from propnet import logger
 import sympy as sp
 
@@ -36,7 +35,7 @@ class AbstractModel(metaclass=ABCMeta):
                 raise ValueError('Please check your property names in your symbol mapping, '
                                  'for property {} and model {}, are they all valid? '
                                  'Exception: {}'
-                                 .format(name, self.__name__, e))
+                                 .format(name, self.__class__.__name__, e))
 
     @property
     @abstractmethod

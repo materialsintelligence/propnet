@@ -5,18 +5,17 @@ from propnet import logger, ureg
 from pybtex.database.input.bibtex import Parser
 from monty.json import MSONable
 
-
 class PropertyMetadata(MSONable):
     """
     Class storing the complete description of a property.
     """
 
     __slots__ = ['name', 'units', 'display_names', 'display_symbols',
-                 'dimension', 'test_value', 'comment']
+                 'dimension', 'test_value', 'comment', 'type']
 
     def __init__ (self, name: str, units: ureg.Quantity, display_names: List[str],
                   display_symbols: List[str], dimension: List[int], test_value: np.ndarray,
-                  comment: str):
+                  comment: str, type: str = 'property'):
         """
         Parses and validates a series of inputs into a PropertyMetadata tuple, a format that PropNet expects.
         Parameters correspond exactly with those of a PropertyMetadata tuple.
@@ -28,8 +27,11 @@ class PropertyMetadata(MSONable):
                           integers in the list.
         :param test_value: a sample value of the property, reasonable over a wide variety of contexts.
         :param comment: any useful information on the property including its definitions and possible citations.
-        :return: Properly-initialized PropertyMetadata instance.
+        :param type: 'property', if a property of a material, or 'condition' for other variables (e.g. temperature)
+        :return: PropertyMetadata instance.
         """
+
+        # TODO: need to formalize property vs condition distinction
 
         if not name.isidentifier() or not name.islower():
             raise ValueError("The canonical name ({}) is not valid.".format(id))
@@ -49,6 +51,9 @@ class PropertyMetadata(MSONable):
             logger.warn("Test value for {} is zero. "
                         "Please change to a more appropriate test value.".format(name))
 
+        if type not in ('property', 'condition'):
+            raise ValueError('Unsupported property type')
+
         self.name = name
         self.units = ureg.Quantity.from_tuple(units)
         self.display_names = display_names
@@ -56,6 +61,35 @@ class PropertyMetadata(MSONable):
         self.dimension = dimension
         self.test_value = test_value
         self.comment = comment
+        self.type = type
+
+    @property
+    def dimension_as_string(self):
+        """
+        :return: dimension of property (np.shape) as a human-readable string
+        """
+
+        if len(self.dimension) == 1 and self.dimension[0] == 1:
+            return 'scalar'
+        elif len(self.dimension) == 1:
+            return '{} vector'.format(self.dimension)
+        elif len(self.dimension) == 2:
+            return '{} matrix'.format(self.dimension)
+        else:
+            # technically might not always be true
+            return '{} tensor'.format(self.dimension)
+
+    @property
+    def unit_as_string(self):
+
+        # self.units has both the units and (sometimes) a
+        # prefactor (its magnitude)
+        unit_str = '{:~P}'.format(self.units.units)
+
+        if self.units.magnitude != 1:
+            unit_str = '{} {}'.format(self.units.magnitude, unit_str)
+
+        return unit_str
 
     def __eq__(self, other):
         return self.name == other.name
@@ -82,5 +116,3 @@ class Property:
         self.comment = comment
         self.source_ids = source_ids
         self.conditions = conditions
-
-###Property enum to go here

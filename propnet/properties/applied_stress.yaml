@@ -7,3 +7,4 @@ display_symbols: ['/sigma']
 dimension: 1
 test_value: 2.2
 comment: ''
+type: condition

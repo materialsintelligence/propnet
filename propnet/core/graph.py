@@ -5,7 +5,6 @@ import networkx as nx
 from propnet import logger
 from propnet.models import *
 from propnet.properties import PropertyType, all_property_names
-from propnet.conditions import ConditionType, all_condition_names
 
 from propnet.core.properties import Property
 from propnet.core.models import AbstractModel

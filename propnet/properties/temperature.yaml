@@ -7,3 +7,4 @@ display_symbols: [T]
 dimension: 1
 test_value: 346
 comment: ''
+type: condition
