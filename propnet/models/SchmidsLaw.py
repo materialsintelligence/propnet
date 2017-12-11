@@ -6,46 +6,47 @@ class SchmidsLaw(AbstractAnalyticalModel):
 
     @property
     def title(self):
-        return "Schmids Law"
+        return "Schmid's Law"
 
     @property
     def tags(self):
-        return ["stub"]
+        return ["mechanical"]
 
     @property
     def description(self):
-        return """
-        Schmids Law finds the resolved shear stress of an applied stress.
+        return """Schmid's Law states that the critically resolved shear stress is equal
+        to the stress applied to the material multipled by a geometric factor combining
+        angles of the glide plane and glide direction.
         """
 
     @property
     def references(self):
-        return []
+        return """
+        
+        @misc{schmid2017,
+        title={Schmid's law},
+        url={https://en.wikipedia.org/wiki/Schmid%27s_law},
+        journal={Wikipedia},
+        publisher={Wikimedia Foundation},
+        year={2017},
+        month={Dec}}
+        
+        """
 
     @property
     def symbol_mapping(self):
         return {
-            'T': 'resolved_shear_stress',
+            'T': 'shear_modulus',
             'm': 'schmid_factor',
-            'o': 'applied_stress'
+            'σ': 'applied_stress'
         }
 
     @property
-    def constraint_properties(self):
-        return None
-
-    @property
-    def inputs_are_valid(self, input_props: Dict[str, Any]):
-        return True
-
-    @property
-    def output_conditions(self, symbol_out: str):
-        return None
-
-    @property
-    def test_sets(self):
-        return {}
+    def connections(self):
+        return {
+            'T': {'m', 'σ'}
+        }
 
     @property
     def equations(self):
-        return ["t-mo"]
+        return ["T-mσ"]

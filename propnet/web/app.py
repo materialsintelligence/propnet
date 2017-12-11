@@ -4,6 +4,10 @@ import dash_html_components as html
 
 from dash.dependencies import Input, Output
 
+# these two imports may be removed in future
+from flask import request
+from urllib.parse import urlparse
+
 from propnet import log_stream
 from propnet.web.app_model import model_layout, models_index
 from propnet.web.app_property import property_layout, properties_index
@@ -16,9 +20,10 @@ from propnet.core.graph import Propnet
 
 app = dash.Dash()
 server = app.server
-app.config.supress_callback_exceptions = True
+app.config.supress_callback_exceptions = True  # TODO: remove this?
 app.scripts.config.serve_locally = True
 app.title = "The Hitchhikers Guide to Materials Science"
+route = dcc.Location(id='url', refresh=False)
 
 g = Propnet().graph
 graph_data = graph_conversion(g)
@@ -29,20 +34,6 @@ graph_component = html.Div(id='graph', children=[
         width=800,
         height=350
 )], className='box')
-
-
-# display corresponding content when node clicked
-@app.callback(
-    Output('url', 'pathname'),
-    [Input('propnet-graph', 'requestContent')]
-)
-def show_content_for_selected_node(node):
-    if node in all_property_names:
-        return '/property/{}'.format(node)
-    elif node in all_model_names:
-        return '/model/{}'.format(node)
-    else:
-        return '/'
 
 # highlight node for corresponding content
 @app.callback(
@@ -55,6 +46,26 @@ def hightlight_node_for_content(pathname):
         return path_info['value']
     else:
         return 'none'
+
+
+# display corresponding content when node clicked
+@app.callback(
+    Output('url', 'pathname'),
+    [Input('propnet-graph', 'requestContent')]
+)
+def show_content_for_selected_node(node):
+    if not node:
+        # This is a hack to get around a circular dependency
+        # It is not nice!
+        # It should be replaced.
+        requesting_path = request.environ.get('HTTP_REFERER')
+        return urlparse(requesting_path).path
+    if node in all_property_names:
+        return '/property/{}'.format(node)
+    elif node in all_model_names:
+        return '/model/{}'.format(node)
+    else:
+        return '/'
 
 # home page
 index = html.Div([
@@ -92,7 +103,7 @@ Propnet initialization log:
 
 # header
 app.layout = html.Div(children=[
-    dcc.Location(id='url', refresh=False),
+    route,
     html.H3("The Hitchhikers Guide to Materials Science "),
     html.Br(),
     graph_component,

@@ -2,7 +2,7 @@ from propnet.core.models import AbstractAnalyticalModel
 from typing import *
 
 
-class GoldchmidtTolerance(AbstractAnalyticalModel):
+class GoldschmidtTolerance(AbstractAnalyticalModel):
 
     @property
     def title(self):
@@ -29,9 +29,13 @@ class GoldchmidtTolerance(AbstractAnalyticalModel):
             'r_anion': 'ionic_radius',
             'r_cation_A': 'ionic_radius',
             'r_cation_B': 'ionic_radius',
-            's': 'structure'
+            's': 'crystal_class'
         }
 
+    def constraints(self):
+        return {
+            'class': lambda x: x == 'perovskite',
+        }
     #@property
     #def inputs_are_val#id(self, input_props: Dict[str, Any]):
     #    #needs to check if material is perovskite

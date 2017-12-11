@@ -22,8 +22,7 @@ def model_layout(model_name):
     """
 
     # instantiate model from name
-    # TODO: horrendous hack, fix propnet.models.__init__
-    model = getattr(getattr(models, model_name), model_name)()
+    model = getattr(models, model_name)()
 
     if model.tags:
         tags = html.Ul(className="tags", children=[
@@ -34,7 +33,7 @@ def model_layout(model_name):
 
     badge = html.Div(className='double-val-label', children=[
         html.Span('model-id', className='model'),
-        html.Span('{}-rev{}'.format(model.__hash__(), model.revision))
+        html.Span('{}'.format(model.model_id))
     ])
 
 
@@ -87,21 +86,36 @@ def model_layout(model_name):
         html.H6('What this model does'),
         dcc.Markdown(model.description),
         # dcc.Markdown("Method: {}".format(model.method)),
+        html.H6('Dimensional analysis'),
         html.H6('Tags'),
         tags
     ])
 
-model_links = html.Div([
-    html.Div([
-        dcc.Link(model_name, href='/model/{}'.format(model_name)),
-        html.Br()
-    ])
-    for model_name in models.all_model_names
-])
+
+model_links = []
+for model_name in models.all_model_names:
+
+    # instantiate model from name
+    model = getattr(models, model_name)()
+
+    # text to display as link
+    link_text_1 = "[{}]".format(model.model_id)
+    link_text_2 = "{}".format(model.title)
+
+    model_links.append(
+        html.Div([
+            dcc.Link(link_text_1,
+                     href='/model/{}'.format(model_name)),
+            html.Span(' '),
+            dcc.Link(link_text_2,
+                     href='/model/{}'.format(model_name)),
+            html.Br()
+        ])
+    )
 
 models_index = html.Div([
     html.H5('Current models:'),
-    model_links,
+    html.Div(children=model_links),
     html.Br(),
     dcc.Link('< Back', href='/')
 ])

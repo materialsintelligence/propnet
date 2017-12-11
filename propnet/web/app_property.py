@@ -3,6 +3,9 @@ import dash_core_components as dcc
 
 from propnet.properties import all_property_names, PropertyType
 
+from pint import formatter
+#formatter(unit.dimensionality)
+
 # layouts for property detail pages
 
 def property_layout(property_name):
