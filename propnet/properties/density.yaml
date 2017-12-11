@@ -1,7 +1,8 @@
 name: density
 units:
 - 1.0
-- - [g/cm^3, 1.0]
+- - [gram, 1.0]
+  - [centimeter, -3.0]
 display_names: [Density]
 display_symbols: [/rho]
 dimension: 1

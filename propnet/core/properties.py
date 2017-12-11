@@ -54,11 +54,18 @@ class PropertyMetadata(MSONable):
         if type not in ('property', 'condition'):
             raise ValueError('Unsupported property type')
 
+        try:
+            units = ureg.Quantity.from_tuple(units)
+            # calling dimensionality explicitly checks units are defined in registry
+            units.dimensionality
+        except Exception as e:
+            raise ValueError('Problem loading units for {}: {}'.format(name, e))
+
         self.name = name
-        self.units = ureg.Quantity.from_tuple(units)
+        self.units = units
         self.display_names = display_names
         self.display_symbols = display_symbols
-        self.dimension = dimension
+        self.dimension = dimension  # TODO: rename to shape?
         self.test_value = test_value
         self.comment = comment
         self.type = type

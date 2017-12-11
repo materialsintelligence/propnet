@@ -2,7 +2,7 @@ name: strengthening_coefficient
 units:
 - 1.0
 - - [megapascal, 1.0]
-- - [meter, 0.5]
+  - [meter, 0.5]
 display_names: [Strengthening Coefficient, Hall-Petch Coefficient]
 display_symbols: [k]
 dimension: 1

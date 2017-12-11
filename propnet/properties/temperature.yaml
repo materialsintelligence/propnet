@@ -1,7 +1,7 @@
 name: temperature
 units:
 - 1.0
-- - [Kelvin, 1.0]
+- - [kelvin, 1.0]
 display_names: [Temperature]
 display_symbols: [T]
 dimension: 1

@@ -1,6 +1,9 @@
 import unittest
 from propnet.core.properties import *
 
+# these are properties distributed with Propnet as
+# yaml files in the properties folder
+from propnet.properties import *
 
 class PropertiesTest(unittest.TestCase):
 
@@ -28,3 +31,9 @@ class PropertiesTest(unittest.TestCase):
 
         self.assertEqual(sample_property_type,
                          PropertyMetadata.from_dict(sample_property_type_dict))
+
+    def testAllProperties(self):
+
+        all_properties = {name: PropertyType[name] for name in all_property_names}
+
+        self.assertEqual(str(all_properties['density'].value.units), '1.0 gram / centimeter ** 3')

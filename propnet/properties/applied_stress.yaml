@@ -2,7 +2,7 @@ name: applied_stress
 units:
 - 1.0
 - - [gigapascal, 1]
-display_names: ['Applied Stress']
+display_names: ['Applied stress']
 display_symbols: ['/sigma']
 dimension: 1
 test_value: 2.2
