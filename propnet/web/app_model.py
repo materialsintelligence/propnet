@@ -1,7 +1,10 @@
 import dash_html_components as html
 import dash_core_components as dcc
 
-from propnet.models import all_model_names, EmpiricalBandGapSetyawan
+from propnet.properties import get_display_name
+from propnet.web.utils import references_to_markdown
+
+import propnet.models as models
 
 # layouts for model detail pages
 
@@ -11,56 +14,81 @@ def model_image_component(model):
     return html.Img(src=url, style={'width': 150, 'border-radius':'50%'})
 
 def model_layout(model_name):
+    """
+    Create a Dash layout for a provided model.
 
-    # for test
-    model = EmpiricalBandGapSetyawan.EmpiricalBandGapSetyawan()
+    :param model: an instance of an AbstractModel subclass
+    :return: Dash layout
+    """
 
-    title = html.Div(className='row', children=[
-        html.Div(className='three columns', children=[model_image_component(model)]),
-        html.Div(className='one columns', children=[]),
-        html.Div(className='eight columns', children=[
-            html.H3(model.title),
-            html.H5('model-id: {}-rev{}'.format(model.__hash__(), model.revision),
-                    style={'font-family': 'monospace'})])])
-
-    if model.references:
-        import io
-        import six
-        import pybtex.database.input.bibtex
-        import pybtex.plugin
-
-        pybtex_style = pybtex.plugin.find_plugin('pybtex.style.formatting', 'plain')()
-        pybtex_html_backend = pybtex.plugin.find_plugin('pybtex.backends', 'markdown')()
-        pybtex_parser = pybtex.database.input.bibtex.Parser()
-
-        my_bibtex = "\n".join(model.references)
-
-        data = pybtex_parser.parse_stream(six.StringIO(my_bibtex))
-        data_formatted = pybtex_style.format_entries(six.itervalues(data.entries))
-        output = io.StringIO()
-        pybtex_html_backend.write_to_stream(data_formatted, output)
-        md = output.getvalue()
-
-        references = dcc.Markdown(md)
-    else:
-        # TODO: append to list instead ...
-        references = None
+    # instantiate model from name
+    # TODO: horrendous hack, fix propnet.models.__init__
+    model = getattr(getattr(models, model_name), model_name)()
 
     if model.tags:
-
         tags = html.Ul(className="tags", children=[
                 html.Li(tag, className="tag") for tag in model.tags
         ])
     else:
+        tags = None
+
+    badge = html.Div(className='double-val-label', children=[
+        html.Span('model-id', className='model'),
+        html.Span('{}-rev{}'.format(model.__hash__(), model.revision))
+    ])
+
+
+    title = html.Div(className='row', children=[
+        html.Div(className='three columns', style={'text-align': 'right'}, children=[
+            model_image_component(model)
+        ]),
+        html.Div(className='nine columns', children=[
+            html.H3(model.title),
+            badge
+        ])
+    ])
+
+    if model.references:
+        references = dcc.Markdown(references_to_markdown(model.references))
+    else:
+        # TODO: append to list instead ...
         references = None
 
+    symbols_layout = html.Div(children=[
+        html.Div(className='row', children=[
+            html.Div(className='two columns', children=[str(symbol)]),
+            html.Div(className='ten columns', children=[dcc.Link(get_display_name(property_name),
+                                                                 href='/property/{}'.format(property_name))])
+        ])
+        for symbol, property_name in model.symbol_mapping.items()
+    ])
+
+    # TODO: change equations to property
+    equations_layout = html.Div(children=[
+        html.Div(className='row', children=[equation])
+        for equation in model.equations
+    ])
+
+    #method = model.method TODO: add below description
+
+    # TODO
+    breadcrumb = html.Div()
+
     return html.Div([
+        breadcrumb,
         title,
         html.Br(),
-        tags,
-        html.Br(),
         html.H6('References'),
-        references
+        references,
+        html.H6('Symbols'),
+        symbols_layout,
+        html.H6('Equations'),
+        equations_layout,
+        html.H6('What this model does'),
+        dcc.Markdown(model.description),
+        # dcc.Markdown("Method: {}".format(model.method)),
+        html.H6('Tags'),
+        tags
     ])
 
 model_links = html.Div([
@@ -68,10 +96,10 @@ model_links = html.Div([
         dcc.Link(model_name, href='/model/{}'.format(model_name)),
         html.Br()
     ])
-    for model_name in all_model_names
+    for model_name in models.all_model_names
 ])
 
-list_models = html.Div([
+models_index = html.Div([
     html.H5('Current models:'),
     model_links,
     html.Br(),
