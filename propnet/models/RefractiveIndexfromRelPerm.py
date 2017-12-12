@@ -6,21 +6,28 @@ class RefractiveIndexfromRelPerm(AbstractAnalyticalModel):
 
     @property
     def title(self):
-        return "Relate Refractive Index with relative permittivity and relative permeability of a material."
+        return "Refractive index, relative permeability and permittivity"
 
     @property
     def tags(self):
-        return ["stub"]
+        return ["optical"]
 
     @property
     def description(self):
-        return """
-        The refractive index is the geometric mean of the relative permittivity and the relative permeability.
+        return """The refractive index is the geometric mean of the relative permittivity and the relative permeability.
         """
 
     @property
     def references(self):
-        return []
+        return """
+        
+        @misc{refractive2017,
+        title={Refractive index},
+        url={https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability},
+        year={2017},
+        month={Dec}}
+        
+        """
 
     @property
     def symbol_mapping(self):
@@ -31,20 +38,10 @@ class RefractiveIndexfromRelPerm(AbstractAnalyticalModel):
         }
 
     @property
-    def constraint_properties(self):
-        return None
-
-    @property
-    def inputs_are_valid(self, input_props: Dict[str, Any]):
-        return True
-
-    @property
-    def output_conditions(self, symbol_out: str):
-        return None
-
-    @property
-    def test_sets(self):
-        return {}
+    def connections(self):
+        return {
+            'n': {'Ur', 'Er'}
+        }
 
     @property
     def equations(self):

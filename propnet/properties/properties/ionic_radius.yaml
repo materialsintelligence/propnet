@@ -1,0 +1,9 @@
+name: ionic_radius
+units:
+- 1.0
+- - [picometer, 1.0]
+display_names: [Ionic radius]
+display_symbols: [r]
+dimension: 1
+test_value: 116
+comment: ''

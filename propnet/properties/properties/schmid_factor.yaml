@@ -1,0 +1,10 @@
+name: schmid_factor
+units:
+- 1.0
+- []
+display_names: ['Schmid factor']
+display_symbols: ['m']
+dimension: 1
+test_value: .4
+comment: ''
+type: condition

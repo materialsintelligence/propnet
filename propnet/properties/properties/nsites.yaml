@@ -1,0 +1,9 @@
+name: nsites
+units:
+- 1.0
+- []
+display_names: ['Number of atomic sites']
+display_symbols: []
+dimension: 1
+test_value: 8
+comment: ''

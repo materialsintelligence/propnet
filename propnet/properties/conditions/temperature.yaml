@@ -1,0 +1,10 @@
+name: temperature
+units:
+- 1.0
+- - [kelvin, 1.0]
+display_names: [Temperature]
+display_symbols: [T]
+dimension: 1
+test_value: 346
+comment: ''
+type: condition

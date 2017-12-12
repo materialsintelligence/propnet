@@ -1,9 +1,0 @@
-name: electronic_thermal_conductivity
-units:
-- 1.0
-- - [W/(m*K), 1.0]
-display_names: ['Electronic contribution to thermal conductivity']
-display_symbols: ['\kappa_{e}']
-dimension: 1
-test_value: 1.6
-comment: ''

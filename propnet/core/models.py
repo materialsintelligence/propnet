@@ -1,23 +1,21 @@
-from abc import ABCMeta, abstractmethod
-from functools import wraps
-from propnet.properties import PropertyType
-from propnet.conditions import ConditionType
-from propnet import logger
 import sympy as sp
 
 # typing information, for type hinting only
 from typing import *
+
+from abc import ABCMeta, abstractmethod
+from functools import wraps
+from hashlib import sha256
+
+from propnet.properties import PropertyType
+from propnet import logger
 from propnet import ureg
 
 # TODO: add pint integration
 # TODO: decide on interface for conditions, assumptions etc.
 # TODO: decide on interface for multiple-material models.
 
-
 class AbstractModel(metaclass=ABCMeta):
-    """
-    azx
-    """
 
     def __init__(self,
                  strict: bool = False):
@@ -33,25 +31,23 @@ class AbstractModel(metaclass=ABCMeta):
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
             try:
-                p_type = PropertyType.get(name)
-            except:
-                p_type = None
-            try:
-                c_type = ConditionType.get(name)
-            except:
-                c_type = None
-            if p_type is None and c_type is None:
-                raise ValueError('No Matching Property or Condition found for model input: {}\n'
-                                 'Please check your property names in your symbol mappings, are they all valid?'
-                                 .format(name))
-            elif not (p_type is None) and not (c_type is None):
-                raise ValueError('A Matching Property and a Matching Condition were found for model input: {}\n'
-                                 'Please check your property names in your symbol mappings, are they all valid?'
-                                 .format(name))
-            elif not (p_type is None):
-                self.unit_mapping[symbol] = p_type.get(name).value.units
-            else:
-                self.unit_mapping[symbol] = c_type.get(name).value.units
+                self.unit_mapping[symbol] = {symbol: PropertyType[name].value.units
+                                             for symbol, name in self.symbol_mapping.items()}
+            except Exception as e:
+                raise ValueError('Please check your property names in your symbol mapping, '
+                                 'for property {} and model {}, are they all valid? '
+                                 'Exception: {}'
+                                 .format(name, self.__class__.__name__, e))
+
+        #if not len(self.test_sets):
+        #    logger.warning('No test sets have been defined for model: {}'
+        #                    .format(self.__class__.__name__))
+
+        #if not self.outputs or not self.connections:
+        #    raise ValueError('Model has to have connections (input/output symbols) specified.')
+
+        #if len(self.title) > 80:
+        #    logger.warning('Title is too long for model: {}'.format(self.__class__.__name__))
 
     @property
     @abstractmethod
@@ -68,6 +64,17 @@ class AbstractModel(metaclass=ABCMeta):
         Add tags to your model as a list of strings.
         """
         pass
+
+    @property
+    def revision(self):
+        """
+        The current revision of the model.
+
+        Override for subsequent revisions to model if model
+        functionality changes.
+        :return:
+        """
+        return 1
 
     @property
     @abstractmethod
@@ -100,11 +107,10 @@ class AbstractModel(metaclass=ABCMeta):
         pass
 
     @property
-    @abstractmethod
     def connections(self) -> Dict[str, Set[str]]:
         """
-        Define your model inputs and outputs in terms of symbols
-        listed in the symbol_mapping method.
+        Define your model inputs and outputs explicitly in terms
+        of symbols listed in the symbol_mapping method.
 
         The model will not attempt to solve for an output
         unless it is marked as a valid output.
@@ -114,38 +120,36 @@ class AbstractModel(metaclass=ABCMeta):
 
         :return: a dict of output symbols to a set of input symbols
         """
-        pass
+        return None
 
-    @property
-    @abstractmethod
-    def constraint_properties(self) -> Set[str]:
-        """
-        Define additional model inputs, not included in connections,
-        that must be examined for the model to ascertain whether it
-        is valid in the given context.
+    #@property
+    #def constraint_properties(self) -> Set[str]:
+    #    """
+    #    Define additional model inputs, not included in connections,
+    #    that must be examined for the model to ascertain whether it
+    #    is valid in the given context.
 
-        These inputs should be specified in terms of a set of symbols.
+    #    These inputs should be specified in terms of a set of symbols.
 
-        :return: a set of symbols required for the model to check the
-                 assumptions upon which it is based.
-        """
-        pass
+    #    :return: a set of symbols required for the model to check the
+    #             assumptions upon which it is based.
+    #    """
+    #    return set()
 
-    @abstractmethod
-    def inputs_are_valid(self, input_props: Dict[str, Any]) -> bool:
-        """
-        Given a set of symbols and values (given by input_props) are fed
-        into the model, returns whether the input values meet the assumptions
-        required for the model to be valid.
+    #def inputs_are_valid(self, input_props: Dict[str, Any]) -> bool:
+    #    """
+    #    Given a set of symbols and values (given by input_props) are fed
+    #    into the model, returns whether the input values meet the assumptions
+    #    required for the model to be valid.
 
-        These input values include values of inputs specified in the connections
-        method as well as values of inputs specified in the constraint_properties
-        method.
+    #    These input values include values of inputs specified in the connections
+    #    method as well as values of inputs specified in the constraint_properties
+    #    method.
 
-        :return: a boolean value (T/F) signaling whether the combination of
-                 model inputs and constraints are valid for the given model.
-        """
-        pass
+    #    :return: a boolean value (T/F) signaling whether the combination of
+    #             model inputs and constraints are valid for the given model.
+    #    """
+    #    return True
 
     @abstractmethod
     def evaluate(self,
@@ -163,27 +167,46 @@ class AbstractModel(metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
-    def output_conditions(self, symbol_out: str) -> List[Any]:
-        """
-        Given the model is used to calculate the output symbol, symbol_out,
-        returns a list of conditions that apply to the output object.
-
-        :param symbol_out: symbol for your desired output
-        :return: list of additional conditions that apply to the output
-        """
-        pass
+    #def output_conditions(self, symbol_out: str) -> List[Any]:
+    #    """
+    #    Given the model is used to calculate the output symbol, symbol_out,
+    #    returns a list of conditions that apply to the output object.
+#
+    #    :param symbol_out: symbol for your desired output
+    #    :return: list of additional conditions that apply to the output
+    #    """
+    #    return []
 
     @property
-    @abstractmethod
-    def test_sets(self) -> List[Tuple[str, ureg.Quantity]]:
+    def test_sets(self) -> List[Tuple[str, Any]]:
         """
         Add test sets to your model. These are used by unit testing,
         and also when testing the model interactively. A test set is
         a dict with keys that correspond to your symbols and values
         that are a (value, unit) tuple.
         """
-        pass
+        return []
+
+    @property
+    def _test_sets(self) -> List[Tuple[str, ureg.Quantity]]:
+        """
+        Parses test_sets into Quantities if they've been supplied
+        as strings or tuples, e.g. "1 GPa" or (1, "GPa")
+        :return:
+        """
+        return NotImplementedError
+
+    def __hash__(self):
+        """
+        A unique model identifier, function of model class name.
+        :return (str):
+        """
+        return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
+
+    @property
+    def model_id(self):
+        return "{}{}".format(self.__hash__(),
+                             ' rev-{}'.format(self.revision) if self.revision > 1 else '')
 
     def test(self) -> bool:
         """
@@ -192,28 +215,6 @@ class AbstractModel(metaclass=ABCMeta):
         :return: True if tests pass.
         """
         return NotImplementedError
-
-        # TODO: add method to test a model interactively, that can also be used in unit tests
-
-    #    for test_set in self.test_sets:
-
-    #        for output in self.valid_outputs:
-
-    #            if output in test_set.keys():
-
-    #                correct_output = ureg.Quantity(test_set[output][0],
-    #                                               test_set[output][1])
-
-    #                symbols_and_values_in = test_set.copy()
-    #                del symbols_and_values_in[output]
-    #                for k, v in symbols_and_values_in.items():
-    #                    symbols_and_values_in[k] = ureg.Quantity(v[0], v[1])
-
-    #                calculated_output = self.evaluate(symbols_and_values_in, output)
-
-    #                assert correct_output==calculated_output,\
-    #                    "Test failed for test set: {}".format(test_set)
-    #    return True
 
 
 class AbstractAnalyticalModel(AbstractModel):
@@ -244,28 +245,28 @@ class AbstractAnalyticalModel(AbstractModel):
         """
         pass
 
-    @property
-    def connections(self) -> Dict[str, Set[str]]:
-        """
-        Implements the abstract connections method for analytical models assuming that
-        the equations are formulated such that every variable can be solved if all
-        other variables are known.
-        Please override this method in your particular subclass if this is not the case.
+    #@property
+    #def connections(self) -> Dict[str, Set[str]]:
+    #    """
+    #    Implements the abstract connections method for analytical models assuming that
+    #    the equations are formulated such that every variable can be solved if all
+    #    other variables are known.
+    #    Please override this method in your particular subclass if this is not the case.
 
-        :return: a dict of output symbols to a set of input symbols
-        """
-        symbols = list(self.symbol_mapping.keys())
-        to_return = {}
-        for i in range(0, len(symbols)):
-            inputs = [None]*(len(symbols)-1)
-            k = 0
-            for j in range(0, len(symbols)):
-                if j == i:
-                    continue
-                inputs[k] = symbols[j]
-                k += 1
-            to_return[i] = Set(inputs)
-        return to_return
+    #    :return: a dict of output symbols to a set of input symbols
+    #    """
+    #    symbols = list(self.symbol_mapping.keys())
+    #    to_return = {}
+    #    for i in range(0, len(symbols)):
+    #        inputs = [None]*(len(symbols)-1)
+    #        k = 0
+    #        for j in range(0, len(symbols)):
+    #            if j == i:
+    #                continue
+    #            inputs[k] = symbols[j]
+    #            k += 1
+    #        to_return[i] = set(inputs)
+    #    return to_return
 
     def evaluate(self,
                  symbols_and_values_in: Dict[str, ureg.Quantity],

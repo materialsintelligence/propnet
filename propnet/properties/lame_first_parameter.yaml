@@ -1,9 +1,0 @@
-name: lame_first_parameter
-units:
-- 1.0
-- - [gigapascal, 1.0]
-display_names: [Lamé's first parameter]
-display_symbols: [\lambda]
-dimension: 1
-test_value: 0.0
-comment: ''

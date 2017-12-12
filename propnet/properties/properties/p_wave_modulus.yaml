@@ -1,0 +1,9 @@
+name: p_wave_modulus
+units:
+- 1.0
+- - [gigapascal, 1.0]
+display_names: [P-wave modulus]
+display_symbols: [M]
+dimension: 1
+test_value: 10.0
+comment: ''

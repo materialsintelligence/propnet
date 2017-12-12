@@ -1,0 +1,10 @@
+name: pretty_formula
+units:
+- 1.0
+- []
+display_names: ['Formula']
+display_symbols: []
+dimension: 1
+test_value: 'BaTiO3'
+comment: ''
+type: object

@@ -1,0 +1,9 @@
+name: band_gap_pbe
+units:
+- 1.0
+- - [electron_volt, 1.0]
+display_names: ["Kohn-Sham gap (PBE)"]
+display_symbols: ["E_{g, PBE}"]
+dimension: 1
+test_value: 0.4
+comment: ''

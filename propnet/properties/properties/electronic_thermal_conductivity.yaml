@@ -1,0 +1,11 @@
+name: electronic_thermal_conductivity
+units:
+- 1.0
+- - [watt, 1.0]
+  - [meter, -1.0]
+  - [kelvin, -1.0]
+display_names: ['Thermal conductivity, electronic contribution']
+display_symbols: ['\kappa_{e}']
+dimension: 1
+test_value: 1.6
+comment: ''
