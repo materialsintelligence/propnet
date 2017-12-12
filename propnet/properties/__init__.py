@@ -23,6 +23,8 @@ for f in property_metadata_files:
     try:
         metadata = PropertyMetadata.from_dict(loadfn(f))
         property_metadata[metadata.name] = metadata
+        if "{}.yaml".format(metadata.name) not in f:
+            raise ValueError('Name/filename mismatch in {}'.format(f))
     except Exception as e:
         logger.error('Failed to parse {}, {}.'.format(path.basename(f), e))
 
@@ -34,5 +36,12 @@ PropertyType: Enum = Enum('PropertyType', [(k, v) for k, v in property_metadata.
 all_property_names: Tuple[str] = tuple(p for p in property_metadata.keys())
 
 def get_display_name(property_name):
-    """Convenience function """
+    """Convenience function
+
+    Args:
+      property_name: 
+
+    Returns:
+
+    """
     return PropertyType[property_name].value.display_names[0]

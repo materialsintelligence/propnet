@@ -6,9 +6,7 @@ from pybtex.database.input.bibtex import Parser
 from monty.json import MSONable
 
 class PropertyMetadata(MSONable):
-    """
-    Class storing the complete description of a property.
-    """
+    """Class storing the complete description of a property."""
 
     __slots__ = ['name', 'units', 'display_names', 'display_symbols',
                  'dimension', 'test_value', 'comment', 'type']
@@ -74,9 +72,7 @@ class PropertyMetadata(MSONable):
 
     @property
     def dimension_as_string(self):
-        """
-        :return: dimension of property (np.shape) as a human-readable string
-        """
+        """:return: dimension of property (np.shape) as a human-readable string"""
 
         if len(self.dimension) == 1 and self.dimension[0] == 1:
             return 'scalar'
@@ -90,6 +86,7 @@ class PropertyMetadata(MSONable):
 
     @property
     def unit_as_string(self):
+        """ """
 
         # self.units has both the units and (sometimes) a
         # prefactor (its magnitude)
@@ -105,9 +102,7 @@ class PropertyMetadata(MSONable):
 
 
 class Property:
-    """
-    Class storing the value of a property in a given context.
-    """
+    """Class storing the value of a property in a given context."""
 
     def __init__(self, type: PropertyMetadata, value: Any, comment: str,
                  source_ids: List[Tuple[str, str]], conditions: Dict[str, Any]):

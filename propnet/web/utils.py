@@ -16,10 +16,15 @@ from monty.serialization import loadfn
 #aesthetics = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml')
 
 def graph_conversion(graph, selected_node=None, highlighted_nodes=None):
-    """
-    Utility function to
-    :param graph: from Propnet.graph
-    :return:
+    """Utility function to
+
+    Args:
+      graph: from Propnet.graph
+      selected_node:  (Default value = None)
+      highlighted_nodes:  (Default value = None)
+
+    Returns:
+
     """
 
     nodes = []
@@ -87,11 +92,15 @@ def graph_conversion(graph, selected_node=None, highlighted_nodes=None):
 
 
 def references_to_markdown(references):
-    """
-    Utility function to convert a BibTeX string containing
+    """Utility function to convert a BibTeX string containing
     references into a Markdown string.
-    :param references: BibTeX string
-    :return: Markdown string
+
+    Args:
+      references: BibTeX string
+
+    Returns:
+      Markdown string
+
     """
 
     pybtex_style = find_plugin('pybtex.style.formatting', 'plain')()
@@ -100,6 +109,16 @@ def references_to_markdown(references):
 
     # hack to not print labels (may remove this later)
     def write_entry(self, key, label, text):
+        """
+
+        Args:
+          key: 
+          label: 
+          text: 
+
+        Returns:
+
+        """
         self.output(u'%s  \n' % text)
     pybtex_md_backend.write_entry = write_entry
     pybtex_md_backend = pybtex_md_backend()
@@ -118,21 +137,28 @@ def references_to_markdown(references):
 def uri_to_breadcrumb_layout(uri):
     """
 
-    :param uri:
-    :return:
+    Args:
+      uri: return:
+
+    Returns:
+
     """
     return
 
 
 def parse_path(pathname):
-    """
-    Utility function to parse URL path for routing purposes etc.
+    """Utility function to parse URL path for routing purposes etc.
     This function exists because the path has to be parsed in
     a few places for callbacks.
 
-    :param path: path from URL
-    :return: dictionary containing 'mode' ('property', 'model' etc.),
-    'value' (name of property etc.)
+    Args:
+      path: path from URL
+      pathname: 
+
+    Returns:
+      dictionary containing 'mode' ('property', 'model' etc.),
+      'value' (name of property etc.)
+
     """
 
     if pathname == '/' or pathname is None:

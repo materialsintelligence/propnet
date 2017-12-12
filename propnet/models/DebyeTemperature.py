@@ -1,26 +1,23 @@
 from propnet.core.models import AbstractModel
 
-from pymatgen.transformations.standard_transformations import AutoOxiStateDecorationTransformation
+from pymatgen.analysis.elasticity import ElasticTensor
 
-class TransformationOxiStructure(AbstractModel):
+class DebyeTemperature(AbstractModel):
     """ """
 
     @property
     def title(self):
         """ """
-        return "Decorate crystal structure with oxidation state"
+        return "Calculate Debye temperature"
 
     @property
     def tags(self):
         """ """
-        return ["transformations"]
+        return ["thermal"]
 
     @property
     def description(self):
-        return """This model attempts to work out what oxidation state is on each crystallographic
-        site using the materials analysis code pymatgen.
-
-        """
+        return """This model currently uses the implementation in pymatgen."""
 
     @property
     def references(self):
@@ -31,8 +28,9 @@ class TransformationOxiStructure(AbstractModel):
     def symbol_mapping(self):
         """ """
         return {
-            's': 'structure',
-            's_oxi': 'structure_oxi'
+            'C_ij': 'elastic_tensor_voigt',
+            'structure': 'structure',
+            'd': 'debye_temperature'
         }
 
 
@@ -40,7 +38,7 @@ class TransformationOxiStructure(AbstractModel):
     def connections(self):
         """ """
         return {
-            's_oxi': {'s'}
+            'd': {'C_ij', 'structure'}
         }
 
     def evaluate(self,
@@ -56,11 +54,13 @@ class TransformationOxiStructure(AbstractModel):
 
         """
 
-        s = symbols_and_values_in['s']
+        structure = symbols_and_values_in['structure']
+        cij = symbols_and_values_in['C_ij']
 
-        trans = AutoOxiStateDecorationTransformation()
-        s_oxi = trans.apply_transformation(s)
+        elastic_tensor = ElasticTensor.from_voigt(cij)
+
+        debye_temp = elastic_tensor.debye_temperature(structure)
 
         return {
-            's_oxi': s_oxi
+            'd': debye_temp
         }

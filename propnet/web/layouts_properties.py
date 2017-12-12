@@ -9,6 +9,14 @@ from pint import formatter
 # layouts for property detail pages
 
 def property_layout(property_name):
+    """
+
+    Args:
+      property_name: 
+
+    Returns:
+
+    """
 
     property_metadata = PropertyType[property_name].value
 

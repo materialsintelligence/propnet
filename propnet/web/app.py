@@ -33,7 +33,8 @@ graph_component = html.Div(id='graph', children=[
         graphData=graph_data,
         width=800,
         height=350
-)], className='box')
+    )], className='box')
+
 
 # highlight node for corresponding content
 @app.callback(
@@ -41,11 +42,20 @@ graph_component = html.Div(id='graph', children=[
     [Input('url', 'pathname')]
 )
 def hightlight_node_for_content(pathname):
+    """
+
+    Args:
+      pathname: 
+
+    Returns:
+
+    """
     path_info = parse_path(pathname)
     if path_info and path_info['value']:
         return path_info['value']
     else:
         return 'none'
+
 
 # display corresponding content when node clicked
 @app.callback(
@@ -53,6 +63,14 @@ def hightlight_node_for_content(pathname):
     [Input('propnet-graph', 'requestContent')]
 )
 def show_content_for_selected_node(node):
+    """
+
+    Args:
+      node: 
+
+    Returns:
+
+    """
     if not node:
         # This is a hack to get around a circular dependency
         # It is not nice!
@@ -69,19 +87,21 @@ def show_content_for_selected_node(node):
     else:
         return '/'
 
+
+layout_menu = html.Div(style={'textAlign': 'center'}, children=[
+    dcc.Link('All Properties', href='/property'),
+    html.Span(' • '),
+    dcc.Link('All Models', href='/model'),
+    html.Span(' • '),
+    dcc.Link('Load Material'),
+    html.Span(' • '),
+    dcc.Link('Developer Tools'),
+    html.Span(' • '),
+    dcc.Link('Fundamental Constants')
+])
+
 # home page
 index = html.Div([
-    html.Div(style={'textAlign': 'center'}, children=[
-        dcc.Link('All Properties', href='/property'),
-        html.Span(' • '),
-        dcc.Link('All Models', href='/model'),
-        html.Span(' • '),
-        dcc.Link('Load Material'),
-        html.Span(' • '),
-        dcc.Link('Developer Tools'),
-        html.Span(' • '),
-        dcc.Link('Fundamental Constants')
-    ]),
     html.Br(),
     dcc.Markdown('''
 **Under active development, pre-alpha.**
@@ -110,6 +130,8 @@ app.layout = html.Div(children=[
     html.Br(),
     graph_component,
     html.Br(),
+    layout_menu,
+    html.Br(),
     html.Div(id='page-content')
 ], style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 50})
 
@@ -121,8 +143,10 @@ app.css.append_css({
 # math rendering
 # TODO: plot.ly uses MathJax too; we're probably loading this twice unnecessarily
 app.scripts.append_script({
-    'external_url': 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML'
+    'external_url': 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX'
+                    '-MML-AM_CHTML'
 })
+
 
 # routing, current routes defined are:
 # / for home page
@@ -133,6 +157,14 @@ app.scripts.append_script({
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
+    """
+
+    Args:
+      pathname: 
+
+    Returns:
+
+    """
 
     path_info = parse_path(pathname)
 
@@ -151,6 +183,7 @@ def display_page(pathname):
             return '404'
     else:
         return index
+
 
 if __name__ == '__main__':
     app.run_server(debug=False)

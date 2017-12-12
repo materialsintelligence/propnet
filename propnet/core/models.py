@@ -16,6 +16,7 @@ from propnet import ureg
 # TODO: decide on interface for multiple-material models.
 
 class AbstractModel(metaclass=ABCMeta):
+    """ """
 
     def __init__(self,
                  strict: bool = False):
@@ -52,73 +53,77 @@ class AbstractModel(metaclass=ABCMeta):
     @property
     @abstractmethod
     def title(self) -> str:
-        """
-        Add a title to your model.
-        """
+        """Add a title to your model."""
         pass
 
     @property
     @abstractmethod
     def tags(self) -> List[str]:
-        """
-        Add tags to your model as a list of strings.
-        """
+        """Add tags to your model as a list of strings."""
         pass
 
     @property
     def revision(self):
-        """
-        The current revision of the model.
-
+        """The current revision of the model.
+        
         Override for subsequent revisions to model if model
         functionality changes.
         :return:
+
+        Args:
+
+        Returns:
+
         """
         return 1
 
     @property
     @abstractmethod
     def description(self) -> str:
-        """
-        Add a description to your model as a multi-line string.
-        """
+        """Add a description to your model as a multi-line string."""
         pass
 
     @property
     @abstractmethod
     def references(self) -> Optional[List[str]]:
-        """
-        :return: A list of references as BibTeX strings
-        """
+        """:return: A list of references as BibTeX strings"""
         pass
 
     @property
     @abstractmethod
     def symbol_mapping(self) -> Dict[str, str]:
-        """
-        Map the symbols used in your model to their canonical property
+        """Map the symbols used in your model to their canonical property
         names. Keys are symbols, values are canonical property names.
-
+        
         Include mappings for all required inputs as well as conditions
         that must be checked for the model to function property.
-
+        
         Because this is a dictionary, each symbol must be unique.
+
+        Args:
+
+        Returns:
+
         """
         pass
 
     @property
     def connections(self) -> Dict[str, Set[str]]:
-        """
-        Define your model inputs and outputs explicitly in terms
+        """Define your model inputs and outputs explicitly in terms
         of symbols listed in the symbol_mapping method.
-
+        
         The model will not attempt to solve for an output
         unless it is marked as a valid output.
-
+        
         Keys represent  potential output symbols,
         values represent a set of input symbols.
-
+        
         :return: a dict of output symbols to a set of input symbols
+
+        Args:
+
+        Returns:
+
         """
         return None
 
@@ -155,15 +160,21 @@ class AbstractModel(metaclass=ABCMeta):
     def evaluate(self,
                  symbols_and_values_in: Dict[str, ureg.Quantity],
                  symbol_out: str) -> Optional[ureg.Quantity]:
-        """
-        Evaluate the model given a set of input values and a desired output.
+        """Evaluate the model given a set of input values and a desired output.
         Evaluate will never be called unless the suite of inputs and assumptions
         passes the inputs_are_valid method.
 
-        :param symbols_and_values_in: dict of symbols and their
-               associated values used as inputs
-        :param symbol_out: symbol for your desired output
-        :return: value the model produces as output.
+        Args:
+          symbols_and_values_in: dict of symbols and their
+        associated values used as inputs
+          symbol_out: symbol for your desired output
+          symbols_and_values_in: Dict[str: 
+          ureg.Quantity]: 
+          symbol_out: str: 
+
+        Returns:
+          value the model produces as output.
+
         """
         pass
 
@@ -179,20 +190,28 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     def test_sets(self) -> List[Tuple[str, Any]]:
-        """
-        Add test sets to your model. These are used by unit testing,
+        """Add test sets to your model. These are used by unit testing,
         and also when testing the model interactively. A test set is
         a dict with keys that correspond to your symbols and values
         that are a (value, unit) tuple.
+
+        Args:
+
+        Returns:
+
         """
         return []
 
     @property
     def _test_sets(self) -> List[Tuple[str, ureg.Quantity]]:
-        """
-        Parses test_sets into Quantities if they've been supplied
+        """Parses test_sets into Quantities if they've been supplied
         as strings or tuples, e.g. "1 GPa" or (1, "GPa")
         :return:
+
+        Args:
+
+        Returns:
+
         """
         return NotImplementedError
 
@@ -205,43 +224,59 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     def model_id(self):
+        """ """
         return "{}{}".format(self.__hash__(),
                              ' rev-{}'.format(self.revision) if self.revision > 1 else '')
 
     def test(self) -> bool:
-        """
-        Test the model using values in test_sets. Used by unit tests.
-
+        """Test the model using values in test_sets. Used by unit tests.
+        
         :return: True if tests pass.
+
+        Args:
+
+        Returns:
+
         """
         return NotImplementedError
 
 
 class AbstractAnalyticalModel(AbstractModel):
-    """
-    A Model for which we define all equations inside Propnet,
+    """A Model for which we define all equations inside Propnet,
     and can solve them symbolically using SymPy.
+
+    Args:
+
+    Returns:
+
     """
 
     @property
     def sp_vars(self) -> List[sp.Symbol]:
-        """
-        Helper method to convert all symbols of the AbstractAnalyticalModel instnace
+        """Helper method to convert all symbols of the AbstractAnalyticalModel instnace
         into SymPy variables.
         :return:
+
+        Args:
+
+        Returns:
+
         """
         return list((sp.Symbol(x) for x in self.symbol_mapping.keys()))
 
     @property
     @abstractmethod
     def equations(self) -> List[str]:
-        """
-        List of equations constituting the abstract model using symbols indicated in
+        """List of equations constituting the abstract model using symbols indicated in
         the provided symbol_mapping method.
         Each equation must be formatted as an expression equal to zero. The strings
-        returned must then reflect simply these expressions without an equals sign.
-        :return: List of strings giving valid sympy expressions equal to zero
-                 between the symbols.
+
+        Args:
+
+        Returns:
+          :return: List of strings giving valid sympy expressions equal to zero
+          between the symbols.
+
         """
         pass
 
@@ -271,11 +306,18 @@ class AbstractAnalyticalModel(AbstractModel):
     def evaluate(self,
                  symbols_and_values_in: Dict[str, ureg.Quantity],
                  symbol_out: str) -> Optional[ureg.Quantity]:
-        """
-        Solve provided equations using SymPy.
-        :param symbols_and_values_in: mapping of symbols to known values
-        :param symbol_out: desired output
-        :return: Sympy solution for the desired symbol_out
+        """Solve provided equations using SymPy.
+
+        Args:
+          symbols_and_values_in: mapping of symbols to known values
+          symbol_out: desired output
+          symbols_and_values_in: Dict[str: 
+          ureg.Quantity]: 
+          symbol_out: str: 
+
+        Returns:
+          Sympy solution for the desired symbol_out
+
         """
         ancillary_eqs = list((f'k-({v})' for (k, v) in symbols_and_values_in))        ###TODO extract float from pint? Discussion req. about pint integration here.
         vals_out = sp.solve(self.equations + ancillary_eqs)
@@ -294,13 +336,25 @@ class AbstractAnalyticalModel(AbstractModel):
 
 
 def validate_evaluate(func):
-    """
-    A wrapper function to check that models conform to spec.
-    :param func: an `evaluate` method
-    :return:
+    """A wrapper function to check that models conform to spec.
+
+    Args:
+      func: an `evaluate` method
+
+    Returns:
+
     """
     @wraps(func)
     def validate_evaluate_wrapper(self, symbols_and_values_in, symbol_out):
+        """
+
+        Args:
+          symbols_and_values_in: 
+          symbol_out: 
+
+        Returns:
+
+        """
 
         # check we support this combination of inputs/outputs
         inputs = set(symbols_and_values_in.keys())

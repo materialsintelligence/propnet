@@ -3,13 +3,16 @@ from typing import *
 
 
 class SchmidsLaw(AbstractAnalyticalModel):
+    """ """
 
     @property
     def title(self):
+        """ """
         return "Schmid's Law"
 
     @property
     def tags(self):
+        """ """
         return ["mechanical"]
 
     @property
@@ -22,17 +25,17 @@ class SchmidsLaw(AbstractAnalyticalModel):
     @property
     def references(self):
         return """
-        
-        @misc{schmid2017,
-        title={Schmid's law},
-        url={https://en.wikipedia.org/wiki/Schmid%27s_law},
-        year={2017},
-        month={Dec}}
-        
+          @misc{schmid2017,
+          title={Schmid's law},
+          url={https://en.wikipedia.org/wiki/Schmid%27s_law},
+          year={2017},
+          month={Dec}}
+
         """
 
     @property
     def symbol_mapping(self):
+        """ """
         return {
             'T': 'resolved_shear_stress',
             'm': 'schmid_factor',
@@ -41,10 +44,12 @@ class SchmidsLaw(AbstractAnalyticalModel):
 
     @property
     def connections(self):
+        """ """
         return {
             'T': {'m', 'σ'}
         }
 
     @property
     def equations(self):
+        """ """
         return ["T-mσ"]

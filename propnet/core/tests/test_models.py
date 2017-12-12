@@ -7,8 +7,10 @@ from propnet.core.models import *
 
 
 class AnalyticalModelTest(unittest.TestCase):
+    """ """
 
     def testInstantiateAllModels(self):
+        """ """
 
         models_to_test = []
 

@@ -4,27 +4,37 @@ from typing import *
 
 
 class ElasticComplianceVoigtConverter(AbstractModel):
+    """ """
 
     @property
     def title(self):
+        """ """
         return "Convert between elastic tensors and compliance tensors (in Voigt notation)"
 
     @property
     def tags(self):
+        """ """
         return ["stub", "mechanical"]
 
     @property
     def description(self):
-        return """
-        The compliance tensor is the inverse of elastic tensor.
+        """
+
+        Args:
+
+        Returns:
+          The compliance tensor is the inverse of elastic tensor.
+
         """
 
     @property
     def references(self):
+        """ """
         return []
 
     @property
     def symbol_mapping(self):
+        """ """
         return {
             'Cij': 'elastic_tensor_voigt',
             'Sij': 'compliance_tensor_voigt'
@@ -32,6 +42,7 @@ class ElasticComplianceVoigtConverter(AbstractModel):
 
     @property
     def connections(self):
+        """ """
         return {
             'Sij': {'Cij'},
             'Cij': {'Sij'}
@@ -39,15 +50,34 @@ class ElasticComplianceVoigtConverter(AbstractModel):
 
     @property
     def constraint_properties(self):
+        """ """
         return None
 
     def inputs_are_valid(self, input_props: Dict[str, Any]):
+        """
+
+        Args:
+          input_props: Dict[str: 
+          Any]: 
+
+        Returns:
+
+        """
         return True
 
     @validate_evaluate
     def evaluate(self,
                  symbols_and_values_in,
                  symbol_out):
+        """
+
+        Args:
+          symbols_and_values_in: 
+          symbol_out: 
+
+        Returns:
+
+        """
 
         if symbol_out == 'Cij':
 
@@ -62,8 +92,17 @@ class ElasticComplianceVoigtConverter(AbstractModel):
         return None
 
     def output_conditions(self, symbol_out: str):
+        """
+
+        Args:
+          symbol_out: str: 
+
+        Returns:
+
+        """
         return None
 
     @property
     def test_sets(self):
+        """ """
         return {}
