@@ -6,7 +6,7 @@ class IsMetallic(AbstractModel):
 
     @property
     def title(self):
-        return "Decorate crystal structure with oxidation state"
+        return "Determine if structure is metallic"
 
     @property
     def tags(self):
