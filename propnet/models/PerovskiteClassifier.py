@@ -24,7 +24,7 @@ class PerovskiteClassifier(AbstractModel):
     @property
     def symbol_mapping(self):
         return {
-            's': 'structure',
+            's': 'structure_oxi',
             'r_A': 'ionic_radius_a',
             'r_B': 'ionic_radius_b',
         }

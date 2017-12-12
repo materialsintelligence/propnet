@@ -15,7 +15,9 @@ from propnet.core.properties import PropertyMetadata
 # their names
 property_metadata: Dict[str, PropertyMetadata] = {}
 
-property_metadata_files: List[str] = glob(path.join(path.dirname(__file__), '../properties/*.yaml'))
+property_metadata_files: List[str] = glob(path.join(path.dirname(__file__),
+                                                    '../properties/**/*.yaml'),
+                                          recursive=True)
 
 for f in property_metadata_files:
     try:

@@ -9,8 +9,8 @@ from flask import request
 from urllib.parse import urlparse
 
 from propnet import log_stream
-from propnet.web.app_model import model_layout, models_index
-from propnet.web.app_property import property_layout, properties_index
+from propnet.web.layouts_models import model_layout, models_index
+from propnet.web.layouts_properties import property_layout, properties_index
 from propnet.models import all_model_names
 from propnet.properties import all_property_names
 
