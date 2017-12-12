@@ -1,0 +1,10 @@
+name: structure
+units:
+- 1.0
+- []
+display_names: ['Crystallographic structure']
+display_symbols: []
+dimension: 1
+comment: ''
+type: object
+test_value: 0

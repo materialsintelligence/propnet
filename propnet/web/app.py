@@ -47,7 +47,6 @@ def hightlight_node_for_content(pathname):
     else:
         return 'none'
 
-
 # display corresponding content when node clicked
 @app.callback(
     Output('url', 'pathname'),
@@ -60,7 +59,10 @@ def show_content_for_selected_node(node):
         # It should be replaced.
         requesting_path = request.environ.get('HTTP_REFERER')
         return urlparse(requesting_path).path
-    if node in all_property_names:
+    print(node)
+    if node == 'home':
+        return '/'
+    elif node in all_property_names:
         return '/property/{}'.format(node)
     elif node in all_model_names:
         return '/model/{}'.format(node)

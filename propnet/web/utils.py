@@ -13,7 +13,7 @@ from propnet.models import all_model_names
 
 from monty.serialization import loadfn
 
-#aesthetics = loadfn('aesthetics.yaml')
+#aesthetics = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml')
 
 def graph_conversion(graph, selected_node=None, highlighted_nodes=None):
     """
@@ -41,7 +41,7 @@ def graph_conversion(graph, selected_node=None, highlighted_nodes=None):
             # property
             id = n.name
             label = n.value.display_names[0]
-            fill = colors['property'] if n.value.type == 'property' else colors['condition']
+            fill = colors[n.value.type]
             shape = 'circle'
             radius = 5.0
         else:

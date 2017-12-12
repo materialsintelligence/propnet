@@ -10,7 +10,7 @@ class GoldschmidtTolerance(AbstractAnalyticalModel):
 
     @property
     def tags(self):
-        return []
+        return ["rules of thumb"]
 
     @property
     def description(self):
@@ -27,24 +27,32 @@ class GoldschmidtTolerance(AbstractAnalyticalModel):
         return {
             't': 'goldchmidt_tolerance_factor',
             'r_anion': 'ionic_radius',
-            'r_cation_A': 'ionic_radius',
-            'r_cation_B': 'ionic_radius',
-            's': 'crystal_class'
+            'r_cation_A': 'ionic_radius_a',
+            'r_cation_B': 'ionic_radius_b',
+            #'structure': 'oxi_structure',
+            #'crystal_prototype': 'crystal_prototype'
         }
 
+    @property
     def constraints(self):
         return {
-            'class': lambda x: x == 'perovskite',
+            'crystal_prototype': 'perovskite',
         }
-    #@property
-    #def inputs_are_val#id(self, input_props: Dict[str, Any]):
-    #    #needs to check if material is perovskite
-    #    return True
+
+    @property
+    def connections(self):
+        return {
+            't': {'r_anion', 'r_cation_A', 'r_cation_B'}
+            # split into perovskite classifier ?
+        }
 
     @property
     def equations(self):
         return ["t - (r_cation_A + r_cation_B)/(2**.5 * (rB + r_anion))"]
 
-    @property
-    def test_sets(self):
-        return {}
+    def evaluate(self):
+
+        # extract r_cation_A
+        # and r_cation_B
+
+        return

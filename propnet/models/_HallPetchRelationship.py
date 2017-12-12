@@ -1,6 +1,4 @@
-from propnet.core.models import AbstractAnalyticalModel, validate_evaluate
-from typing import *
-
+from propnet.core.models import AbstractAnalyticalModel
 
 class HallPetchRelationship(AbstractAnalyticalModel):
 
@@ -10,44 +8,35 @@ class HallPetchRelationship(AbstractAnalyticalModel):
 
     @property
     def tags(self):
-        return ["stub"]
+        return ["mechancial"]
 
     @property
     def description(self):
         return """
-        The Hall-Petch Relationship relates yield stress with average grain size.
+        The Hall-Petch relationship relates yield stress with average grain size.
         """
 
     @property
     def references(self):
-        return []
+        return """
+        
+        @misc{petch2017,
+        title={Hall-Petch relationship},
+        url={https://en.wikipedia.org/wiki/Grain_boundary_strengthening#Hall.E2.80.93Petch_relationship},
+        year={2017},
+        month={Dec}}
+        
+        """
 
     @property
     def symbol_mapping(self):
         return {
-            'd': 'avg_grain_diameter',
+            'd': 'grain_diameter',
             'k': 'strengthening_coefficient',
             'o': 'dislocation_movement_stress',
             'y': 'yield_stress',
             's': 'structure'
         }
-
-   ##@property
-   #def constraint_properties(self):
-   #    return ['s']
-
-   #@property
-   #def inputs_are_valid(self, input_props: Dict[str, Any]):
-   #    #needs to be polycrystalline
-   #    return True
-
-   #@property
-   #def output_conditions(self, symbol_out: str):
-   #    return
-
-    @property
-    def test_sets(self):
-        return {}
 
     @property
     def equations(self):

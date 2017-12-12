@@ -33,33 +33,35 @@ class PropertyMetadata(MSONable):
 
         # TODO: need to formalize property vs condition distinction
 
+        if type not in ('property', 'condition', 'object'):
+            raise ValueError('Unsupported property type')
+
         if not name.isidentifier() or not name.islower():
             raise ValueError("The canonical name ({}) is not valid.".format(id))
 
         if display_names is None or len(display_names) == 0:
             raise ValueError("Insufficient display names for ({}).".format(id))
 
-        if display_symbols is None or len(display_symbols) == 0:
-            raise ValueError("Insufficient display symbols for ({}).".format(id))
 
-        try:
-            np.zeros(dimension)
-        except:
-            raise ValueError("Dimensions provided for ({}) are invalid.".format(id))
+        if type in ('property', 'condition'):
 
-        if not np.any(test_value):
-            logger.warn("Test value for {} is zero. "
-                        "Please change to a more appropriate test value.".format(name))
+            # additional checking
 
-        if type not in ('property', 'condition'):
-            raise ValueError('Unsupported property type')
+            try:
+                np.zeros(dimension)
+            except:
+                raise ValueError("Dimensions provided for ({}) are invalid.".format(id))
 
-        try:
-            units = ureg.Quantity.from_tuple(units)
-            # calling dimensionality explicitly checks units are defined in registry
-            units.dimensionality
-        except Exception as e:
-            raise ValueError('Problem loading units for {}: {}'.format(name, e))
+            if not np.any(test_value):
+                logger.warn("Test value for {} is zero. "
+                            "Please change to a more appropriate test value.".format(name))
+
+            try:
+                units = ureg.Quantity.from_tuple(units)
+                # calling dimensionality explicitly checks units are defined in registry
+                units.dimensionality
+            except Exception as e:
+                raise ValueError('Problem loading units for {}: {}'.format(name, e))
 
         self.name = name
         self.units = units
@@ -116,10 +118,8 @@ class Property:
         :param value: value of the property
         :param comment: important information relative to the property, including sourcing.
         :param source_ids: the mpIDs from which the property value originates.
-        :param conditions: dictionary mapping canonical names of conditions to condition instances.
         """
         self.type = type
         self.value = value
         self.comment = comment
         self.source_ids = source_ids
-        self.conditions = conditions

@@ -26,8 +26,6 @@ class SchmidsLaw(AbstractAnalyticalModel):
         @misc{schmid2017,
         title={Schmid's law},
         url={https://en.wikipedia.org/wiki/Schmid%27s_law},
-        journal={Wikipedia},
-        publisher={Wikimedia Foundation},
         year={2017},
         month={Dec}}
         
@@ -36,7 +34,7 @@ class SchmidsLaw(AbstractAnalyticalModel):
     @property
     def symbol_mapping(self):
         return {
-            'T': 'shear_modulus',
+            'T': 'resolved_shear_stress',
             'm': 'schmid_factor',
             'σ': 'applied_stress'
         }

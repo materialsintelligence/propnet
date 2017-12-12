@@ -44,16 +44,20 @@ class Propnet:
 
         for model_cls in models:
             model = model_cls()
-            for idx, (output, inputs) in enumerate(model.connections.items()):
+            # there are multiple routes for multiple sets of inputs/outputs (given by idx)
+            for idx, (outputs, inputs) in enumerate(model.connections.items()):
 
                 for input in inputs:
                     input = PropertyType[model.symbol_mapping[input]]
                     g.add_edge(input, model_cls, route=idx)
 
-                output = PropertyType[model.symbol_mapping[output]]
+                # TODO: remove, update models
+                if isinstance(outputs, str):
+                    outputs = {outputs}
 
-                # there are multiple routes for multiple sets of inputs/outputs
-                g.add_edge(model_cls, output, route=idx)
+                for output in outputs:
+                    output = PropertyType[model.symbol_mapping[output]]
+                    g.add_edge(model_cls, output, route=idx)
 
         self.graph = g
 
