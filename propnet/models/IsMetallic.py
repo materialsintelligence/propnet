@@ -8,12 +8,12 @@ class IsMetallic(AbstractModel):
     @property
     def title(self):
         """ """
-        return "Determine if structure is metallic"
+        return "Metallic Classifier"
 
     @property
     def tags(self):
         """ """
-        return ["stub"]
+        return ["classifier"]
 
     @property
     def description(self):

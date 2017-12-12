@@ -13,7 +13,7 @@ class GoldschmidtTolerance(AbstractAnalyticalModel):
     @property
     def tags(self):
         """ """
-        return ["rules of thumb"]
+        return ["stability"]
 
     @property
     def description(self):

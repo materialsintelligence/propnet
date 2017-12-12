@@ -109,29 +109,46 @@ def model_layout(model_name):
     ])
 
 
-model_links = []
+model_links = {}
 for model_name in models.all_model_names:
     # instantiate model from name
     model = getattr(models, model_name)()
 
-    # text to display as link
-    link_text_1 = "[{}]".format(model.model_id)
-    link_text_2 = "{}".format(model.title)
+    # group by tag
+    tags = model.tags
 
-    model_links.append(
-        html.Div([
-            dcc.Link(link_text_1,
-                     href='/model/{}'.format(model_name)),
-            html.Span(' '),
-            dcc.Link(link_text_2,
-                     href='/model/{}'.format(model_name)),
-            html.Br()
-        ])
-    )
+    for tag in tags:
+        if tag not in model_links:
+            model_links[tag] = []
+
+    for tag in tags:
+
+        # text to display as link
+        link_text_1 = "[{}]".format(model.model_id)
+        link_text_2 = "{}".format(model.title)
+
+        model_links[tag].append(
+            html.Div([
+                dcc.Link(link_text_1,
+                         href='/model/{}'.format(model_name)),
+                html.Span(' '),
+                dcc.Link(link_text_2,
+                         href='/model/{}'.format(model_name)),
+                html.Br()
+            ])
+        )
+
+model_links_grouped = []
+for tag, links in model_links.items():
+    model_links_grouped += [
+        html.H6(tag.title()),
+        html.Div(links),
+        html.Br()
+    ]
 
 models_index = html.Div([
     html.H5('Current models:'),
-    html.Div(children=model_links),
+    html.Div(model_links_grouped),
     html.Br(),
     dcc.Link('< Back', href='/')
 ])
