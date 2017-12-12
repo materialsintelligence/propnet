@@ -23,6 +23,8 @@ for f in property_metadata_files:
     try:
         metadata = PropertyMetadata.from_dict(loadfn(f))
         property_metadata[metadata.name] = metadata
+        if "{}.yaml".format(metadata.name) not in f:
+            raise ValueError('Name/filename mismatch in {}'.format(f))
     except Exception as e:
         logger.error('Failed to parse {}, {}.'.format(path.basename(f), e))
 
