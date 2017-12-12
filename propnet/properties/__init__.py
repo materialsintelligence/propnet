@@ -36,5 +36,12 @@ PropertyType: Enum = Enum('PropertyType', [(k, v) for k, v in property_metadata.
 all_property_names: Tuple[str] = tuple(p for p in property_metadata.keys())
 
 def get_display_name(property_name):
-    """Convenience function """
+    """Convenience function
+
+    Args:
+      property_name: 
+
+    Returns:
+
+    """
     return PropertyType[property_name].value.display_names[0]

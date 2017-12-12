@@ -4,26 +4,37 @@ from typing import *
 
 
 class IsotropicElasticModuliFromTensor(AbstractModel):
+    """ """
 
     @property
     def title(self):
+        """ """
         return "Calculate isotropic elastic moduli from elastic tensor"
 
     @property
     def tags(self):
+        """ """
         return ["mechanical"]
 
     @property
     def description(self):
-        return """Elastic moduli assuming isotropic elasticity can be derived from
-        the full elastic tensor, under certain assumptions."""
+        """
+
+        Args:
+
+        Returns:
+          the full elastic tensor, under certain assumptions.
+
+        """
 
     @property
     def references(self):
+        """ """
         return []
 
     @property
     def symbol_mapping(self):
+        """ """
         return {
             'Sij': 'elastic_tensor_voigt',
             'E': 'youngs_modulus',
@@ -36,12 +47,22 @@ class IsotropicElasticModuliFromTensor(AbstractModel):
 
     @property
     def connections(self):
+        """ """
         return {
             'E': {'Sij'}
         }
 
     @validate_evaluate
     def evaluate(self, symbols_and_values_in, symbol_out):
+        """
+
+        Args:
+          symbols_and_values_in: 
+          symbol_out: 
+
+        Returns:
+
+        """
 
         tensor = ElasticTensor.from_voigt(symbols_and_values_in.get('E_ij'))
 
@@ -52,5 +73,6 @@ class IsotropicElasticModuliFromTensor(AbstractModel):
 
     @property
     def test_sets(self):
+        """ """
         return []
 

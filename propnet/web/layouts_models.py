@@ -9,16 +9,28 @@ import propnet.models as models
 # layouts for model detail pages
 
 def model_image_component(model):
+    """
+
+    Args:
+      model: 
+
+    Returns:
+
+    """
 
     url = "https://robohash.org/{}".format(model.__hash__())
     return html.Img(src=url, style={'width': 150, 'border-radius':'50%'})
 
 def model_layout(model_name):
-    """
-    Create a Dash layout for a provided model.
+    """Create a Dash layout for a provided model.
 
-    :param model: an instance of an AbstractModel subclass
-    :return: Dash layout
+    Args:
+      model: an instance of an AbstractModel subclass
+      model_name: 
+
+    Returns:
+      Dash layout
+
     """
 
     # instantiate model from name

@@ -3,36 +3,48 @@ from typing import *
 
 
 class SchmidsLaw(AbstractAnalyticalModel):
+    """ """
 
     @property
     def title(self):
+        """ """
         return "Schmid's Law"
 
     @property
     def tags(self):
+        """ """
         return ["mechanical"]
 
     @property
     def description(self):
-        return """Schmid's Law states that the critically resolved shear stress is equal
-        to the stress applied to the material multipled by a geometric factor combining
-        angles of the glide plane and glide direction.
+        """
+
+        Args:
+
+        Returns:
+          to the stress applied to the material multipled by a geometric factor combining
+          angles of the glide plane and glide direction.
+
         """
 
     @property
     def references(self):
-        return """
-        
-        @misc{schmid2017,
-        title={Schmid's law},
-        url={https://en.wikipedia.org/wiki/Schmid%27s_law},
-        year={2017},
-        month={Dec}}
-        
+        """
+
+        Args:
+
+        Returns:
+          @misc{schmid2017,
+          title={Schmid's law},
+          url={https://en.wikipedia.org/wiki/Schmid%27s_law},
+          year={2017},
+          month={Dec}}
+
         """
 
     @property
     def symbol_mapping(self):
+        """ """
         return {
             'T': 'resolved_shear_stress',
             'm': 'schmid_factor',
@@ -41,10 +53,12 @@ class SchmidsLaw(AbstractAnalyticalModel):
 
     @property
     def connections(self):
+        """ """
         return {
             'T': {'m', 'σ'}
         }
 
     @property
     def equations(self):
+        """ """
         return ["T-mσ"]

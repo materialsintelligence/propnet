@@ -41,6 +41,14 @@ graph_component = html.Div(id='graph', children=[
     [Input('url', 'pathname')]
 )
 def hightlight_node_for_content(pathname):
+    """
+
+    Args:
+      pathname: 
+
+    Returns:
+
+    """
     path_info = parse_path(pathname)
     if path_info and path_info['value']:
         return path_info['value']
@@ -53,6 +61,14 @@ def hightlight_node_for_content(pathname):
     [Input('propnet-graph', 'requestContent')]
 )
 def show_content_for_selected_node(node):
+    """
+
+    Args:
+      node: 
+
+    Returns:
+
+    """
     if not node:
         # This is a hack to get around a circular dependency
         # It is not nice!
@@ -133,6 +149,14 @@ app.scripts.append_script({
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
+    """
+
+    Args:
+      pathname: 
+
+    Returns:
+
+    """
 
     path_info = parse_path(pathname)
 

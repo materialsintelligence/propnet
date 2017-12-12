@@ -2,27 +2,37 @@ from propnet.core.models import AbstractModel
 
 
 class PerovskiteClassifier(AbstractModel):
+    """ """
 
     @property
     def title(self):
+        """ """
         return "Perovskite Classifier"
 
     @property
     def tags(self):
+        """ """
         return ["classifier"]
 
     @property
     def description(self):
-        return """This model classifies whether a crystal is a perovskite, and returns information
-        on the A-site ionic radius and B-site ionic radius.
+        """
+
+        Args:
+
+        Returns:
+          on the A-site ionic radius and B-site ionic radius.
+
         """
 
     @property
     def references(self):
+        """ """
         return ""
 
     @property
     def symbol_mapping(self):
+        """ """
         return {
             's': 'structure_oxi',
             'r_A': 'ionic_radius_a',
@@ -32,6 +42,7 @@ class PerovskiteClassifier(AbstractModel):
 
     @property
     def connections(self):
+        """ """
         return {
             frozenset({'r_A', 'r_B'}): {'s'}
         }
@@ -39,6 +50,15 @@ class PerovskiteClassifier(AbstractModel):
     def evaluate(self,
                  symbols_and_values_in,
                  symbol_out):
+        """
+
+        Args:
+          symbols_and_values_in: 
+          symbol_out: 
+
+        Returns:
+
+        """
 
         structure = symbols_and_values_in['s']
 

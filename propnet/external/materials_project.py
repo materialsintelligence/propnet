@@ -24,23 +24,31 @@ propnet_prop_list = list(mp_from_propnet_name_mapping.keys())
 
 
 def import_all_props(mp_ids):
-    """
-    Given a list of materials ids, returns a list of all available properties
+    """Given a list of materials ids, returns a list of all available properties
     for each material. One list per material id is stored in a list of lists.
-    :param mp_ids: materials ids for which properties are requested.
-    :return: list of lists containing all possible materials properties by mp_id
+
+    Args:
+      mp_ids: materials ids for which properties are requested.
+
+    Returns:
+      list of lists containing all possible materials properties by mp_id
+
     """
     return import_props(mp_ids, mp_prop_list)
 
 
 def import_props(mp_ids, prop_list):
-    """
-    Given a list of materials ids and mp property names returns a list of property
+    """Given a list of materials ids and mp property names returns a list of property
     instances for each requested material. These lists are stored in an encapsulating
     list.
-    :param mp_ids: materials ids for which properties are requested.
-    :param prop_list: requested MP properties for materials.
-    :return: list of lists containing requested materials properties by mp_id
+
+    Args:
+      mp_ids: materials ids for which properties are requested.
+      prop_list: requested MP properties for materials.
+
+    Returns:
+      list of lists containing requested materials properties by mp_id
+
     """
     m = MPRester()
     query = m.query(criteria={"task_id": {'$in': mp_ids}}, properties=prop_list)

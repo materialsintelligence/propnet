@@ -18,6 +18,7 @@ NodeType = Enum('NodeType', ['Material'])
 
 
 class Propnet:
+    """ """
     # clumsy implementation at present, storing classes directly
     # on graph ... this may be fine, but more investigation required!
 
@@ -62,17 +63,28 @@ class Propnet:
         self.graph = g
 
     def add_material(self, material):
-        """
-        Add a material and its associated properties to the
+        """Add a material and its associated properties to the
         Propnet graph.
 
-        :param material: an instance of a Material
-        :return:
+        Args:
+          material: an instance of a Material
+
+        Returns:
+
         """
 
         self.graph = nx.compose(material.graph, self.graph)
 
     def evaluate(self, material=None, property_type=None):
+        """
+
+        Args:
+          material:  (Default value = None)
+          property_type:  (Default value = None)
+
+        Returns:
+
+        """
         # should be straight-forward to evaluate graph,
         # filter graph on what material properties have been
         # defined, create a sub-graph, and traverse this sub-graph
@@ -82,32 +94,42 @@ class Propnet:
         return NotImplementedError
 
     def shortest_path(self, property_one: str, property_two: str):
+        """
+
+        Args:
+          property_one: str: 
+          property_two: str: 
+
+        Returns:
+
+        """
         # very easy to do with networkx, use in-built algo
         return NotImplementedError
 
     def populate_with_test_values(self):
+        """ """
         # takes test values from the property definitions
         return NotImplementedError
 
     @property
     def property_type_nodes(self):
-        """
-        :return: Return a list of nodes of property types.
-        """
+        """:return: Return a list of nodes of property types."""
         return list(filter(lambda x: isinstance(x, PropertyType), self.graph.nodes))
 
     @property
     def all_models(self):
-        """
-        :return: Return a list of nodes of models.
-        """
+        """:return: Return a list of nodes of models."""
         return list(filter(lambda x: issubclass(x, AbstractModel), self.graph.nodes))
 
     @property
     def model_tags(self):
-        """
-        Collates tags present in models.
+        """Collates tags present in models.
         :return: Returns list of tags
+
+        Args:
+
+        Returns:
+
         """
         all_tags = [tag for tags in self.all_models for tag in tags]
         unique_tags = sorted(list(set(all_tags)))

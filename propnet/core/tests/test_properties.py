@@ -6,8 +6,10 @@ from propnet.core.properties import *
 from propnet.properties import *
 
 class PropertiesTest(unittest.TestCase):
+    """ """
 
     def testPropertyMetadata(self):
+        """ """
 
         sample_property_type_dict = {
             'name': 'youngs_modulus',
@@ -33,6 +35,7 @@ class PropertiesTest(unittest.TestCase):
                          PropertyMetadata.from_dict(sample_property_type_dict))
 
     def testAllProperties(self):
+        """ """
 
         all_properties = {name: PropertyType[name] for name in all_property_names}
 
