@@ -16,23 +16,14 @@ class WiedemannFranzLaw(AbstractAnalyticalModel):
 
     @property
     def description(self):
-        """
-
-        Args:
-
-        Returns:
-          electronic component of thermal conductivity to electrical
-          conductivity is proportional to temperature (for a metal).
-
+        return """The Wiedemann-Franz Law states that the ratio of the
+        electronic component of thermal conductivity to electrical
+        conductivity is proportional to temperature (for a metal).
         """
 
     @property
     def references(self):
-        """
-
-        Args:
-
-        Returns:
+        return """
           @misc{widemann2017,
           title={Thermal Conductivity and the Wiedemann-Franz Law},
           url={http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/thercond.html#c2},

@@ -17,23 +17,14 @@ class SchmidsLaw(AbstractAnalyticalModel):
 
     @property
     def description(self):
-        """
-
-        Args:
-
-        Returns:
-          to the stress applied to the material multipled by a geometric factor combining
-          angles of the glide plane and glide direction.
-
+        return """Schmid's Law states that the critically resolved shear stress is equal
+        to the stress applied to the material multipled by a geometric factor combining
+        angles of the glide plane and glide direction.
         """
 
     @property
     def references(self):
-        """
-
-        Args:
-
-        Returns:
+        return """
           @misc{schmid2017,
           title={Schmid's law},
           url={https://en.wikipedia.org/wiki/Schmid%27s_law},

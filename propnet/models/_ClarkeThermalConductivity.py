@@ -21,7 +21,7 @@ class ClarkeThermalConductivity(AbstractAnalyticalModel):
     @property
     def references(self):
         """ """
-                """DOI: 10.1016/j.commatsci.2015.07.029"""]
+                """DOI: 10.1016/j.commatsci.2015.07.029"""
 
     @property
     def symbol_mapping(self):

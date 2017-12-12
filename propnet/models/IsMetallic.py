@@ -17,7 +17,7 @@ class IsMetallic(AbstractModel):
 
     @property
     def description(self):
-        """ """
+        return """This model returns true if band gap is zero."""
 
     @property
     def references(self):

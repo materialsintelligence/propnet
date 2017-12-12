@@ -16,20 +16,13 @@ class PeierlsStress(AbstractAnalyticalModel):
 
     @property
     def description(self):
-        """
-
-        Args:
-
-        Returns:
-          Peierls stress is the force required to move a dislocation within a plane of atoms in a unit cell.
+        return """Peierls stress is the force required to move a dislocation within a plane of atoms in a unit cell.
 
         """
 
     @property
     def references(self):
-        """
-
-        Args:
+        return """
 
         Returns:
           @misc{peierls2017,

@@ -16,22 +16,13 @@ class EmpiricalBandGapsGarcia(AbstractAnalyticalModel):
 
     @property
     def description(self):
-        """
-
-        Args:
-
-        Returns:
-          functional) typically underestimate the true band gap.
-
+        return """Band gaps estimated using Density Functional Theory (and the PBE exchange-correlation
+        functional) typically underestimate the true band gap.
         """
 
     @property
     def references(self):
-        """
-
-        Args:
-
-        Returns:
+        return """
           @article{Garcia2017,
           doi = {10.1021/acs.jpcc.7b07421},
           year = 2017,

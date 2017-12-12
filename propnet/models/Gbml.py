@@ -16,22 +16,14 @@ class Gbml(AbstractModel):
 
     @property
     def description(self):
-        """
-
-        Args:
-
-        Returns:
-          predictions for bulk and shear moduli given material descriptors and training data.
-
+        return """This model uses Gradient Boosting Machine-Locfit (GBML) to give
+        predictions for bulk and shear moduli given material descriptors and training data.
         """
 
     @property
     def references(self):
-        """
-
-        Args:
-
-        Returns:
+        return """
+        
           @article{deJong2016,
           doi = {10.1038/srep34256},
           url = {https://doi.org/10.1038/srep34256},

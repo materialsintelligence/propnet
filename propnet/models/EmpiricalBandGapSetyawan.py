@@ -20,24 +20,15 @@ class EmpiricalBandGapSetyawan(AbstractAnalyticalModel):
 
     @property
     def description(self):
-        """
-
-        Args:
-
-        Returns:
-          functional) typically underestimate the true band gap. A linear least squares fit
-          can provide an estimate of the true band gap from the PBE gap (R² = 0.886 when tested
-          against 100 compounds with gaps between ~1 and ~12 eV).
-
+        return """Band gaps estimated using Density Functional Theory (and the PBE exchange-correlation
+        functional) typically underestimate the true band gap. A linear least squares fit
+        can provide an estimate of the true band gap from the PBE gap (R² = 0.886 when tested
+        against 100 compounds with gaps between ~1 and ~12 eV).
         """
 
     @property
     def references(self):
-        """
-
-        Args:
-
-        Returns:
+        return """
           @article{Setyawan2011,
           doi = {10.1021/co200012w},
           year  = {2011},

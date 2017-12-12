@@ -17,15 +17,12 @@ class RefractiveIndexfromRelPerm(AbstractAnalyticalModel):
 
     @property
     def description(self):
-        """ """
+        return """The refractive index is the geometric mean of the relative permittivity and the relative permeability."""
 
     @property
     def references(self):
-        """
+        return """
 
-        Args:
-
-        Returns:
           @misc{refractive2017,
           title={Refractive index},
           url={https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability},

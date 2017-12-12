@@ -16,12 +16,8 @@ class PerovskiteClassifier(AbstractModel):
 
     @property
     def description(self):
-        """
-
-        Args:
-
-        Returns:
-          on the A-site ionic radius and B-site ionic radius.
+        return """This model classifies whether a crystal is a perovskite, and returns information
+        on the A-site ionic radius and B-site ionic radius.
 
         """
 

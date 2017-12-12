@@ -17,12 +17,8 @@ class TransformationOxiStructure(AbstractModel):
 
     @property
     def description(self):
-        """
-
-        Args:
-
-        Returns:
-          site using the materials analysis code pymatgen.
+        return """This model attempts to work out what oxidation state is on each crystallographic
+        site using the materials analysis code pymatgen.
 
         """
 

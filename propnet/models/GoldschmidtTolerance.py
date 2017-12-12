@@ -17,12 +17,7 @@ class GoldschmidtTolerance(AbstractAnalyticalModel):
 
     @property
     def description(self):
-        """
-
-        Args:
-
-        Returns:
-          The Goldchmidt Tolerance Factor indicates stability of perovskites.
+        return """The Goldchmidt Tolerance Factor indicates stability of perovskites.
 
         """
 
@@ -36,11 +31,17 @@ class GoldschmidtTolerance(AbstractAnalyticalModel):
         """ """
         return {
             't': 'goldschmidt_tolerance_factor',
-            'r_anion': 'ionic_radius',
             'r_cation_A': 'ionic_radius_a',
             'r_cation_B': 'ionic_radius_b',
+            'r_anion': 'ionic_radius'
             #'structure': 'oxi_structure',
             #'crystal_prototype': 'crystal_prototype'
+        }
+
+    @property
+    def constants(self):
+        return {
+            'r_anion': (100, "pm") # or whatever this is
         }
 
     @property
@@ -54,7 +55,7 @@ class GoldschmidtTolerance(AbstractAnalyticalModel):
     def connections(self):
         """ """
         return {
-            't': {'r_anion', 'r_cation_A', 'r_cation_B'}
+            't': {'r_cation_A', 'r_cation_B'}
             # split into perovskite classifier ?
         }
 
