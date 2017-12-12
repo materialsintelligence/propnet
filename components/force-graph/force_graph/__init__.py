@@ -16,10 +16,7 @@ _this_module = _sys.modules[__name__]
 _js_dist = [
     {
         "relative_package_path": "bundle.js",
-        "external_url": (
-            "https://unpkg.com/force-graph@{}"
-            "/force_graph/bundle.js"
-        ).format(__version__),
+        "external_url": "https://raw.githubusercontent.com/materialsintelligence/propnet/master/components/force-graph/force_graph/bundle.js",
         "namespace": "force_graph"
     }
 ]

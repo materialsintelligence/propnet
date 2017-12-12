@@ -12,3 +12,4 @@ pylatexenc==1.2
 pymatgen==2017.9.23
 pytest==3.2.3
 -e .
+-e ./components/force-graph/
