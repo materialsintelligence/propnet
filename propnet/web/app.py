@@ -115,6 +115,11 @@ derive additional properties automatically. Integration with the
 [Materials Project](https://materialsproject.org) and other databases
 provides these sets of initial properties for a given material,
 as well as information on the real world distributions of these properties.
+
+We also provide interfaces to machine-learned models. Machine learning is **great**, and one
+day might replace our conventional wisdom, but until then as scientists we still need to understand
+how to use and interpret these machine-learned models. Additionally, formally codifying our
+existing models will help train further machine-learned models in the future.
     '''),
     dcc.Markdown('''
 ```

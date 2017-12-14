@@ -1,5 +1,6 @@
 import numpy as np
 
+from os import path
 from enum import Enum
 from io import StringIO
 from json import dumps
@@ -13,7 +14,7 @@ from propnet.models import all_model_names
 
 from monty.serialization import loadfn
 
-#aesthetics = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml')
+AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
 
 def graph_conversion(graph, selected_node=None, highlighted_nodes=None):
     """Utility function to
@@ -46,14 +47,14 @@ def graph_conversion(graph, selected_node=None, highlighted_nodes=None):
             # property
             id = n.name
             label = n.value.display_names[0]
-            fill = colors[n.value.type]
+            fill = AESTHETICS['color'][n.value.type]
             shape = 'circle'
             radius = 5.0
         else:
             # model
             id = n.__name__
             label = n().title
-            fill = colors['model']
+            fill = AESTHETICS['color']['model']
             shape = 'square'
             radius = 6.0
 
