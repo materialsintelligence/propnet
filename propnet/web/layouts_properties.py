@@ -102,7 +102,13 @@ def property_layout(property_name, mp_values=None):
     ])
 
 
-def properties_index(available_hists):
+def properties_index(available_hists=None):
+
+    # properties for which we have values from a database, e.g. MP
+    # this was used in a demo, needs to be replaced with something
+    # more permanent
+    if not available_hists:
+        available_hists = {}
 
     property_links = {}
     for property_name in all_property_names:
@@ -115,7 +121,7 @@ def properties_index(available_hists):
         if property_type not in property_links:
             property_links[property_type] = []
 
-        if available_hists[property_name]:
+        if available_hists.get(property_name, None):
             token = "• "
         else:
             token = ""

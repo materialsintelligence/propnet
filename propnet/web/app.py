@@ -33,29 +33,8 @@ app.title = "The Hitchhikers Guide to Materials Science"
 route = dcc.Location(id='url', refresh=False)
 
 cache = Cache(app.server, config={
-    'CACHE_TYPE': 'filesystem', 'CACHE_DIR': 'tmp'
+    'CACHE_TYPE': 'filesystem', 'CACHE_DIR': '.tmp'
 })
-
-
-@cache.memoize(timeout=86400)
-def retrieve_mp_properties(property_name):
-    # this horrific function *will* be replaced, for demo only
-    try:
-        mp_property = MP_FROM_PROPNET_NAME_MAPPING[property_name]
-        query_result = mpr.query({}, properties=['task_id', mp_property])
-    except:
-        return (None, None)
-    try:
-        list_of_property_values = [r[mp_property] for r in query_result]
-        hist = np.histogram(list_of_property_values, bins='auto')
-        description = describe(list_of_property_values)
-    except:
-        return (None, None)
-    return (hist, description)
-
-
-available_hists = {name: False for name in all_property_names}
-available_hists = {name: bool(retrieve_mp_properties(name)[0]) for name in all_property_names}
 
 g = Propnet().graph
 graph_data = graph_conversion(g)
@@ -238,48 +217,6 @@ def retrieve_material(n_clicks, formula):
     else:
         return None
 
-
-#calculator_layouts = {}
-#for property_name in all_property_names:
-#    calculator = html.Div([
-#        dcc.Input(
-#            placeholder='Enter value',
-#            type='number',
-#            value='',
-#            id='calculator-value-input-{}'.format(property_name)
-#        ),
-#        dcc.Input(
-#            placeholder='Enter input unit',
-#            type='text',
-#            value='',
-#            id='calculator-unit-input-{}'.format(property_name)
-#        ),
-#        dcc.Input(
-#            placeholder='Enter desired output unit',
-#            type='text',
-#            value='',
-#            id='calculator-unit-output-{}'.format(property_name)
-#        ),
-#        html.Button('Convert', id='calculator-button-{}'.format(property_name))
-#        html.Br(),
-#        html.Label('', id='calculator-output-{}'.format(property_name))
-#    ])
-#    calculator_layouts[property_name] = calculator
-#
-#    @app.callback(
-#        Output('calculator-output-{}'.format(property_name), 'children'),
-#        [Input('calculator-button-{}'.format(property_name), 'n_clicks')],
-#        [State('calculator-value-input-{}'.format(property_name), 'value'),
-#         State('calculator-unit-input-{}'.format(property_name), 'value'),
-#         State('calculator-unit-output-{}'.format(property_name), 'value')]
-#    )
-#    def convert_units(n_clicks, value, input_unit, output_unit):
-#        # TODO: remove try/except, add warning label div
-#        try:
-#            q = ureg.Quantity()
-#        except:
-#            return "Could not convert."#
-
 material_layout = html.Div([
     dcc.Input(
         placeholder='Enter a formula...',
@@ -322,14 +259,9 @@ def display_page(pathname):
         elif path_info['mode'] == 'property':
             if path_info['value']:
                 property_name = path_info['value']
-                if property_name in PROPNET_PROPERTIES_ON_MP:
-                    mp_values = retrieve_mp_properties(property_name)
-                    print(mp_values)
-                else:
-                    mp_values = None
-                return property_layout(property_name, mp_values=mp_values)
+                return property_layout(property_name)
             else:
-                return properties_index(available_hists)
+                return properties_index()
         elif path_info['mode'] == 'load_material':
             return material_layout
         else:
