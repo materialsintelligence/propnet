@@ -9,14 +9,17 @@ from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
 from pybtex.style.labels import BaseLabelStyle
 
-from propnet.properties import all_property_names
+from propnet.vars import all_property_names, PropertyType
 from propnet.models import all_model_names
 
 from monty.serialization import loadfn
 
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
 
-def graph_conversion(graph, selected_node=None, highlighted_nodes=None):
+def graph_conversion(graph, highlight=False,
+                     highlight_green=(),
+                     highlight_yellow=(),
+                     highlight_red=()):
     """Utility function to
 
     Args:
@@ -43,6 +46,7 @@ def graph_conversion(graph, selected_node=None, highlighted_nodes=None):
     for n in graph.nodes():
 
         # should do better parsing of nodes here
+        # TODO: this is also horrific code for demo, change
         if isinstance(n, Enum):
             # property
             id = n.name
@@ -65,6 +69,17 @@ def graph_conversion(graph, selected_node=None, highlighted_nodes=None):
             'shape': shape,
             'radius': radius
         })
+
+    if highlight:
+        for node in nodes:
+            if node['id'] in highlight_green:
+                node['fill'] = '#9CDC90'
+            elif node['id'] in highlight_yellow:
+                node['fill'] = '#FFBF00'
+            elif node['id'] in highlight_red:
+                node['fill'] = '#FD9998'
+            else:
+                node['fill'] = '#BDBDBD'
 
     for n1, n2 in graph.edges():
 
@@ -182,6 +197,11 @@ def parse_path(pathname):
         for property in all_property_names:
             if pathname.startswith('/property/{}'.format(property)):
                 value = property
+    elif pathname == '/load_material':
+        mode = 'load_material'
+    elif pathname.startswith('/load_material'):
+        mode = 'load_material'
+        value = pathname.split('/')[-1]
 
     return {
         'mode': mode,
