@@ -1,7 +1,7 @@
 import dash_html_components as html
 import dash_core_components as dcc
 
-from propnet.properties import get_display_name
+from propnet.symbols import get_display_name
 from propnet.web.utils import references_to_markdown
 
 import propnet.models as models
@@ -103,7 +103,7 @@ def model_layout(model_name):
         html.H6('What this model does'),
         dcc.Markdown(model.description),
         # dcc.Markdown("Method: {}".format(model.method)),
-        html.H6('Dimensional analysis'),
+        #html.H6('Dimensional analysis'),
         html.H6('Tags'),
         tags
     ])
@@ -124,14 +124,14 @@ for model_name in models.all_model_names:
     for tag in tags:
 
         # text to display as link
-        link_text_1 = "[{}]".format(model.model_id)
+        #link_text_1 = "[{}]".format(model.model_id)
         link_text_2 = "{}".format(model.title)
 
         model_links[tag].append(
             html.Div([
-                dcc.Link(link_text_1,
-                         href='/model/{}'.format(model_name)),
-                html.Span(' '),
+                #dcc.Link(link_text_1,
+                #         href='/model/{}'.format(model_name)),
+                #html.Span(' '),
                 dcc.Link(link_text_2,
                          href='/model/{}'.format(model_name)),
                 html.Br()

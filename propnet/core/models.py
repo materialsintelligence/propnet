@@ -7,7 +7,7 @@ from abc import ABCMeta, abstractmethod
 from functools import wraps
 from hashlib import sha256
 
-from propnet.properties import PropertyType
+from propnet.symbols import PropertyType
 from propnet import logger
 from propnet import ureg
 

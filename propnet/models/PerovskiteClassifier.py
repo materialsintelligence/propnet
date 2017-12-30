@@ -44,8 +44,7 @@ class PerovskiteClassifier(AbstractModel):
         }
 
     def evaluate(self,
-                 symbols_and_values_in,
-                 symbol_out):
+                 symbols_and_values_in):
         """
 
         Args:

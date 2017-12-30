@@ -1,0 +1,11 @@
+name: thermal_conductivity
+units:
+- 1.0
+- - [watt, 1.0]
+  - [meter, -1.0]
+  - [kelvin, -1.0]
+display_names: [Thermal conductivity]
+display_symbols: [\kappa]
+dimension: 1
+test_value: 65.0
+comment: ''

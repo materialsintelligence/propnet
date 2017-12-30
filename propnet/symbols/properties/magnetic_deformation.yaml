@@ -1,0 +1,9 @@
+name: magnetic_deformation
+units:
+- 1.0
+- []
+display_names: ['Magnetic deformation']
+display_symbols: []
+dimension: 1
+test_value: 8
+comment: 'A quantity measuring the deformation between magnetic and non-magnetic lattices, a proxy for delta_s_max.'

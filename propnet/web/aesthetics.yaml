@@ -1,2 +1,2 @@
-color: {condition: green, model: blue, property: orange}
+color: {condition: "#7FD553", model: "orange", property: "#43A1F8", object: "#DF69A5"}
 radius: {property: 5.0}
