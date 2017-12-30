@@ -3,7 +3,7 @@ from propnet.core.properties import *
 
 # these are properties distributed with Propnet as
 # yaml files in the properties folder
-from propnet.properties import *
+from propnet.vars import *
 
 class PropertiesTest(unittest.TestCase):
     """ """

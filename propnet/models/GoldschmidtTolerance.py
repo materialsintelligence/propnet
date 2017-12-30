@@ -34,8 +34,6 @@ class GoldschmidtTolerance(AbstractAnalyticalModel):
             'r_cation_A': 'ionic_radius_a',
             'r_cation_B': 'ionic_radius_b',
             'r_anion': 'ionic_radius'
-            #'structure': 'oxi_structure',
-            #'crystal_prototype': 'crystal_prototype'
         }
 
     @property
@@ -45,29 +43,13 @@ class GoldschmidtTolerance(AbstractAnalyticalModel):
         }
 
     @property
-    def constraints(self):
-        """ """
-        return {
-            'crystal_prototype': 'perovskite',
-        }
-
-    @property
     def connections(self):
         """ """
         return {
             't': {'r_cation_A', 'r_cation_B'}
-            # split into perovskite classifier ?
         }
 
     @property
     def equations(self):
         """ """
         return ["t - (r_cation_A + r_cation_B)/(2**.5 * (rB + r_anion))"]
-
-    def evaluate(self):
-        """ """
-
-        # extract r_cation_A
-        # and r_cation_B
-
-        return

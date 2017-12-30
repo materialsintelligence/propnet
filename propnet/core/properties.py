@@ -74,11 +74,11 @@ class PropertyMetadata(MSONable):
     def dimension_as_string(self):
         """:return: dimension of property (np.shape) as a human-readable string"""
 
-        if len(self.dimension) == 1 and self.dimension[0] == 1:
+        if isinstance(self.dimension, int):
             return 'scalar'
-        elif len(self.dimension) == 1:
+        elif isinstance(self.dimension, list) and len(self.dimension) == 1:
             return '{} vector'.format(self.dimension)
-        elif len(self.dimension) == 2:
+        elif isinstance(self.dimension, list) and len(self.dimension) == 2:
             return '{} matrix'.format(self.dimension)
         else:
             # technically might not always be true
@@ -104,8 +104,8 @@ class PropertyMetadata(MSONable):
 class Property:
     """Class storing the value of a property in a given context."""
 
-    def __init__(self, type: PropertyMetadata, value: Any, comment: str,
-                 source_ids: List[Tuple[str, str]], conditions: Dict[str, Any]):
+    def __init__(self, type, value,
+                 provenance):
         """
         Parses inputs for constructing a Property object.
         :param type: pointer to an existing PropertyMetadata object,
@@ -116,5 +116,4 @@ class Property:
         """
         self.type = type
         self.value = value
-        self.comment = comment
-        self.source_ids = source_ids
+        self.provenance = provenance

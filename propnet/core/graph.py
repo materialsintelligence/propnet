@@ -4,18 +4,17 @@ import networkx as nx
 
 from propnet import logger
 from propnet.models import *
-from propnet.properties import PropertyType, all_property_names
+from propnet.vars import PropertyType, all_property_names
 
 from propnet.core.properties import Property
 from propnet.core.models import AbstractModel
 from propnet.core.models import AbstractAnalyticalModel
 
 from enum import Enum
-from collections import Counter
+from collections import Counter, namedtuple
 
-# TODO: add more node types as appropriate
-NodeType = Enum('NodeType', ['Material'])
-
+NodeType = Enum('NodeType', ['Material', 'Object', 'Property', 'Condition', 'Model'])
+Node = namedtuple('Node', ['node_type', 'node_value'])
 
 class Propnet:
     """ """
