@@ -12,7 +12,7 @@ from propnet import log_stream, ureg
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_properties import property_layout, properties_index
 from propnet.models import all_model_names
-from propnet.vars import all_property_names
+from propnet.symbols import all_property_names
 
 from force_graph import ForceGraphComponent
 from propnet.web.utils import graph_conversion, parse_path

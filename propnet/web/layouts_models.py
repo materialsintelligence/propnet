@@ -1,7 +1,7 @@
 import dash_html_components as html
 import dash_core_components as dcc
 
-from propnet.vars import get_display_name
+from propnet.symbols import get_display_name
 from propnet.web.utils import references_to_markdown
 
 import propnet.models as models

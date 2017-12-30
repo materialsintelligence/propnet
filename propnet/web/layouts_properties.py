@@ -2,7 +2,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import plotly.graph_objs as go
 
-from propnet.vars import all_property_names, PropertyType
+from propnet.symbols import all_property_names, PropertyType
 
 
 # layouts for property detail pages

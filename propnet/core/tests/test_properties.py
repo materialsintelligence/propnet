@@ -1,9 +1,9 @@
 import unittest
-from propnet.core.properties import *
+from propnet.core.symbols import *
 
 # these are properties distributed with Propnet as
 # yaml files in the properties folder
-from propnet.vars import *
+from propnet.symbols import *
 
 class PropertiesTest(unittest.TestCase):
     """ """

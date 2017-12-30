@@ -9,7 +9,7 @@ from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
 from pybtex.style.labels import BaseLabelStyle
 
-from propnet.vars import all_property_names, PropertyType
+from propnet.symbols import all_property_names, PropertyType
 from propnet.models import all_model_names
 
 from monty.serialization import loadfn

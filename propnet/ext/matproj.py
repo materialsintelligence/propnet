@@ -1,8 +1,8 @@
 from datetime import datetime
 
 from pymatgen import MPRester
-from propnet.core.properties import Property
-from propnet.vars import PropertyType, property_metadata
+from propnet.core.symbols import Property
+from propnet.symbols import PropertyType, property_metadata
 
 from propnet.core.materials import Material
 

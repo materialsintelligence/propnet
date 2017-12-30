@@ -1,8 +1,8 @@
 import networkx as nx
 
-from propnet.vars import PropertyType
+from propnet.symbols import PropertyType
 from propnet.core.graph import NodeType
-from propnet.core.properties import Property
+from propnet.core.symbols import Property
 
 
 class Material:

@@ -4,9 +4,9 @@ import networkx as nx
 
 from propnet import logger
 from propnet.models import *
-from propnet.vars import PropertyType, all_property_names
+from propnet.symbols import PropertyType, all_property_names
 
-from propnet.core.properties import Property
+from propnet.core.symbols import Property
 from propnet.core.models import AbstractModel
 from propnet.core.models import AbstractAnalyticalModel
 
