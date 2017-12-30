@@ -8,6 +8,7 @@ from propnet import logger
 from propnet.core.properties import PropertyMetadata
 
 # TODO: clean up this file, move as much to propnet.core.properties as possible
+# TODO: 'vars' is a dumb name, anyone feel free to rename
 
 # Auto loading of all allowed properties
 
@@ -16,7 +17,7 @@ from propnet.core.properties import PropertyMetadata
 property_metadata: Dict[str, PropertyMetadata] = {}
 
 property_metadata_files: List[str] = glob(path.join(path.dirname(__file__),
-                                                    '../properties/**/*.yaml'),
+                                                    '../vars/**/*.yaml'),
                                           recursive=True)
 
 for f in property_metadata_files:
