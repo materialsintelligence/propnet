@@ -17,6 +17,7 @@ For a design overview, please see the `docs/design_overview.md` file -- this is 
   * [Submitting a Model](#submitting-a-model)
   * [Submitting a code contribution](#submitting-a-code-contribution)
 * [Web Interface](#web-interface)
+* [Contributors](#contributors) 
 * [Acknowledgements](#acknowledgements)
 
 # Guidelines for Contributions
@@ -88,6 +89,9 @@ We only have a few guidelines at present:
 
 Each model and property will have an auto-generated page associated with them. This page will allow manual input of model parameters and calculation of model outputs, and will also provide documentation/explanations of how the model works. The uses the [Dash library by plot.ly](https://plot.ly/products/dash/). To test it out, you can run the `app.py`, or can see the app deployed online at [https://propnet.herokuapp.com](https://propnet.herokuapp.com).
 
+# Contributors
+
+@computron, @mkhorton, 
 
 # Acknowledgements
 
