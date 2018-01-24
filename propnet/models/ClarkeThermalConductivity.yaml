@@ -1,0 +1,14 @@
+---
+title: Clarke thermal conductivity
+tags: [thermal]
+references: ["TODO"]
+symbol_mapping: {
+	C_ij: elastic_tensor_voigt,
+	structure: structure,
+	t: thermal_conductivity
+}
+connections:
+- inputs: t
+  outputs: [C_ij, structure]
+---
+This model currently uses the implementation in pymatgen.

@@ -1,0 +1,15 @@
+---
+title: Refractive index, relative permeability and permittivity
+tags: [optical]
+references: ["url:https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability}"]
+symbol_mapping: {
+  Er: relative_permeability,
+  Ur: relative_permittivity,
+  n: refractive_index
+}
+connections:
+- inputs: n
+  outputs: [Ur, Er]
+equations: [n - sqrt(Ur*Er)]
+---
+The refractive index is the geometric mean of the relative permittivity and the relative permeability.

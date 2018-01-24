@@ -1,0 +1,17 @@
+---
+title: Peierls-Nabarro Stress for Dislocation Slip
+tags: [dislocations]
+references: ["url:https://en.wikipedia.org/wiki/Peierls_stress}"]
+symbol_mapping: {
+  G: shear_modulus,
+  T_pn: peierls_stress,
+  a: interplanar_spacing,
+  b: interatomic_spacing,
+  ν: poisson_ratio
+}
+connections:
+- inputs: T_pn
+  outputs: [ν, a, G, b]
+equations: ["T_pn - G*sp.E**(-2*sp.pi*a/(1-ν)/b)"]
+---
+Peierls stress is the force required to move a dislocation within a plane of atoms in a unit cell.

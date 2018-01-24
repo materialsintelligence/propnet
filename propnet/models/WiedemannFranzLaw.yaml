@@ -1,0 +1,22 @@
+---
+title: Wiedemann-Franz Law
+tags: [thermal, empirical]
+references: ["url:http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/thercond.html#c2"]
+symbol_mapping: {
+  T: temperature,
+  _is_metallic: is_metallic,
+  k: electronic_thermal_conductivity,
+  o: electrical_conductivity
+}
+connections:
+- inputs: [T, k, _is_metallic]
+  outputs: [o]
+- inputs: [T, o, _is_metallic]
+  outputs: [k]
+equations: [T * 2.45*10**-8 * o - k]
+---
+The Wiedemann-Franz Law states that the ratio of the
+electronic component of thermal conductivity to electrical
+conductivity is proportional to temperature (for a metal).
+
+TODO: add some caveats here, value of constant can vary (2.23-3.2, see Kittel/wikipedia).

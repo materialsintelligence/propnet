@@ -1,4 +1,6 @@
 name: structure
+module: pymatgen.core.structure
+class: Structure
 units:
 - 1.0
 - []
@@ -7,4 +9,3 @@ display_symbols: []
 dimension: 1
 comment: ''
 type: object
-test_value: 0

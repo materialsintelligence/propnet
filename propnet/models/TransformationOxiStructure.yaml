@@ -1,0 +1,14 @@
+---
+title: Decorate crystal structure with oxidation state
+tags: [transformations]
+references: ['TODO']
+symbol_mapping: {
+  s: structure,
+  s_oxi: structure_oxi
+}
+connections:
+- inputs: s_oxi
+  outputs: [s]
+---
+This model attempts to work out what oxidation state is on each crystallographic
+site using the materials analysis code pymatgen.
