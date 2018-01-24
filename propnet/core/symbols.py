@@ -105,7 +105,7 @@ class Property:
     """Class storing the value of a property in a given context."""
 
     def __init__(self, type, value,
-                 provenance):
+                 provenance=None):
         """
         Parses inputs for constructing a Property object.
         :param type: pointer to an existing PropertyMetadata object,

@@ -1,6 +1,4 @@
 name: structure
-module: pymatgen.core.structure
-class: Structure
 units:
 - 1.0
 - []

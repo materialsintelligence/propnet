@@ -4,11 +4,11 @@ tags: [thermal]
 references: ["TODO"]
 symbol_mapping: {
 	C_ij: elastic_tensor_voigt,
-	structure: structure,
+	_structure: structure,
 	t: thermal_conductivity
 }
 connections:
 - inputs: t
-  outputs: [C_ij, structure]
+  outputs: [C_ij, _structure]
 ---
 This model currently uses the implementation in pymatgen.
