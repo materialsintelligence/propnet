@@ -1,0 +1,18 @@
+---
+title: Machine-learned bulk and shear modulus estimates
+tags: [machine learning, mechanical]
+references: ["doi:10.1038/srep34256"]
+symbol_mapping: {
+  G: shear_modulus,
+  K: bulk_modulus,
+  energy_per_atom: energy_per_atom,
+  _formula: pretty_formula,
+  nsites: nsites,
+  volume: volume_unit_cell
+}
+connections:
+- inputs: [G, K]
+  outputs: [volume, energy_per_atom, _formula, nsites]
+---
+This model uses Gradient Boosting Machine-Locfit (GBML) to give
+predictions for bulk and shear moduli given material descriptors and training data.

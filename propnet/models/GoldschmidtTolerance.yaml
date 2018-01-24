@@ -1,0 +1,18 @@
+---
+title: Find Goldchmidt Tolerance Factor from ionic radii
+tags: [stability]
+references: []
+symbol_mapping: {
+  r_anion: ionic_radius,
+  r_cation_A: ionic_radius_a,
+  r_cation_B: ionic_radius_b,
+  t: goldschmidt_tolerance_factor
+}
+connections:
+- inputs: t
+  outputs: [r_cation_B, r_cation_A]
+equations: [t - (r_cation_A + r_cation_B)/(2**.5 * (rB + r_anion))]
+---
+The Goldchmidt Tolerance Factor indicates stability of perovskites.
+
+        

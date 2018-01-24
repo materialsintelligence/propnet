@@ -1,0 +1,18 @@
+---
+title: Calculate Snyder sound velocities
+tags: [elastic]
+references: ['TODO']
+symbol_mapping: {
+  C_ij: elastic_tensor_voigt,
+  structure: structure,
+  v_ac: snyder_acoustic_sound_velocity,
+  v_op: snyder_optical_sound_velocity,
+  v_tot: snyder_total_sound_velocity
+}
+connections:
+- inputs: v_ac
+  outputs: [C_ij, structure]
+- inputs: v_op
+  outputs: [C_ij, structure]
+---
+This model currently uses the implementation in pymatgen.

@@ -1,0 +1,14 @@
+---
+title: Perovskite Classifier
+tags: [classifier]
+symbol_mapping: {
+  r_A: ionic_radius_a,
+  r_B: ionic_radius_b,
+  s: structure_oxi
+}
+connections:
+- inputs: [r_A, r_B]
+  outputs: [s]
+---
+This model classifies whether a crystal is a perovskite, and returns information
+on the A-site ionic radius and B-site ionic radius.

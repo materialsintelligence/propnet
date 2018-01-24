@@ -1,0 +1,15 @@
+---
+title: Magnetic Deformation
+tags: [magnetism]
+references: ['TODO']
+symbol_mapping: {
+  l_mag: lattice_unit_cell,
+  l_nonmag: lattice_unit_cell,
+  sigma: magnetic_deformation
+}
+connections:
+- inputs: sigma
+  outputs: [l_nonmag, l_mag]
+---
+This model calculates the magnetic deformation between an idealized 'non-magnetic'
+crystal lattice and a ferromagnetic crystal lattice.

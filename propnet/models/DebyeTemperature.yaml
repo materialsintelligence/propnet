@@ -1,0 +1,14 @@
+---
+title: Debye model
+tags: [thermal]
+references: ['']
+symbol_mapping: {
+  C_ij: elastic_tensor_voigt,
+  d: debye_temperature,
+  structure: structure
+}
+connections:
+- inputs: d
+  outputs: [C_ij, structure]
+---
+This model currently uses the implementation in pymatgen.
