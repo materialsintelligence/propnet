@@ -6,9 +6,7 @@ from propnet import logger
 from propnet.models import *
 from propnet.symbols import PropertyType, all_property_names
 
-from propnet.core.symbols import Property
 from propnet.core.models import AbstractModel
-from propnet.core.models import AbstractAnalyticalModel
 
 from enum import Enum
 from collections import Counter, namedtuple

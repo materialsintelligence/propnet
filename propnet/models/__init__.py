@@ -4,7 +4,7 @@ from glob import glob
 files = glob(dirname(__file__)+"/*.py")
 
 # TODO: replace with dict of name to class ?
-all_model_names = [basename(f)[:-3] for f in files
+all_model_names = [basename(f)[:-3] for f in files#
                    if isfile(f) and not basename(f).startswith('_')]
 
 # auto loading of defined models
