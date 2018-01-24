@@ -91,7 +91,7 @@ Each model and property will have an auto-generated page associated with them. T
 
 # Contributors
 
-@computron, @mkhorton, @jdagdelen
+@computron, @mkhorton, @vtshitoyan, @LeighWeston86, @jdagdelen
 
 # Acknowledgements
 
