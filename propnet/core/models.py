@@ -1,4 +1,5 @@
 import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
 
 # typing information, for type hinting only
 from typing import *
@@ -12,11 +13,27 @@ from propnet import logger
 from propnet import ureg
 
 from os.path import dirname
-from monty.serialization import loadfn
+from ruamel.yaml import safe_load
 
 # TODO: add pint integration
 # TODO: decide on interface for conditions, assumptions etc.
 # TODO: decide on interface for multiple-material models.
+
+
+def load_metadata(path):
+
+    with open(path, 'r') as f:
+        metadata = f.read()
+
+    # metadata file has yaml front matter with Markdown
+    # as body of file (fairly standard format)
+    metadata = metadata.split('---')
+
+    markdown = metadata[2]
+    metadata = safe_load(metadata[1])
+    metadata['description'] = markdown
+
+    return metadata
 
 
 class AbstractModel(metaclass=ABCMeta):
@@ -26,9 +43,10 @@ class AbstractModel(metaclass=ABCMeta):
         if not metadata:
             try:
                 # try loading from local file, see /models/ for examples
-                metadata = loadfn('{}/{}.yaml'.format(dirname(__file__),
-                                                      self.__class__.__name__))
-            except:
+                path = '{}/../models/{}.yaml'.format(dirname(__file__), self.__class__.__name__)
+                metadata = load_metadata(path)
+            except Exception as e:
+                print(e)
                 metadata = {}
 
         self._metadata = metadata
@@ -191,9 +209,29 @@ class AbstractModel(metaclass=ABCMeta):
         """
 
         # TODO: rename this method?
+
+        # check that we have equations defined
         if not self.equations:
             raise ValueError('Please implement the _evaluate '
                              'method for the {} model.'.format(self.name))
+
+        eqns = [parse_expr(eq) for eq in self.equations]
+        eqns = [eqn.subs(symbol_values) for eqn in eqns]
+
+        possible_outputs = set()
+        for eqn in eqns:
+            possible_outputs = possible_outputs.union(eqn.free_symbols)
+
+        outputs = {}
+        for possible_output in possible_outputs:
+            solutions = sp.nonlinsolve(eqns, possible_output)
+            # taking first solution only, and only asking for one output symbol
+            # so know length of output tuple for solutions will be 1
+            solution = list(solutions)[0][0]
+            if not isinstance(solution, sp.EmptySet):
+                outputs[possible_output] = solution
+
+        return outputs
 
     def evaluate(self, symbol_values):
         """
