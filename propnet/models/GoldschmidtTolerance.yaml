@@ -11,7 +11,7 @@ symbol_mapping: {
 connections:
 - inputs: t
   outputs: [r_cation_B, r_cation_A]
-equations: [t - (r_cation_A + r_cation_B)/(2**.5 * (rB + r_anion))]
+equations: [t - (r_cation_A + r_cation_B)/(2**.5 * (r_cation_B + r_anion))]
 ---
 The Goldchmidt Tolerance Factor indicates stability of perovskites.
 
