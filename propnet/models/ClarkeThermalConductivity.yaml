@@ -1,7 +1,7 @@
 ---
 title: Clarke thermal conductivity
 tags: [thermal]
-references: ["TODO"]
+references: ["url:https://doi.org/10.1016/S0257-8972(02)00593-5"]
 symbol_mapping: {
 	C_ij: elastic_tensor_voigt,
 	_structure: structure,
@@ -11,4 +11,17 @@ connections:
 - inputs: t
   outputs: [C_ij, _structure]
 ---
+Based on the model posited in https://doi.org/10.1016/S0257-8972(02)00593-5,
+predicts the thermal conductivity of materials in the high temperature limit.
+Materials have smaller values of Clarke thermal conductivity should be expected
+to have smaller thermal conductivity at high temperatures.
+
+In particular, this model predicts that a material will have low thermal conductivity
+at high temperatures if it has the following broad characteristics
+
+1) A large molecular weight
+2) A complex crystal structure
+3) Non-directional bonding
+4) A large number of different atoms per molecule
+
 This model currently uses the implementation in pymatgen.
