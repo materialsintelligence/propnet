@@ -1,3 +1,7 @@
+"""
+Module containing classes and methods for model functionality in propnet code.
+"""
+
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
@@ -37,6 +41,9 @@ def load_metadata(path):
 
 
 class AbstractModel(metaclass=ABCMeta):
+    """
+    Baseclass for all models appearing in Propnet
+    """
 
     def __init__(self, metadata=None):
 
