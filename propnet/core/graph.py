@@ -33,11 +33,8 @@ class Propnet:
         g.add_nodes_from(PropertyType)
 
         # add all our models (except abstract base classes)
-        abstract_models = [model for model in AbstractModel.__subclasses__()
-                                     if not model.__module__.startswith('propnet.core')]
-        abstract_analytical_models = [model for model in AbstractAnalyticalModel.__subclasses__()
-                                                if not model.__module__.startswith('propnet.core')]
-        models = abstract_models + abstract_analytical_models
+        models = [model for model in AbstractModel.__subclasses__()
+                  if not model.__module__.startswith('propnet.core')]
         g.add_nodes_from(models)
 
         for model_cls in models:
