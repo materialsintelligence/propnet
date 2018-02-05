@@ -4,15 +4,15 @@ import networkx as nx
 
 from propnet import logger
 from propnet.models import *
-from propnet.symbols import PropertyType, all_property_names
+from propnet.symbols import SymbolType, all_symbol_names
 
 from propnet.core.models import AbstractModel
 
 from enum import Enum
 from collections import Counter, namedtuple
 
-NodeType = Enum('NodeType', ['Material', 'Object', 'Property', 'Condition', 'Model'])
-Node = namedtuple('Node', ['node_type', 'node_value'])
+PropnetNodeType = Enum('PropnetNodeType', ['Material', 'SymbolType', 'Symbol', 'Model'])
+PropnetNode = namedtuple('PropnetNode', ['node_type', 'node_value'])
 
 class Propnet:
     """ """
@@ -29,30 +29,46 @@ class Propnet:
 
         g = nx.MultiDiGraph()
 
-        # add all our property types
-        g.add_nodes_from(PropertyType)
+        # add all symbols to graph
+        symbol_nodes = [PropnetNode(node_type=PropnetNodeType.SymbolType, node_value=symbol_type)
+                        for symbol_type in SymbolType]
+        g.add_nodes_from(symbol_nodes)
 
-        # add all our models (except abstract base classes)
+        # get a list of our models (except abstract base classes)
         models = [model for model in AbstractModel.__subclasses__()
                   if not model.__module__.startswith('propnet.core')]
-        g.add_nodes_from(models)
+
+        # add all models to graph
+        model_nodes = [PropnetNode(node_type=PropnetNodeType.Model, node_value=model)
+                       for model in models]
+        g.add_nodes_from(model_nodes)
 
         for model_cls in models:
+
             model = model_cls()
+            model_node = PropnetNode(node_type=PropnetNodeType.Model, node_value=model)
+
             # there are multiple routes for multiple sets of inputs/outputs (given by idx)
-            for idx, (outputs, inputs) in enumerate(model.connections.items()):
+            for idx, connection in enumerate(model.connections):
+
+                outputs, inputs = connection['outputs'], connection['inputs']
+
+                if isinstance(outputs, str):
+                    outputs = [outputs]
+                if isinstance(inputs, str):
+                    inputs = [inputs]
 
                 for input in inputs:
-                    input = PropertyType[model.symbol_mapping[input]]
-                    g.add_edge(input, model_cls, route=idx)
-
-                # TODO: remove, update models
-                if isinstance(outputs, str):
-                    outputs = {outputs}
+                    symbol_type = SymbolType[model.symbol_mapping[input]]
+                    input_node = PropnetNode(node_type=PropnetNodeType.SymbolType,
+                                             node_value=symbol_type)
+                    g.add_edge(input_node, model_node, route=idx)
 
                 for output in outputs:
-                    output = PropertyType[model.symbol_mapping[output]]
-                    g.add_edge(model_cls, output, route=idx)
+                    symbol_type = SymbolType[model.symbol_mapping[output]]
+                    output_node = PropnetNode(node_type=PropnetNodeType.SymbolType,
+                                              node_value=symbol_type)
+                    g.add_edge(model_node, output_node, route=idx)
 
         self.graph = g
 
@@ -108,7 +124,7 @@ class Propnet:
     @property
     def property_type_nodes(self):
         """:return: Return a list of nodes of property types."""
-        return list(filter(lambda x: isinstance(x, PropertyType), self.graph.nodes))
+        return list(filter(lambda x: isinstance(x, SymbolType), self.graph.nodes))
 
     @property
     def all_models(self):

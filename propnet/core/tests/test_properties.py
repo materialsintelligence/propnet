@@ -21,7 +21,7 @@ class PropertiesTest(unittest.TestCase):
             'comment': ""
         }
 
-        sample_property_type = PropertyMetadata(
+        sample_property_type = SymbolMetadata(
             name='youngs_modulus',
             units= [1.0, [["gigapascal", 1.0]]], #ureg.parse_expression("GPa"),
             display_names=["Young's modulus", "Elastic modulus"],
@@ -32,11 +32,11 @@ class PropertiesTest(unittest.TestCase):
         )
 
         self.assertEqual(sample_property_type,
-                         PropertyMetadata.from_dict(sample_property_type_dict))
+                         SymbolMetadata.from_dict(sample_property_type_dict))
 
     def testAllProperties(self):
         """ """
 
-        all_properties = {name: PropertyType[name] for name in all_property_names}
+        all_properties = {name: SymbolType[name] for name in all_symbol_names}
 
         self.assertEqual(str(all_properties['density'].value.units), '1.0 gram / centimeter ** 3')

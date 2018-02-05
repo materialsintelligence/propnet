@@ -20,7 +20,7 @@ ureg = UnitRegistry()
 ureg.define('atom = []')
 
 # convenience imports for user
-from propnet.symbols import PropertyType
-from propnet.core.symbols import Property
+from propnet.symbols import SymbolType
+from propnet.core.symbols import Symbol
 from propnet.core.graph import Propnet
 from propnet.core.materials import Material

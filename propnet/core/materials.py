@@ -1,8 +1,8 @@
 import networkx as nx
 
-from propnet.symbols import PropertyType
-from propnet.core.graph import NodeType
-from propnet.core.symbols import Property
+from propnet.symbols import SymbolType
+from propnet.core.graph import PropnetNodeType
+from propnet.core.symbols import Symbol
 
 
 class Material:
@@ -10,7 +10,7 @@ class Material:
     def __init__(self):
 
         self.graph = nx.MultiDiGraph()
-        self.root_node = NodeType.Material
+        self.root_node = PropnetNodeType.Material
         self.graph.add_node(self.root_node)
 
     def add_property(self, property):
@@ -31,7 +31,7 @@ class Material:
 
         available_propertes = []
         for node in self.graph.nodes:
-            if isinstance(node, PropertyType):
+            if isinstance(node, SymbolType):
                 available_propertes.append(node.value.name)
 
         return available_propertes

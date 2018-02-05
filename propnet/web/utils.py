@@ -9,7 +9,7 @@ from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
 from pybtex.style.labels import BaseLabelStyle
 
-from propnet.symbols import all_property_names, PropertyType
+from propnet.symbols import all_symbol_names, SymbolType
 from propnet.models import all_model_names
 
 from monty.serialization import loadfn
@@ -194,7 +194,7 @@ def parse_path(pathname):
         mode = 'property'
     elif pathname.startswith('/property'):
         mode = 'property'
-        for property in all_property_names:
+        for property in all_symbol_names:
             if pathname.startswith('/property/{}'.format(property)):
                 value = property
     elif pathname == '/load_material':

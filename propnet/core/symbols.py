@@ -5,7 +5,7 @@ from propnet import logger, ureg
 from pybtex.database.input.bibtex import Parser
 from monty.json import MSONable
 
-class PropertyMetadata(MSONable):
+class SymbolMetadata(MSONable):
     """Class storing the complete description of a property."""
 
     __slots__ = ['name', 'units', 'display_names', 'display_symbols',
@@ -41,7 +41,7 @@ class PropertyMetadata(MSONable):
             raise ValueError("Insufficient display names for ({}).".format(id))
 
 
-        if type in ('property', 'condition'):
+        if type in ('property', 'condition', 'objects'):
 
             # additional checking
 
@@ -101,7 +101,7 @@ class PropertyMetadata(MSONable):
         return self.name == other.name
 
 
-class Property:
+class Symbol:
     """Class storing the value of a property in a given context."""
 
     def __init__(self, type, value, tags,
