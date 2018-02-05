@@ -4,8 +4,8 @@ tags: [stability]
 references: []
 symbol_mapping: {
   r_anion: ionic_radius,
-  r_cation_A: ionic_radius_a,
-  r_cation_B: ionic_radius_b,
+  r_cation_A: ionic_radius,
+  r_cation_B: ionic_radius,
   t: goldschmidt_tolerance_factor
 }
 connections:

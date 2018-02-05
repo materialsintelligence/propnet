@@ -1,0 +1,10 @@
+name: prototype
+units:
+- 1.0
+- []
+display_names: ['Crystal Prototype']
+display_symbols: []
+dimension: 1
+test_value: '(Cubic) Perovskite'
+comment: ''
+type: object

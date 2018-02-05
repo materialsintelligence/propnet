@@ -3,9 +3,9 @@ title: Clarke thermal conductivity
 tags: [thermal]
 references: ["TODO"]
 symbol_mapping: {
-	C_ij: elastic_tensor_voigt,
-	_structure: structure,
-	t: thermal_conductivity
+  C_ij: elastic_tensor_voigt,
+  _structure: structure,
+  t: thermal_conductivity
 }
 connections:
 - inputs: t

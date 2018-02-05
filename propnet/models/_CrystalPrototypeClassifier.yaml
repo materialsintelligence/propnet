@@ -1,0 +1,14 @@
+---
+title: Crystal Prototype Classifier
+tags: [classifier]
+references: []
+symbol_mapping: {
+  _structure: structure,
+  _prototype: prototype
+}
+connections:
+- inputs: [_structure]
+  outputs: [_prototype]
+---
+This model uses a library of crystallographic prototpyes combined with pymatgen's StructureMatcher
+to assign a crystal prototype to a given input structure.
