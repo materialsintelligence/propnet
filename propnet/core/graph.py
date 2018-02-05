@@ -40,15 +40,18 @@ class Propnet:
         for model_cls in models:
             model = model_cls()
             # there are multiple routes for multiple sets of inputs/outputs (given by idx)
-            for idx, (outputs, inputs) in enumerate(model.connections.items()):
+            for idx, connection in enumerate(model.connections):
+
+                outputs, inputs = connection['outputs'], connection['inputs']
+
+                if isinstance(outputs, str):
+                    outputs = [outputs]
+                if isinstance(inputs, str):
+                    inputs = [inputs]
 
                 for input in inputs:
                     input = PropertyType[model.symbol_mapping[input]]
                     g.add_edge(input, model_cls, route=idx)
-
-                # TODO: remove, update models
-                if isinstance(outputs, str):
-                    outputs = {outputs}
 
                 for output in outputs:
                     output = PropertyType[model.symbol_mapping[output]]
