@@ -104,7 +104,7 @@ class PropertyMetadata(MSONable):
 class Property:
     """Class storing the value of a property in a given context."""
 
-    def __init__(self, type, value,
+    def __init__(self, type, value, tags,
                  provenance=None):
         """
         Parses inputs for constructing a Property object.
@@ -116,4 +116,5 @@ class Property:
         """
         self.type = type
         self.value = value
+        self.tags = tags
         self.provenance = provenance
