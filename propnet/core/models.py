@@ -186,7 +186,7 @@ class AbstractModel(metaclass=ABCMeta):
 
     @property
     def constraints(self):
-        return self._metadata.get('equations', [])
+        return {}
 
     @property
     def constants(self):

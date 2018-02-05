@@ -85,6 +85,16 @@ class Propnet:
         # all model edges are directed for inputs and outputs, so
         # traversal shouldn't require too much logic
         # return as pandas data frame
+
+        #Find list<Property> of existing Property objects in the graph
+
+        #Find list<PropertyMetadata> of PropertyMetadata objects are thus "active"
+
+        #Find list<AbstractModel> of connected Model objects
+
+        #Go through all outputs of the Model objects and generate unique new Property objects
+
+
         return NotImplementedError
 
     def shortest_path(self, property_one: str, property_two: str):
