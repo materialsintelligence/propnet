@@ -12,7 +12,7 @@ from abc import ABCMeta, abstractmethod
 from functools import wraps
 from hashlib import sha256
 
-from propnet.symbols import PropertyType
+from propnet.symbols import SymbolType
 from propnet import logger
 from propnet import ureg
 
@@ -62,7 +62,7 @@ class AbstractModel(metaclass=ABCMeta):
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
             try:
-                self.unit_mapping[symbol] = {symbol: PropertyType[name].value.units
+                self.unit_mapping[symbol] = {symbol: SymbolType[name].value.units
                                              for symbol, name in self.symbol_mapping.items()}
             except Exception as e:
                 raise ValueError('Please check your property names in your symbol mapping, '
@@ -283,7 +283,7 @@ class AbstractModel(metaclass=ABCMeta):
 
         :return (str): 4-digit hex string
         """
-        return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
+        return int.from_bytes(sha256(self.__class__.__name__.encode('utf-8')).digest(), 'big')
 
     @property
     def model_id(self):
@@ -292,4 +292,4 @@ class AbstractModel(metaclass=ABCMeta):
 
         :return (str): 4-digit hex string
         """
-        return self.__hash__()
+        return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
