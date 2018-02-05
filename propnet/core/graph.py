@@ -7,6 +7,7 @@ from propnet.models import *
 from propnet.symbols import PropertyType, all_property_names
 
 from propnet.core.models import AbstractModel
+from propnet.core.symbols import Property
 
 from enum import Enum
 from collections import Counter, namedtuple
@@ -86,12 +87,25 @@ class Propnet:
         # traversal shouldn't require too much logic
         # return as pandas data frame
 
-        #Find list<Property> of existing Property objects in the graph
+        #Find list<PropertyMetadata> of existing Property objects in the graph
+        active_propertyMetadata_nodes = self.property_type_nodes
 
+
+
+        extant_Property_nodes = list(filter(lambda x: isinstance(x, Property), self.graph.nodes))
         #Find list<PropertyMetadata> of PropertyMetadata objects are thus "active"
-
+        active_PropertyMetadata_nodes = [None]*len(extant_Property_Nodes)
+        c = 0
+        for node in extant_property_nodes:
+            for neighbor in self.graph.neighbors(node):
+                #Add to active_PropertyMetadata_nodes if a PropertyMetadata type.
+                pass
         #Find list<AbstractModel> of connected Model objects
-
+        active_Model_nodes = []
+        for node in active_PropertyMetadata_nodes:
+            for neighbor in self.graph.neighbors(node):
+                #Add to active_Model_nodes if a model type.
+                pass
         #Go through all outputs of the Model objects and generate unique new Property objects
 
 
