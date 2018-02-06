@@ -5,25 +5,24 @@ from os import path
 from monty.serialization import loadfn
 from propnet import logger
 
-from propnet.core.symbols import PropertyMetadata
+from propnet.core.symbols import SymbolMetadata
 
 # TODO: clean up this file, move as much to propnet.core.properties as possible
-# TODO: 'symbols' is a dumb name, anyone feel free to rename
 
 # Auto loading of all allowed properties
 
 # Stores all loaded properties as PropertyMetadata instances in a dictionary, mapped to
 # their names
-property_metadata: Dict[str, PropertyMetadata] = {}
+_symbol_metadata: Dict[str, SymbolMetadata] = {}
 
-property_metadata_files: List[str] = glob(path.join(path.dirname(__file__),
+_symbol_metadata_files: List[str] = glob(path.join(path.dirname(__file__),
                                                     '../symbols/**/*.yaml'),
-                                          recursive=True)
+                                         recursive=True)
 
-for f in property_metadata_files:
+for f in _symbol_metadata_files:
     try:
-        metadata = PropertyMetadata.from_dict(loadfn(f))
-        property_metadata[metadata.name] = metadata
+        metadata = SymbolMetadata.from_dict(loadfn(f))
+        _symbol_metadata[metadata.name] = metadata
         if "{}.yaml".format(metadata.name) not in f:
             raise ValueError('Name/filename mismatch in {}'.format(f))
     except Exception as e:
@@ -31,18 +30,18 @@ for f in property_metadata_files:
 
 # using property names for Enum, conventional to have all upper case
 # but using all lower case here
-PropertyType: Enum = Enum('PropertyType', [(k, v) for k, v in property_metadata.items()])
+SymbolType: Enum = Enum('SymbolType', [(k, v) for k, v in _symbol_metadata.items()])
 
 # Stores all loaded properties' names in a tuple in the global scope.
-all_property_names: Tuple[str] = tuple(p for p in property_metadata.keys())
+all_symbol_names: Tuple[str] = tuple(p for p in _symbol_metadata.keys())
 
-def get_display_name(property_name):
+def get_display_name(symbol_name):
     """Convenience function
 
     Args:
-      property_name: 
+      symbol_name: 
 
     Returns:
 
     """
-    return PropertyType[property_name].value.display_names[0]
+    return SymbolType[symbol_name].value.display_names[0]

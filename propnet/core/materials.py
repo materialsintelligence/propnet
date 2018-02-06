@@ -1,8 +1,9 @@
 import networkx as nx
 
-from propnet.symbols import PropertyType
-from propnet.core.graph import Node, NodeType
-from propnet.core.symbols import Property
+
+from propnet.symbols import SymbolType
+from propnet.core.graph import PropnetNodeType
+from propnet.core.symbols import Symbol
 
 from uuid import uuid4
 

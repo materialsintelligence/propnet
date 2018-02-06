@@ -1,8 +1,8 @@
 from datetime import datetime
 
 from pymatgen import MPRester
-from propnet.core.symbols import Property
-from propnet.symbols import PropertyType, property_metadata
+from propnet.core.symbols import Symbol
+from propnet.symbols import SymbolType, _symbol_metadata
 
 from propnet.core.materials import Material
 
@@ -68,11 +68,11 @@ def import_props(mp_ids, prop_list):
         mat_properties = []
         for key in data:
             if not data[key] is None:
-                prop_type = property_metadata[PROPNET_FROM_MP_NAME_MAPPING[key]]
-                p = Property(prop_type,
-                             data[key],
+                prop_type = _symbol_metadata[PROPNET_FROM_MP_NAME_MAPPING[key]]
+                p = Symbol(prop_type,
+                           data[key],
                              'Imported from Materials Project',
-                             [(data['task_id'], '')], {})
+                           [(data['task_id'], '')], {})
                 mat_properties.append(p)
         properties.append(mat_properties)
     return properties
@@ -95,9 +95,9 @@ def materials_from_mp_ids(mp_ids):
         for k, v in result.items():
             try:
                 property_name = PROPNET_FROM_MP_NAME_MAPPING[k]
-                property = Property(PropertyType[property_name],
-                         v,
-                         {
+                property = Symbol(SymbolType[property_name],
+                                  v,
+                                  {
                              'source': 'Materials Project',
                              'uid': result['task_id'],
                              'date': datetime.now().strftime('%Y-%m-%d')

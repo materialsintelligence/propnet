@@ -2,7 +2,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import plotly.graph_objs as go
 
-from propnet.symbols import all_property_names, PropertyType
+from propnet.symbols import all_symbol_names, SymbolType
 
 
 # layouts for property detail pages
@@ -17,7 +17,7 @@ def property_layout(property_name, mp_values=None):
 
     """
 
-    property_metadata = PropertyType[property_name].value
+    property_metadata = SymbolType[property_name].value
 
     main_name = property_metadata.display_names[0]
 
@@ -111,12 +111,12 @@ def properties_index(available_hists=None):
         available_hists = {}
 
     property_links = {}
-    for property_name in all_property_names:
+    for property_name in all_symbol_names:
 
         # group by tag
-        property_type = PropertyType[property_name].value.type
+        property_type = SymbolType[property_name].value.type
         # TODO: rename .type, add .display_name property, rename PropertyType etc.
-        display_name = PropertyType[property_name].value.display_names[0]
+        display_name = SymbolType[property_name].value.display_names[0]
 
         if property_type not in property_links:
             property_links[property_type] = []
