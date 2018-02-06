@@ -3,7 +3,7 @@
 Propnet is a knowledge graph for materials science. Given a set of *properties* about a given material, it can try to derive additional properties of that material using *models*. It is intended to integrated closely with the [Materials Project](http://materialsproject.org) and its large database of materials properties.
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/0803e3ca599a4250bb3ec2bb16b4b911)](https://www.codacy.com/app/mkhorton/propnet?utm_source=github.com&utm_medium=referral&utm_content=materialsintelligence/propnet&utm_campaign=badger)
-[![Build Status](https://travis-ci.org/materialsintelligence/propnet.svg?branch=master)](https://travis-ci.org/materialsintelligence/propnet) [![Heroku](https://heroku-badge.herokuapp.com/?app=propnet&svg=1)](https://propnet.herokuapp.com) [[!Docs](https://readthedocs.org/projects/propnet/badge/)]
+[![Build Status](https://travis-ci.org/materialsintelligence/propnet.svg?branch=master)](https://travis-ci.org/materialsintelligence/propnet) [![Heroku](https://heroku-badge.herokuapp.com/?app=propnet&svg=1)](https://propnet.herokuapp.com) [![Docs](https://readthedocs.org/projects/propnet/badge/)]
 
 **This is not ready for public use yet, please wait for a formal release announcement/publication! Thank you.** Any questions should be directed to the project lead @computron or, in the case of code, to the individual project contributors.
 
