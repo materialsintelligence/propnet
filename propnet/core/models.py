@@ -236,7 +236,7 @@ class AbstractModel(metaclass=ABCMeta):
             # so know length of output tuple for solutions will be 1
             solution = list(solutions)[0][0]
             if not isinstance(solution, sp.EmptySet):
-                outputs[possible_output] = solution
+                outputs[str(possible_output)] = solution
 
         return outputs
 
@@ -254,7 +254,7 @@ class AbstractModel(metaclass=ABCMeta):
         available_symbols = set(symbol_values.keys())
 
         # check we support this combination of inputs
-        available_inputs = [len(set(possible_input_symbols) - available_symbols) > 0
+        available_inputs = [len(set(possible_input_symbols) - available_symbols) == 0
                             for possible_input_symbols in self.input_symbols]
         if not any(available_inputs):
             raise ValueError("The {} model cannot generate any outputs for "
@@ -266,10 +266,10 @@ class AbstractModel(metaclass=ABCMeta):
         try:
             # evaluate is allowed to fail
             out = self._evaluate(symbol_values)
-            out['status'] = 'SUCCESS'
+            out['successful'] = True
         except Exception as e:
             return {
-                'status': 'FAILED',
+                'successful': False,
                 'message': str(e)
             }
 
