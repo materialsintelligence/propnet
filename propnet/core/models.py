@@ -147,6 +147,23 @@ class AbstractModel(metaclass=ABCMeta):
 
         # TODO: see below
 
+        def retrieve_from_library(ref):
+            """
+            Retrieves a reference from library distributed with
+            Propnet.
+
+            Args:
+                ref: reference string
+
+            Returns: BibTeX string
+
+            """
+
+            return None
+
+        def update_library(ref, parsed_ref):
+            return None
+
         def parse_doi(doi):
             """
             Parses a DOI into a BibTeX-formatted referenced.
@@ -171,7 +188,12 @@ class AbstractModel(metaclass=ABCMeta):
 
         parsed_refs = []
         for ref in refs:
-            if ref.startswith('url:'):
+
+            already_parsed = retrieve_from_library(ref)
+
+            if already_parsed:
+                parsed_ref = already_parsed
+            elif ref.startswith('url:'):
                 url = ref.split('url:')[1]
                 parsed_ref = parse_url(url)
             elif ref.startswith('doi:'):
@@ -180,13 +202,18 @@ class AbstractModel(metaclass=ABCMeta):
             else:
                 raise ValueError('Unknown reference style for'
                                  'model {}: {}'.format(self.name, ref))
+
+            if not already_parsed:
+                update_library(ref, parsed_ref)
+                logger.warn("Please commit changes to reference library.")
+
             parsed_refs.append(ref)
 
         return refs
 
     @property
     def constraints(self):
-        return self._metadata.get('equations', [])
+        return {}
 
     @property
     def constants(self):
@@ -293,3 +320,25 @@ class AbstractModel(metaclass=ABCMeta):
         :return (str): 4-digit hex string
         """
         return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
+
+    def __repr__(self):
+        return str(self._metadata)
+
+    #def __str__(self):
+    #    return NotImplementedError
+    #    return Markdown-formatted text
+    #    """
+    #    Model: model_name (model_id)
+    #
+    #    Associated Symbols:
+    #
+    #    Properties:
+    #    Conditions:
+    #    Objects:
+    #
+    #    Equations:
+    #
+    #    Inputs/outputs:
+    #
+    #    Description:
+    #    """#
