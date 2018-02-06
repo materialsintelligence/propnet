@@ -96,36 +96,74 @@ class Propnet:
         Returns:
 
         """
-        # should be straight-forward to evaluate graph,
-        # filter graph on what material properties have been
-        # defined, create a sub-graph, and traverse this sub-graph
-        # all model edges are directed for inputs and outputs, so
-        # traversal shouldn't require too much logic
-        # return as pandas data frame
+        #Get existing Symbol nodes, 'active' SymbolType nodes, and 'candidate' Models.
+        symbol_nodes = self.nodes_by_type(PropnetNodeType.Symbol)
+        active_symbol_type_nodes = set()
+        for node in symbol_nodes:
+            active_symbol_type_nodes += \
+                list(filter(lambda n: n.node_type == PropnetNodeType.SymbolType, self.graph.neighbors(node)))
+        candidate_models = set()
+        for node in active_symbol_type_nodes:
+            candidate_models += list(filter(lambda n: n.node_type == PropnetNodeType.Model, self.graph.neighbors(node)))
 
-        #Find list<PropertyMetadata> of existing Property objects in the graph
-        active_propertyMetadata_nodes = self.property_type_nodes
+        #Create fast-lookup datastructure (SymbolType -> Symbol):
+        lookup_dict = {}
+        for node in symbol_nodes:
+            if node.node_value.type not in lookup_dict:
+                lookup_dict[node.node_value.type] = [node.node_value]
+            else:
+                lookup_dict[node.node_value.type] += [node.node_value]
 
+        #For each candidate model, check if we have active property types to match types and assumptions.
+        #If so, produce the available output properties.
+        outputs = []
+        for model_node in candidate_models:
+            ##Cache necessary data from model_node: input symbols, types, and conditions.
+            model = model_node.node_value
+            legend = model.symbol_mapping
+            sym_inputs = model.input_symbols
+            input_conditions = model.conditions
+            sym_outputs = model.output_symbols
 
+            def get_types(symbols_in, legend):
+                """Converts symbols used in equations to SymbolType enum objects"""
+                to_return = []
+                for l in symbols_in:
+                    out = []
+                    for i in l:
+                        out.append(SymbolType[legend[symbols_in[l][i]]])
+                    to_return.append(out)
+                return to_return
 
-        extant_Property_nodes = list(filter(lambda x: isinstance(x, Property), self.graph.nodes))
-        #Find list<PropertyMetadata> of PropertyMetadata objects are thus "active"
-        active_PropertyMetadata_nodes = [None]*len(extant_Property_Nodes)
-        c = 0
-        for node in extant_property_nodes:
-            for neighbor in self.graph.neighbors(node):
-                #Add to active_PropertyMetadata_nodes if a PropertyMetadata type.
-                pass
-        #Find list<AbstractModel> of connected Model objects
-        active_Model_nodes = []
-        for node in active_PropertyMetadata_nodes:
-            for neighbor in self.graph.neighbors(node):
-                #Add to active_Model_nodes if a model type.
-                pass
-        #Go through all outputs of the Model objects and generate unique new Property objects
+            type_inputs = get_types(sym_inputs, legend)
+            type_outputs = get_types(sym_outputs, legend)
 
+            ##Look through all input sets and match with all combinations from lookup_dict.
+            def gen_input_dicts(symbols, candidate_props, constraint_props, level):
+                """Recursively generates all possible combinations of input arguments"""
+                current_level = []
+                candidates = candidate_props[level]
+                for candidate in candidates:
+                    if constraint_props[symbols[level]](candidate):
+                        current_level.append({symbols[level]: candidate})
+                if level == 0:
+                    return current_level
+                else:
+                    others = gen_input_dicts(symbols, candidate_props, level-1)
+                    to_return = []
+                    for entry1 in current_level:
+                        for entry2 in others:
+                            to_return.append(entry1 + entry2)
+                    return to_return
 
-        return NotImplementedError
+            for i in range(0, len(type_inputs)):
+                candidate_properties = []
+                for j in range(0, len(type_inputs[i])):
+                    candidate_properties.append(lookup_dict.get(type_inputs[i][j], []))
+                input_sets = gen_input_dicts(sym_inputs, candidate_properties, input_conditions, len(candidate_properties)-1)
+                for input_set in input_sets:
+                    outputs.append(model.evaluate(input_set))
+        return outputs
 
     def shortest_path(self, property_one: str, property_two: str):
         """
@@ -145,10 +183,9 @@ class Propnet:
         # takes test values from the property definitions
         return NotImplementedError
 
-    @property
-    def property_type_nodes(self):
+    def nodes_by_type(self, node_type):
         """:return: Return a list of nodes of property types."""
-        return list(filter(lambda x: isinstance(x, SymbolType), self.graph.nodes))
+        return list(filter(lambda n: n.node_type == node_type, self.graph.nodes))
 
     @property
     def all_models(self):
