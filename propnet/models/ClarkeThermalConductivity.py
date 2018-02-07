@@ -4,8 +4,6 @@ from pymatgen.analysis.elasticity.elastic import ElasticTensor
 
 class ClarkeThermalConductivity(AbstractModel):
 
-
-
    def _evaluate(self, symbol_values):
 
        tensor = ElasticTensor.from_voigt(symbol_values["C_ij"])
