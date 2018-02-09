@@ -101,7 +101,7 @@ class SymbolMetadata(MSONable):
         return self.name == other.name
 
 
-class Symbol:
+class Symbol(MSONable):
     """Class storing the value of a property in a given context."""
 
     def __init__(self, type, value, tags,
@@ -114,7 +114,23 @@ class Symbol:
         :param comment: important information relative to the property, including sourcing.
         :param source_ids: the mpIDs from which the property value originates.
         """
-        self.type = type
-        self.value = value
-        self.tags = tags
-        self.provenance = provenance
+        self._type = type
+        self._value = value
+        self._tags = tags
+        self._provenance = provenance
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def type(self):
+        return self._type
+
+    @property
+    def tags(self):
+        return self._tags
+
+    @property
+    def provenance(self):
+        return self._provenance

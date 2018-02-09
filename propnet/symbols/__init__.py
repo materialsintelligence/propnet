@@ -1,7 +1,8 @@
+import os
+
 from typing import *
 from glob import glob
 from enum import Enum
-from os import path
 from monty.serialization import loadfn
 from propnet import logger
 
@@ -15,7 +16,7 @@ from propnet.core.symbols import SymbolMetadata
 # their names
 _symbol_metadata: Dict[str, SymbolMetadata] = {}
 
-_symbol_metadata_files: List[str] = glob(path.join(path.dirname(__file__),
+_symbol_metadata_files: List[str] = glob(os.path.join(os.path.dirname(__file__),
                                                     '../symbols/**/*.yaml'),
                                          recursive=True)
 
