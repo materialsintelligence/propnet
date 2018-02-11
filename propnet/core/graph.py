@@ -97,9 +97,10 @@ class Propnet:
         """
         Gathers all PropnetNodes of a given PropnetNodeType.
 
-        :param node_type: type of node that will be returned.
-        :type node_type: str
-        :returns (list<PropnetNode>) list of nodes of property types.
+        Args:
+            node_type (str): type of node that will be returned.
+        Returns:
+            (list<PropnetNode>) list of nodes of property types.
         """
         to_return = []
         for node in self.graph.nodes:
@@ -112,9 +113,10 @@ class Propnet:
         Add a material and any of its associated properties to the Propnet graph.
         Mutates the graph instance variable.
 
-        :param material: Material whose information will be added to the graph.
-        :type material: Material
-        :return void
+        Args:
+            material (Material) Material whose information will be added to the graph.
+        Returns:
+            void
         """
         material.parent = self
         self.graph = nx.compose(material.graph, self.graph)
@@ -124,9 +126,10 @@ class Propnet:
         Removes a material and any of its associated properties from the Propnet graph.
         Mutates the graph instance variable.
 
-        :param material:
-        :type material: Material
-        :return void
+        Args:
+            material (Material) Material whose information will be removed from the graph.
+        Returns:
+            void
         """
         material_node = None
         for node in self.graph.nodes:
@@ -165,12 +168,11 @@ class Propnet:
         a Symbol might be derived from a combination of materials in this case. Likewise existing Material nodes' graph
         instances will not be mutated in this case.
 
-        :param material: optional limit on which material's properties will be expanded (default -> all materials)
-        :type material: Material
-        :param property_type: optional limit on which Symbols will be considered as input
-        :type property_type: list<SymbolType>
-        :return void
-
+        Args:
+            material (Material): optional limit on which material's properties will be expanded (default: all materials)
+            property_type (list<SymbolType>): optional limit on which Symbols will be considered as input.
+        Returns:
+            void
         """
         # Get existing Symbol nodes, 'active' SymbolType nodes, and 'candidate' Models.
         # Filter by provided material and property_type arguments.
@@ -340,7 +342,8 @@ class Propnet:
         Returns a full summary of the graph in terms of the SymbolTypes, Symbols, Materials, and Models
         that it contains. Connections are shown as nesting within the printout.
 
-        :returns (str) representation of this Propnet object
+        Returns:
+            (str) representation of this Propnet object.
         """
         summary = ["Propnet Graph", ""]
         property_type_nodes = self.nodes_by_type('SymbolType')

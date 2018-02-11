@@ -46,16 +46,20 @@ class SymbolMetadata(MSONable):
         """
         Parses and validates a series of inputs into a PropertyMetadata tuple, a format that PropNet expects.
         Parameters correspond exactly with those of a PropertyMetadata tuple.
-        :param name: string ASCII identifying the property uniquely as an internal identifier.
-        :param units: units of the property as a Quantity supported by the Pint package.
-        :param display_names: list of strings giving possible human-readable names for the property.
-        :param display_symbols: list of strings giving possible human-readable symbols for the property.
-        :param dimension: list giving the order of the tensor as the length, and number of dimensions as individual
-                          integers in the list.
-        :param test_value: a sample value of the property, reasonable over a wide variety of contexts.
-        :param comment: any useful information on the property including its definitions and possible citations.
-        :param type: 'property', if a property of a material, or 'condition' for other variables (e.g. temperature)
-        :return: PropertyMetadata instance.
+
+        Args:
+            name (str): string ASCII identifying the property uniquely as an internal identifier.
+            units (id): units of the property as a Quantity supported by the Pint package.
+            display_names (list<str>): list of strings giving possible human-readable names for the property.
+            display_symbols (list<str>): list of strings giving possible human-readable symbols for the property.
+            dimension (id): list giving the order of the tensor as the length, and number of dimensions as individual
+                            integers in the list.
+            test_value (id): a sample value of the property, reasonable over a wide variety of contexts.
+            comment (str): any useful information on the property including its definitions and possible citations.
+            type (str): 'property', if a property of a material, or 'condition' for other variables (e.g. temperature)
+
+        Returns:
+            (PropertyMetadata) PropertyMetadata instance.
         """
 
         # TODO: need to formalize property vs condition distinction
@@ -96,7 +100,10 @@ class SymbolMetadata(MSONable):
 
     @property
     def dimension_as_string(self):
-        """:return: dimension of property (np.shape) as a human-readable string"""
+        """
+        Returns:
+            (str): dimension of property (np.shape) as a human-readable string
+        """
 
         if isinstance(self.dimension, int):
             return 'scalar'
@@ -110,7 +117,10 @@ class SymbolMetadata(MSONable):
 
     @property
     def unit_as_string(self):
-        """:return: unit of property as human-readable string"""
+        """
+        Returns:
+            (str): unit of property as human-readable string
+        """
 
         # self.units has both the units and (sometimes) a
         # prefactor (its magnitude)
@@ -143,12 +153,13 @@ class Symbol(MSONable):
                  provenance=None):
         """
         Parses inputs for constructing a Property object.
-        :param type: pointer to an existing PropertyMetadata object, identifies the type of data stored in the property.
-        :type type: SymbolMetadata
-        :param value: value of the property
-        :param tags: list of strings storing metadata from Symbol evaluation.
-        :type tags: list<str>
-        :param provenance: time of creation of the object.
+
+        Args:
+            type (SymbolMetadata): pointer to an existing PropertyMetadata object, identifies the type of data stored
+                                   in the property.
+            value (id): value of the property.
+            tags (list<str>): list of strings storing metadata from Symbol evaluation.
+            provenance (id): time of creation of the object.
         """
         self._type = type
         self._value = value
@@ -158,20 +169,32 @@ class Symbol(MSONable):
     # Associated accessor methods.
     @property
     def value(self):
-        """:returns value of the Symbol"""
+        """
+        Returns:
+            (id): value of the Symbol
+        """
         return self._value
 
     @property
     def type(self):
-        """:returns SymbolMetadata of the Symbol"""
+        """
+        Returns:
+            (SymbolMetadata): SymbolMetadata of the Symbol
+        """
         return self._type
 
     @property
     def tags(self):
-        """:returns tags of the Symbol"""
+        """
+        Returns:
+            (list<str>): tags of the Symbol
+        """
         return self._tags
 
     @property
     def provenance(self):
-        """:returns time of creation of the Symbol"""
+        """
+        Returns:
+            (id): time of creation of the Symbol
+        """
         return self._provenance

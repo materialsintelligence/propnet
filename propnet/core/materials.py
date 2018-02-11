@@ -44,9 +44,10 @@ class Material:
         If the material has been bound to a Propnet instance, correctly adds the property to that instance.
         Mutates graph instance variable.
 
-        :param property: property to be bound to the material.
-        :type property: Symbol
-        :return void
+        Args:
+            property (Symbol): property to be bound to the material.
+        Returns:
+            void
         """
         property_node = PropnetNode(node_type=PropnetNodeType.Symbol, node_value=property)
         property_symbol_node = PropnetNode(node_type=PropnetNodeType.SymbolType, node_value=property.type)
@@ -59,7 +60,9 @@ class Material:
     def available_properties(self):
         """
         Method obtains the names of all properties bound to this Material.
-        :return (list<Str>)
+
+        Returns:
+            (list<str>) list of all properties bound to this Material.
         """
         available_propertes = []
         for node in self.graph.nodes:

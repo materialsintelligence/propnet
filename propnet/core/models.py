@@ -29,9 +29,10 @@ def load_metadata(path):
     Loads the .yaml file at the given path, returning a dictionary of .yaml contents.
     Custom model data at the end of the .yaml file is loaded in under the key "description".
 
-    :param path: valid file path to a .yaml file to be loaded.
-    :type path: str
-    :return: (dict<str,id>) representation of .yaml contents.
+    Args:
+        path (str): valid file path to a .yaml file to be loaded.
+    Returns:
+        (dict<str,id>) representation of .yaml contents.
     """
     with open(path, 'r') as f:
         metadata = f.read()
@@ -95,8 +96,8 @@ class AbstractModel(metaclass=ABCMeta):
         Constructs a Model object with the provided metadata. If the metadata is None, it attempts to load in the
         appropriate .yaml file at this time. Such a .yaml file must have a name equal to the class name.
 
-        :param metadata: metadata defining the model.
-        :type metadata: dict<str,id>
+        Args:
+            metadata (dict<str,id>): metadata defining the model.
         """
 
         if not metadata:
@@ -127,7 +128,9 @@ class AbstractModel(metaclass=ABCMeta):
         """
         Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
         indicating whether that Symbol meets all necessary conditions for validity.
-        :return: dict<str,lambda(Symbol)->bool>
+
+        Returns:
+            (dict<str, lambda(Symbol) -> bool>)
         """
         return {}
 
@@ -136,10 +139,12 @@ class AbstractModel(metaclass=ABCMeta):
         Given a set of symbol_values, plugs the values into the model and returns a dictionary of outputs representing
         the result of plugging in the symbol_values. symbol_values must contain a valid set of inputs as indicated in
         the connections method.
-        :param symbol_values: Mapping from string symbol to float value, giving inputs
-        :type symbol_values: dict<str,float>
-        :returns (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
-                                    given inputs.
+
+        Args:
+            symbol_values (dict<str,float>): Mapping from string symbol to float value, giving inputs.
+        Returns:
+            (dict<str,float>) mapping from string symbol to float value giving result of applying the model to the
+                              given inputs.
         """
         # Define sympy equations for the model
         if not self.equations:
@@ -166,10 +171,12 @@ class AbstractModel(metaclass=ABCMeta):
         Given a set of symbol_values, performs error checking to see if the input symbol_values represents a valid input
         set based on the self.connections() method. If so, it returns a dictionary representing the value of plug_in
         applied to the inputs. The dictionary contains a "successful" key representing if plug_in was successful.
-        :param symbol_values: Mapping from string symbol to float value, giving inputs
-        :type symbol_values: dict<str,float>
-        :returns (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
-                                    given inputs. Additionally contains a "successful" key -> bool pair.
+
+        Args:
+            symbol_values (dict<str,float>): Mapping from string symbol to float value, giving inputs.
+        Returns:
+            (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
+                               given inputs. Additionally contains a "successful" key -> bool pair.
 
         TODO: check our units
         TODO: make this more robust
@@ -200,22 +207,33 @@ class AbstractModel(metaclass=ABCMeta):
     # Suite of getter methods returning appropriate model data.
     @property
     def name(self):
-        """ :returns (str): Name of model """
+        """
+        Returns:
+            (str): Name of model
+        """
         return self.__class__.__name__
 
     @property
     def title(self):
-        """ :returns (str): Title of model """
+        """
+        Returns:
+            (str): Title of model
+        """
         return self._metadata.get('title', 'undefined')
 
     @property
     def tags(self):
-        """ :returns (list<str>): List of tags associated with the model """
+        """
+        Returns:
+            (list<str>): List of tags associated with the model
+        """
         return self._metadata.get('tags', [])
 
     @property
     def description(self):
-        """ :returns (str): Description of model as Markdown string """
+        """
+        Returns:
+            (str): Description of model as Markdown string """
         return self._metadata.get('description', '')
 
     @property
@@ -224,7 +242,8 @@ class AbstractModel(metaclass=ABCMeta):
         A mapping of a symbol named used within the model to the canonical symbol name, e.g. {"E": "youngs_modulus"}
         keys are symbols used in the model; values are SymbolType enum values (SymbolMetadata.name field)
 
-        :returns (dict<str,str>): symbol mapping dictionary
+        Returns:
+            (dict<str,str>): symbol mapping dictionary
         """
         return self._metadata.get('symbol_mapping', {})
 
@@ -235,23 +254,33 @@ class AbstractModel(metaclass=ABCMeta):
         dictionaries. These dictionaries contain two keys: "inputs" and "outputs". Each key maps to a list of symbol
         strings that serve as the list of input / output property types required for evaluation by the model.
 
-        :returns (list<dict<str,list<str>>>): List of connections
+        Returns:
+             (list<dict<str,list<str>>>): List of connections
         """
         return self._metadata.get('connections', [])
 
     @property
     def input_symbols(self):
-        """:returns (list<str>): all sets of input symbols for the model"""
+        """
+        Returns:
+            (list<str>): all sets of input symbols for the model
+        """
         return [d['inputs'] for d in self.connections]
 
     @property
     def output_symbols(self):
-        """:returns (list<str>): all sets of output symbols for the model"""
+        """
+        Returns:
+            (list<str>): all sets of output symbols for the model
+        """
         return [d['outputs'] for d in self.connections]
 
     @property
     def equations(self):
-        """:returns (list<str>): equations that define the model"""
+        """
+        Returns:
+            (list<str>): equations that define the model
+        """
         return self._metadata.get('equations', [])
 
     @property
@@ -260,7 +289,8 @@ class AbstractModel(metaclass=ABCMeta):
         References for a model. When defining a model, these should be given as a list of strings with either the
         prefix "url:" or "doi:", and a formatted BibTeX string will be generated
 
-        :returns (list<str>): list of BibTeX strings
+        Returns:
+            (list<str>): list of BibTeX strings
         """
 
         refs = self._metadata.get('references', [])
