@@ -6,7 +6,11 @@ from pybtex.database.input.bibtex import Parser
 from monty.json import MSONable
 
 class SymbolMetadata(MSONable):
-    """Class storing the complete description of a property."""
+    """
+    Class storing the complete description of a property.
+
+
+    """
 
     __slots__ = ['name', 'units', 'display_names', 'display_symbols',
                  'dimension', 'test_value', 'comment', 'type']
@@ -40,19 +44,14 @@ class SymbolMetadata(MSONable):
         if display_names is None or len(display_names) == 0:
             raise ValueError("Insufficient display names for ({}).".format(id))
 
-
-        if type in ('property', 'condition', 'objects'):
+        if type in ('property', 'condition'):
 
             # additional checking
 
             try:
                 np.zeros(dimension)
-            except:
-                raise ValueError("Dimensions provided for ({}) are invalid.".format(id))
-
-            if not np.any(test_value):
-                logger.warn("Test value for {} is zero. "
-                            "Please change to a more appropriate test value.".format(name))
+            except TypeError:
+                raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
 
             try:
                 units = ureg.Quantity.from_tuple(units)

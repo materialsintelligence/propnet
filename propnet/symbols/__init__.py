@@ -27,7 +27,7 @@ for f in _symbol_metadata_files:
         if "{}.yaml".format(metadata.name) not in f:
             raise ValueError('Name/filename mismatch in {}'.format(f))
     except Exception as e:
-        logger.error('Failed to parse {}, {}.'.format(path.basename(f), e))
+        logger.error('Failed to parse {}, {}.'.format(os.path.basename(f), e))
 
 # using property names for Enum, conventional to have all upper case
 # but using all lower case here
@@ -35,6 +35,7 @@ SymbolType: Enum = Enum('SymbolType', [(k, v) for k, v in _symbol_metadata.items
 
 # Stores all loaded properties' names in a tuple in the global scope.
 all_symbol_names: Tuple[str] = tuple(p for p in _symbol_metadata.keys())
+
 
 def get_display_name(symbol_name):
     """Convenience function

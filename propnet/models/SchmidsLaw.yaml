@@ -5,7 +5,7 @@ references: ["url:https://en.wikipedia.org/wiki/Schmid%27s_law"]
 symbol_mapping: {
   T: resolved_shear_stress,
   m: schmid_factor,
-  σ:applied_stress
+  σ: applied_stress
 }
 connections:
 - inputs: T
