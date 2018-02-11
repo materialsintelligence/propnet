@@ -24,6 +24,7 @@ class Material:
 
     Attributes:
         graph (nx.MultiDiGraph<PropnetNode>): data structure storing all Symbol nodes of the Material.
+        id (int): unique hash number used as an identifier for this object.
         root_node (PropnetNode): the Material node associated with this material, has a unique hash id.
         parent (Propnet): Stores a pointer to the Propnet instance this Material has been bound to.
     """
@@ -32,7 +33,8 @@ class Material:
         Creates a Material instance, instantiating a trivial graph of one node.
         """
         self.graph = nx.MultiDiGraph()
-        self.root_node = PropnetNode(node_type=PropnetNodeType.Material, node_value=str(uuid4()))
+        self.id = uuid4()
+        self.root_node = PropnetNode(node_type=PropnetNodeType.Material, node_value=self)
         self.graph.add_node(self.root_node)
         self.parent = None
 

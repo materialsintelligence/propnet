@@ -8,11 +8,10 @@ import networkx as nx
 
 from propnet import logger
 from propnet.models import *
-from propnet.symbols import SymbolType, all_symbol_names
+from propnet.symbols import SymbolType
 
-from propnet.core.models import AbstractModel
 from propnet.core.symbols import Symbol
-from propnet.core.materials import Material
+from propnet.core.models import AbstractModel
 
 from enum import Enum
 from collections import Counter, namedtuple
@@ -135,7 +134,7 @@ class Propnet:
                 continue
             if node.node_value != material:
                 continue
-            if material_node
+            if material_node:
                 raise ValueError("Multiple duplicate Material nodes were found - removal is ambiguous.")
             material_node = node
         if not material_node:
@@ -156,8 +155,15 @@ class Propnet:
         Mutates the graph instance variable.
 
         Optional arguments limit the scope of which models or properties are tested.
-            material parameter will produce output from models only if the input properties come from the specified material.
-            property_type parameter will produce  output from models only if the input properties are in the list.
+            material parameter: produces output from models only if the input properties come from the specified material.
+                                mutated graph will modify the Material's graph instance as well as this graph instance.
+                                mutated graph will include edges from Material to Symbol to SymbolType.
+            property_type parameter: produces output from models only if the input properties are in the list.
+
+        If no material parameter is specified, the generated SymbolNodes will be added with edges to and from
+        corresponding SymbolTypeNodes specifically. No connections will be made to existing Material nodes because
+        a Symbol might be derived from a combination of materials in this case. Likewise existing Material nodes' graph
+        instances will not be mutated in this case.
 
         :param material: optional limit on which material's properties will be expanded (default -> all materials)
         :type material: Material
@@ -177,7 +183,7 @@ class Propnet:
                 if node.node_value == material:
                     if material_node:
                         raise ValueError('Multiple identical materials found.')
-                    material_nodes = node
+                    material_node = node
             if not material_node:
                 raise ValueError('Specified material not found.')
             symbol_nodes = []
@@ -206,7 +212,7 @@ class Propnet:
                     continue
                 candidate_models.add(neighbor)
 
-        #Create fast-lookup datastructure (SymbolType -> Symbol):
+        # Create fast-lookup data structure (SymbolType -> Symbol):
         lookup_dict = {}
         for node in symbol_nodes:
             if node.node_value.type not in lookup_dict:
@@ -214,16 +220,15 @@ class Propnet:
             else:
                 lookup_dict[node.node_value.type] += [node.node_value]
 
-        #For each candidate model, check if we have active property types to match types and assumptions.
-        #If so, produce the available output properties.
-        outputs = []
+        # For each candidate model, check if we have active property types to match types and assumptions.
+        # If so, produce the available output properties.
         for model_node in candidate_models:
-            ##Cache necessary data from model_node: input symbols, types, and conditions.
+            outputs = []
+            # Cache necessary data from model_node: input symbols, types, and conditions.
             model = model_node.node_value
             legend = model.symbol_mapping
             sym_inputs = model.input_symbols
             input_conditions = model.constraints
-            #sym_outputs = model.output_symbols
 
             def get_types(symbols_in, legend):
                 """Converts symbols used in equations to SymbolType enum objects"""
@@ -236,9 +241,8 @@ class Propnet:
                 return to_return
 
             type_inputs = get_types(sym_inputs, legend)
-            #type_outputs = get_types(sym_outputs, legend)
 
-            ##Look through all input sets and match with all combinations from lookup_dict.
+            # Look through all input sets and match with all combinations from lookup_dict.
             def gen_input_dicts(symbols, candidate_props, constraint_props, level):
                 """Recursively generates all possible combinations of input arguments"""
                 current_level = []
@@ -262,19 +266,36 @@ class Propnet:
                             to_return.append(merged_dict)
                     return to_return
 
+            # Get candidate input Symbols for the given model.
             for i in range(0, len(type_inputs)):
                 candidate_properties = []
                 for j in range(0, len(type_inputs[i])):
                     candidate_properties.append(lookup_dict.get(type_inputs[i][j], []))
                 input_sets = gen_input_dicts(sym_inputs[i], candidate_properties, input_conditions, len(candidate_properties)-1)
                 for input_set in input_sets:
-                    outputs.append(model.evaluate(input_set))
+                    plug_in_set = {}
+                    for (k, v) in input_set.items():
+                        plug_in_set[k] = v.value
+                    outputs.append(model.evaluate(plug_in_set))
 
-        ##For any new symbol nodes created, add them and their corresponding edges to the graph.
-        # TBD
-
-
-        return outputs
+            # For any new outputs generated, create the appropriate SymbolNode and connections to SymbolTypeNodes
+            # Mutates this graph.
+            symbol_outputs = []
+            for entry in outputs:
+                for (k, v) in entry.items():
+                    try:
+                        prop_type = SymbolType[legend[k]]
+                    except KeyError:
+                        continue
+                    symbol_outputs.append(Symbol(prop_type, v, None))
+            for symbol in symbol_outputs:
+                symbol_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol)
+                symbol_type_node = PropnetNode(node_type=PropnetNodeType['SymbolType'], node_value=symbol.type)
+                self.graph.add_edge(symbol_node, symbol_type_node)
+                if material:
+                    self.graph.add_edge(material_node, symbol_node)
+                    material_node.node_value.graph.add_edge(material_node.node_value.root_node, symbol_node)
+                    material_node.node_value.graph.add_edge(symbol_node, symbol_type_node)
 
     def shortest_path(self, property_one: str, property_two: str):
         """
@@ -344,7 +365,7 @@ class Propnet:
         if len(materials) != 0:
             summary += ["Materials:"]
         for material_node in materials:
-            summary += ["\t " + material_node.node_value]
+            summary += ["\t " + str(material_node.node_value.id)]
             for property in filter(lambda n: n.node_type == PropnetNodeType['Symbol'],
                                    self.graph.neighbors(material_node)):
                 summary += ["\t\t " + property.node_value.type.value.display_names[0] +

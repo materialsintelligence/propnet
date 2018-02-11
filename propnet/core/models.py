@@ -71,7 +71,7 @@ class AbstractModel(metaclass=ABCMeta):
         constraints () -> dict<str,lambda(Symbol)->bool>
             Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
             indicating whether that Symbol meets all necessary conditions for validity.
-        evaluate (dict<str,id>) -> dict<str,id>
+        plug_in (dict<str,id>) -> dict<str,id>
             Given a dictionary specifying a value for a set of input symbols, returns the predicted value of the model
             for those inputs.
 
@@ -121,7 +121,7 @@ class AbstractModel(metaclass=ABCMeta):
                                  'Exception: {}'
                                  .format(name, self.__class__.__name__, e))
 
-    # constraints and evaluate methods are optional overrides in base classes
+    # constraints and evaluate methods are optional overrides in extending classes
     @property
     def constraints(self):
         """
@@ -131,31 +131,26 @@ class AbstractModel(metaclass=ABCMeta):
         """
         return {}
 
-    def _evaluate(self, symbol_values):
+    def plug_in(self, symbol_values):
         """
-        Evaluates a model directly.
-
-        Args:
-            symbol_values:
-
-        Returns:
-
+        Given a set of symbol_values, plugs the values into the model and returns a dictionary of outputs representing
+        the result of plugging in the symbol_values. symbol_values must contain a valid set of inputs as indicated in
+        the connections method.
+        :param symbol_values: Mapping from string symbol to float value, giving inputs
+        :type symbol_values: dict<str,float>
+        :returns (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
+                                    given inputs.
         """
-
-        # TODO: rename this method?
-
-        # check that we have equations defined
+        # Define sympy equations for the model
         if not self.equations:
             raise ValueError('Please implement the _evaluate '
                              'method for the {} model.'.format(self.name))
-
         eqns = [parse_expr(eq) for eq in self.equations]
         eqns = [eqn.subs(symbol_values) for eqn in eqns]
-
+        # Generate outputs from the sympy equations.
         possible_outputs = set()
         for eqn in eqns:
             possible_outputs = possible_outputs.union(eqn.free_symbols)
-
         outputs = {}
         for possible_output in possible_outputs:
             solutions = sp.nonlinsolve(eqns, possible_output)
@@ -164,42 +159,41 @@ class AbstractModel(metaclass=ABCMeta):
             solution = list(solutions)[0][0]
             if not isinstance(solution, sp.EmptySet):
                 outputs[str(possible_output)] = solution
-
         return outputs
 
     def evaluate(self, symbol_values):
         """
-        Evaluate a model
+        Given a set of symbol_values, performs error checking to see if the input symbol_values represents a valid input
+        set based on the self.connections() method. If so, it returns a dictionary representing the value of plug_in
+        applied to the inputs. The dictionary contains a "successful" key representing if plug_in was successful.
+        :param symbol_values: Mapping from string symbol to float value, giving inputs
+        :type symbol_values: dict<str,float>
+        :returns (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
+                                    given inputs. Additionally contains a "successful" key -> bool pair.
 
-        Args:
-            symbol_values:
-
-        Returns:
-
+        TODO: check our units
+        TODO: make this more robust
         """
-
         available_symbols = set(symbol_values.keys())
 
         # check we support this combination of inputs
         available_inputs = [len(set(possible_input_symbols) - available_symbols) == 0
                             for possible_input_symbols in self.input_symbols]
         if not any(available_inputs):
-            raise ValueError("The {} model cannot generate any outputs for "
-                             "these inputs: {}".format(self.name, available_symbols))
-
-        # TODO: check our units
-        # TODO: make this more robust
-
+            return {
+                'successful': False,
+                'message': "The {} model cannot generate any outputs for these inputs: {}".format(
+                    self.name, available_symbols)
+            }
         try:
             # evaluate is allowed to fail
-            out = self._evaluate(symbol_values)
+            out = self.plug_in(symbol_values)
             out['successful'] = True
         except Exception as e:
             return {
                 'successful': False,
                 'message': str(e)
             }
-
         # add units to output
         return out
 
