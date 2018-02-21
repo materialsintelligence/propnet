@@ -67,5 +67,25 @@ class Material:
         available_propertes = []
         for node in self.graph.nodes:
             if node.node_type == PropnetNodeType.Symbol:
-                available_propertes.append(node.value.name)
+                available_propertes.append(node.node_value.type.name)
         return available_propertes
+
+    def available_property_nodes(self):
+        """
+        Method obtains all Symbol objects bound to this Material.
+
+        Returns:
+            (list<Symbol>) list of all Symbol objects bound to this Material.
+        """
+        to_return = []
+        for node in self.graph.nodes:
+            if node.node_type == PropnetNodeType['Symbol']:
+                to_return.append(node)
+        return to_return
+
+    def __str__(self):
+        to_return = "Material: " + str(self.id) + "\n"
+        for node in self.available_property_nodes():
+            to_return += "\t" + node.node_value.type.name + ":\t"
+            to_return += str(node.node_value.value) + "\n"
+        return to_return
