@@ -79,7 +79,7 @@ class AbstractModel(metaclass=ABCMeta):
     Thus, in full generality, a model requires a .yaml file to specify appropriate parameters along with a .py file to
     specify any method overrides. Each model thus corresponds to two files with the same name, and an equivalently-named
     class in the .py file inheriting from AbstractModel. While this class is termed 'abstract', it contains no pure
-    virtual methods (borrowing terms from C++)
+    virtual methods (borrowing terms from C++) -- instead abstract is used to force the user to subclass.
 
     At runtime, all models' associated .py files are loaded in and a class object is created for each Model. These
     class objects' __init__ methods must be called to produce a Model object via instantiation. Upon instantiation,
