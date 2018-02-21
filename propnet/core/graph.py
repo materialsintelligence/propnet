@@ -300,15 +300,7 @@ class Propnet:
                     material_node.node_value.graph.add_edge(symbol_node, symbol_type_node)
 
     def shortest_path(self, property_one: str, property_two: str):
-        """
-
-        Args:
-          property_one: str: 
-          property_two: str: 
-
-        Returns:
-
-        """
+        """ """
         # very easy to do with networkx, use in-built algo
         return NotImplementedError
 
