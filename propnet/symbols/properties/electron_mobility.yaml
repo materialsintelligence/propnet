@@ -1,0 +1,11 @@
+name: electron_mobility
+units:
+- 1.0
+- - [centimeter, 2.0]
+  - [volt, -1.0]
+  - [second, -1.0]
+display_names: ['Electron mobility']
+display_symbols: ['\mu_e']
+dimension: 1
+test_value: 10.0
+comment: ''
