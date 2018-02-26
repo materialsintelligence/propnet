@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 from typing import *
 from propnet import logger, ureg
@@ -198,3 +199,20 @@ class Symbol(MSONable):
             (id): time of creation of the Symbol
         """
         return self._provenance
+
+    def __hash__(self):
+        return hash(self.type.name) + hash(self.value)
+
+    def __eq__(self, other):
+        tol = 1E-6
+        if not isinstance(other, Symbol):
+            return False
+        if self.type != other.type:
+            return False
+        if self.value == 0 or other.value == 0:
+            return self.value < tol and other.value < tol
+        elif abs(self.value) < 1.0 and abs(other.value) > abs(self.value)*sys.float_info.max:
+            return False
+        elif abs(self.value) > 1.0 and abs(other.value) < abs(self.value)*sys.float_info.min:
+            return False
+        return ((1-tol) < (self.value / other.value)) and ((self.value / other.value) < (1 + tol))
