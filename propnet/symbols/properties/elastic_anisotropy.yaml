@@ -1,0 +1,9 @@
+name: elastic_anisotropy
+units:
+- 1.0
+- []
+display_names: [Elastic Anisotropy]
+display_symbols: ['E_{anisotropy}']
+dimension: 1
+test_value: 0.27
+comment: ''

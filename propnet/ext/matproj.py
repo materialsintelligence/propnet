@@ -1,12 +1,12 @@
 from datetime import datetime
 
 from pymatgen import MPRester
+from pymatgen.core.structure import IStructure
 from propnet.core.symbols import Symbol
-from propnet.symbols import SymbolType, _symbol_metadata
+from propnet.core.materials import Material
+from propnet.symbols import SymbolType
 
 from propnet.core.materials import Material
-
-mpr = MPRester()
 
 # maps propnet symbol names to mp (mapidoc) keypath
 MP_FROM_PROPNET_NAME_MAPPING = {
@@ -22,104 +22,70 @@ MP_FROM_PROPNET_NAME_MAPPING = {
     'final_energy_per_atom': 'final_energy_per_atom',
     'formation_energy_per_atom': 'formation_energy_per_atom',
     'piezoelectric_tensor': 'piezo.piezoelectric_tensor',
-    'volume_unit_cell': 'volume',
-    'structure': 'structure'
+    'volume_unit_cell': 'volume'
 }
 PROPNET_FROM_MP_NAME_MAPPING = {v: k for k, v in MP_FROM_PROPNET_NAME_MAPPING.items()}
 
 # list of all available properties
-AVAILABLE_MP_PROPERTIES = list(PROPNET_FROM_MP_NAME_MAPPING.keys()) + ['task_id']
+AVAILABLE_MP_PROPERTIES = list(PROPNET_FROM_MP_NAME_MAPPING.keys()) + ['task_id', 'structure']
 PROPNET_PROPERTIES_ON_MP = list(MP_FROM_PROPNET_NAME_MAPPING.keys())
 
 
-def import_all_props(mp_ids):
-    """Given a list of materials ids, returns a list of all available properties
-    for each material. One list per material id is stored in a list of lists.
-
-    Args:
-      mp_ids: materials ids for which properties are requested.
-
-    Returns:
-      list of lists containing all possible materials properties by mp_id
-
+def import_materials(mp_ids, api_key=None):
     """
-    return import_props(mp_ids, AVAILABLE_MP_PROPERTIES)
-
-
-def import_props(mp_ids, prop_list):
-    """Given a list of materials ids and mp property names returns a list of property
-    instances for each requested material. These lists are stored in an encapsulating
-    list.
-
+    Given a list of material ids, returns a list of Material objects with all
+    available properties from the Materials Project.
     Args:
-      mp_ids: materials ids for which properties are requested.
-      prop_list: requested MP properties for materials.
-
+        mp_ids (list<str>): list of material ids whose information will be retrieved.
+        api_key (str): api key to be used to conduct the query.
     Returns:
-      list of lists containing requested materials properties by mp_id
-
+        (list<Material>): list of material objects with associated data.
     """
-    query = mpr.query(criteria={"task_id": {'$in': mp_ids}}, properties=prop_list)
-    print(query)
-    # properties of all mp-ids inputted; list of lists
-    properties = []
+    if api_key:
+        mpr = MPRester(api_key)
+    else:
+        mpr = MPRester()
+    to_return = []
+    query = mpr.query(criteria={"task_id": {'$in': mp_ids}}, properties=AVAILABLE_MP_PROPERTIES)
     for data in query:
         # properties of one mp-id
-        mat_properties = []
+        mat = Material()
+        iString = data['task_id']
+        mat.add_property(Symbol(SymbolType['structure'], data['structure'], [iString]))
+        mat.add_property(Symbol(SymbolType['lattice_unit_cell'], data['structure'].lattice.matrix, [iString]))
         for key in data:
-            if not data[key] is None:
-                prop_type = _symbol_metadata[PROPNET_FROM_MP_NAME_MAPPING[key]]
-                p = Symbol(prop_type,
-                           data[key],
-                             'Imported from Materials Project',
-                           [(data['task_id'], '')], {})
-                mat_properties.append(p)
-        properties.append(mat_properties)
-    return properties
+            if not data[key] is None and key in PROPNET_FROM_MP_NAME_MAPPING.keys():
+                prop_type = SymbolType[PROPNET_FROM_MP_NAME_MAPPING[key]]
+                p = Symbol(prop_type, data[key], [iString])
+                mat.add_property(p)
+        to_return.append(mat)
+    return to_return
 
 
-def materials_from_mp_ids(mp_ids):
+def import_material(mp_id, api_key=None):
     """
-
+    Given a material id, returns a Material object with all available properties from
+    the Materials Project
     Args:
-        mp_ids:
-
+        mp_id (str): material id whose information will be retrieved.
+        api_key (str): api key to be used to conduct the query.
     Returns:
-
+        (Material): material object with associated data.
     """
-    query_results = mpr.query(criteria={'task_id': {'$in': mp_ids}},
-                             properties=AVAILABLE_MP_PROPERTIES)
-    materials = []
-    for result in query_results:
-        m = Material()
-        for k, v in result.items():
-            try:
-                property_name = PROPNET_FROM_MP_NAME_MAPPING[k]
-                property = Symbol(SymbolType[property_name],
-                                  v,
-                                  {
-                             'source': 'Materials Project',
-                             'uid': result['task_id'],
-                             'date': datetime.now().strftime('%Y-%m-%d')
-                         })
-                m.add_property(property)
-            except:
-                print('Remove this try/except, for demo only ... some mappings incorrect')
-        materials.append(m)
-    return materials
+    return import_materials([mp_id], api_key)[0]
 
 
-def materials_from_formula(formula):
-    query_results = mpr.query(criteria={'pretty_formula': formula},
-                             properties=['task_id'])
-    mpids = [entry['task_id'] for entry in query_results]
-    return materials_from_mp_ids(mpids)
-
-def mpid_from_formula(formula):
+def materials_from_formula(formula, api_key):
+    """
+    Given a material chemical formula, returns all Material objects with a matching formula
+    with all their available properties from the Materials Project.
+    Args:
+        formula (str): material's formula
+        api_key (str): api key to be used to conduct the query.
+    Returns:
+        (list<Material>): all materials with matching formula
+    """
     query_results = mpr.query(criteria={'pretty_formula': formula},
                               properties=['task_id'])
     mpids = [entry['task_id'] for entry in query_results]
-    if mpids:
-        return mpids[0]
-    else:
-        return None
+    return import_materials(mpids, api_key)

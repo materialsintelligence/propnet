@@ -21,7 +21,7 @@ class GraphTest(unittest.TestCase):
 
         # if any node on the graph is not of type Node, raise an error
         for node in self.p.graph.nodes:
-            assert(isinstance(node, PropnetNode))
+            self.assertTrue(isinstance(node, PropnetNode))
 
     @staticmethod
     def checkGraphSymbols(to_test, values: list, node_type: str):
@@ -106,12 +106,12 @@ class GraphTest(unittest.TestCase):
         st_outputs.append(SymbolType['refractive_index'])
 
         # Test
-        assert(GraphTest.checkGraphSymbols(mat1.graph, s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(mat1.graph, m_outputs, 'Material'))
-        assert(GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'))
+        self.assertTrue(GraphTest.checkGraphSymbols(mat1.graph, s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.checkGraphSymbols(mat1.graph, m_outputs, 'Material'))
+        self.assertTrue(GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'))
 
-        assert(GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'))
+        self.assertTrue(GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'))
 
     def testEvaluateMethod2(self):
         """
@@ -168,13 +168,13 @@ class GraphTest(unittest.TestCase):
         st_outputs.append(SymbolType['refractive_index'])
 
         # Test
-        assert(GraphTest.checkGraphSymbols(mat1.graph, m1_s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(mat1.graph, [mat1], 'Material'))
-        assert(GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'))
+        self.assertTrue(GraphTest.checkGraphSymbols(mat1.graph, m1_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.checkGraphSymbols(mat1.graph, [mat1], 'Material'))
+        self.assertTrue(GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'))
 
-        assert(GraphTest.checkGraphSymbols(mat2.graph, m2_s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(mat2.graph, [mat2], 'Material'))
-        assert(GraphTest.checkGraphSymbols(mat2.graph, st_outputs, 'SymbolType'))
+        self.assertTrue(GraphTest.checkGraphSymbols(mat2.graph, m2_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.checkGraphSymbols(mat2.graph, [mat2], 'Material'))
+        self.assertTrue(GraphTest.checkGraphSymbols(mat2.graph, st_outputs, 'SymbolType'))
 
-        assert(GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'))
+        self.assertTrue(GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'))
