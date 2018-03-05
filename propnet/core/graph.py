@@ -174,11 +174,15 @@ class Propnet:
         Returns:
             void
         """
+
         # Get existing Symbol nodes, 'active' SymbolType nodes, and 'candidate' Models.
         # Filter by provided material and property_type arguments.
+
         if not material:
+            # All symbol_nodes are candidates for evaluation.
             symbol_nodes = self.nodes_by_type('Symbol')
         else:
+            # Only symbol_nodes connected to the given Material object are candidates for evaluation.
             material_nodes = self.nodes_by_type('Material')
             material_node = None
             for node in material_nodes:
@@ -194,6 +198,7 @@ class Propnet:
                     symbol_nodes.append(node)
 
         if property_type:
+            # Only SymbolType objects in the property_type list are candidates for evaluation.
             c = 0
             while c < len(symbol_nodes):
                 if symbol_nodes[c].node_value.type not in property_type:
@@ -201,12 +206,15 @@ class Propnet:
                 else:
                     c += 1
 
+        # Get set of SymbolTypes that have values provided.
         active_symbol_type_nodes = set()
         for node in symbol_nodes:
             for neighbor in self.graph.neighbors(node):
                 if neighbor.node_type != PropnetNodeType.SymbolType:
                     continue
                 active_symbol_type_nodes.add(neighbor)
+
+        # Get set of Models that have values provided to inputs.
         candidate_models = set()
         for node in active_symbol_type_nodes:
             for neighbor in self.graph.neighbors(node):
@@ -221,6 +229,28 @@ class Propnet:
                 lookup_dict[node.node_value.type] = [node.node_value]
             else:
                 lookup_dict[node.node_value.type] += [node.node_value]
+
+        # Create fast-lookup data structure (Symbol -> MaterialNode)
+        source_dict = {}
+
+        def get_source_nodes(graph, node):
+            """
+            Given a Symbol node on the graph, returns a list of connected material nodes.
+            This list symbolizes the set of materials for which this Symbol is a property.
+            Args:
+                graph (networkx.MultiDiGraph): graph on which the node is stored.
+                node (PropnetNode): node on the graph whose connected material nodes are to be found.
+            Returns:
+                (list<PropnetNode>): list of material type nodes that are connected to this node.
+            """
+            to_return = []
+            for n in graph.in_edges(node):
+                if n[0].node_type == PropnetNodeType['Material']:
+                    to_return.append(n[0])
+            return to_return
+
+        for node in symbol_nodes:
+            source_dict[node.node_value] = get_source_nodes(self.graph, node)
 
         # For each candidate model, check if we have active property types to match types and assumptions.
         # If so, produce the available output properties.
@@ -242,11 +272,27 @@ class Propnet:
                     to_return.append(out)
                 return to_return
 
+            # list<list<SymbolType>>, representing sets of input properties the model accepts.
             type_inputs = get_types(sym_inputs, legend)
 
             # Look through all input sets and match with all combinations from lookup_dict.
             def gen_input_dicts(symbols, candidate_props, constraint_props, level):
-                """Recursively generates all possible combinations of input arguments"""
+                """
+                Recursively generates all possible combinations of input arguments.
+                Args:
+                    symbols (list<str>): one set of input symbols required by the model.
+                    candidate_props (list<list<Symbol>>):
+                        list of potential values that can be plugged into each symbol,
+                        the outer list corresponds by ordering to the symbols list,
+                        the inner list gives values that can be plugged in to each symbol.
+                    constraint_props (dict<str, lambda(Symbol) -> bool>):
+                        Dictionary mapping Symbols to lambda functions that evaluate whether the symbol meets necessary
+                        input conditions.
+                    level (int): internal parameter used for recursion, says which symbol is being enumerated, should
+                                 be set to the final index value of symbols.
+                Returns:
+                    (list<dict>) list of dictionaries giving symbol strings mapped to values.
+                """
                 current_level = []
                 candidates = candidate_props[level]
                 for candidate in candidates:
@@ -276,28 +322,36 @@ class Propnet:
                 input_sets = gen_input_dicts(sym_inputs[i], candidate_properties, input_conditions, len(candidate_properties)-1)
                 for input_set in input_sets:
                     plug_in_set = {}
+                    sourcing = set()
                     for (k, v) in input_set.items():
                         plug_in_set[k] = v.value
-                    outputs.append(model.evaluate(plug_in_set))
+                        for elem in source_dict[v]:
+                            sourcing.add(elem)
+                    outputs.append({"output": model.evaluate(plug_in_set), "source": sourcing})
 
             # For any new outputs generated, create the appropriate SymbolNode and connections to SymbolTypeNodes
+            # For any new outputs generated, create the appropriate connections from Material Nodes
             # Mutates this graph.
             symbol_outputs = []
+            output_sources = []
             for entry in outputs:
-                for (k, v) in entry.items():
+                for (k, v) in entry['output'].items():
                     try:
                         prop_type = SymbolType[legend[k]]
                     except KeyError:
                         continue
                     symbol_outputs.append(Symbol(prop_type, v, None))
-            for symbol in symbol_outputs:
+                    output_sources.append(entry['source'])
+            for i in range(0, len(symbol_outputs)):
+                symbol = symbol_outputs[i]
                 symbol_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol)
                 symbol_type_node = PropnetNode(node_type=PropnetNodeType['SymbolType'], node_value=symbol.type)
                 self.graph.add_edge(symbol_node, symbol_type_node)
-                if material:
-                    self.graph.add_edge(material_node, symbol_node)
-                    material_node.node_value.graph.add_edge(material_node.node_value.root_node, symbol_node)
-                    material_node.node_value.graph.add_edge(symbol_node, symbol_type_node)
+                for source_node in output_sources[i]:
+                    self.graph.add_edge(source_node, symbol_node)
+                if len(output_sources[i]) == 1:
+                    store = output_sources[i].__iter__().__next__()
+                    store.node_value.graph.add_edge(store.node_value.root_node, symbol_node)
 
     def shortest_path(self, property_one: str, property_two: str):
         """ """
