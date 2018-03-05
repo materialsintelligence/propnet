@@ -8,7 +8,7 @@ from propnet.core.materials import Material
 
 mpr = MPRester()
 
-# maps propnet property names to mp (mapidoc) keypath
+# maps propnet symbol names to mp (mapidoc) keypath
 MP_FROM_PROPNET_NAME_MAPPING = {
     'poisson_ratio': 'elasticity.poisson_ratio',
     'bulk_modulus': 'elasticity.K_Voigt_Reuss_Hill',
