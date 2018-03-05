@@ -21,8 +21,7 @@ class GraphTest(unittest.TestCase):
 
         # if any node on the graph is not of type Node, raise an error
         for node in self.p.graph.nodes:
-            if not isinstance(node, PropnetNode):
-                raise ValueError('Node on graph is not of valid type: {}'.format(node))
+            assert(isinstance(node, PropnetNode))
 
     @staticmethod
     def checkGraphSymbols(to_test, values: list, node_type: str):
@@ -107,17 +106,12 @@ class GraphTest(unittest.TestCase):
         st_outputs.append(SymbolType['refractive_index'])
 
         # Test
-        if not GraphTest.checkGraphSymbols(mat1.graph, s_outputs, 'Symbol'):
-            raise ValueError('Graph symbol structure incorrect.')
-        if not GraphTest.checkGraphSymbols(mat1.graph, m_outputs, 'Material'):
-            raise ValueError('Graph material structure incorrect.')
-        if not GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'):
-            raise ValueError('Graph symbol type structure incorrect.')
+        assert(GraphTest.checkGraphSymbols(mat1.graph, s_outputs, 'Symbol'))
+        assert(GraphTest.checkGraphSymbols(mat1.graph, m_outputs, 'Material'))
+        assert(GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'))
 
-        if not GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'):
-            raise ValueError('Graph symbol structure incorrect.')
-        if not GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'):
-            raise ValueError('Graph material structure incorrect.')
+        assert(GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'))
+        assert(GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'))
 
     def testEvaluateMethod2(self):
         """
@@ -174,21 +168,13 @@ class GraphTest(unittest.TestCase):
         st_outputs.append(SymbolType['refractive_index'])
 
         # Test
-        if not GraphTest.checkGraphSymbols(mat1.graph, m1_s_outputs, 'Symbol'):
-            raise ValueError('Graph symbol structure incorrect.')
-        if not GraphTest.checkGraphSymbols(mat1.graph, [mat1], 'Material'):
-            raise ValueError('Graph material structure incorrect.')
-        if not GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'):
-            raise ValueError('Graph symbol type structure incorrect.')
+        assert(GraphTest.checkGraphSymbols(mat1.graph, m1_s_outputs, 'Symbol'))
+        assert(GraphTest.checkGraphSymbols(mat1.graph, [mat1], 'Material'))
+        assert(GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'))
 
-        if not GraphTest.checkGraphSymbols(mat2.graph, m2_s_outputs, 'Symbol'):
-            raise ValueError('Graph symbol structure incorrect.')
-        if not GraphTest.checkGraphSymbols(mat2.graph, [mat2], 'Material'):
-            raise ValueError('Graph material structure incorrect.')
-        if not GraphTest.checkGraphSymbols(mat2.graph, st_outputs, 'SymbolType'):
-            raise ValueError('Graph symbol type structure incorrect.')
+        assert(GraphTest.checkGraphSymbols(mat2.graph, m2_s_outputs, 'Symbol'))
+        assert(GraphTest.checkGraphSymbols(mat2.graph, [mat2], 'Material'))
+        assert(GraphTest.checkGraphSymbols(mat2.graph, st_outputs, 'SymbolType'))
 
-        if not GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'):
-            raise ValueError('Graph symbol structure incorrect.')
-        if not GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'):
-            raise ValueError('Graph material structure incorrect.')
+        assert(GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'))
+        assert(GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'))
