@@ -204,15 +204,10 @@ class Symbol(MSONable):
         return hash(self.type.name) + hash(self.value)
 
     def __eq__(self, other):
-        tol = 1E-6
         if not isinstance(other, Symbol):
             return False
         if self.type != other.type:
             return False
-        if self.value == 0 or other.value == 0:
-            return self.value < tol and other.value < tol
-        elif abs(self.value) < 1.0 and abs(other.value) > abs(self.value)*sys.float_info.max:
+        if not np.isclose(self.value, other.value):
             return False
-        elif abs(self.value) > 1.0 and abs(other.value) < abs(self.value)*sys.float_info.min:
-            return False
-        return ((1-tol) < (self.value / other.value)) and ((self.value / other.value) < (1 + tol))
+        return True
