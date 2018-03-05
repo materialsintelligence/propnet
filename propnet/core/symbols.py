@@ -208,6 +208,6 @@ class Symbol(MSONable):
             return False
         if self.type != other.type:
             return False
-        if not np.isclose(self.value, other.value):
+        if not np.isclose(float(self.value), float(other.value)):
             return False
         return True
