@@ -12,7 +12,7 @@ from propnet.core.models import *
 
 class ModelTest(unittest.TestCase):
 
-    def testInstantiateAllModels(self):
+    def test_instantiate_all_models(self):
         models_to_test = []
         for model_name in all_model_names:
             try:
@@ -21,7 +21,7 @@ class ModelTest(unittest.TestCase):
             except Exception as e:
                 raise Exception('Failed to load model {}: {}'.format(model_name, e))
 
-    def testEvaluate(self):
+    def test_evaluate(self):
         test_data = glob(os.path.join(os.path.dirname(__file__), '../../models/test_data/*.json'))
         for f in test_data:
             model_name = os.path.splitext(os.path.basename(f))[0]
