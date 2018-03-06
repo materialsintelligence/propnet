@@ -41,22 +41,19 @@ def import_materials(mp_ids, api_key=None):
     Returns:
         (list<Material>): list of material objects with associated data.
     """
-    if api_key:
-        mpr = MPRester(api_key)
-    else:
-        mpr = MPRester()
+    mpr = MPRester(api_key)
     to_return = []
     query = mpr.query(criteria={"task_id": {'$in': mp_ids}}, properties=AVAILABLE_MP_PROPERTIES)
     for data in query:
         # properties of one mp-id
         mat = Material()
-        iString = data['task_id']
-        mat.add_property(Symbol(SymbolType['structure'], data['structure'], [iString]))
-        mat.add_property(Symbol(SymbolType['lattice_unit_cell'], data['structure'].lattice.matrix, [iString]))
+        tag_string = data['task_id']
+        mat.add_property(Symbol(SymbolType['structure'], data['structure'], [tag_string]))
+        mat.add_property(Symbol(SymbolType['lattice_unit_cell'], data['structure'].lattice.matrix, [tag_string]))
         for key in data:
             if not data[key] is None and key in PROPNET_FROM_MP_NAME_MAPPING.keys():
                 prop_type = SymbolType[PROPNET_FROM_MP_NAME_MAPPING[key]]
-                p = Symbol(prop_type, data[key], [iString])
+                p = Symbol(prop_type, data[key], [tag_string])
                 mat.add_property(p)
         to_return.append(mat)
     return to_return
