@@ -6,7 +6,7 @@ from propnet.core.symbols import *
 
 class GraphTest(unittest.TestCase):
 
-    def set_up(self):
+    def setUp(self):
 
         self.p = Propnet()
 
