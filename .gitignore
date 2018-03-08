@@ -109,3 +109,6 @@ ENV/
 
 # temporary cache files
 .tmp/
+
+# testing notebook
+demo/vtshitoyan_test.ipynb
