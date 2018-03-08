@@ -201,7 +201,7 @@ class Symbol(MSONable):
         return self._provenance
 
     def __hash__(self):
-        return hash(self.type.name) + hash(self.value)
+        return hash(self.type.name)
 
     def __eq__(self, other):
         if not isinstance(other, Symbol):
