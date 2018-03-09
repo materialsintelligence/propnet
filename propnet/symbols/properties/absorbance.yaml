@@ -1,0 +1,9 @@
+name: absorbance
+units:
+- 1.0
+- []
+display_names: ['Absorbance']
+display_symbols: ['A']
+dimension: 1
+test_value: 0.1
+comment: 'the intensity of absorbed light relative to the incident intensity'
