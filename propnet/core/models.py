@@ -163,7 +163,7 @@ class AbstractModel(metaclass=ABCMeta):
             # so know length of output tuple for solutions will be 1
             solution = list(solutions)[0][0]
             if not isinstance(solution, sp.EmptySet):
-                outputs[str(possible_output)] = solution
+                outputs[str(possible_output)] = sp.N(solution)
         return outputs
 
     def evaluate(self, symbol_values):

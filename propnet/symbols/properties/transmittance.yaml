@@ -1,0 +1,9 @@
+name: transmittance
+units:
+- 1.0
+- []
+display_names: ['Transmittance']
+display_symbols: ['T']
+dimension: 1
+test_value: 0.7
+comment: 'the intensity of transmitted light relative to the incident intensity'

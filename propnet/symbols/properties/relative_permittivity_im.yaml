@@ -1,0 +1,9 @@
+name: relative_permittivity_im
+units:
+- 1.0
+- []
+display_names: ['Imaginary part of relative permittivity']
+display_symbols: ['\epsilon_{c}']
+dimension: 1
+test_value: 0.2
+comment: ''

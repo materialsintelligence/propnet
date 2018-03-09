@@ -1,0 +1,10 @@
+name: wavelength
+units:
+- 1.0
+- - [nanometer, 1.0]
+display_names: [Wavelength]
+display_symbols: [\lambda]
+dimension: 1
+test_value: 512
+comment: 'wavelength of light'
+type: condition
