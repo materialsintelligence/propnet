@@ -5,26 +5,25 @@ from propnet.core.symbols import *
 
 
 class GraphTest(unittest.TestCase):
-    """ """
 
     def setUp(self):
 
         self.p = Propnet()
 
-    def testGraphConstruction(self):
+    def test_graph_construction(self):
 
         self.assertGreaterEqual(self.p.graph.number_of_nodes(), 1)
 
-    def testValidNodeTypes(self):
+    def test_valid_node_types(self):
 
         print(self.p.graph.nodes)
 
         # if any node on the graph is not of type Node, raise an error
         for node in self.p.graph.nodes:
-            assert(isinstance(node, PropnetNode))
+            self.assertTrue(isinstance(node, PropnetNode))
 
     @staticmethod
-    def checkGraphSymbols(to_test, values: list, node_type: str):
+    def check_graph_symbols(to_test, values: list, node_type: str):
         """
         Checks a graph instance (toTest) to see if it contains corresponding elements.
         Cannot contain duplicates (unless they appear in values) or more than are indicated in the list.
@@ -106,12 +105,12 @@ class GraphTest(unittest.TestCase):
         st_outputs.append(SymbolType['refractive_index'])
 
         # Test
-        assert(GraphTest.checkGraphSymbols(mat1.graph, s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(mat1.graph, m_outputs, 'Material'))
-        assert(GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m_outputs, 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, st_outputs, 'SymbolType'))
 
-        assert(GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, m_outputs, 'Material'))
 
     def testEvaluateMethod2(self):
         """
@@ -168,13 +167,13 @@ class GraphTest(unittest.TestCase):
         st_outputs.append(SymbolType['refractive_index'])
 
         # Test
-        assert(GraphTest.checkGraphSymbols(mat1.graph, m1_s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(mat1.graph, [mat1], 'Material'))
-        assert(GraphTest.checkGraphSymbols(mat1.graph, st_outputs, 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, st_outputs, 'SymbolType'))
 
-        assert(GraphTest.checkGraphSymbols(mat2.graph, m2_s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(mat2.graph, [mat2], 'Material'))
-        assert(GraphTest.checkGraphSymbols(mat2.graph, st_outputs, 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, st_outputs, 'SymbolType'))
 
-        assert(GraphTest.checkGraphSymbols(propnet.graph, s_outputs, 'Symbol'))
-        assert(GraphTest.checkGraphSymbols(propnet.graph, m_outputs, 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, m_outputs, 'Material'))

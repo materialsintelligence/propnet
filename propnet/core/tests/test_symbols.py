@@ -6,10 +6,8 @@ from propnet.core.symbols import *
 from propnet.symbols import *
 
 class PropertiesTest(unittest.TestCase):
-    """ """
 
-    def testPropertyMetadata(self):
-        """ """
+    def test_property_metadata(self):
 
         sample_symbol_type_dict = {
             'name': 'youngs_modulus',
@@ -34,8 +32,7 @@ class PropertiesTest(unittest.TestCase):
         self.assertEqual(sample_symbol_type,
                          SymbolMetadata.from_dict(sample_symbol_type_dict))
 
-    def testAllProperties(self):
-        """ """
+    def test_all_properties(self):
 
         all_properties = {name: SymbolType[name] for name in all_symbol_names}
 
