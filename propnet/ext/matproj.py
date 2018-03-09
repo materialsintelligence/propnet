@@ -43,6 +43,7 @@ def import_materials(mp_ids, api_key=None):
     """
     mpr = MPRester(api_key)
     to_return = []
+
     query = mpr.query(criteria={"task_id": {'$in': mp_ids}}, properties=AVAILABLE_MP_PROPERTIES)
     for data in query:
         # properties of one mp-id
