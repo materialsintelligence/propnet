@@ -22,9 +22,11 @@ pymatgen = "*"
 flask-caching = "*"
 "8834a26" = {path = "./components/force-graph", editable = true}
 
+
 [dev-packages]
 
 pytest = "*"
+"3f0c26f" = {path = ".", editable = true}
 
 
 [requires]

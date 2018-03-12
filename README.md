@@ -24,7 +24,7 @@ For a design overview, please see the `docs/design_overview.md` file -- this is 
 
 Currently, a lot of ideas are still in flux, and there are no guarantees!
 
-The recommended way to install and use the package is to clone the package locally and run `pipenv install`, followed by `pipenv shell` to launch Propnet inside a virtual environment.
+The recommended way to install and use the package is to clone the package locally and run `pipenv install --dev`, followed by `pipenv shell` to launch Propnet inside a virtual environment.
 
 To run Propnet inside a Jupyter notebook, run:
 
