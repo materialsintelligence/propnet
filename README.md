@@ -26,6 +26,8 @@ Currently, a lot of ideas are still in flux, and there are no guarantees!
 
 The recommended way to install and use the package is to clone the package locally and run `pipenv install --dev`, followed by `pipenv shell` to launch Propnet inside a virtual environment.
 
+If you want to use the Materials Project interface, please set your `PMG_MAPI_KEY` environment variable appropriately (or add it to a .env file inside the Propnet directory to have it be used automatically during installation).
+
 To run Propnet inside a Jupyter notebook, run:
 
 ```bash
