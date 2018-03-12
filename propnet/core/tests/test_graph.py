@@ -177,3 +177,5 @@ class GraphTest(unittest.TestCase):
 
         self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, s_outputs, 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, m_outputs, 'Material'))
+
+    #Future more-general tests to come.
