@@ -1,0 +1,32 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+dash = "*"
+dash-core-components = "*"
+dash-html-components = "*"
+dash-renderer = "*"
+gunicorn = "*"
+monty = "*"
+networkx = "*"
+pint = "*"
+plotly = "*"
+pybtex = "*"
+pylatexenc = "*"
+pymatgen = "*"
+flask-caching = "*"
+"8834a26" = {path = "./components/force-graph", editable = true}
+
+[dev-packages]
+
+pytest = "*"
+
+
+[requires]
+
+python_version = "3.6"

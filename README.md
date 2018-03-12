@@ -11,7 +11,7 @@ For a design overview, please see the `docs/design_overview.md` file -- this is 
 
 # Table of Contents
 
-
+* [Installation and Use](#installation-and-use)
 * [Guidelines for Contributions](#guidelines-for-contributions)
   * [Submitting a Property](#submitting-a-property)
   * [Submitting a Model](#submitting-a-model)
@@ -19,6 +19,24 @@ For a design overview, please see the `docs/design_overview.md` file -- this is 
 * [Web Interface](#web-interface)
 * [Contributors](#contributors) 
 * [Acknowledgements](#acknowledgements)
+
+# Installation and Use
+
+Currently, a lot of ideas are still in flux, and there are no guarantees!
+
+The recommended way to install and use the package is to clone the package locally and run `pipenv install`, followed by `pipenv shell` to launch Propnet inside a virtual environment.
+
+To run Propnet inside a Jupyter notebook, run:
+
+```bash
+pipenv install ipykernel
+pipenv shell
+python -m ipykernel install --user --name=propnet-dev
+jupyter notebook
+```
+
+A `propnet-dev` kernel will then be available inside Jupyter.
+
 
 # Guidelines for Contributions
 
