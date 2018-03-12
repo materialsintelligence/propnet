@@ -370,6 +370,8 @@ class Propnet:
                 # Add outputs to graph.
                 symbol = symbol_outputs[i]
                 symbol_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol)
+                if symbol_node in self.graph:
+                    continue
                 symbol_type_node = PropnetNode(node_type=PropnetNodeType['SymbolType'], node_value=symbol.type)
                 self.graph.add_edge(symbol_node, symbol_type_node)
                 for source_node in output_sources[i]:
