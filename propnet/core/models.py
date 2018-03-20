@@ -8,6 +8,8 @@ from sympy.parsing.sympy_parser import parse_expr
 # typing information, for type hinting only
 from typing import *
 
+import numpy as np
+
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 from hashlib import sha256
@@ -16,7 +18,8 @@ from propnet.symbols import SymbolType
 from propnet import logger
 from propnet import ureg
 
-from os.path import dirname
+from monty.serialization import loadfn
+from os.path import dirname, join, isfile
 from ruamel.yaml import safe_load
 
 # TODO: add pint integration
@@ -405,3 +408,36 @@ class AbstractModel(metaclass=ABCMeta):
     #
     #    Description:
     #    """#
+
+    def test(self, test_file=None):
+        """
+
+        Args:
+            test_file: path to file containing test data
+
+        Returns: False if tests fail or no test data supplied,
+        True if tests pass.
+
+        """
+
+        if not test_file:
+            test_file = join(dirname(__file__), '../models/test_data/{}.json'
+                             .format(self.__class__.__name__))
+            if not isfile(test_file):
+                return False
+
+        test_data = loadfn(test_file)
+        for d in test_data:
+            try:
+                model_outputs = self.evaluate(d['inputs'])
+                for k, v in d['outputs'].items():
+                    if np.isclose(model_outputs[k], v):
+                        return False
+            except Exception as e:
+                print(e)
+                print('Testing {} raised an exception'.format(self.__class__.__name__))
+                return False
+
+        return True
+
+
