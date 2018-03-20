@@ -28,12 +28,12 @@ def model_layout(model_name):
 
     Args:
       model: an instance of an AbstractModel subclass
-      model_name: 
 
     Returns:
       Dash layout
 
     """
+
 
     # instantiate model from name
     model = getattr(models, model_name)()
@@ -60,11 +60,13 @@ def model_layout(model_name):
         ])
     ])
 
-    if model.references:
-        references = dcc.Markdown(references_to_markdown(model.references))
-    else:
-        # TODO: append to list instead ...
-        references = None
+    #if model.references:
+    #    references = dcc.Markdown(references_to_markdown(model.references))
+    #else:
+    #    # TODO: append to list instead ...
+    #    references = None
+
+    references = None
 
     symbols_layout = html.Div(children=[
         html.Div(className='row', children=[
@@ -123,16 +125,15 @@ for model_name in models.all_model_names:
 
     for tag in tags:
 
-        # text to display as link
-        #link_text_1 = "[{}]".format(model.model_id)
-        link_text_2 = "{}".format(model.title)
+        passes = model.test()
+        passes = "😃" if passes else "🙁"
+
+        link_text = "{}".format(model.title)
 
         model_links[tag].append(
             html.Div([
-                #dcc.Link(link_text_1,
-                #         href='/model/{}'.format(model_name)),
-                #html.Span(' '),
-                dcc.Link(link_text_2,
+                html.Span('{} '.format(passes)),
+                dcc.Link(link_text,
                          href='/model/{}'.format(model_name)),
                 html.Br()
             ])
