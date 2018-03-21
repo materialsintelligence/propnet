@@ -193,6 +193,7 @@ class GraphTest(unittest.TestCase):
         """
         # Setup
         """
+        # Commit Text
         A = SymbolMetadata('A', [], ['A'], ['A'], [1], np.asarray([1]), '', strict=False)
         B = SymbolMetadata('B', [], ['B'], ['B'], [1], np.asarray([1]), '', strict=False)
         C = SymbolMetadata('C', [], ['C'], ['C'], [1], np.asarray([1]), '', strict=False)
