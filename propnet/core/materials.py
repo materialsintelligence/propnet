@@ -57,6 +57,35 @@ class Material:
             self.parent.graph.add_edge(self.root_node, property_node)
             self.parent.graph.add_edge(property_node, property_symbol_node)
 
+    def remove_property(self, property):
+        """
+        Removes the Symbol object attached to this Material.
+        Args:
+            property (Symbol): Symbol object reference indicating with property is to be removed from this Material.
+        Returns:
+            None
+        """
+        for node in self.graph.neighbors(self.root_node):
+            if node.node_value == property:
+                self.graph.remove_node(node)
+                if self.parent:
+                    self.parent.graph.remove_node(node)
+
+    def remove_property_type(self, property_type):
+        """
+        Removes all Symbol Nodes attached to this Material whose SymbolType matches the indicated
+        property_type text.
+        Args:
+            property_type (str): String indicating which property type is to be removed from this material.
+        Returns:
+            None
+        """
+        for node in self.graph.neighbors(self.root_node):
+            if node.node_value.type.name == property_type:
+                self.graph.remove_node(node)
+                if self.parent:
+                    self.parent.graph.remove_node(node)
+
     def available_properties(self):
         """
         Method obtains the names of all properties bound to this Material.
@@ -75,7 +104,7 @@ class Material:
         Method obtains all Symbol objects bound to this Material.
 
         Returns:
-            (list<Symbol>) list of all Symbol objects bound to this Material.
+            (list<PropnetNode<Symbol>>) list of all Symbol objects bound to this Material.
         """
         to_return = []
         for node in self.graph.nodes:
