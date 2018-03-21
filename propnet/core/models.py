@@ -8,7 +8,7 @@ from sympy.parsing.sympy_parser import parse_expr
 # typing information, for type hinting only
 from typing import *
 
-import numpy as np
+import math
 
 from abc import ABCMeta, abstractmethod
 from functools import wraps
@@ -431,11 +431,11 @@ class AbstractModel(metaclass=ABCMeta):
             try:
                 model_outputs = self.evaluate(d['inputs'])
                 for k, v in d['outputs'].items():
-                    if np.isclose(model_outputs[k], v):
+                    if not math.isclose(model_outputs[k], v):
                         return False
             except Exception as e:
                 print(e)
-                print('Testing {} raised an exception'.format(self.__class__.__name__))
+                print('Testing {} raised an exception.'.format(self.__class__.__name__))
                 return False
 
         return True

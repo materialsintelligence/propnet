@@ -27,10 +27,6 @@ class ModelTest(unittest.TestCase):
             model_name = os.path.splitext(os.path.basename(f))[0]
             if model_name in all_model_names:
                 model = getattr(models, model_name)()
-                model_test_data = loadfn(f)
-                for d in model_test_data:
-                    model_outputs = model.evaluate(d['inputs'])
-                    for k, v in d['outputs'].items():
-                        self.assertAlmostEqual(model_outputs[k], v)
+                self.assertTrue(model.test())
             else:
                 raise ValueError("Model not found: {}".format(model_name))
