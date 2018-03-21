@@ -43,7 +43,7 @@ class SymbolMetadata(MSONable):
 
     def __init__(self, name: str, units: ureg.Quantity, display_names: List[str],
                  display_symbols: List[str], dimension: List[int], test_value: np.ndarray,
-                 comment: str, type: str = 'property'):
+                 comment: str, type: str = 'property', strict: bool = True):
         """
         Parses and validates a series of inputs into a PropertyMetadata tuple, a format that PropNet expects.
         Parameters correspond exactly with those of a PropertyMetadata tuple.
@@ -58,37 +58,38 @@ class SymbolMetadata(MSONable):
             test_value (id): a sample value of the property, reasonable over a wide variety of contexts.
             comment (str): any useful information on the property including its definitions and possible citations.
             type (str): 'property', if a property of a material, or 'condition' for other variables (e.g. temperature)
+            strict (bool): flag indicating if error checking should occur on the inputs.
 
         Returns:
             (PropertyMetadata) PropertyMetadata instance.
         """
 
-        # TODO: need to formalize property vs condition distinction
+        if strict:
 
-        if type not in ('property', 'condition', 'object'):
-            raise ValueError('Unsupported property type')
+            if type not in ('property', 'condition', 'object'):
+                raise ValueError('Unsupported property type')
 
-        if not name.isidentifier() or not name.islower():
-            raise ValueError("The canonical name ({}) is not valid.".format(id))
+            if not name.isidentifier() or not name.islower():
+                raise ValueError("The canonical name ({}) is not valid.".format(name))
 
-        if display_names is None or len(display_names) == 0:
-            raise ValueError("Insufficient display names for ({}).".format(id))
+            if display_names is None or len(display_names) == 0:
+                raise ValueError("Insufficient display names for ({}).".format(name))
 
-        if type in ('property', 'condition'):
+            if type in ('property', 'condition'):
 
-            # additional checking
+                # additional checking
 
-            try:
-                np.zeros(dimension)
-            except TypeError:
-                raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
+                try:
+                    np.zeros(dimension)
+                except TypeError:
+                    raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
 
-            try:
-                units = ureg.Quantity.from_tuple(units)
-                # calling dimensionality explicitly checks units are defined in registry
-                units.dimensionality
-            except Exception as e:
-                raise ValueError('Problem loading units for {}: {}'.format(name, e))
+                try:
+                    units = ureg.Quantity.from_tuple(units)
+                    # calling dimensionality explicitly checks units are defined in registry
+                    units.dimensionality
+                except Exception as e:
+                    raise ValueError('Problem loading units for {}: {}'.format(name, e))
 
         self.name = name
         self.units = units
