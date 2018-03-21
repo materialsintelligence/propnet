@@ -43,56 +43,76 @@ class Propnet:
 
     """
 
-    def __init__(self):
+    def __init__(self, auto_load=True):
         """
-        Creates a Propnet instance, adding all valid SymbolTypes and Models found in surrounding folders.
+        Creates a Propnet instance.
         """
-
         g = nx.MultiDiGraph()
+        self.graph = g
+        if auto_load:
+            self.load_files()
 
-        # add all symbols to graph
+    def add_property_types(self, symbol_types):
+        """
+        Given a provided list of property types, adds these property types to the graph.
+        Args:
+            symbol_types (list<SymbolType>): list of SymbolTypes to be added to the graph.
+        Returns:
+            None
+        """
         symbol_nodes = [PropnetNode(node_type=PropnetNodeType.SymbolType, node_value=symbol_type)
-                        for symbol_type in SymbolType]
-        g.add_nodes_from(symbol_nodes)
+                        for symbol_type in symbol_types]
+        self.graph.add_nodes_from(symbol_nodes)
 
-        # get a list of our models (except abstract base classes)
-        models = [model() for model in AbstractModel.__subclasses__()
-                  if not model.__module__.startswith('propnet.core')]
+    def add_models(self, models):
+        """
+        Given a provided list of models, adds these properties to the graph.
+        Args:
+            models (list<Model>): list of Models to be added to the graph.
+        Returns:
+            None
+        """
 
-        # add all models to graph
+        # Add appropriate Model nodes.
         model_nodes = [PropnetNode(node_type=PropnetNodeType.Model, node_value=model)
                        for model in models]
-        g.add_nodes_from(model_nodes)
+        self.graph.add_nodes_from(model_nodes)
 
-        # add appropriate edges to the graph
+        # Add appropriate Model edges.
+        symbol_type_nodes = self.nodes_by_type('SymbolType')
+        symbol_mapping = dict()
+        for i in range(0, len(symbol_type_nodes)):
+            symbol_mapping[symbol_type_nodes[i].node_value.name] = symbol_type_nodes[i]
         for model in models:
-
             model_node = PropnetNode(node_type=PropnetNodeType.Model, node_value=model)
-
-            # integer idx is used to disambiguate edges when multiple exist between the same start and end nodes.
             for idx, connection in enumerate(model.connections):
-
                 outputs, inputs = connection['outputs'], connection['inputs']
-
                 if isinstance(outputs, str):
                     outputs = [outputs]
                 if isinstance(inputs, str):
                     inputs = [inputs]
-
                 for input in inputs:
-                    symbol_type = SymbolType[model.symbol_mapping[input]]
-                    input_node = PropnetNode(node_type=PropnetNodeType.SymbolType,
-                                             node_value=symbol_type)
-                    g.add_edge(input_node, model_node, route=idx)
-
+                    type_str = model.symbol_mapping[input]
+                    input_node = symbol_mapping.get(type_str)
+                    if not input_node:
+                        raise Exception('Model includes property types not added to the graph: ' + type_str)
+                    self.graph.add_edge(input_node, model_node, route=idx)
                 for output in outputs:
-                    symbol_type = SymbolType[model.symbol_mapping[output]]
-                    output_node = PropnetNode(node_type=PropnetNodeType.SymbolType,
-                                              node_value=symbol_type)
-                    g.add_edge(model_node, output_node, route=idx)
+                    type_str = model.symbol_mapping[output]
+                    output_node = symbol_mapping.get(type_str)
+                    if not output_node:
+                        raise Exception('Model includes property types not added to the graph: ' + type_str)
+                    self.graph.add_edge(model_node, output_node, route=idx)
 
-        # Set graph instance variable.
-        self.graph = g
+    def load_files(self):
+        """
+        Adds all valid SymbolTypes and Models found in surrounding folders.
+        Returns: None
+        """
+        self.add_property_types([symbol_type for symbol_type in SymbolType])
+        models = [model(metadata=None) for model in AbstractModel.__subclasses__()
+                  if not model.__module__.startswith('propnet.core')]
+        self.add_models(models)
 
     def nodes_by_type(self, node_type):
         """
@@ -115,7 +135,7 @@ class Propnet:
         Mutates the graph instance variable.
 
         Args:
-            material (Material) Material whose information will be added to the graph.
+            material (Material): Material whose information will be added to the graph.
         Returns:
             void
         """
