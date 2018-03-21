@@ -110,7 +110,7 @@ class Propnet:
         Returns: None
         """
         self.add_property_types([symbol_type for symbol_type in SymbolType])
-        models = [model() for model in AbstractModel.__subclasses__()
+        models = [model(metadata=None) for model in AbstractModel.__subclasses__()
                   if not model.__module__.startswith('propnet.core')]
         self.add_models(models)
 

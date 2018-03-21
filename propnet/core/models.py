@@ -99,28 +99,15 @@ class AbstractModel(metaclass=ABCMeta):
         Args:
             metadata (dict<str,id>): metadata defining the model.
         """
-
         if not metadata:
             try:
                 # try loading from local file, see /models/ for examples
                 path = '{}/../models/{}.yaml'.format(dirname(__file__), self.__class__.__name__)
                 metadata = load_metadata(path)
             except Exception as e:
-                print(e)
+                print('Error loading data: ' + str(e))
                 metadata = {}
-
         self._metadata = metadata
-
-        # retrieve units for each symbol
-        self.unit_mapping = {}
-        for symbol, name in self.symbol_mapping.items():
-            try:
-                self.unit_mapping[symbol] = SymbolType[name].value.units
-            except Exception as e:
-                raise ValueError('Please check your property names in your symbol mapping, '
-                                 'for property {} and model {}, are they all valid? '
-                                 'Exception: {}'
-                                 .format(name, self.__class__.__name__, e))
 
     # constraints and evaluate methods are optional overrides in extending classes
     @property

@@ -2,17 +2,15 @@ import unittest
 from propnet.core.graph import *
 from propnet.core.materials import *
 from propnet.core.symbols import *
-
-from propnet.symbols import SymbolType
+from propnet.core.models import *
 
 class GraphTest(unittest.TestCase):
 
     def setUp(self):
         self.p = Propnet()
-        self.SymbolType = SymbolType
 
     def test_graph_construction(self):
-        self.assertGreaterEqual(self.p.graph.number_of_nodes(), 1)
+        self.assertGreaterEqual(Propnet().graph.number_of_nodes(), 1)
 
     def test_valid_node_types(self):
         print(self.p.graph.nodes)
@@ -192,20 +190,10 @@ class GraphTest(unittest.TestCase):
             Joint properties: E=6/5, E=7/3
         """
         # Setup
-        """
-        # Commit Text
         A = SymbolMetadata('A', [], ['A'], ['A'], [1], np.asarray([1]), '', strict=False)
         B = SymbolMetadata('B', [], ['B'], ['B'], [1], np.asarray([1]), '', strict=False)
         C = SymbolMetadata('C', [], ['C'], ['C'], [1], np.asarray([1]), '', strict=False)
         E = SymbolMetadata('E', [], ['E'], ['E'], [1], np.asarray([1]), '', strict=False)
-
-        cache = [(sym.name, sym.value) for sym in self.SymbolType]
-        cache.append(('A', A))
-        cache.append(('B', B))
-        cache.append(('C', C))
-        cache.append(('D', D))
-        SymbolType: Enum = Enum('SymbolType', [(k, v) for k, v in cache])
-
 
         mat1 = Material()
         mat2 = Material()
@@ -214,12 +202,38 @@ class GraphTest(unittest.TestCase):
         mat2.add_property(Symbol(B, 5, []))
         mat2.add_property(Symbol(C, 7, []))
 
-        model1 = Model(metadata={
+        class CustomModel(AbstractModel):
+            def __init__(self, metadata):
+                super(CustomModel, self).__init__(metadata=metadata)
+
+        model1 = CustomModel(metadata={
             'title': 'model1',
             'tags': [],
             'references': [],
-            'symbol_mapping':'a'
+            'symbol_mapping': {'a': 'A',
+                               'b': 'B',
+                               'c': 'C'},
+            'connections': [{'inputs': ['c', 'b'],
+                             'outputs':['a']}],
+            'equations': ['c = a*b'],
+            'description': ''
         })
 
-        p = Propnet()
-        """
+        model2 = CustomModel(metadata={
+            'title': 'model2',
+            'tags': [],
+            'references': [],
+            'symbol_mapping': {'e': 'E',
+                               'b': 'B',
+                               'c': 'C'},
+            'connections': [{'inputs': ['c', 'b'],
+                             'outputs': ['e']}],
+            'equations': ['e = c/b'],
+            'description': ''
+        })
+
+        p = Propnet(auto_load=False)
+        p.add_property_types([A, B, C, E])
+        p.add_models([model1])
+
+        print(p)
