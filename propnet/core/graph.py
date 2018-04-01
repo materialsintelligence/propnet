@@ -159,7 +159,7 @@ class Propnet:
         Returns:
             void
         """
-        self.graph = nx.difference(self.graph, material.graph)
+        self.graph = nx.difference(self.graph, material.subgraph)
 
     def evaluate(self, material=None, property_type=None):
         """
