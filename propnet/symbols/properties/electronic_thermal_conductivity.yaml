@@ -7,5 +7,5 @@ units:
 display_names: ['Thermal conductivity, electronic contribution']
 display_symbols: ['\kappa_{e}']
 dimension: 1
-test_value: 1.6
 comment: ''
+category: property

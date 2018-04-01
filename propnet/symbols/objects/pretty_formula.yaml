@@ -5,6 +5,5 @@ units:
 display_names: ['Formula']
 display_symbols: []
 dimension: 1
-test_value: 'BaTiO3'
 comment: ''
-type: object
+category: object

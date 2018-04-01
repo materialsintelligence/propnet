@@ -7,8 +7,8 @@ from typing import *
 import networkx as nx
 
 from propnet import logger
-from propnet.models import *
-from propnet.symbols import SymbolType
+from propnet.models import DEFAULT_MODELS
+from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
 from propnet.core.symbols import Symbol
 from propnet.core.models import AbstractModel
@@ -16,8 +16,14 @@ from propnet.core.models import AbstractModel
 from enum import Enum
 from collections import Counter, namedtuple
 
-PropnetNodeType = Enum('PropnetNodeType', ['Material', 'SymbolType', 'Symbol', 'Model'])
+
+_ALLOWED_NODE_TYPES = ['Material', 'SymbolType', 'Symbol', 'Model']
+
+PropnetNodeType = Enum('PropnetNodeType', _ALLOWED_NODE_TYPES)
 PropnetNode = namedtuple('PropnetNode', ['node_type', 'node_value'])
+# add an easy-to-read __repr__() for PropnetNode, it's a little verbose otherwise
+PropnetNode.__repr__ = lambda self: "{}<{}>".format(self.node_type.name,
+                                                    self.node_value.__repr__())
 
 
 class Propnet:
@@ -43,33 +49,33 @@ class Propnet:
 
     """
 
-    def __init__(self):
+    def __init__(self, materials=None, models=None, symbol_types=None):
         """
-        Creates a Propnet instance, adding all valid SymbolTypes and Models found in surrounding folders.
+        Creates a Propnet instance
         """
 
-        g = nx.MultiDiGraph()
+        # set our defaults if no models/symbol types supplied
+        models = models or DEFAULT_MODELS
+        symbol_types = symbol_types or DEFAULT_SYMBOL_TYPES
 
-        # add all symbols to graph
-        symbol_nodes = [PropnetNode(node_type=PropnetNodeType.SymbolType, node_value=symbol_type)
-                        for symbol_type in SymbolType]
-        g.add_nodes_from(symbol_nodes)
+        # create the graph
+        self.graph = nx.MultiDiGraph()
 
-        # get a list of our models (except abstract base classes)
-        models = [model() for model in AbstractModel.__subclasses__()
-                  if not model.__module__.startswith('propnet.core')]
+        # add our symbols
+        self._symbol_types = symbol_types
+        self.add_symbol_types(symbol_types)
 
-        # add all models to graph
-        model_nodes = [PropnetNode(node_type=PropnetNodeType.Model, node_value=model)
-                       for model in models]
-        g.add_nodes_from(model_nodes)
+        # add our models
+        self.add_models(models)
 
         # add appropriate edges to the graph
-        for model in models:
+        for model in models.values():
 
+            model = model(symbol_types=self._symbol_types)  # instantiate model
             model_node = PropnetNode(node_type=PropnetNodeType.Model, node_value=model)
 
-            # integer idx is used to disambiguate edges when multiple exist between the same start and end nodes.
+            # integer idx is used to disambiguate edges when
+            # multiple paths exist between the same start and end nodes
             for idx, connection in enumerate(model.connections):
 
                 outputs, inputs = connection['outputs'], connection['inputs']
@@ -80,19 +86,51 @@ class Propnet:
                     inputs = [inputs]
 
                 for input in inputs:
-                    symbol_type = SymbolType[model.symbol_mapping[input]]
+                    symbol_type = symbol_types[model.symbol_mapping[input]]
                     input_node = PropnetNode(node_type=PropnetNodeType.SymbolType,
                                              node_value=symbol_type)
-                    g.add_edge(input_node, model_node, route=idx)
+                    self.graph.add_edge(input_node, model_node, route=idx)
 
                 for output in outputs:
-                    symbol_type = SymbolType[model.symbol_mapping[output]]
+                    symbol_type = symbol_types[model.symbol_mapping[output]]
                     output_node = PropnetNode(node_type=PropnetNodeType.SymbolType,
                                               node_value=symbol_type)
-                    g.add_edge(model_node, output_node, route=idx)
+                    self.graph.add_edge(model_node, output_node, route=idx)
 
-        # Set graph instance variable.
-        self.graph = g
+        if materials:
+            for material in materials:
+                self.add_material(material)
+
+    def add_models(self, models):
+        """
+        Add a user-defined model to the Propnet graph.
+
+        Args:
+            model: An instance of a model class (subclasses AbstractModel)
+
+        Returns:
+
+        """
+        model_nodes = [PropnetNode(node_type=PropnetNodeType.Model,
+                                   node_value=model(symbol_types=self._symbol_types))
+                       for model in models.values()]
+        self.graph.add_nodes_from(model_nodes)
+
+    def add_symbol_types(self, symbol_types):
+        """
+
+        Args:
+            symbol_type: {name:SymbolType}
+
+        Returns:
+
+        """
+        self._symbol_types.update(symbol_types)
+        symbol_type_nodes = [PropnetNode(node_type=PropnetNodeType.SymbolType,
+                                         node_value=symbol_type)
+                             for symbol_type in symbol_types.values()]
+
+        self.graph.add_nodes_from(symbol_type_nodes)
 
     def nodes_by_type(self, node_type):
         """
@@ -103,11 +141,10 @@ class Propnet:
         Returns:
             (list<PropnetNode>) list of nodes of property types.
         """
-        to_return = []
-        for node in self.graph.nodes:
-            if node.node_type.name == node_type:
-                to_return.append(node)
-        return to_return
+        if node_type not in _ALLOWED_NODE_TYPES:
+            raise ValueError("Unsupported node type, choose from: {}"
+                             .format(_ALLOWED_NODE_TYPES))
+        return filter(lambda n: n.node_type.name == node_type, self.graph.nodes)
 
     def add_material(self, material):
         """
@@ -132,26 +169,7 @@ class Propnet:
         Returns:
             void
         """
-        material_node = None
-        for node in self.graph.nodes:
-            if node.node_type != PropnetNodeType['Material']:
-                continue
-            if node.node_value != material:
-                continue
-            if material_node:
-                raise ValueError("Multiple duplicate Material nodes were found - removal is ambiguous.")
-            material_node = node
-        if not material_node:
-            raise ValueError("Material was not found.")
-        to_remove = []
-        for neighbor in self.graph.neighbors(material_node):
-            if neighbor.node_type != PropnetNodeType['Symbol']:
-                continue
-            to_remove.append(neighbor)
-        self.graph.remove_node(material_node)
-        for node in to_remove:
-            self.graph.remove_node(node)
-        material_node.node_value.parent = None
+        self.graph = nx.difference(self.graph, material.subgraph)
 
     def evaluate(self, material=None, property_type=None):
         """
@@ -421,6 +439,12 @@ class Propnet:
         all_tags = [tag for tags in self.all_models for tag in tags]
         unique_tags = sorted(list(set(all_tags)))
         return Counter(all_tags)
+
+    def __repr__(self):
+        nodes = "\n".join([n.__repr__() for n in self.graph.nodes()])
+        edges = "\n".join(["\t{}-->{}".format(u.__repr__(), v.__repr__())
+                           for u, v in self.graph.edges()])
+        return "Nodes:\n{}\nEdges:\n{}".format(nodes, edges)
 
     def __str__(self):
         """

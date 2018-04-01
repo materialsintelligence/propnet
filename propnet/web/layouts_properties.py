@@ -2,7 +2,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import plotly.graph_objs as go
 
-from propnet.symbols import all_symbol_names, SymbolType
+from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, SymbolType
 
 
 # layouts for property detail pages
@@ -111,7 +111,7 @@ def properties_index(available_hists=None):
         available_hists = {}
 
     property_links = {}
-    for property_name in all_symbol_names:
+    for property_name in DEFAULT_SYMBOL_TYPE_NAMES:
 
         # group by tag
         property_type = SymbolType[property_name].value.type

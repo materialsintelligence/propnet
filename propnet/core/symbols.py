@@ -6,8 +6,7 @@ from propnet import logger, ureg
 from pybtex.database.input.bibtex import Parser
 from monty.json import MSONable
 
-
-class SymbolMetadata(MSONable):
+class SymbolType(MSONable):
     """
     Class storing the complete description of a SymbolType.
 
@@ -25,7 +24,6 @@ class SymbolMetadata(MSONable):
         (str) dimension -> (id) gives the length dimensions of the n-dimensional array required to represent the property.
                                 This value is a list if multiple length dimensions are required or an integer if only
                                 one length dimension is required.
-        (str) test_value -> (id) n dimensional array giving a sample value of the property.
         (str) comment -> (str) Gives any important commentary on the property.
 
     Attributes (see above for descriptions):
@@ -34,40 +32,42 @@ class SymbolMetadata(MSONable):
         display_names: (list<str>)
         display_symbols: (list<str>)
         dimension: (id)
-        test_value: (id)
         comment: (str)
     """
 
     __slots__ = ['name', 'units', 'display_names', 'display_symbols',
-                 'dimension', 'test_value', 'comment', 'type']
+                 'dimension', 'comment', 'category']
 
-    def __init__(self, name: str, units: ureg.Quantity, display_names: List[str],
-                 display_symbols: List[str], dimension: List[int], test_value: np.ndarray,
-                 comment: str, type: str = 'property', strict: bool = True):
+    # TODO rename to category
+    def __init__(self, name, units, display_names,
+                 display_symbols, dimension,
+                 comment, category='property', validate=True):
         """
-        Parses and validates a series of inputs into a PropertyMetadata tuple, a format that PropNet expects.
+        Parses and validates a series of inputs into a PropertyMetadata tuple, a format that
+        PropNet expects.
         Parameters correspond exactly with those of a PropertyMetadata tuple.
 
         Args:
             name (str): string ASCII identifying the property uniquely as an internal identifier.
             units (id): units of the property as a Quantity supported by the Pint package.
-            display_names (list<str>): list of strings giving possible human-readable names for the property.
-            display_symbols (list<str>): list of strings giving possible human-readable symbols for the property.
-            dimension (id): list giving the order of the tensor as the length, and number of dimensions as individual
+            display_names (list<str>): list of strings giving possible human-readable names for
+            the property.
+            display_symbols (list<str>): list of strings giving possible human-readable symbols
+            for the property.
+            dimension (id): list giving the order of the tensor as the length, and number of
+            dimensions as individual
                             integers in the list.
-            test_value (id): a sample value of the property, reasonable over a wide variety of contexts.
-            comment (str): any useful information on the property including its definitions and possible citations.
-            type (str): 'property', if a property of a material, or 'condition' for other variables (e.g. temperature)
-            strict (bool): flag indicating if error checking should occur on the inputs.
-
-        Returns:
-            (PropertyMetadata) PropertyMetadata instance.
+            comment (str): any useful information on the property including its definitions and
+            possible citations.
+            category (str): 'property', if a property of a material, or 'condition' for other
+            variables (e.g. temperature)
+            validate (bool): flag indicating if error checking should occur on the inputs.
         """
 
-        if strict:
+        if validate:
 
-            if type not in ('property', 'condition', 'object'):
-                raise ValueError('Unsupported property type')
+            if category not in ('property', 'condition', 'object'):
+                raise ValueError('Unsupported property category')
 
             if not name.isidentifier() or not name.islower():
                 raise ValueError("The canonical name ({}) is not valid.".format(name))
@@ -75,7 +75,7 @@ class SymbolMetadata(MSONable):
             if display_names is None or len(display_names) == 0:
                 raise ValueError("Insufficient display names for ({}).".format(name))
 
-            if type in ('property', 'condition'):
+            if category in ('property', 'condition'):
 
                 # additional checking
 
@@ -92,13 +92,12 @@ class SymbolMetadata(MSONable):
                     raise ValueError('Problem loading units for {}: {}'.format(name, e))
 
         self.name = name
+        self.category = category
         self.units = units
         self.display_names = display_names
         self.display_symbols = display_symbols
         self.dimension = dimension  # TODO: rename to shape?
-        self.test_value = test_value
         self.comment = comment
-        self.type = type
 
     @property
     def dimension_as_string(self):
@@ -136,34 +135,49 @@ class SymbolMetadata(MSONable):
     def __eq__(self, other):
         return self.name == other.name
 
+    def __repr__(self):
+        return "{}<{}>".format(self.category, self.name)
+
+    def __hash__(self):
+        return self.name.__hash__()
+
 
 class Symbol(MSONable):
     """
     Class storing the value of a property.
 
-    Constructed by the user to assign values to abstract SymbolMetadata types. Represents the fact that a given Symbol
+    Constructed by the user to assign values to abstract SymbolType types. Represents the fact that a given Symbol
     has a given value. They are added to the PropertyNetwork graph in the context of Material objects that store
     collections of Symbol objects representing that a given material has those properties.
 
     Attributes:
-        type: (SymbolMetadata) the type of information that is represented by the associated value.
+        type: (SymbolType) the type of information that is represented by the associated value.
         value: (id) the value associated with this symbol.
         tags: (list<str>)
     """
 
-    def __init__(self, type, value, tags,
+    def __init__(self, symbol_type, value, tags,
                  provenance=None):
         """
         Parses inputs for constructing a Property object.
 
         Args:
-            type (SymbolMetadata): pointer to an existing PropertyMetadata object, identifies the type of data stored
+            symbol_type (SymbolType): pointer to an existing PropertyMetadata object, identifies the
+            type of data stored
                                    in the property.
             value (id): value of the property.
             tags (list<str>): list of strings storing metadata from Symbol evaluation.
             provenance (id): time of creation of the object.
         """
-        self._type = type
+
+        # TODO: move Symbol + SymbolType to separate files to remove circular import
+        from propnet.symbols import DEFAULT_SYMBOL_TYPES
+        if isinstance(symbol_type, str):
+            if symbol_type not in DEFAULT_SYMBOL_TYPES.keys():
+                raise ValueError("Symbol type {} not recognized".format(symbol_type))
+            symbol_type = DEFAULT_SYMBOL_TYPES[symbol_type]
+
+        self._symbol_type = symbol_type
         self._value = value
         self._tags = tags
         self._provenance = provenance
@@ -181,9 +195,9 @@ class Symbol(MSONable):
     def type(self):
         """
         Returns:
-            (SymbolMetadata): SymbolMetadata of the Symbol
+            (SymbolType): SymbolType of the Symbol
         """
-        return self._type
+        return self._symbol_type
 
     @property
     def tags(self):

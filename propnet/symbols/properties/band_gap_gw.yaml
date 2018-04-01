@@ -5,5 +5,5 @@ units:
 display_names: ["Quasiparticle band gap (GW)"]
 display_symbols: ["E_{g, GW}"]
 dimension: 1
-test_value: 0.55
 comment: ''
+category: property

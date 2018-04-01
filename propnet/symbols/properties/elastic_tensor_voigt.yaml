@@ -5,11 +5,5 @@ units:
 display_names: ['Elastic tensor (in Voigt notation)']
 display_symbols: ["C_{ij}"]
 dimension: [6, 6]
-test_value:
-- [325.0, 112.0, 78.0, 0.0, 0.0, 0.0]
-- [112.0, 325.0, 78.0, 0.0, 0.0, 0.0]
-- [78.0, 78.0, 358.0, 0.0, 0.0, 0.0]
-- [0.0, 0.0, 0.0, 90.0, 0.0, 0.0]
-- [0.0, 0.0, 0.0, 0.0, 90.0, 0.0]
-- [0.0, 0.0, 0.0, 0.0, 0.0, 90.0]
 comment: ''
+category: property

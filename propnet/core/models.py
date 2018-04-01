@@ -2,22 +2,27 @@
 Module containing classes and methods for Model functionality in Propnet code.
 """
 
-import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr
-
 # typing information, for type hinting only
 from typing import *
 
+import math
+
 from abc import ABCMeta, abstractmethod
 from functools import wraps
+from os.path import dirname, join, isfile
 from hashlib import sha256
 
-from propnet.symbols import SymbolType
+from ruamel.yaml import safe_load
+from monty.serialization import loadfn
+
+import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
+
+from propnet.symbols import DEFAULT_SYMBOL_TYPES
 from propnet import logger
 from propnet import ureg
 
-from os.path import dirname
-from ruamel.yaml import safe_load
+
 
 # TODO: add pint integration
 # TODO: decide on interface for conditions, assumptions etc.
@@ -57,7 +62,7 @@ class AbstractModel(metaclass=ABCMeta):
         (str) tags -> (list<str>) list of categories applicable to the model.
         (str) references -> (list<str>) list of informational links explaining / supporting the model
         (str) symbol_mapping -> (dict<str,str>) keys are symbols used in equations of the model,
-                                                values are SymbolType enum values (SymbolMetadata.name field)
+                                                values are SymbolType enum values (SymbolType.name field)
         (str) connections -> (list<dict<str,list<str>>>)
                                                 Forms the list of outputs that can be generated from different sets of
                                                 inputs. The outer list contains dictionaries. These dictionaries contain
@@ -91,14 +96,19 @@ class AbstractModel(metaclass=ABCMeta):
         unit_mapping (dict<str,Pint.unit>): mapping from symbols used in the model to their corresponding units.
     """
 
-    def __init__(self, metadata=None):
+    def __init__(self, metadata=None, symbol_types=None):
         """
-        Constructs a Model object with the provided metadata. If the metadata is None, it attempts to load in the
-        appropriate .yaml file at this time. Such a .yaml file must have a name equal to the class name.
+        Constructs a Model object with the provided metadata.
+
+        If the metadata is None, it attempts to load in the
+        appropriate .yaml file at this time.
+        Such a .yaml file must have a name equal to the class name.
 
         Args:
             metadata (dict<str,id>): metadata defining the model.
         """
+
+        symbol_types = symbol_types or DEFAULT_SYMBOL_TYPES
 
         if not metadata:
             try:
@@ -115,7 +125,7 @@ class AbstractModel(metaclass=ABCMeta):
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
             try:
-                self.unit_mapping[symbol] = SymbolType[name].value.units
+                self.unit_mapping[symbol] = symbol_types[name].units
             except Exception as e:
                 raise ValueError('Please check your property names in your symbol mapping, '
                                  'for property {} and model {}, are they all valid? '
@@ -240,7 +250,7 @@ class AbstractModel(metaclass=ABCMeta):
     def symbol_mapping(self):
         """
         A mapping of a symbol named used within the model to the canonical symbol name, e.g. {"E": "youngs_modulus"}
-        keys are symbols used in the model; values are SymbolType enum values (SymbolMetadata.name field)
+        keys are symbols used in the model; values are SymbolType enum values (SymbolType.name field)
 
         Returns:
             (dict<str,str>): symbol mapping dictionary
@@ -297,72 +307,6 @@ class AbstractModel(metaclass=ABCMeta):
 
         return refs
 
-        # TODO: see below
-
-        def retrieve_from_library(ref):
-            """
-            Retrieves a reference from library distributed with
-            Propnet.
-
-            Args:
-                ref: reference string
-
-            Returns: BibTeX string
-
-            """
-
-            return None
-
-        def update_library(ref, parsed_ref):
-            return None
-
-        def parse_doi(doi):
-            """
-            Parses a DOI into a BibTeX-formatted referenced.
-
-            Args:
-                doi: DOI
-
-            Returns: BibTeX string
-
-            """
-
-        def parse_url(url):
-            """
-            Parses a url into a BibTeX-formatted referenced.
-
-            Args:
-                url: url string
-
-            Returns:
-
-            """
-
-        parsed_refs = []
-        for ref in refs:
-
-            already_parsed = retrieve_from_library(ref)
-
-            if already_parsed:
-                parsed_ref = already_parsed
-            elif ref.startswith('url:'):
-                url = ref.split('url:')[1]
-                parsed_ref = parse_url(url)
-            elif ref.startswith('doi:'):
-                doi = ref.split('doi:')[1]
-                parsed_ref = parse_url(doi)
-            else:
-                raise ValueError('Unknown reference style for'
-                                 'model {}: {}'.format(self.name, ref))
-
-            if not already_parsed:
-                update_library(ref, parsed_ref)
-                logger.warn("Please commit changes to reference library.")
-
-            parsed_refs.append(ref)
-
-        return refs
-
     @property
     def constants(self):
         return self._metadata.get('constants', {})
@@ -384,24 +328,44 @@ class AbstractModel(metaclass=ABCMeta):
         """
         return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
 
-    def __repr__(self):
-        return str(self._metadata)
+    def __eq__(self, other):
+        return self.model_id == getattr(other, "model_id", None)
 
-    #def __str__(self):
-    #    return NotImplementedError
-    #    return Markdown-formatted text
-    #    """
-    #    Model: model_name (model_id)
-    #
-    #    Associated Symbols:
-    #
-    #    Properties:
-    #    Conditions:
-    #    Objects:
-    #
-    #    Equations:
-    #
-    #    Inputs/outputs:
-    #
-    #    Description:
-    #    """#
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return "{} [{}]".format(self._metadata['title'], self.model_id)
+
+    def test(self, test_file=None):
+        """
+
+        Args:
+            test_file: path to file containing test data
+
+        Returns: False if tests fail or no test data supplied,
+        True if tests pass.
+
+        """
+
+        if not test_file:
+            test_file = join(dirname(__file__), '../models/test_data/{}.json'
+                             .format(self.__class__.__name__))
+            if not isfile(test_file):
+                return False
+
+        test_data = loadfn(test_file)
+        for d in test_data:
+            try:
+                model_outputs = self.evaluate(d['inputs'])
+                for k, v in d['outputs'].items():
+                    if not math.isclose(model_outputs[k], v):
+                        return False
+            except Exception as e:
+                print(e)
+                print('Testing {} raised an exception.'.format(self.__class__.__name__))
+                return False
+
+        return True
+
+

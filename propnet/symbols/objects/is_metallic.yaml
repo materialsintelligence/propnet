@@ -5,6 +5,5 @@ units:
 display_names: ['Is Metallic']
 display_symbols: []
 dimension: 1
-test_value: true
 comment: ''
-type: object
+category: object

@@ -5,5 +5,5 @@ units:
 display_names: ['Goldschmidt tolerance factor']
 display_symbols: ['t']
 dimension: 1
-test_value: 0.8
 comment: ''
+category: property

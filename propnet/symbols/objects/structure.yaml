@@ -6,5 +6,4 @@ display_names: ['Crystallographic structure']
 display_symbols: []
 dimension: 1
 comment: ''
-type: object
-test_value: 1
+category: object

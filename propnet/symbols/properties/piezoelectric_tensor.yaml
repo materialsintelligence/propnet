@@ -6,8 +6,5 @@ units:
 display_names: ['Piezoelectric Tensor']
 display_symbols: ['d_{ij}']
 dimension: [3, 6]
-test_value:
-- [0.0, 0.0, 0.0, 0.0, 0.0, 0.19]
-- [0.19, -0.19, 0.0, 0.0, 0.0, 0.0]
-- [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 comment: ''
+category: property

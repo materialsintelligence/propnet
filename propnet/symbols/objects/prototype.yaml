@@ -5,6 +5,5 @@ units:
 display_names: ['Crystal Prototype']
 display_symbols: []
 dimension: 1
-test_value: '(Cubic) Perovskite'
 comment: ''
-type: object
+category: object

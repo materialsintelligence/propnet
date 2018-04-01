@@ -1,24 +1,25 @@
 import dash_html_components as html
 import dash_core_components as dcc
 
-from propnet.symbols import get_display_name
-from propnet.web.utils import references_to_markdown
-
 import propnet.models as models
+
+from propnet.symbols import DEFAULT_SYMBOL_TYPES
+from propnet.web.utils import references_to_markdown
 
 
 # layouts for model detail pages
 
 def model_image_component(model):
     """
+    Get a Robohash of a provided model, to give a
+    face to a name.
 
     Args:
-      model: 
+      model: instance of an AbstractModel subclass
 
-    Returns:
+    Returns: a Dash Img element
 
     """
-
     url = "https://robohash.org/{}".format(model.__hash__())
     return html.Img(src=url, style={'width': 150, 'border-radius': '50%'})
 
@@ -28,7 +29,6 @@ def model_layout(model_name):
 
     Args:
       model: an instance of an AbstractModel subclass
-      model_name: 
 
     Returns:
       Dash layout
@@ -60,20 +60,22 @@ def model_layout(model_name):
         ])
     ])
 
-    if model.references:
-        references = dcc.Markdown(references_to_markdown(model.references))
-    else:
-        # TODO: append to list instead ...
-        references = None
+    #if model.references:
+    #    references = dcc.Markdown(references_to_markdown(model.references))
+    #else:
+    #    # TODO: append to list instead ...
+    #    references = None
+
+    references = None
 
     symbols_layout = html.Div(children=[
         html.Div(className='row', children=[
             html.Div(className='two columns', children=[str(symbol)]),
-            html.Div(className='ten columns', children=[dcc.Link(get_display_name(property_name),
-                                                                 href='/property/{}'.format(
-                                                                     property_name))])
+            html.Div(className='ten columns', children=[
+                dcc.Link(DEFAULT_SYMBOL_TYPES[symbol_name].display_names[0],
+                         href='/property/{}'.format(symbol_name))])
         ])
-        for symbol, property_name in model.symbol_mapping.items()
+        for symbol, symbol_name in model.symbol_mapping.items()
     ])
 
     # method = model.method TODO: add below description
@@ -110,7 +112,7 @@ def model_layout(model_name):
 
 
 model_links = {}
-for model_name in models.all_model_names:
+for model_name in models.DEFAULT_MODEL_NAMES:
     # instantiate model from name
     model = getattr(models, model_name)()
 
@@ -123,16 +125,15 @@ for model_name in models.all_model_names:
 
     for tag in tags:
 
-        # text to display as link
-        #link_text_1 = "[{}]".format(model.model_id)
-        link_text_2 = "{}".format(model.title)
+        passes = model.test()
+        passes = "✅" if passes else "❌"
+
+        link_text = "{}".format(model.title)
 
         model_links[tag].append(
             html.Div([
-                #dcc.Link(link_text_1,
-                #         href='/model/{}'.format(model_name)),
-                #html.Span(' '),
-                dcc.Link(link_text_2,
+                html.Span('{} '.format(passes)),
+                dcc.Link(link_text,
                          href='/model/{}'.format(model_name)),
                 html.Br()
             ])

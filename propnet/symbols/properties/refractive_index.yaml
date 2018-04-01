@@ -5,5 +5,5 @@ units:
 display_names: ['Refractive index','Index of Refraction']
 display_symbols: ['n']
 dimension: 1
-test_value: 1.2
 comment: ''
+category: property

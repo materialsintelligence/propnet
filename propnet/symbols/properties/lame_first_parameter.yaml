@@ -5,5 +5,5 @@ units:
 display_names: [Lamé's first parameter]
 display_symbols: [\lambda]
 dimension: 1
-test_value: 10.0
 comment: ''
+category: property

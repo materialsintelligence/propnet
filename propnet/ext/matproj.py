@@ -4,7 +4,7 @@ from pymatgen import MPRester
 from pymatgen.core.structure import IStructure
 from propnet.core.symbols import Symbol
 from propnet.core.materials import Material
-from propnet.symbols import SymbolType
+from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
 from propnet.core.materials import Material
 
@@ -48,11 +48,11 @@ def import_materials(mp_ids, api_key=None):
         # properties of one mp-id
         mat = Material()
         tag_string = data['task_id']
-        mat.add_property(Symbol(SymbolType['structure'], data['structure'], [tag_string]))
-        mat.add_property(Symbol(SymbolType['lattice_unit_cell'], data['structure'].lattice.matrix, [tag_string]))
+        mat.add_property(Symbol('structure', data['structure'], [tag_string]))
+        mat.add_property(Symbol('lattice_unit_cell', data['structure'].lattice.matrix, [tag_string]))
         for key in data:
             if not data[key] is None and key in PROPNET_FROM_MP_NAME_MAPPING.keys():
-                prop_type = SymbolType[PROPNET_FROM_MP_NAME_MAPPING[key]]
+                prop_type = DEFAULT_SYMBOL_TYPES[PROPNET_FROM_MP_NAME_MAPPING[key]]
                 p = Symbol(prop_type, data[key], [tag_string])
                 mat.add_property(p)
         to_return.append(mat)
@@ -72,7 +72,7 @@ def import_material(mp_id, api_key=None):
     return import_materials([mp_id], api_key)[0]
 
 
-def materials_from_formula(formula, api_key):
+def materials_from_formula(formula, api_key=None):
     """
     Given a material chemical formula, returns all Material objects with a matching formula
     with all their available properties from the Materials Project.
@@ -82,6 +82,7 @@ def materials_from_formula(formula, api_key):
     Returns:
         (list<Material>): all materials with matching formula
     """
+    mpr = MPRester(api_key)
     query_results = mpr.query(criteria={'pretty_formula': formula},
                               properties=['task_id'])
     mpids = [entry['task_id'] for entry in query_results]

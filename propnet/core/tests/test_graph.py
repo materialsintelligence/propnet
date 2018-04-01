@@ -3,7 +3,7 @@ from propnet.core.graph import *
 from propnet.core.materials import *
 from propnet.core.symbols import *
 
-from propnet.symbols import SymbolType
+from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
 class GraphTest(unittest.TestCase):
 
@@ -76,31 +76,31 @@ class GraphTest(unittest.TestCase):
         # Setup
         propnet = Propnet()
         mat1 = Material()
-        mat1.add_property(Symbol(SymbolType['relative_permeability'], 1, None))
-        mat1.add_property(Symbol(SymbolType['relative_permeability'], 2, None))
-        mat1.add_property(Symbol(SymbolType['relative_permittivity'], 3, None))
-        mat1.add_property(Symbol(SymbolType['relative_permittivity'], 5, None))
+        mat1.add_property(Symbol(DEFAULT_SYMBOL_TYPES['relative_permeability'], 1, None))
+        mat1.add_property(Symbol(DEFAULT_SYMBOL_TYPES['relative_permeability'], 2, None))
+        mat1.add_property(Symbol(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 3, None))
+        mat1.add_property(Symbol(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 5, None))
         propnet.add_material(mat1)
 
         propnet.evaluate(material=mat1)
 
         # Expected outputs
         s_outputs = []
-        s_outputs.append(Symbol(SymbolType['relative_permeability'], 1, None))
-        s_outputs.append(Symbol(SymbolType['relative_permeability'], 2, None))
-        s_outputs.append(Symbol(SymbolType['relative_permittivity'], 3, None))
-        s_outputs.append(Symbol(SymbolType['relative_permittivity'], 5, None))
-        s_outputs.append(Symbol(SymbolType['refractive_index'], 3 ** 0.5, None))
-        s_outputs.append(Symbol(SymbolType['refractive_index'], 5 ** 0.5, None))
-        s_outputs.append(Symbol(SymbolType['refractive_index'], 6 ** 0.5, None))
-        s_outputs.append(Symbol(SymbolType['refractive_index'], 10 ** 0.5, None))
+        s_outputs.append(Symbol('relative_permeability', 1, None))
+        s_outputs.append(Symbol('relative_permeability', 2, None))
+        s_outputs.append(Symbol('relative_permittivity', 3, None))
+        s_outputs.append(Symbol('relative_permittivity', 5, None))
+        s_outputs.append(Symbol('refractive_index', 3 ** 0.5, None))
+        s_outputs.append(Symbol('refractive_index', 5 ** 0.5, None))
+        s_outputs.append(Symbol('refractive_index', 6 ** 0.5, None))
+        s_outputs.append(Symbol('refractive_index', 10 ** 0.5, None))
 
         m_outputs = [mat1]
 
         st_outputs = []
-        st_outputs.append(SymbolType['relative_permeability'])
-        st_outputs.append(SymbolType['relative_permittivity'])
-        st_outputs.append(SymbolType['refractive_index'])
+        st_outputs.append('relative_permeability')
+        st_outputs.append('relative_permittivity')
+        st_outputs.append('refractive_index')
 
         # Test
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, s_outputs, 'Symbol'))
@@ -125,10 +125,10 @@ class GraphTest(unittest.TestCase):
         propnet = Propnet()
         mat1 = Material()
         mat2 = Material()
-        mat1.add_property(Symbol(SymbolType['relative_permeability'], 1, None))
-        mat2.add_property(Symbol(SymbolType['relative_permeability'], 2, None))
-        mat1.add_property(Symbol(SymbolType['relative_permittivity'], 3, None))
-        mat2.add_property(Symbol(SymbolType['relative_permittivity'], 5, None))
+        mat1.add_property(Symbol('relative_permeability', 1, None))
+        mat2.add_property(Symbol('relative_permeability', 2, None))
+        mat1.add_property(Symbol('relative_permittivity', 3, None))
+        mat2.add_property(Symbol('relative_permittivity', 5, None))
         propnet.add_material(mat1)
         propnet.add_material(mat2)
 
@@ -136,33 +136,33 @@ class GraphTest(unittest.TestCase):
 
         # Expected propnet outputs
         s_outputs = []
-        s_outputs.append(Symbol(SymbolType['relative_permeability'], 1, None))
-        s_outputs.append(Symbol(SymbolType['relative_permeability'], 2, None))
-        s_outputs.append(Symbol(SymbolType['relative_permittivity'], 3, None))
-        s_outputs.append(Symbol(SymbolType['relative_permittivity'], 5, None))
-        s_outputs.append(Symbol(SymbolType['refractive_index'], 3 ** 0.5, None))
-        s_outputs.append(Symbol(SymbolType['refractive_index'], 5 ** 0.5, None))
-        s_outputs.append(Symbol(SymbolType['refractive_index'], 6 ** 0.5, None))
-        s_outputs.append(Symbol(SymbolType['refractive_index'], 10 ** 0.5, None))
+        s_outputs.append(Symbol('relative_permeability', 1, None))
+        s_outputs.append(Symbol('relative_permeability', 2, None))
+        s_outputs.append(Symbol('relative_permittivity', 3, None))
+        s_outputs.append(Symbol('relative_permittivity', 5, None))
+        s_outputs.append(Symbol('refractive_index', 3 ** 0.5, None))
+        s_outputs.append(Symbol('refractive_index', 5 ** 0.5, None))
+        s_outputs.append(Symbol('refractive_index', 6 ** 0.5, None))
+        s_outputs.append(Symbol('refractive_index', 10 ** 0.5, None))
 
         m_outputs = [mat1, mat2]
 
         # Expected mat_1 outputs
         m1_s_outputs = []
-        m1_s_outputs.append(Symbol(SymbolType['relative_permeability'], 1, None))
-        m1_s_outputs.append(Symbol(SymbolType['relative_permittivity'], 3, None))
-        m1_s_outputs.append(Symbol(SymbolType['refractive_index'], 3 ** 0.5, None))
+        m1_s_outputs.append(Symbol('relative_permeability', 1, None))
+        m1_s_outputs.append(Symbol('relative_permittivity', 3, None))
+        m1_s_outputs.append(Symbol('refractive_index', 3 ** 0.5, None))
 
         #Expected mat_2 outputs
         m2_s_outputs = []
-        m2_s_outputs.append(Symbol(SymbolType['relative_permeability'], 2, None))
-        m2_s_outputs.append(Symbol(SymbolType['relative_permittivity'], 5, None))
-        m2_s_outputs.append(Symbol(SymbolType['refractive_index'], 10 ** 0.5, None))
+        m2_s_outputs.append(Symbol('relative_permeability', 2, None))
+        m2_s_outputs.append(Symbol('relative_permittivity', 5, None))
+        m2_s_outputs.append(Symbol('refractive_index', 10 ** 0.5, None))
 
         st_outputs = []
-        st_outputs.append(SymbolType['relative_permeability'])
-        st_outputs.append(SymbolType['relative_permittivity'])
-        st_outputs.append(SymbolType['refractive_index'])
+        st_outputs.append('relative_permeability')
+        st_outputs.append('relative_permittivity')
+        st_outputs.append('refractive_index')
 
         # Test
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
@@ -193,10 +193,10 @@ class GraphTest(unittest.TestCase):
         """
         # Setup
         """
-        A = SymbolMetadata('A', [], ['A'], ['A'], [1], np.asarray([1]), '', strict=False)
-        B = SymbolMetadata('B', [], ['B'], ['B'], [1], np.asarray([1]), '', strict=False)
-        C = SymbolMetadata('C', [], ['C'], ['C'], [1], np.asarray([1]), '', strict=False)
-        E = SymbolMetadata('E', [], ['E'], ['E'], [1], np.asarray([1]), '', strict=False)
+        A = SymbolType('A', [], ['A'], ['A'], [1], np.asarray([1]), '', strict=False)
+        B = SymbolType('B', [], ['B'], ['B'], [1], np.asarray([1]), '', strict=False)
+        C = SymbolType('C', [], ['C'], ['C'], [1], np.asarray([1]), '', strict=False)
+        E = SymbolType('E', [], ['E'], ['E'], [1], np.asarray([1]), '', strict=False)
 
         cache = [(sym.name, sym.value) for sym in self.SymbolType]
         cache.append(('A', A))
