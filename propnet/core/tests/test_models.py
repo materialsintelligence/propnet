@@ -19,7 +19,7 @@ class ModelTest(unittest.TestCase):
                 model = getattr(models, model_name)()
                 models_to_test.append(model_name)
             except Exception as e:
-                raise Exception('Failed to load model {}: {}'.format(model_name, e))
+                self.fail('Failed to load model {}: {}'.format(model_name, e))
 
     def test_evaluate(self):
         test_data = glob(os.path.join(os.path.dirname(__file__), '../../models/test_data/*.json'))
@@ -29,4 +29,4 @@ class ModelTest(unittest.TestCase):
                 model = getattr(models, model_name)()
                 self.assertTrue(model.test())
             else:
-                raise ValueError("Model not found: {}".format(model_name))
+                raise ValueError("Model matching test data not found: {}".format(model_name))
