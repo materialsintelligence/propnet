@@ -391,7 +391,7 @@ class AbstractModel(metaclass=ABCMeta):
         return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
 
     def __repr__(self):
-        return str(self._metadata)
+        return self.name
 
     def __str__(self):
         return "{} ({})".format(self._metadata['title'], self.model_id)

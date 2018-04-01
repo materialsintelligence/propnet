@@ -14,7 +14,6 @@ from propnet.core.symbols import Symbol
 from propnet.core.models import AbstractModel
 
 from enum import Enum
-from frozendict import frozendict
 from collections import Counter, namedtuple
 
 
@@ -57,7 +56,6 @@ class Propnet:
         self.graph = nx.MultiDiGraph()
 
         # add our symbols
-        self._symbol_types = {}
         self.add_symbol_types(symbol_types)
 
         # add our models
@@ -108,11 +106,6 @@ class Propnet:
                        for model in models.values()]
         self.graph.add_nodes_from(model_nodes)
 
-    @property
-    def symbol_types(self):
-        # this may not be necessary ...
-        return frozendict(self._symbol_type)
-
     def add_symbol_types(self, symbol_types):
         """
 
@@ -122,8 +115,6 @@ class Propnet:
         Returns:
 
         """
-
-        self._symbol_types.update(symbol_types)
 
         symbol_type_nodes = [PropnetNode(node_type=PropnetNodeType.SymbolType,
                                          node_value=symbol_type)
@@ -461,6 +452,12 @@ class Propnet:
         all_tags = [tag for tags in self.all_models for tag in tags]
         unique_tags = sorted(list(set(all_tags)))
         return Counter(all_tags)
+
+    def __repr__(self):
+        nodes = "\n".join([n.__repr__() for n in self.graph.nodes()])
+        edges = "\n".join(["\t{}-->{}".format(u.__repr__(), v.__repr__())
+                           for u, v in self.graph.edges()])
+        return "Nodes:\n{}\nEdges:\n{}".format(nodes, edges)
 
     def __str__(self):
         """
