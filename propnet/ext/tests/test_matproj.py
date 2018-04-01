@@ -3,9 +3,11 @@ from propnet.core.symbols import *
 from propnet.symbols import *
 from propnet.ext.matproj import *
 
-class MPInterfaceTest(unittest.TestCase):
+
+class MatProjTest(unittest.TestCase):
 
     def test_load_properties(self):
+
         mp_id = 'mp-1153'
         mat = import_material(mp_id)
         self.assertTrue('structure' in mat.available_properties())

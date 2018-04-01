@@ -116,7 +116,7 @@ class Material:
         available_propertes = []
         for node in self.graph.nodes:
             if node.node_type == PropnetNodeType.Symbol:
-                available_propertes.append(node.node_value.type.name)
+                available_propertes.append(node.node_value.name)
         return available_propertes
 
     def available_property_nodes(self):

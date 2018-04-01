@@ -331,7 +331,7 @@ class AbstractModel(metaclass=ABCMeta):
         return self.name
 
     def __str__(self):
-        return "{} ({})".format(self._metadata['title'], self.model_id)
+        return "{} [{}]".format(self._metadata['title'], self.model_id)
 
     def test(self, test_file=None):
         """

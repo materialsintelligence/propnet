@@ -36,7 +36,7 @@ class SymbolType(MSONable):
     """
 
     __slots__ = ['name', 'units', 'display_names', 'display_symbols',
-                 'dimension', 'comment', 'type']
+                 'dimension', 'comment', 'category']
 
     # TODO rename to category
     def __init__(self, name, units, display_names,
@@ -92,12 +92,12 @@ class SymbolType(MSONable):
                     raise ValueError('Problem loading units for {}: {}'.format(name, e))
 
         self.name = name
+        self.category = category
         self.units = units
         self.display_names = display_names
         self.display_symbols = display_symbols
         self.dimension = dimension  # TODO: rename to shape?
         self.comment = comment
-        self.category = category
 
     @property
     def dimension_as_string(self):
@@ -136,7 +136,7 @@ class SymbolType(MSONable):
         return self.name == other.name
 
     def __repr__(self):
-        return self.name
+        return "{}<{}>".format(self.category, self.name)
 
     def __hash__(self):
         return self.name.__hash__()
