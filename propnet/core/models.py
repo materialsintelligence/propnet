@@ -2,9 +2,6 @@
 Module containing classes and methods for Model functionality in Propnet code.
 """
 
-import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr
-
 # typing information, for type hinting only
 from typing import *
 
@@ -12,15 +9,20 @@ import math
 
 from abc import ABCMeta, abstractmethod
 from functools import wraps
+from os.path import dirname, join, isfile
 from hashlib import sha256
+
+from ruamel.yaml import safe_load
+from monty.serialization import loadfn
+
+import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
 
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 from propnet import logger
 from propnet import ureg
 
-from monty.serialization import loadfn
-from os.path import dirname, join, isfile
-from ruamel.yaml import safe_load
+
 
 # TODO: add pint integration
 # TODO: decide on interface for conditions, assumptions etc.

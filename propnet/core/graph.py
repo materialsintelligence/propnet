@@ -17,7 +17,9 @@ from enum import Enum
 from collections import Counter, namedtuple
 
 
-PropnetNodeType = Enum('PropnetNodeType', ['Material', 'SymbolType', 'Symbol', 'Model'])
+_ALLOWED_NODE_TYPES = ['Material', 'SymbolType', 'Symbol', 'Model']
+
+PropnetNodeType = Enum('PropnetNodeType', _ALLOWED_NODE_TYPES)
 PropnetNode = namedtuple('PropnetNode', ['node_type', 'node_value'])
 # add an easy-to-read __repr__() for PropnetNode, it's a little verbose otherwise
 PropnetNode.__repr__ = lambda self: "{}<{}>".format(self.node_type.name,
@@ -47,7 +49,7 @@ class Propnet:
 
     """
 
-    def __init__(self, models=None, symbol_types=None):
+    def __init__(self, materials=None, models=None, symbol_types=None):
         """
         Creates a Propnet instance
         """
@@ -95,6 +97,10 @@ class Propnet:
                                               node_value=symbol_type)
                     self.graph.add_edge(model_node, output_node, route=idx)
 
+        if materials:
+            for material in materials:
+                self.add_material(material)
+
     def add_models(self, models):
         """
         Add a user-defined model to the Propnet graph.
@@ -135,10 +141,10 @@ class Propnet:
         Returns:
             (list<PropnetNode>) list of nodes of property types.
         """
-        if node_type not in PropnetNodeType._member_names_:
+        if node_type not in _ALLOWED_NODE_TYPES:
             raise ValueError("Unsupported node type, choose from: {}"
-                             .format(PropnetNodeType._member_names_))
-        return filter(lambda n: n.node_type.name==node_type, self.graph.nodes)
+                             .format(_ALLOWED_NODE_TYPES))
+        return filter(lambda n: n.node_type.name == node_type, self.graph.nodes)
 
     def add_material(self, material):
         """
