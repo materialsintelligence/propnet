@@ -9,8 +9,8 @@ from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
 from pybtex.style.labels import BaseLabelStyle
 
-from propnet.symbols import all_symbol_names, SymbolType
-from propnet.models import all_model_names
+from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, SymbolType
+from propnet.models import DEFAULT_MODEL_NAMES
 
 from monty.serialization import loadfn
 
@@ -50,8 +50,8 @@ def graph_conversion(graph, highlight=False,
         if n.node_type.name == 'SymbolType':
             # property
             id = n.node_value.name
-            label = n.node_value.value.display_names[0]
-            fill = AESTHETICS['color'][n.node_value.value.type]
+            label = n.node_value.display_names[0]
+            fill = AESTHETICS['color'][n.node_value.category]
             shape = 'circle'
             radius = 5.0
         elif n.node_type.name == 'Model':
@@ -187,14 +187,14 @@ def parse_path(pathname):
         mode = 'model'
     elif pathname.startswith('/model'):
         mode = 'model'
-        for model in all_model_names:
+        for model in DEFAULT_MODEL_NAMES:
             if pathname.startswith('/model/{}'.format(model)):
                 value = model
     elif pathname == '/property':
         mode = 'property'
     elif pathname.startswith('/property'):
         mode = 'property'
-        for property in all_symbol_names:
+        for property in DEFAULT_SYMBOL_TYPE_NAMES:
             if pathname.startswith('/property/{}'.format(property)):
                 value = property
     #elif pathname == '/load_material':

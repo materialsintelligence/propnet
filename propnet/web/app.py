@@ -11,8 +11,8 @@ from urllib.parse import urlparse
 from propnet import log_stream, ureg
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_properties import property_layout, properties_index
-from propnet.models import all_model_names
-from propnet.symbols import all_symbol_names
+from propnet.models import DEFAULT_MODEL_NAMES
+from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
 
 from force_graph import ForceGraphComponent
 from propnet.web.utils import graph_conversion, parse_path
@@ -95,9 +95,9 @@ def show_content_for_selected_node(node):
     print(node)
     if node == 'home':
         return '/'
-    elif node in all_symbol_names:
+    elif node in DEFAULT_SYMBOL_TYPE_NAMES:
         return '/property/{}'.format(node)
-    elif node in all_model_names:
+    elif node in DEFAULT_MODEL_NAMES:
         return '/model/{}'.format(node)
     else:
         return '/'

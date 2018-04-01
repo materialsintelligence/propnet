@@ -14,7 +14,7 @@ from abc import ABCMeta, abstractmethod
 from functools import wraps
 from hashlib import sha256
 
-from propnet.symbols import SymbolType
+from propnet.symbols import DEFAULT_SYMBOL_TYPES
 from propnet import logger
 from propnet import ureg
 
@@ -60,7 +60,7 @@ class AbstractModel(metaclass=ABCMeta):
         (str) tags -> (list<str>) list of categories applicable to the model.
         (str) references -> (list<str>) list of informational links explaining / supporting the model
         (str) symbol_mapping -> (dict<str,str>) keys are symbols used in equations of the model,
-                                                values are SymbolType enum values (SymbolMetadata.name field)
+                                                values are SymbolType enum values (SymbolType.name field)
         (str) connections -> (list<dict<str,list<str>>>)
                                                 Forms the list of outputs that can be generated from different sets of
                                                 inputs. The outer list contains dictionaries. These dictionaries contain
@@ -96,8 +96,11 @@ class AbstractModel(metaclass=ABCMeta):
 
     def __init__(self, metadata=None):
         """
-        Constructs a Model object with the provided metadata. If the metadata is None, it attempts to load in the
-        appropriate .yaml file at this time. Such a .yaml file must have a name equal to the class name.
+        Constructs a Model object with the provided metadata.
+
+        If the metadata is None, it attempts to load in the
+        appropriate .yaml file at this time.
+        Such a .yaml file must have a name equal to the class name.
 
         Args:
             metadata (dict<str,id>): metadata defining the model.
@@ -118,7 +121,7 @@ class AbstractModel(metaclass=ABCMeta):
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
             try:
-                self.unit_mapping[symbol] = SymbolType[name].value.units
+                self.unit_mapping[symbol] = DEFAULT_SYMBOL_TYPES[name].units
             except Exception as e:
                 raise ValueError('Please check your property names in your symbol mapping, '
                                  'for property {} and model {}, are they all valid? '
@@ -243,7 +246,7 @@ class AbstractModel(metaclass=ABCMeta):
     def symbol_mapping(self):
         """
         A mapping of a symbol named used within the model to the canonical symbol name, e.g. {"E": "youngs_modulus"}
-        keys are symbols used in the model; values are SymbolType enum values (SymbolMetadata.name field)
+        keys are symbols used in the model; values are SymbolType enum values (SymbolType.name field)
 
         Returns:
             (dict<str,str>): symbol mapping dictionary
@@ -390,24 +393,8 @@ class AbstractModel(metaclass=ABCMeta):
     def __repr__(self):
         return str(self._metadata)
 
-    #def __str__(self):
-    #    return NotImplementedError
-    #    return Markdown-formatted text
-    #    """
-    #    Model: model_name (model_id)
-    #
-    #    Associated Symbols:
-    #
-    #    Properties:
-    #    Conditions:
-    #    Objects:
-    #
-    #    Equations:
-    #
-    #    Inputs/outputs:
-    #
-    #    Description:
-    #    """#
+    def __str__(self):
+        return "{} ({})".format(self._metadata['title'], self.model_id)
 
     def test(self, test_file=None):
         """

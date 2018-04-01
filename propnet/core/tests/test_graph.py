@@ -193,10 +193,10 @@ class GraphTest(unittest.TestCase):
         """
         # Setup
         """
-        A = SymbolMetadata('A', [], ['A'], ['A'], [1], np.asarray([1]), '', strict=False)
-        B = SymbolMetadata('B', [], ['B'], ['B'], [1], np.asarray([1]), '', strict=False)
-        C = SymbolMetadata('C', [], ['C'], ['C'], [1], np.asarray([1]), '', strict=False)
-        E = SymbolMetadata('E', [], ['E'], ['E'], [1], np.asarray([1]), '', strict=False)
+        A = SymbolType('A', [], ['A'], ['A'], [1], np.asarray([1]), '', strict=False)
+        B = SymbolType('B', [], ['B'], ['B'], [1], np.asarray([1]), '', strict=False)
+        C = SymbolType('C', [], ['C'], ['C'], [1], np.asarray([1]), '', strict=False)
+        E = SymbolType('E', [], ['E'], ['E'], [1], np.asarray([1]), '', strict=False)
 
         cache = [(sym.name, sym.value) for sym in self.SymbolType]
         cache.append(('A', A))
