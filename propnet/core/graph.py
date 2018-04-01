@@ -47,10 +47,14 @@ class Propnet:
 
     """
 
-    def __init__(self, models=DEFAULT_MODELS, symbol_types=DEFAULT_SYMBOL_TYPES):
+    def __init__(self, models=None, symbol_types=None):
         """
         Creates a Propnet instance
         """
+
+        # set our defaults if no models/symbol types supplied
+        models = models or DEFAULT_MODELS
+        symbol_types = symbol_types or DEFAULT_SYMBOL_TYPES
 
         # create the graph
         self.graph = nx.MultiDiGraph()

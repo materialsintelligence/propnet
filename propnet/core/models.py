@@ -94,7 +94,7 @@ class AbstractModel(metaclass=ABCMeta):
         unit_mapping (dict<str,Pint.unit>): mapping from symbols used in the model to their corresponding units.
     """
 
-    def __init__(self, metadata=None, symbol_types=DEFAULT_SYMBOL_TYPES):
+    def __init__(self, metadata=None, symbol_types=None):
         """
         Constructs a Model object with the provided metadata.
 
@@ -105,6 +105,8 @@ class AbstractModel(metaclass=ABCMeta):
         Args:
             metadata (dict<str,id>): metadata defining the model.
         """
+        
+        symbol_types = symbol_types or DEFAULT_SYMBOL_TYPES
 
         if not metadata:
             try:
