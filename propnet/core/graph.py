@@ -90,7 +90,6 @@ class Propnet:
                                               node_value=symbol_type)
                     self.graph.add_edge(model_node, output_node, route=idx)
 
-
     def add_models(self, models):
         """
         Add a user-defined model to the Propnet graph.
@@ -159,26 +158,7 @@ class Propnet:
         Returns:
             void
         """
-        material_node = None
-        for node in self.graph.nodes:
-            if node.node_type != PropnetNodeType['Material']:
-                continue
-            if node.node_value != material:
-                continue
-            if material_node:
-                raise ValueError("Multiple duplicate Material nodes were found - removal is ambiguous.")
-            material_node = node
-        if not material_node:
-            raise ValueError("Material was not found.")
-        to_remove = []
-        for neighbor in self.graph.neighbors(material_node):
-            if neighbor.node_type != PropnetNodeType['Symbol']:
-                continue
-            to_remove.append(neighbor)
-        self.graph.remove_node(material_node)
-        for node in to_remove:
-            self.graph.remove_node(node)
-        material_node.node_value.parent = None
+        self.graph = nx.difference(self.graph, material.graph)
 
     def evaluate(self, material=None, property_type=None):
         """
