@@ -6,5 +6,4 @@ display_names: ['Crystallographic structure (oxidation-state decorated)']
 display_symbols: []
 dimension: 1
 comment: ''
-type: object
-test_value: 0
+category: object

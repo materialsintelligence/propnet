@@ -5,5 +5,5 @@ units:
 display_names: ['Electron effective mass']
 display_symbols: ['m_e^*']
 dimension: 1
-test_value: 0.2
 comment: ''
+category: property

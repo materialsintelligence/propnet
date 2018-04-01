@@ -6,5 +6,5 @@ units:
 display_names: [Snyder's optical sound velocity]
 display_symbols: [v_op]
 dimension: 1
-test_value: 65.0
 comment: ''
+category: property

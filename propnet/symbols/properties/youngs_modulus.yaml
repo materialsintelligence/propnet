@@ -5,5 +5,5 @@ units:
 display_names: [Young's modulus, Elastic modulus]
 display_symbols: [E]
 dimension: 1
-test_value: 130.0
 comment: ''
+category: property

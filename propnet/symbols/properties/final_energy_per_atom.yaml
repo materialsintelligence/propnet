@@ -5,5 +5,5 @@ units:
 display_names: [Final Energy Per Atom]
 display_symbols: [E]
 dimension: 1
-test_value: 4.75
 comment: ''
+category: property

@@ -5,5 +5,5 @@ units:
 display_names: ["Kohn-Sham gap (PBE)"]
 display_symbols: ["E_{g, PBE}"]
 dimension: 1
-test_value: 0.4
 comment: ''
+category: property

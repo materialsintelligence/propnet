@@ -5,6 +5,5 @@ units:
 display_names: [Thickness]
 display_symbols: [t]
 dimension: 1
-test_value: 100
 comment: 'thickness of the material'
-type: condition
+category: condition
