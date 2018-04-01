@@ -390,6 +390,9 @@ class AbstractModel(metaclass=ABCMeta):
         """
         return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
 
+    def __eq__(self, other):
+        return self.model_id == getattr(other, "model_id", None)
+
     def __repr__(self):
         return self.name
 
