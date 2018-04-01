@@ -41,7 +41,7 @@ class GraphTest(unittest.TestCase):
                 if value == v_check:
                     v_count += 1
             for value in checked:
-                if value == c_count:
+                if value == v_check:
                     c_count += 1
             if c_count >= v_count:
                 # Graph contains too many of a value.
@@ -98,9 +98,9 @@ class GraphTest(unittest.TestCase):
         m_outputs = [mat1]
 
         st_outputs = []
-        st_outputs.append('relative_permeability')
-        st_outputs.append('relative_permittivity')
-        st_outputs.append('refractive_index')
+        st_outputs.append(DEFAULT_SYMBOL_TYPES['relative_permeability'])
+        st_outputs.append(DEFAULT_SYMBOL_TYPES['relative_permittivity'])
+        st_outputs.append(DEFAULT_SYMBOL_TYPES['refractive_index'])
 
         # Test
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, s_outputs, 'Symbol'))
@@ -160,9 +160,9 @@ class GraphTest(unittest.TestCase):
         m2_s_outputs.append(Symbol('refractive_index', 10 ** 0.5, None))
 
         st_outputs = []
-        st_outputs.append('relative_permeability')
-        st_outputs.append('relative_permittivity')
-        st_outputs.append('refractive_index')
+        st_outputs.append(DEFAULT_SYMBOL_TYPES['relative_permeability'])
+        st_outputs.append(DEFAULT_SYMBOL_TYPES['relative_permittivity'])
+        st_outputs.append(DEFAULT_SYMBOL_TYPES['refractive_index'])
 
         # Test
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))

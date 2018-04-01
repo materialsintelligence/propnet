@@ -162,9 +162,9 @@ class Symbol(MSONable):
         Parses inputs for constructing a Property object.
 
         Args:
-            symbol_type (SymbolType): pointer to an existing PropertyMetadata object, identifies the
-            type of data stored
-                                   in the property.
+            symbol_type: pointer to an existing PropertyMetadata object or String giving
+                    the name of a SymbolType object, identifies the type of data stored
+                    in the property.
             value (id): value of the property.
             tags (list<str>): list of strings storing metadata from Symbol evaluation.
             provenance (id): time of creation of the object.
