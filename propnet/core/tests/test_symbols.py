@@ -32,5 +32,5 @@ class PropertiesTest(unittest.TestCase):
 
     def test_all_properties(self):
 
-        self.assertEqual(str(DEFAULT_SYMBOL_TYPES['density'].value.units),
+        self.assertEqual(str(DEFAULT_SYMBOL_TYPES['density'].units),
                          '1.0 gram / centimeter ** 3')

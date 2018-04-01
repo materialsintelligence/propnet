@@ -106,7 +106,7 @@ class Propnet:
         Add a user-defined model to the Propnet graph.
 
         Args:
-            model: An instance of a model class (subclasses AbstractModel)
+            models: An instance of a model class (subclasses AbstractModel)
 
         Returns:
 
@@ -120,7 +120,7 @@ class Propnet:
         """
 
         Args:
-            symbol_type: {name:SymbolType}
+            symbol_types: {name:SymbolType}
 
         Returns:
 
@@ -201,7 +201,7 @@ class Propnet:
 
         if not material:
             # All symbol_nodes are candidates for evaluation.
-            symbol_nodes = self.nodes_by_type('Symbol')
+            symbol_nodes = list(self.nodes_by_type('Symbol'))
         else:
             # Only symbol_nodes connected to the given Material object are candidates for evaluation.
             material_nodes = self.nodes_by_type('Material')
@@ -259,6 +259,10 @@ class Propnet:
         # Create fast-lookup data structure (Symbol -> MaterialNode)
         source_dict = {}
 
+        # Create fast-lookup data structure (str (SymbolType name) -> SymbolType)
+        symbol_type_nodes = self.nodes_by_type('SymbolType')
+        symbol_types = {x.node_value.name: x.node_value for x in symbol_type_nodes}
+
         def get_source_nodes(graph, node):
             """
             Given a Symbol node on the graph, returns a list of connected material nodes.
@@ -296,20 +300,24 @@ class Propnet:
             sym_inputs = model.input_symbols
             input_conditions = model.constraints
 
-            def get_types(symbols_in, legend):
-                """Converts symbols used in equations to SymbolType enum objects"""
+            def get_types(symbols_in, legend, symbol_types):
+                """Converts symbols used in equations to SymbolType objects"""
                 to_return = []
                 for l in symbols_in:
                     if not isinstance(l, list):
                         l = [l]
                     out = []
                     for i in l:
-                        out.append(SymbolType[legend[i]])
+                        to_append = symbol_types.get(legend[i])
+                        if not to_append:
+                            raise Exception('Error evaluating graph: Model references SymbolType'
+                                            'objects that do not appear in the graph.')
+                        out.append(to_append)
                     to_return.append(out)
                 return to_return
 
             # list<list<SymbolType>>, representing sets of input properties the model accepts.
-            type_inputs = get_types(sym_inputs, legend)
+            type_inputs = get_types(sym_inputs, legend, symbol_types)
 
             # Recursive helper method here.
             # Look through all input sets and match with all combinations from lookup_dict.
@@ -378,9 +386,8 @@ class Propnet:
             output_sources = []
             for entry in outputs:
                 for (k, v) in entry['output'].items():
-                    try:
-                        prop_type = SymbolType[legend[k]]
-                    except KeyError:
+                    prop_type = symbol_types.get(legend.get(k))
+                    if not prop_type:
                         continue
                     symbol_outputs.append(Symbol(prop_type, v, None))
                     output_sources.append(entry['source'])
