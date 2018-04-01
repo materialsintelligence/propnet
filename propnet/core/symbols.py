@@ -6,7 +6,6 @@ from propnet import logger, ureg
 from pybtex.database.input.bibtex import Parser
 from monty.json import MSONable
 
-
 class SymbolType(MSONable):
     """
     Class storing the complete description of a SymbolType.
@@ -157,20 +156,28 @@ class Symbol(MSONable):
         tags: (list<str>)
     """
 
-    def __init__(self, type, value, tags,
+    def __init__(self, symbol_type, value, tags,
                  provenance=None):
         """
         Parses inputs for constructing a Property object.
 
         Args:
-            type (SymbolType): pointer to an existing PropertyMetadata object, identifies the
+            symbol_type (SymbolType): pointer to an existing PropertyMetadata object, identifies the
             type of data stored
                                    in the property.
             value (id): value of the property.
             tags (list<str>): list of strings storing metadata from Symbol evaluation.
             provenance (id): time of creation of the object.
         """
-        self._type = type
+
+        # TODO: move Symbol + SymbolType to separate files to remove circular import
+        from propnet.symbols import DEFAULT_SYMBOL_TYPES
+        if isinstance(symbol_type, str):
+            if symbol_type not in DEFAULT_SYMBOL_TYPES.keys():
+                raise ValueError("Symbol type {} not recognized".format(symbol_type))
+            symbol_type = DEFAULT_SYMBOL_TYPES[symbol_type]
+
+        self._symbol_type = symbol_type
         self._value = value
         self._tags = tags
         self._provenance = provenance
@@ -190,7 +197,7 @@ class Symbol(MSONable):
         Returns:
             (SymbolType): SymbolType of the Symbol
         """
-        return self._type
+        return self._symbol_type
 
     @property
     def tags(self):
