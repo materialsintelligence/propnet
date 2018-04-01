@@ -105,7 +105,7 @@ class AbstractModel(metaclass=ABCMeta):
         Args:
             metadata (dict<str,id>): metadata defining the model.
         """
-        
+
         symbol_types = symbol_types or DEFAULT_SYMBOL_TYPES
 
         if not metadata:

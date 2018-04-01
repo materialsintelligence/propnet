@@ -3,7 +3,7 @@ from propnet.core.symbols import *
 
 # these are properties distributed with Propnet as
 # yaml files in the properties folder
-from propnet.symbols import *
+from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
 class PropertiesTest(unittest.TestCase):
 
@@ -15,7 +15,6 @@ class PropertiesTest(unittest.TestCase):
             'display_names': ["Young's modulus", "Elastic modulus"],
             'display_symbols': ["E"],
             'dimension': 1,
-            'test_value': 130.0,
             'comment': ""
         }
 
@@ -25,7 +24,6 @@ class PropertiesTest(unittest.TestCase):
             display_names=["Young's modulus", "Elastic modulus"],
             display_symbols=["E"],
             dimension=1,
-            test_value=130.0,
             comment=""
         )
 
@@ -34,6 +32,5 @@ class PropertiesTest(unittest.TestCase):
 
     def test_all_properties(self):
 
-        all_properties = {name: SymbolType[name] for name in DEFAULT_SYMBOL_TYPE_NAMES}
-
-        self.assertEqual(str(all_properties['density'].value.units), '1.0 gram / centimeter ** 3')
+        self.assertEqual(str(DEFAULT_SYMBOL_TYPES['density'].value.units),
+                         '1.0 gram / centimeter ** 3')
