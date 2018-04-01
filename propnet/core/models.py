@@ -94,7 +94,7 @@ class AbstractModel(metaclass=ABCMeta):
         unit_mapping (dict<str,Pint.unit>): mapping from symbols used in the model to their corresponding units.
     """
 
-    def __init__(self, metadata=None):
+    def __init__(self, metadata=None, symbol_types=DEFAULT_SYMBOL_TYPES):
         """
         Constructs a Model object with the provided metadata.
 
@@ -121,7 +121,7 @@ class AbstractModel(metaclass=ABCMeta):
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
             try:
-                self.unit_mapping[symbol] = DEFAULT_SYMBOL_TYPES[name].units
+                self.unit_mapping[symbol] = symbol_types[name].units
             except Exception as e:
                 raise ValueError('Please check your property names in your symbol mapping, '
                                  'for property {} and model {}, are they all valid? '

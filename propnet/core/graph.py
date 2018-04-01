@@ -56,6 +56,7 @@ class Propnet:
         self.graph = nx.MultiDiGraph()
 
         # add our symbols
+        self._symbol_types = symbol_types
         self.add_symbol_types(symbol_types)
 
         # add our models
@@ -64,7 +65,7 @@ class Propnet:
         # add appropriate edges to the graph
         for model in models.values():
 
-            model = model()  # instantiate model
+            model = model(symbol_types=self._symbol_types)  # instantiate model
             model_node = PropnetNode(node_type=PropnetNodeType.Model, node_value=model)
 
             # integer idx is used to disambiguate edges when
@@ -101,7 +102,7 @@ class Propnet:
 
         """
         model_nodes = [PropnetNode(node_type=PropnetNodeType.Model,
-                                   node_value=model())
+                                   node_value=model(symbol_types=self._symbol_types))
                        for model in models.values()]
         self.graph.add_nodes_from(model_nodes)
 
@@ -114,7 +115,7 @@ class Propnet:
         Returns:
 
         """
-
+        self._symbol_types.update(symbol_types)
         symbol_type_nodes = [PropnetNode(node_type=PropnetNodeType.SymbolType,
                                          node_value=symbol_type)
                              for symbol_type in symbol_types.values()]
