@@ -134,11 +134,7 @@ class Propnet:
         if node_type not in PropnetNodeType._member_names_:
             raise ValueError("Unsupported node type, choose from: {}"
                              .format(PropnetNodeType._member_names_))
-        to_return = []
-        for node in self.graph.nodes:
-            if node.node_type.name == node_type:
-                to_return.append(node)
-        return to_return
+        return filter(lambda n: n.node_type.name==node_type, self.graph.nodes)
 
     def add_material(self, material):
         """
