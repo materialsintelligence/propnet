@@ -10,7 +10,6 @@ class GraphTest(unittest.TestCase):
 
     def setUp(self):
         self.p = Propnet()
-        self.SymbolType = SymbolType
 
     def test_graph_construction(self):
         self.assertGreaterEqual(self.p.graph.number_of_nodes(), 1)
@@ -20,6 +19,75 @@ class GraphTest(unittest.TestCase):
         # if any node on the graph is not of type Node, raise an error
         for node in self.p.graph.nodes:
             self.assertTrue(isinstance(node, PropnetNode))
+
+    def test_add_material(self):
+        """
+        Adding a material to a Propnet instance should lead to all the
+        Symbol, SymbolType, and Material nodes of the material getting
+        added to the Propnet instance -- a disjoint union.
+
+        Given a general Propnet instance, we add a material with custom
+        SymbolType, A, and two Symbol nodes of type A with different values.
+
+        Returns: None
+        """
+        # Setup
+        p = Propnet()
+        A = SymbolType('A', [], ['A'], ['A'], [1], '', validate=False)
+        mat1 = Material()
+        mat1.add_property(Symbol(A, 2, []))
+        mat1.add_property(Symbol(A, 3, []))
+        mat2 = Material()
+        mat2.add_property(Symbol(A, 4, []))
+        p.add_material(mat2)
+
+        # Add Material
+        p.add_material(mat1)
+
+        # Test Graph
+        # 1) Material's graph should be unchanged.
+        # 2) Propnet instance should be appropriately updated.
+
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [Symbol(A, 2, []), Symbol(A, 3, [])], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
+
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, [Symbol(A, 2, []), Symbol(A, 3, []), Symbol(A, 4, [])], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, list(DEFAULT_SYMBOL_TYPES.values()) + [A], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, [mat1, mat2], 'Material'))
+
+    def test_remove_material(self):
+        """
+        Adding a removing a material from a Propnet instance should lead
+        to all the Symbol nodes from the specific material being removed
+        from the Propnet instance, along with the material's node. The
+        material's graph should not be altered.
+
+        Given a general Propnet instance, we add a material with Symbols.
+        We ensure that adding and removing does not alter its graph.
+        We ensure that adding and then removing the material does not
+        alter the Propnet instance.
+
+        Returns: None
+        """
+        """
+        # Setup
+        p = Propnet()
+        mat1 = Material()
+        mat1.add_property(Symbol('refractive_index', 1.3, []))
+        p.add_material(mat1)
+        p.remove_material(mat1)
+
+        # Test Graph
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [Symbol('refractive_index', 1.3, [])], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph,
+                                                      [Symbol('refractive_index', 1.3, []).type], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [], 'Material'))
+        """
 
     @staticmethod
     def check_graph_symbols(to_test, values: list, node_type: str):
