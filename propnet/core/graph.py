@@ -21,7 +21,6 @@ _ALLOWED_NODE_TYPES = ['Material', 'SymbolType', 'Symbol', 'Model']
 
 PropnetNodeType = Enum('PropnetNodeType', _ALLOWED_NODE_TYPES)
 PropnetNode = namedtuple('PropnetNode', ['node_type', 'node_value'])
-# add an easy-to-read __repr__() for PropnetNode, it's a little verbose otherwise
 PropnetNode.__repr__ = lambda self: "{}<{}>".format(self.node_type.name,
                                                     self.node_value.__repr__())
 
@@ -463,15 +462,15 @@ class Propnet:
         """
         summary = ["Propnet Graph", ""]
         property_type_nodes = self.nodes_by_type('SymbolType')
-        summary += ["Property Types:"]
+        summary += ["Symbol Types:"]
         for property_type_node in property_type_nodes:
-            summary += ["\t " + property_type_node.node_value.value.display_names[0]]
+            summary += ["\t " + property_type_node.node_value.display_names[0]]
             neighbors = self.graph.neighbors(property_type_node)
             for neighbor in neighbors:
                 if neighbor.node_type != PropnetNodeType['Model']:
                     continue
                 summary += ["\t\t " + neighbor.node_value.title]
-        model_nodes = self.nodes_by_type('Model')
+        model_nodes = list(self.nodes_by_type('Model'))
         summary += ["Models:"]
         for model_node in model_nodes:
             summary += ["\t " + model_node.node_value.title]
@@ -479,14 +478,14 @@ class Propnet:
             for neighbor in neighbors:
                 if neighbor.node_type != PropnetNodeType['SymbolType']:
                     continue
-                summary += ["\t\t " + neighbor.node_value.value.display_names[0]]
-        materials = self.nodes_by_type('Material')
+                summary += ["\t\t " + neighbor.node_value.display_names[0]]
+        materials = list(self.nodes_by_type('Material'))
         if len(materials) != 0:
             summary += ["Materials:"]
         for material_node in materials:
-            summary += ["\t " + str(material_node.node_value.id)]
+            summary += ["\t " + str(material_node.node_value.uuid)]
             for property in filter(lambda n: n.node_type == PropnetNodeType['Symbol'],
                                    self.graph.neighbors(material_node)):
-                summary += ["\t\t " + property.node_value.type.value.display_names[0] +
-                            "\t:\t" + str(property.node_value.value)]
+                summary += ["\t\t " + property.node_value.type.display_names[0] +
+                            "\t:\t" + str(property.node_value)]
         return "\n".join(summary)

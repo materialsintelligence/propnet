@@ -2,6 +2,7 @@ import unittest
 from propnet.core.graph import *
 from propnet.core.materials import *
 from propnet.core.symbols import *
+from propnet.core.models import *
 
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
@@ -9,7 +10,6 @@ class GraphTest(unittest.TestCase):
 
     def setUp(self):
         self.p = Propnet()
-        self.SymbolType = SymbolType
 
     def test_graph_construction(self):
         self.assertGreaterEqual(self.p.graph.number_of_nodes(), 1)
@@ -19,6 +19,75 @@ class GraphTest(unittest.TestCase):
         # if any node on the graph is not of type Node, raise an error
         for node in self.p.graph.nodes:
             self.assertTrue(isinstance(node, PropnetNode))
+
+    def test_add_material(self):
+        """
+        Adding a material to a Propnet instance should lead to all the
+        Symbol, SymbolType, and Material nodes of the material getting
+        added to the Propnet instance -- a disjoint union.
+
+        Given a general Propnet instance, we add a material with custom
+        SymbolType, A, and two Symbol nodes of type A with different values.
+
+        Returns: None
+        """
+        # Setup
+        p = Propnet()
+        A = SymbolType('A', [], ['A'], ['A'], [1], '', validate=False)
+        mat1 = Material()
+        mat1.add_property(Symbol(A, 2, []))
+        mat1.add_property(Symbol(A, 3, []))
+        mat2 = Material()
+        mat2.add_property(Symbol(A, 4, []))
+        p.add_material(mat2)
+
+        # Add Material
+        p.add_material(mat1)
+
+        # Test Graph
+        # 1) Material's graph should be unchanged.
+        # 2) Propnet instance should be appropriately updated.
+
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [Symbol(A, 2, []), Symbol(A, 3, [])], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
+
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, [Symbol(A, 2, []), Symbol(A, 3, []), Symbol(A, 4, [])], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, list(DEFAULT_SYMBOL_TYPES.values()) + [A], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, [mat1, mat2], 'Material'))
+
+    def test_remove_material(self):
+        """
+        Adding a removing a material from a Propnet instance should lead
+        to all the Symbol nodes from the specific material being removed
+        from the Propnet instance, along with the material's node. The
+        material's graph should not be altered.
+
+        Given a general Propnet instance, we add a material with Symbols.
+        We ensure that adding and removing does not alter its graph.
+        We ensure that adding and then removing the material does not
+        alter the Propnet instance.
+
+        Returns: None
+        """
+        """
+        # Setup
+        p = Propnet()
+        mat1 = Material()
+        mat1.add_property(Symbol('refractive_index', 1.3, []))
+        p.add_material(mat1)
+        p.remove_material(mat1)
+
+        # Test Graph
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [Symbol('refractive_index', 1.3, [])], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph,
+                                                      [Symbol('refractive_index', 1.3, []).type], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [], 'Material'))
+        """
 
     @staticmethod
     def check_graph_symbols(to_test, values: list, node_type: str):
@@ -191,20 +260,14 @@ class GraphTest(unittest.TestCase):
             mat2 has properties: E=7/5
             Joint properties: E=6/5, E=7/3
         """
+
         # Setup
-        """
-        A = SymbolType('A', [], ['A'], ['A'], [1], np.asarray([1]), '', strict=False)
-        B = SymbolType('B', [], ['B'], ['B'], [1], np.asarray([1]), '', strict=False)
-        C = SymbolType('C', [], ['C'], ['C'], [1], np.asarray([1]), '', strict=False)
-        E = SymbolType('E', [], ['E'], ['E'], [1], np.asarray([1]), '', strict=False)
 
-        cache = [(sym.name, sym.value) for sym in self.SymbolType]
-        cache.append(('A', A))
-        cache.append(('B', B))
-        cache.append(('C', C))
-        cache.append(('D', D))
-        SymbolType: Enum = Enum('SymbolType', [(k, v) for k, v in cache])
-
+        A = SymbolType('A', [], ['A'], ['A'], [1], '', validate=False)
+        B = SymbolType('B', [], ['B'], ['B'], [1], '', validate=False)
+        C = SymbolType('C', [], ['C'], ['C'], [1], '', validate=False)
+        E = SymbolType('E', [], ['E'], ['E'], [1], '', validate=False)
+        symbol_type_dict = {'A': A, 'B': B, 'C': C, 'E': E}
 
         mat1 = Material()
         mat2 = Material()
@@ -213,12 +276,76 @@ class GraphTest(unittest.TestCase):
         mat2.add_property(Symbol(B, 5, []))
         mat2.add_property(Symbol(C, 7, []))
 
-        model1 = Model(metadata={
-            'title': 'model1',
-            'tags': [],
-            'references': [],
-            'symbol_mapping':'a'
-        })
+        class Model1 (AbstractModel):
+            def __init__(self, symbol_types=None):
+                AbstractModel.__init__(self, metadata={
+                        'title': 'model1',
+                        'tags': [],
+                        'references': [],
+                        'symbol_mapping': {'a': 'A',
+                                           'b': 'B',
+                                           'c': 'C'
+                                           },
+                        'connections': [{
+                                         'inputs': ['a', 'b'],
+                                         'outputs': ['c']
+                                         }],
+                        'equations': ['c=a*b'],
+                        'description': ''
+                    },
+                    symbol_types=symbol_types)
 
-        p = Propnet()
-        """
+        class Model2 (AbstractModel):
+            def __init__(self, symbol_types=None):
+                AbstractModel.__init__(self, metadata={
+                        'title': 'model2',
+                        'tags': [],
+                        'references': [],
+                        'symbol_mapping': {'e': 'E',
+                                           'c': 'C',
+                                           'b': 'B'},
+                        'connections': [{'inputs': ['c', 'b'],
+                                         'outputs': ['e']
+                                         }],
+                        'equations': ['e=c/b'],
+                        'description': ''
+                    },
+                    symbol_types=symbol_types)
+
+        p = Propnet(materials=[mat1, mat2],
+                    models={'model1': Model1, 'model2': Model2},
+                    symbol_types=symbol_type_dict)
+
+        # Evaluate
+        p.evaluate()
+
+        # Test
+        m1_s_outputs = []
+        m1_s_outputs.append(Symbol(A, 2, []))
+        m1_s_outputs.append(Symbol(B, 3, []))
+        m1_s_outputs.append(Symbol(C, 6, []))
+        m1_s_outputs.append(Symbol(E, 2, []))
+
+        m2_s_outputs = []
+        m2_s_outputs.append(Symbol(B, 5, []))
+        m2_s_outputs.append(Symbol(C, 7, []))
+        m2_s_outputs.append(Symbol(E, 7/5, []))
+
+        joint_outputs = []
+        joint_outputs.append(Symbol(E, 6/5, []))
+        joint_outputs.append(Symbol(E, 7/3, []))
+
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A, B, C, E], 'SymbolType'))
+
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [B, C, E], 'SymbolType'))
+
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, m1_s_outputs + m2_s_outputs + joint_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, [A, B, C, E], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, [mat1, mat2], 'Material'))
