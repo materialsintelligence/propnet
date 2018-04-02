@@ -2,6 +2,7 @@ import unittest
 from propnet.core.graph import *
 from propnet.core.materials import *
 from propnet.core.symbols import *
+from propnet.core.models import *
 
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
@@ -191,20 +192,14 @@ class GraphTest(unittest.TestCase):
             mat2 has properties: E=7/5
             Joint properties: E=6/5, E=7/3
         """
+
         # Setup
-        """
-        A = SymbolType('A', [], ['A'], ['A'], [1], np.asarray([1]), '', strict=False)
-        B = SymbolType('B', [], ['B'], ['B'], [1], np.asarray([1]), '', strict=False)
-        C = SymbolType('C', [], ['C'], ['C'], [1], np.asarray([1]), '', strict=False)
-        E = SymbolType('E', [], ['E'], ['E'], [1], np.asarray([1]), '', strict=False)
 
-        cache = [(sym.name, sym.value) for sym in self.SymbolType]
-        cache.append(('A', A))
-        cache.append(('B', B))
-        cache.append(('C', C))
-        cache.append(('D', D))
-        SymbolType: Enum = Enum('SymbolType', [(k, v) for k, v in cache])
-
+        A = SymbolType('A', [], ['A'], ['A'], [1], '', validate=False)
+        B = SymbolType('B', [], ['B'], ['B'], [1], '', validate=False)
+        C = SymbolType('C', [], ['C'], ['C'], [1], '', validate=False)
+        E = SymbolType('E', [], ['E'], ['E'], [1], '', validate=False)
+        symbol_type_dict = {'A': A, 'B': B, 'C': C, 'E': E}
 
         mat1 = Material()
         mat2 = Material()
@@ -213,13 +208,76 @@ class GraphTest(unittest.TestCase):
         mat2.add_property(Symbol(B, 5, []))
         mat2.add_property(Symbol(C, 7, []))
 
-        model1 = Model(metadata={
-            'title': 'model1',
-            'tags': [],
-            'references': [],
-            'symbol_mapping':'a'
-        })
+        class Model1 (AbstractModel):
+            def __init__(self, symbol_types=None):
+                AbstractModel.__init__(self, metadata={
+                        'title': 'model1',
+                        'tags': [],
+                        'references': [],
+                        'symbol_mapping': {'a': 'A',
+                                           'b': 'B',
+                                           'c': 'C'
+                                           },
+                        'connections': [{
+                                         'inputs': ['a', 'b'],
+                                         'outputs': ['c']
+                                         }],
+                        'equations': ['c=a*b'],
+                        'description': ''
+                    },
+                    symbol_types=symbol_types)
 
-        p = Propnet()
-        """
+        class Model2 (AbstractModel):
+            def __init__(self, symbol_types=None):
+                AbstractModel.__init__(self, metadata={
+                        'title': 'model2',
+                        'tags': [],
+                        'references': [],
+                        'symbol_mapping': {'e': 'E',
+                                           'c': 'C',
+                                           'b': 'B'},
+                        'connections': [{'inputs': ['c', 'b'],
+                                         'outputs': ['e']
+                                         }],
+                        'equations': ['e=c/b'],
+                        'description': ''
+                    },
+                    symbol_types=symbol_types)
 
+        p = Propnet(materials=[mat1, mat2],
+                    models={'model1': Model1, 'model2': Model2},
+                    symbol_types=symbol_type_dict)
+
+        # Evaluate
+        p.evaluate()
+
+        # Test
+        m1_s_outputs = []
+        m1_s_outputs.append(Symbol(A, 2, []))
+        m1_s_outputs.append(Symbol(B, 3, []))
+        m1_s_outputs.append(Symbol(C, 6, []))
+        m1_s_outputs.append(Symbol(E, 2, []))
+
+        m2_s_outputs = []
+        m2_s_outputs.append(Symbol(B, 5, []))
+        m2_s_outputs.append(Symbol(C, 7, []))
+        m2_s_outputs.append(Symbol(E, 7/5, []))
+
+        joint_outputs = []
+        joint_outputs.append(Symbol(E, 6/5, []))
+        joint_outputs.append(Symbol(E, 7/3, []))
+
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A, B, C, E], 'SymbolType'))
+
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [B, C, E], 'SymbolType'))
+
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, m1_s_outputs + m2_s_outputs + joint_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, [A, B, C, E], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(
+            p.graph, [mat1, mat2], 'Material'))
