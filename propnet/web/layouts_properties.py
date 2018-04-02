@@ -2,7 +2,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import plotly.graph_objs as go
 
-from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, SymbolType
+from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
 
 # layouts for property detail pages
@@ -17,7 +17,7 @@ def property_layout(property_name, mp_values=None):
 
     """
 
-    property_metadata = SymbolType[property_name].value
+    property_metadata = DEFAULT_SYMBOL_TYPES[property_name]
 
     main_name = property_metadata.display_names[0]
 
@@ -33,7 +33,7 @@ def property_layout(property_name, mp_values=None):
     else:
         symbols = html.Div()
 
-    if property_metadata.type in ('property', 'condition'):
+    if property_metadata.category in ('property', 'condition'):
         units = dcc.Markdown("Units: **{}**".format(property_metadata.unit_as_string))
         dimension = dcc.Markdown("Type: **{}**".format(property_metadata.dimension_as_string))
     else:
@@ -94,7 +94,7 @@ def property_layout(property_name, mp_values=None):
         html.Br(),
         mp,
         html.Br(),
-        html.H5('Calculator'),
+        #html.H5('Calculator'),
         html.Div(id='{}-calculator'.format(property_name)),
         dcc.Link('< Back to Properties', href='/property'),
         html.Br(),
@@ -111,12 +111,12 @@ def properties_index(available_hists=None):
         available_hists = {}
 
     property_links = {}
-    for property_name in DEFAULT_SYMBOL_TYPE_NAMES:
+    for property_name in DEFAULT_SYMBOL_TYPES:
 
         # group by tag
-        property_type = SymbolType[property_name].value.type
+        property_type = DEFAULT_SYMBOL_TYPES[property_name].category
         # TODO: rename .type, add .display_name property, rename PropertyType etc.
-        display_name = SymbolType[property_name].value.display_names[0]
+        display_name = DEFAULT_SYMBOL_TYPES[property_name].display_names[0]
 
         if property_type not in property_links:
             property_links[property_type] = []
