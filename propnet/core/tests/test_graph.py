@@ -8,6 +8,48 @@ from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
 class GraphTest(unittest.TestCase):
 
+    @staticmethod
+    def check_graph_symbols(to_test, values: list, node_type: str):
+        """
+        Checks a graph instance (toTest) to see if it contains corresponding elements.
+        Cannot contain duplicates (unless they appear in values) or more than are indicated in the list.
+        Args:
+            to_test: (networkx.multiDiGraph) graph instance to check.
+            values: (list<id>) list of all node_type types that should be present in the graph.
+            node_type: (str) type of node being checked (ie. Symbol vs. SymbolType)
+        Returns: (bool) indicating whether the graph passed or not.
+        """
+        checked = list()
+        to_check = list(filter(lambda n: n.node_type == PropnetNodeType[node_type], to_test.nodes))
+        for checking in to_check:
+            v_check = checking.node_value
+            v_count = 0
+            c_count = 0
+            for value in values:
+                if value == v_check:
+                    v_count += 1
+            for value in checked:
+                if value == v_check:
+                    c_count += 1
+            if c_count >= v_count:
+                # Graph contains too many of a value.
+                return False
+            checked.append(v_check)
+        for checking in checked:
+            v_check = checking
+            v_count = 0
+            c_count = 0
+            for value in values:
+                if value == v_check:
+                    v_count += 1
+            for value in checked:
+                if value == v_check:
+                    c_count += 1
+            if v_count != c_count:
+                # Graph is missing value(s).
+                return False
+        return True
+
     def setUp(self):
         self.p = Propnet()
 
@@ -93,48 +135,6 @@ class GraphTest(unittest.TestCase):
         ], 'SymbolType'))
         self.assertTrue(GraphTest.check_graph_symbols(p.graph, [Symbol('refractive_index', 1, [])], 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(p.graph, [mat2], 'Material'))
-
-    @staticmethod
-    def check_graph_symbols(to_test, values: list, node_type: str):
-        """
-        Checks a graph instance (toTest) to see if it contains corresponding elements.
-        Cannot contain duplicates (unless they appear in values) or more than are indicated in the list.
-        Args:
-            to_test: (networkx.multiDiGraph) graph instance to check.
-            values: (list<id>) list of all node_type types that should be present in the graph.
-            node_type: (str) type of node being checked (ie. Symbol vs. SymbolType)
-        Returns: (bool) indicating whether the graph passed or not.
-        """
-        checked = list()
-        to_check = list(filter(lambda n: n.node_type == PropnetNodeType[node_type], to_test.nodes))
-        for checking in to_check:
-            v_check = checking.node_value
-            v_count = 0
-            c_count = 0
-            for value in values:
-                if value == v_check:
-                    v_count += 1
-            for value in checked:
-                if value == v_check:
-                    c_count += 1
-            if c_count >= v_count:
-                # Graph contains too many of a value.
-                return False
-            checked.append(v_check)
-        for checking in checked:
-            v_check = checking
-            v_count = 0
-            c_count = 0
-            for value in values:
-                if value == v_check:
-                    v_count += 1
-            for value in checked:
-                if value == v_check:
-                    c_count += 1
-            if v_count != c_count:
-                # Graph is missing value(s).
-                return False
-        return True
 
     def testSingleMaterialDegeneratePropertySinglePropagationProperties(self):
         """
