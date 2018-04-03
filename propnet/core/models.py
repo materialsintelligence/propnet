@@ -22,8 +22,6 @@ from propnet.symbols import DEFAULT_SYMBOL_TYPES
 from propnet import logger
 from propnet import ureg
 
-
-
 # TODO: add pint integration
 # TODO: decide on interface for conditions, assumptions etc.
 # TODO: decide on interface for multiple-material models.

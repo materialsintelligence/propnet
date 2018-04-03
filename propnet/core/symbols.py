@@ -135,6 +135,12 @@ class SymbolType(MSONable):
     def __eq__(self, other):
         return self.name == other.name
 
+    def __str__(self):
+        to_return = self.name + ":\n"
+        for item in self.__slots__:
+            to_return += "\t" + item + ":\t" + str(self.__getattribute__(item)) + "\n"
+        return to_return
+
     def __repr__(self):
         return "{}<{}>".format(self.category, self.name)
 
@@ -162,7 +168,7 @@ class Symbol(MSONable):
         Parses inputs for constructing a Property object.
 
         Args:
-            symbol_type: pointer to an existing PropertyMetadata object or String giving
+            symbol_type (SymbolType): pointer to an existing PropertyMetadata object or String giving
                     the name of a SymbolType object, identifies the type of data stored
                     in the property.
             value (id): value of the property.
@@ -226,3 +232,7 @@ class Symbol(MSONable):
         if not np.isclose(float(self.value), float(other.value)):
             return False
         return True
+
+    def __str__(self):
+        to_return = '<' + self._symbol_type.name + ', ' + str(self._value) + ', ' + str(self._tags) + '>'
+        return to_return
