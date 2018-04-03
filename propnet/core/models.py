@@ -367,5 +367,3 @@ class AbstractModel(metaclass=ABCMeta):
                 return False
 
         return True
-
-
