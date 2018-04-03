@@ -168,7 +168,12 @@ class Propnet:
         Returns:
             void
         """
-        self.graph = nx.difference(self.graph, material.subgraph)
+        symbol_nodes = self.graph.neighbors(material.root_node)
+        self.graph.remove_node(material.root_node)
+        for symbol_node in symbol_nodes:
+            if any([x.node_type == 'Material' for x in self.graph.neighbors(symbol_node)]):
+                continue
+            self.graph.remove_node(symbol_node)
 
     def evaluate(self, material=None, property_type=None):
         """

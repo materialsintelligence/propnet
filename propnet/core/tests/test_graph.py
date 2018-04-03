@@ -73,21 +73,26 @@ class GraphTest(unittest.TestCase):
 
         Returns: None
         """
-        """
         # Setup
         p = Propnet()
         mat1 = Material()
-        mat1.add_property(Symbol('refractive_index', 1.3, []))
+        mat1.add_property(Symbol('refractive_index', 1, []))
+        mat1.add_property(Symbol('relative_permittivity', 2, []))
+        mat2 = Material()
+        mat2.add_property(Symbol('refractive_index', 1, []))
         p.add_material(mat1)
+        p.add_material(mat2)
         p.remove_material(mat1)
 
         # Test Graph
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [Symbol('refractive_index', 1.3, [])], 'Symbol'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph,
-                                                      [Symbol('refractive_index', 1.3, []).type], 'SymbolType'))
-        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [], 'Symbol'))
-        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [], 'Material'))
-        """
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [
+            Symbol('refractive_index', 1, []), Symbol('relative_permittivity', 2, [])
+        ], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [
+            Symbol('refractive_index', 1.3, []).type, Symbol('relative_permittivity', 2, []).type
+        ], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [Symbol('refractive_index', 1, [])], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [mat2], 'Material'))
 
     @staticmethod
     def check_graph_symbols(to_test, values: list, node_type: str):
