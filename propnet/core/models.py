@@ -189,7 +189,7 @@ class AbstractModel(metaclass=ABCMeta):
 
         # strip units from input
         for symbol in symbol_values:
-            if type(symbol_values[symbol]) == float:
+            if type(symbol_values[symbol]) == float or type(symbol_values[symbol]) == int:
                 continue
             else:  # We assume the type is a pint quantity, coerce to canonical units, then strip values.
                 symbol_values[symbol] = symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude
@@ -367,7 +367,7 @@ class AbstractModel(metaclass=ABCMeta):
         test_data = loadfn(test_file)
         for d in test_data:
             try:
-                model_outputs = self.evaluate(d['inputs'])
+                model_outputs = self.plug_in(d['inputs'])
                 for k, v in d['outputs'].items():
                     if not math.isclose(model_outputs[k], v):
                         return False
