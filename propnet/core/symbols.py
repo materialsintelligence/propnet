@@ -84,11 +84,14 @@ class SymbolType(MSONable):
                 except TypeError:
                     raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
 
-                try:
-                    units = ureg.Quantity.from_tuple(units)
-                    # calling dimensionality explicitly checks units are defined in registry
-                    units.dimensionality
-                except Exception as e:
+        if category in ('property', 'condition'):
+            try:
+                new_units = ureg.Quantity.from_tuple(units)
+                # calling dimensionality explicitly checks units are defined in registry
+                new_units.dimensionality
+                units = new_units
+            except Exception as e:
+                if validate:
                     raise ValueError('Problem loading units for {}: {}'.format(name, e))
 
         self.name = name

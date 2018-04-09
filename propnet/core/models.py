@@ -185,10 +185,15 @@ class AbstractModel(metaclass=ABCMeta):
         Returns:
             (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
                                given inputs. Additionally contains a "successful" key -> bool pair.
-
-        TODO: check our units
-        TODO: make this more robust
         """
+
+        # strip units from input
+        for symbol in symbol_values:
+            if type(symbol_values[symbol]) == float:
+                continue
+            else:  # We assume the type is a pint quantity, coerce to canonical units, then strip values.
+                symbol_values[symbol] = symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude
+
         available_symbols = set(symbol_values.keys())
 
         # check we support this combination of inputs
@@ -209,7 +214,14 @@ class AbstractModel(metaclass=ABCMeta):
                 'successful': False,
                 'message': str(e)
             }
+
         # add units to output
+        for key in out:
+            if key == 'successful':
+                continue
+            units = self.unit_mapping[key]
+            out[key] *= units
+
         return out
 
     # Suite of getter methods returning appropriate model data.

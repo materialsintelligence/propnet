@@ -354,4 +354,3 @@ class GraphTest(unittest.TestCase):
             p.graph, [A, B, C, E], 'SymbolType'))
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, [mat1, mat2], 'Material'))
-
