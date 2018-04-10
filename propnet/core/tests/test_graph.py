@@ -75,7 +75,7 @@ class GraphTest(unittest.TestCase):
         """
         # Setup
         p = Propnet()
-        A = SymbolType('A', [], ['A'], ['A'], [1], '', validate=False)
+        A = SymbolType('A', [1.0, []], ['A'], ['A'], [1], '', validate=False)
         mat1 = Material()
         mat1.add_property(Symbol(A, 2, []))
         mat1.add_property(Symbol(A, 3, []))
@@ -268,10 +268,10 @@ class GraphTest(unittest.TestCase):
 
         # Setup
 
-        A = SymbolType('A', [], ['A'], ['A'], [1], '', validate=False)
-        B = SymbolType('B', [], ['B'], ['B'], [1], '', validate=False)
-        C = SymbolType('C', [], ['C'], ['C'], [1], '', validate=False)
-        E = SymbolType('E', [], ['E'], ['E'], [1], '', validate=False)
+        A = SymbolType('A', [1.0, []], ['A'], ['A'], [1], '', validate=False)
+        B = SymbolType('B', [1.0, []], ['B'], ['B'], [1], '', validate=False)
+        C = SymbolType('C', [1.0, []], ['C'], ['C'], [1], '', validate=False)
+        E = SymbolType('E', [1.0, []], ['E'], ['E'], [1], '', validate=False)
         symbol_type_dict = {'A': A, 'B': B, 'C': C, 'E': E}
 
         mat1 = Material()

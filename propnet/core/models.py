@@ -189,10 +189,8 @@ class AbstractModel(metaclass=ABCMeta):
 
         # strip units from input
         for symbol in symbol_values:
-            if type(symbol_values[symbol]) == float or type(symbol_values[symbol]) == int:
-                continue
-            else:  # We assume the type is a pint quantity, coerce to canonical units, then strip values.
-                symbol_values[symbol] = symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude
+            if type(symbol_values[symbol]) == ureg.Quantity:
+                symbol_values[symbol] = float(symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude)
 
         available_symbols = set(symbol_values.keys())
 
@@ -219,8 +217,7 @@ class AbstractModel(metaclass=ABCMeta):
         for key in out:
             if key == 'successful':
                 continue
-            units = self.unit_mapping[key]
-            out[key] *= units
+            out[key] = ureg.Quantity(out[key], self.unit_mapping[key])
 
         return out
 
