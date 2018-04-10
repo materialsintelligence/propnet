@@ -84,11 +84,14 @@ class SymbolType(MSONable):
                 except TypeError:
                     raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
 
-                try:
-                    units = ureg.Quantity.from_tuple(units)
-                    # calling dimensionality explicitly checks units are defined in registry
-                    units.dimensionality
-                except Exception as e:
+        if category in ('property', 'condition'):
+            try:
+                new_units = ureg.Quantity.from_tuple(units)
+                # calling dimensionality explicitly checks units are defined in registry
+                new_units.dimensionality
+                units = new_units
+            except Exception as e:
+                if validate:
                     raise ValueError('Problem loading units for {}: {}'.format(name, e))
 
         self.name = name
@@ -182,6 +185,11 @@ class Symbol(MSONable):
             if symbol_type not in DEFAULT_SYMBOL_TYPES.keys():
                 raise ValueError("Symbol type {} not recognized".format(symbol_type))
             symbol_type = DEFAULT_SYMBOL_TYPES[symbol_type]
+        
+        if type(value) == float or type(value) == int:
+            value = ureg.Quantity(value, symbol_type.units)
+        elif type(value) == ureg.Quantity:
+            value = value.to(symbol_type.units)
 
         self._symbol_type = symbol_type
         self._value = value
@@ -229,7 +237,15 @@ class Symbol(MSONable):
             return False
         if self.type != other.type:
             return False
-        if not np.isclose(float(self.value), float(other.value)):
+        if type(self.value) == ureg.Quantity:
+            val1 = float(self.value.magnitude)
+        else:
+            val1 = self.value
+        if type(other.value) == ureg.Quantity:
+            val2 = float(other.value.magnitude)
+        else:
+            val2 = other.value
+        if not np.isclose(val1, val2):
             return False
         return True
 

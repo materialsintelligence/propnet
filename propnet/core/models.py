@@ -185,10 +185,13 @@ class AbstractModel(metaclass=ABCMeta):
         Returns:
             (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
                                given inputs. Additionally contains a "successful" key -> bool pair.
-
-        TODO: check our units
-        TODO: make this more robust
         """
+
+        # strip units from input
+        for symbol in symbol_values:
+            if type(symbol_values[symbol]) == ureg.Quantity:
+                symbol_values[symbol] = float(symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude)
+
         available_symbols = set(symbol_values.keys())
 
         # check we support this combination of inputs
@@ -209,7 +212,13 @@ class AbstractModel(metaclass=ABCMeta):
                 'successful': False,
                 'message': str(e)
             }
+
         # add units to output
+        for key in out:
+            if key == 'successful':
+                continue
+            out[key] = ureg.Quantity(out[key], self.unit_mapping[key])
+
         return out
 
     # Suite of getter methods returning appropriate model data.
@@ -355,7 +364,7 @@ class AbstractModel(metaclass=ABCMeta):
         test_data = loadfn(test_file)
         for d in test_data:
             try:
-                model_outputs = self.evaluate(d['inputs'])
+                model_outputs = self.plug_in(d['inputs'])
                 for k, v in d['outputs'].items():
                     if not math.isclose(model_outputs[k], v):
                         return False
