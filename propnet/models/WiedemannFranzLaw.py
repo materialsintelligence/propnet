@@ -7,6 +7,5 @@ class WiedemannFranzLaw(AbstractModel):
     def constraint_symbols(self):
         return ['is_metallic']
 
-    @property
     def check_constraints(self, constraint_inputs):
         return constraint_inputs['is_metallic'] is True

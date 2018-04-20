@@ -141,7 +141,6 @@ class AbstractModel(metaclass=ABCMeta):
         """
         return []
 
-    @property
     def check_constraints(self, constraint_inputs):
         """
         Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
