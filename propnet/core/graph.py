@@ -287,7 +287,7 @@ class Propnet:
             source_dict[node.node_value] = get_source_nodes(self.graph, node)
 
         ##
-        # For each candidate model, check if we have active property types to match types and assumptions.
+        # For each candidate model, check if we have active property types to match inputs and conditions.
         # If so, produce the available output properties using all possible permutations of inputs & add
         #     new models that can be calculated from previously-derived properties.
         # If certain outputs have already been generated, do not generate duplicate outputs.
@@ -302,7 +302,7 @@ class Propnet:
             model = model_node.node_value
             legend = model.symbol_mapping
             sym_inputs = model.input_symbols
-            input_conditions = model.constraints
+            sym_constraints = model.constraint_symbols
 
             def get_types(symbols_in, legend, symbol_types):
                 """Converts symbols used in equations to SymbolType objects"""
@@ -322,10 +322,16 @@ class Propnet:
 
             # list<list<SymbolType>>, representing sets of input properties the model accepts.
             type_inputs = get_types(sym_inputs, legend, symbol_types)
+            c_inputs = get_types(sym_constraints, legend, symbol_types)
+            for l in type_inputs:
+                for l1 in c_inputs:
+                    for l2 in l1:
+                        if l2 not in l:
+                            l.append(l2)
 
-            # Recursive helper method here.
+            # Recursive helper method.
             # Look through all input sets and match with all combinations from lookup_dict.
-            def gen_input_dicts(symbols, candidate_props, constraint_props, level):
+            def gen_input_dicts(symbols, candidate_props, level):
                 """
                 Recursively generates all possible combinations of input arguments.
                 Args:
@@ -335,9 +341,6 @@ class Propnet:
                         list of potential values that can be plugged into each symbol,
                         the outer list corresponds by ordering to the symbols list,
                         the inner list gives values that can be plugged in to each symbol.
-                    constraint_props (dict<str, lambda(Symbol) -> bool>):
-                        Dictionary mapping Symbols to lambda functions that evaluate whether the symbol meets necessary
-                        input conditions.
                     level (int):
                         internal parameter used for recursion, says which symbol is being enumerated, should
                                  be set to the final index value of symbols.
@@ -347,13 +350,11 @@ class Propnet:
                 current_level = []
                 candidates = candidate_props[level]
                 for candidate in candidates:
-                    constraint = constraint_props.get(symbols[level])
-                    if not constraint or constraint(candidate):
-                        current_level.append({symbols[level]: candidate})
+                    current_level.append({symbols[level]: candidate})
                 if level == 0:
                     return current_level
                 else:
-                    others = gen_input_dicts(symbols, candidate_props, constraint_props, level-1)
+                    others = gen_input_dicts(symbols, candidate_props, level-1)
                     to_return = []
                     for entry1 in current_level:
                         for entry2 in others:
@@ -371,8 +372,10 @@ class Propnet:
                 candidate_properties = []
                 for j in range(0, len(type_inputs[i])):
                     candidate_properties.append(lookup_dict.get(type_inputs[i][j], []))
-                input_sets = gen_input_dicts(sym_inputs[i], candidate_properties, input_conditions, len(candidate_properties)-1)
+                input_sets = gen_input_dicts(sym_inputs[i], candidate_properties, len(candidate_properties)-1)
                 for input_set in input_sets:
+                    if not model.check_constraints(input_set):
+                        continue
                     plug_in_set = {}
                     sourcing = set()
                     for (k, v) in input_set.items():

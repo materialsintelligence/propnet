@@ -6,6 +6,7 @@ from propnet import logger, ureg
 from pybtex.database.input.bibtex import Parser
 from monty.json import MSONable
 
+
 class SymbolType(MSONable):
     """
     Class storing the complete description of a SymbolType.

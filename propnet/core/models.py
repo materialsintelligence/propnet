@@ -139,10 +139,10 @@ class AbstractModel(metaclass=ABCMeta):
         current conditions.
         Returns: ({str})
         """
-        return {}
+        return []
 
     @property
-    def constraints(self, constraint_inputs):
+    def check_constraints(self, constraint_inputs):
         """
         Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
         indicating whether that Symbol meets all necessary conditions for validity.
