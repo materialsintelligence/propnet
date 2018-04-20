@@ -302,7 +302,10 @@ class Propnet:
             model = model_node.node_value
             legend = model.symbol_mapping
             sym_inputs = model.input_symbols
-            sym_constraints = model.constraint_symbols
+            for i in sym_inputs:
+                for c in model.constraint_symbols:
+                    if c not in i:
+                        i.append(c)
 
             def get_types(symbols_in, legend, symbol_types):
                 """Converts symbols used in equations to SymbolType objects"""
@@ -322,12 +325,6 @@ class Propnet:
 
             # list<list<SymbolType>>, representing sets of input properties the model accepts.
             type_inputs = get_types(sym_inputs, legend, symbol_types)
-            c_inputs = get_types(sym_constraints, legend, symbol_types)
-            for l in type_inputs:
-                for l1 in c_inputs:
-                    for l2 in l1:
-                        if l2 not in l:
-                            l.append(l2)
 
             # Recursive helper method.
             # Look through all input sets and match with all combinations from lookup_dict.
