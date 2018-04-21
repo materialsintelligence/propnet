@@ -8,7 +8,7 @@ symbol_mapping: {
   structure: structure
 }
 connections:
-- inputs: d
+- inputs: [d]
   outputs: [C_ij, structure]
 ---
 Assuming a linear dispersion relationship between angular frequency and

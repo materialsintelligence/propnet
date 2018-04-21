@@ -3,7 +3,7 @@ units:
 - 1.0
 - []
 display_names: ['Formula']
-display_symbols: []
+display_symbols: ['Formula']
 dimension: 1
 comment: ''
 category: object

@@ -9,7 +9,7 @@ symbol_mapping: {
 }
 connections:
 - inputs: [n, k]
-  outputs: R
+  outputs: [R]
 equations: [R - ((1-n)**2+k**2)/((1+n)**2+k**2)]
 ---
 Reflectance R at the vacuum/material interface using real and imaginary parts of

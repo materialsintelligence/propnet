@@ -3,7 +3,7 @@ units:
 - 1.0
 - []
 display_names: ['Crystal Prototype']
-display_symbols: []
+display_symbols: ['Crystal Prototype']
 dimension: 1
 comment: ''
 category: object

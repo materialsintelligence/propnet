@@ -325,10 +325,6 @@ class AbstractModel(metaclass=ABCMeta):
 
         return refs
 
-    @property
-    def constants(self):
-        return self._metadata.get('constants', {})
-
     def __hash__(self):
         """
         A unique model hash, SHA256 hash of the model class name.

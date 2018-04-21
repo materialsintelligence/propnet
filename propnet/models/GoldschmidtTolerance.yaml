@@ -10,7 +10,7 @@ symbol_mapping: {
 }
 connections:
 - inputs: [r_cation_B, r_cation_A, r_anion]
-  outputs: t
+  outputs: [t]
 constants:
 - r_anion: 1.28
 equations: [t - (r_cation_A + r_anion)/(2**.5 * (r_cation_B + r_anion))]

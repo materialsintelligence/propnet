@@ -9,11 +9,11 @@ symbol_mapping: {
 }
 connections:
 - inputs: [Ur, Er]
-  outputs: n
+  outputs: [n]
 - inputs: [Er, n]
-  outputs: Ur
+  outputs: [Ur]
 - inputs: [Ur, n]
-  outputs: Er
+  outputs: [Er]
 equations: [n - sqrt(Ur*Er)]
 ---
 The refractive index gives the factor by which the speed of light is reduced in a medium.
