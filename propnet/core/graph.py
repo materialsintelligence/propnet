@@ -240,13 +240,12 @@ class Propnet:
                 active_symbol_type_nodes.add(neighbor)
 
         # Get set of Models that have values provided to inputs.
-        candidate_models = list()
+        candidate_models = set()
         for node in active_symbol_type_nodes:
             for neighbor in self.graph.neighbors(node):
                 if neighbor.node_type != PropnetNodeType.Model:
                     continue
-                if neighbor not in candidate_models:
-                    candidate_models.append(neighbor)
+                candidate_models.add(neighbor.node_value)
 
         ##
         # Define helper data structures and methods.
@@ -295,131 +294,154 @@ class Propnet:
 
         # Keeps track of number of Symbol_Types derived from the current loop iteration.
         # Loop terminates when no new properties are derived from any models.
-        for m in range(0, len(candidate_models)):
-            model_node = candidate_models.pop(0)
-            outputs = []
-            # Cache necessary data from model_node: input symbols, types, and conditions.
-            model = model_node.node_value
-            legend = model.symbol_mapping
-            sym_inputs = model.input_symbols
-            for i in sym_inputs:
-                for c in model.constraint_symbols:
-                    if c not in i:
-                        i.append(c)
 
-            def get_types(symbols_in, legend, symbol_types):
-                """Converts symbols used in equations to SymbolType objects"""
-                to_return = []
-                for l in symbols_in:
-                    if not isinstance(l, list):
-                        l = [l]
-                    out = []
-                    for i in l:
-                        to_append = symbol_types.get(legend[i])
-                        if not to_append:
-                            raise Exception('Error evaluating graph: Model references SymbolType'
-                                            'objects that do not appear in the graph.')
-                        out.append(to_append)
-                    to_return.append(out)
-                return to_return
+        original_models = {x for x in candidate_models}
+        evaluated_models = set()
+        next_round_models = candidate_models
+        while True:
+            added_on_loop = False
+            candidate_models = next_round_models
+            next_round_models = set()
+            while len(candidate_models) > 0:
+                model = candidate_models.pop()
+                outputs = []
+                # Cache necessary data from model_node: input symbols, types, and conditions.
+                legend = model.symbol_mapping
+                sym_inputs = model.input_symbols
+                for i in sym_inputs:
+                    for c in model.constraint_symbols:
+                        if c not in i:
+                            i.append(c)
 
-            # list<list<SymbolType>>, representing sets of input properties the model accepts.
-            type_inputs = get_types(sym_inputs, legend, symbol_types)
-
-            # Recursive helper method.
-            # Look through all input sets and match with all combinations from lookup_dict.
-            def gen_input_dicts(symbols, candidate_props, level):
-                """
-                Recursively generates all possible combinations of input arguments.
-                Args:
-                    symbols (list<str>):
-                        one set of input symbols required by the model.
-                    candidate_props (list<list<Symbol>>):
-                        list of potential values that can be plugged into each symbol,
-                        the outer list corresponds by ordering to the symbols list,
-                        the inner list gives values that can be plugged in to each symbol.
-                    level (int):
-                        internal parameter used for recursion, says which symbol is being enumerated, should
-                                 be set to the final index value of symbols.
-                Returns:
-                    (list<dict<String, Symbol>>) list of dictionaries giving symbol strings mapped to values.
-                """
-                current_level = []
-                candidates = candidate_props[level]
-                for candidate in candidates:
-                    current_level.append({symbols[level]: candidate})
-                if level == 0:
-                    return current_level
-                else:
-                    others = gen_input_dicts(symbols, candidate_props, level-1)
+                def get_types(symbols_in, legend, symbol_types):
+                    """Converts symbols used in equations to SymbolType objects"""
                     to_return = []
-                    for entry1 in current_level:
-                        for entry2 in others:
-                            merged_dict = {}
-                            for (k, v) in entry1.items():
-                                merged_dict[k] = v
-                            for (k, v) in entry2.items():
-                                merged_dict[k] = v
-                            to_return.append(merged_dict)
+                    for l in symbols_in:
+                        if not isinstance(l, list):
+                            l = [l]
+                        out = []
+                        for i in l:
+                            to_append = symbol_types.get(legend[i])
+                            if not to_append:
+                                raise Exception('Error evaluating graph: Model references SymbolType'
+                                                'objects that do not appear in the graph.')
+                            out.append(to_append)
+                        to_return.append(out)
                     return to_return
 
-            # Get candidate input Symbols for the given model.
-            # Skip over any input Symbol lists that have already been evaluated.
-            for i in range(0, len(type_inputs)):
-                candidate_properties = []
-                for j in range(0, len(type_inputs[i])):
-                    candidate_properties.append(lookup_dict.get(type_inputs[i][j], []))
-                input_sets = gen_input_dicts(sym_inputs[i], candidate_properties, len(candidate_properties)-1)
-                for input_set in input_sets:
-                    if not model.check_constraints(input_set):
-                        continue
-                    plug_in_set = {}
-                    sourcing = set()
-                    for (k, v) in input_set.items():
-                        plug_in_set[k] = v.value
-                        for elem in source_dict[v]:
-                            sourcing.add(elem)
-                    outputs.append({"output": model.evaluate(plug_in_set), "source": sourcing})
+                # list<list<SymbolType>>, representing sets of input properties the model accepts.
+                type_inputs = get_types(sym_inputs, legend, symbol_types)
 
-            # For any new outputs generated, create the appropriate SymbolNode and connections to SymbolTypeNodes
-            # For any new outputs generated, create the appropriate connections from Material Nodes
-            # For any new outputs generated, add new models connected to the derived SymbolTypeNodes to the
-            #     candidate_models list & update convenience data structures.
-            # Mutates this graph.
-            symbol_outputs = []
-            output_sources = []
-            for entry in outputs:
-                for (k, v) in entry['output'].items():
-                    prop_type = symbol_types.get(legend.get(k))
-                    if not prop_type:
-                        continue
-                    symbol_outputs.append(Symbol(prop_type, v, None))
-                    output_sources.append(entry['source'])
-            for i in range(0, len(symbol_outputs)):
-                # Add outputs to graph.
-                symbol = symbol_outputs[i]
-                symbol_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol)
-                if symbol_node in self.graph:
-                    continue
-                symbol_type_node = PropnetNode(node_type=PropnetNodeType['SymbolType'], node_value=symbol.type)
-                self.graph.add_edge(symbol_node, symbol_type_node)
-                for source_node in output_sources[i]:
-                    self.graph.add_edge(source_node, symbol_node)
-                if len(output_sources[i]) == 1:
-                    store = output_sources[i].__iter__().__next__()
-                    store.node_value.graph.add_edge(store.node_value.root_node, symbol_node)
+                # Recursive helper method.
+                # Look through all input sets and match with all combinations from lookup_dict.
+                def gen_input_dicts(symbols, candidate_props, level):
+                    """
+                    Recursively generates all possible combinations of input arguments.
+                    Args:
+                        symbols (list<str>):
+                            one set of input symbols required by the model.
+                        candidate_props (list<list<Symbol>>):
+                            list of potential values that can be plugged into each symbol,
+                            the outer list corresponds by ordering to the symbols list,
+                            the inner list gives values that can be plugged in to each symbol.
+                        level (int):
+                            internal parameter used for recursion, says which symbol is being enumerated, should
+                                     be set to the final index value of symbols.
+                    Returns:
+                        (list<dict<String, Symbol>>) list of dictionaries giving symbol strings mapped to values.
+                    """
+                    current_level = []
+                    candidates = candidate_props[level]
+                    for candidate in candidates:
+                        current_level.append({symbols[level]: candidate})
+                    if level == 0:
+                        return current_level
+                    else:
+                        others = gen_input_dicts(symbols, candidate_props, level-1)
+                        to_return = []
+                        for entry1 in current_level:
+                            for entry2 in others:
+                                merged_dict = {}
+                                for (k, v) in entry1.items():
+                                    merged_dict[k] = v
+                                for (k, v) in entry2.items():
+                                    merged_dict[k] = v
+                                to_return.append(merged_dict)
+                        return to_return
 
-                # Update helper data structures etc. for next cycle.
-                source_dict[symbol] = get_source_nodes(self.graph, symbol_node)
-                if symbol.type not in lookup_dict:
-                    lookup_dict[symbol.type] = [symbol]
+                # Get candidate input Symbols for the given model.
+                # Skip over any input Symbol lists that have already been evaluated.
+                for i in range(0, len(type_inputs)):
+                    candidate_properties = []
+                    for j in range(0, len(type_inputs[i])):
+                        candidate_properties.append(lookup_dict.get(type_inputs[i][j], []))
+                    input_sets = gen_input_dicts(sym_inputs[i], candidate_properties, len(candidate_properties)-1)
+                    for input_set in input_sets:
+                        if not model.check_constraints(input_set):
+                            continue
+                        plug_in_set = {}
+                        sourcing = set()
+                        for (k, v) in input_set.items():
+                            plug_in_set[k] = v.value
+                            for elem in source_dict[v]:
+                                sourcing.add(elem)
+                        outputs.append({"output": model.evaluate(plug_in_set), "source": sourcing})
+
+                # For any new outputs generated, create the appropriate SymbolNode and connections to SymbolTypeNodes
+                # For any new outputs generated, create the appropriate connections from Material Nodes
+                # For any new outputs generated, add new models connected to the derived SymbolTypeNodes to the
+                #     candidate_models list & update convenience data structures.
+                # Mutates this graph.
+                symbol_outputs = []
+                output_sources = []
+                if len(outputs) == 0:
+                    next_round_models.add(model)
                 else:
-                    lookup_dict[symbol.type] += [symbol]
-                if not property_type or symbol.type in property_type:
-                    for neighbor in self.graph.neighbors(symbol_type_node):
-                        if neighbor.node_type == PropnetNodeType['Model']:
-                            if neighbor not in candidate_models:
-                                candidate_models.append(neighbor)
+                    added_on_loop = True
+                    evaluated_models.add(model)
+                for entry in outputs:
+                    for (k, v) in entry['output'].items():
+                        prop_type = symbol_types.get(legend.get(k))
+                        if not prop_type:
+                            continue
+                        symbol_outputs.append(Symbol(prop_type, v, None))
+                        output_sources.append(entry['source'])
+                for i in range(0, len(symbol_outputs)):
+                    # Add outputs to graph.
+                    symbol = symbol_outputs[i]
+                    symbol_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol)
+                    if symbol_node in self.graph:
+                        continue
+                    symbol_type_node = PropnetNode(node_type=PropnetNodeType['SymbolType'], node_value=symbol.type)
+                    self.graph.add_edge(symbol_node, symbol_type_node)
+                    for source_node in output_sources[i]:
+                        self.graph.add_edge(source_node, symbol_node)
+
+                    # Strategy A:
+
+                    if len(output_sources[i]) == 1:
+                        store = output_sources[i].__iter__().__next__()
+                        store.node_value.graph.add_edge(store.node_value.root_node, symbol_node)
+
+                    # Strategy B:
+                    """
+                    for store in output_sources[i]:
+                        store.node_value.graph.add_edge(store.node_value.root_node, symbol_node)
+                    """
+
+                    # Update helper data structures etc. for next cycle.
+                    source_dict[symbol] = get_source_nodes(self.graph, symbol_node)
+                    if symbol.type not in lookup_dict:
+                        lookup_dict[symbol.type] = [symbol]
+                    else:
+                        lookup_dict[symbol.type] += [symbol]
+                    if not property_type or symbol.type in property_type:
+                        for neighbor in self.graph.neighbors(symbol_type_node):
+                            if neighbor.node_type == PropnetNodeType['Model']:
+                                if neighbor.node_value not in original_models:
+                                    next_round_models.add(neighbor.node_value)
+            if not added_on_loop:
+                break
 
     def shortest_path(self, property_one: str, property_two: str):
         """ """
@@ -494,4 +516,3 @@ class Propnet:
                 summary += ["\t\t " + property.node_value.type.display_names[0] +
                             "\t:\t" + str(property.node_value)]
         return "\n".join(summary)
-

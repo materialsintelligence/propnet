@@ -2,7 +2,7 @@
 title: Metallic Classifier
 tags: [classifier]
 symbol_mapping: {
-  E_g: band_gap_pbe,
+  E_g: band_gap,
   is_metallic: is_metallic
 }
 connections:

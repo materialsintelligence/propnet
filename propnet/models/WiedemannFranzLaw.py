@@ -8,4 +8,4 @@ class WiedemannFranzLaw(AbstractModel):
         return ['is_metallic']
 
     def check_constraints(self, constraint_inputs):
-        return constraint_inputs['is_metallic'] is True
+        return constraint_inputs['is_metallic'].value.magnitude != 0
