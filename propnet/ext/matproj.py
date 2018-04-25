@@ -87,3 +87,4 @@ def materials_from_formula(formula, api_key=None):
                               properties=['task_id'])
     mpids = [entry['task_id'] for entry in query_results]
     return import_materials(mpids, api_key)
+
