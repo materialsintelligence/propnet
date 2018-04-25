@@ -6,7 +6,9 @@ from monty.serialization import loadfn
 
 import propnet.models as models
 
+from propnet.models import DEFAULT_MODELS
 from propnet.models import DEFAULT_MODEL_NAMES
+from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
 from propnet.core.models import *
 from propnet.core.symbols import *
 
@@ -21,6 +23,33 @@ class ModelTest(unittest.TestCase):
                 models_to_test.append(model_name)
             except Exception as e:
                 self.fail('Failed to load model {}: {}'.format(model_name, e))
+
+    def test_model_formatting(self):
+        for m in DEFAULT_MODELS.values():
+            m = m()
+            self.assertTrue(m.name is not None and m.name.isidentifier())
+            self.assertTrue(m.title is not None and m.title != 'undefined')
+            self.assertTrue(m.tags is not None)
+            self.assertTrue(m.description is not None)
+            self.assertTrue(m.symbol_mapping is not None and isinstance(m.symbol_mapping, dict) and
+                            len(m.symbol_mapping.keys()) > 0)
+            for key in m.symbol_mapping.keys():
+                self.assertTrue(isinstance(key, str) and key.isidentifier())
+                self.assertTrue(isinstance(m.symbol_mapping[key], str) and
+                                m.symbol_mapping[key] in DEFAULT_SYMBOL_TYPE_NAMES)
+            self.assertTrue(m.connections is not None and isinstance(m.connections, list) and len(m.connections) > 0)
+            for item in m.connections:
+                self.assertTrue(item is not None)
+                self.assertTrue(isinstance(item, dict) and 'inputs' in item.keys() and 'outputs' in item.keys())
+                self.assertTrue(item['inputs'] is not None and item['outputs'] is not None)
+                self.assertTrue(isinstance(item['inputs'], list) and isinstance(item['outputs'], list))
+                self.assertTrue(len(item['inputs']) > 0 and len(item['outputs']) > 0)
+                for in_symb in item['inputs']:
+                    self.assertTrue(in_symb is not None and isinstance(in_symb, str))
+                    self.assertTrue(in_symb in m.symbol_mapping.keys())
+                for out_symb in item['outputs']:
+                    self.assertTrue(out_symb is not None and isinstance(out_symb, str))
+                    self.assertTrue(out_symb in m.symbol_mapping.keys())
 
     def test_evaluate(self):
         test_data = glob(os.path.join(os.path.dirname(__file__), '../../models/test_data/*.json'))

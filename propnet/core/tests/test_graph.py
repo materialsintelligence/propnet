@@ -354,3 +354,88 @@ class GraphTest(unittest.TestCase):
             p.graph, [A, B, C, E], 'SymbolType'))
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, [mat1, mat2], 'Material'))
+
+    def testEvaluationWithConstraint(self):
+        """
+        Simple graph in which property C can be derived from properties A and B iff Constraint has value True.
+        Graph has 2 materials on it: mat1 and mat2.
+            mat1 has a Constraint with value True.
+            mat2 has a Constraint with value False.
+        Upon evaluation of the graph, we expect c to be derived ONLY for mat1.
+        """
+
+        # Setup
+
+        A = SymbolType('A', [1.0, []], ['A'], ['A'], [1], '', validate=False)
+        B = SymbolType('B', [1.0, []], ['B'], ['B'], [1], '', validate=False)
+        C = SymbolType('C', [1.0, []], ['C'], ['C'], [1], '', validate=False)
+        Constraint = SymbolType('Constraint', [1.0, []], ['C'], ['C'], [True], '', validate=False)
+        symbol_type_dict = {'A': A, 'B': B, 'C': C, 'Constraint': Constraint}
+
+        a = Symbol(A, 2, [])
+        b = Symbol(B, 3, [])
+        const1 = Symbol(Constraint, True, [])
+        const2 = Symbol(Constraint, False, [])
+
+        class Model1 (AbstractModel):
+            def __init__(self, symbol_types=None):
+                AbstractModel.__init__(self, metadata={
+                        'title': 'model1',
+                        'tags': [],
+                        'references': [],
+                        'symbol_mapping': {'a': 'A',
+                                           'b': 'B',
+                                           'c': 'C',
+                                           'const': 'Constraint'
+                                           },
+                        'connections': [{
+                                         'inputs': ['a', 'b'],
+                                         'outputs': ['c']
+                                         }],
+                        'equations': ['c=a*b'],
+                        'description': ''
+                    },
+                    symbol_types=symbol_types)
+            @property
+            def constraint_symbols(self):
+                return ['const']
+            def check_constraints(self, ins):
+                return ins['const']
+
+        mat1 = Material()
+        mat1.add_property(a)
+        mat1.add_property(b)
+        mat1.add_property(const1)
+
+        mat2 = Material()
+        mat2.add_property(a)
+        mat2.add_property(b)
+        mat2.add_property(const2)
+
+        p = Propnet(materials=[mat1, mat2],
+                    models={'model1': Model1},
+                    symbol_types=symbol_type_dict)
+
+        # Evaluate
+        p.evaluate(material=mat1)
+        p.evaluate(material=mat2)
+
+        # Test
+        m1_s_outputs = []
+        m1_s_outputs.append(Symbol(A, 2, []))
+        m1_s_outputs.append(Symbol(B, 3, []))
+        m1_s_outputs.append(Symbol(C, 6, []))
+        m1_s_outputs.append(Symbol(Constraint, True, []))
+
+        m2_s_outputs = []
+        m2_s_outputs.append(Symbol(A, 2, []))
+        m2_s_outputs.append(Symbol(B, 3, []))
+        m2_s_outputs.append(Symbol(Constraint, False, []))
+
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A, B, C, Constraint], 'SymbolType'))
+
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [A, B, Constraint], 'SymbolType'))

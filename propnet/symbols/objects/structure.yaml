@@ -3,7 +3,7 @@ units:
 - 1.0
 - []
 display_names: ['Crystallographic structure']
-display_symbols: []
+display_symbols: ['Structure']
 dimension: 1
 comment: ''
 category: object

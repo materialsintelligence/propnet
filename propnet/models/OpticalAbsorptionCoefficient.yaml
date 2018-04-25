@@ -10,11 +10,11 @@ symbol_mapping: {
 }
 connections:
 - inputs: [k, l]
-  outputs: alpha
+  outputs: [alpha]
 - inputs: [alpha, l]
-  outputs: k
+  outputs: [k]
 - inputs: [k, alpha]
-  outputs: l
+  outputs: [l]
 equations: [alpha - (4*pi*k*l**-1)]
 ---
 Absorption coefficient characterizes the decay of intensity as light goes through the material.

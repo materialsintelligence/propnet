@@ -1,13 +1,12 @@
 import unittest
 from propnet.core.symbols import *
-
-# these are properties distributed with Propnet as
-# yaml files in the properties folder
+from propnet import ureg
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
+
 
 class PropertiesTest(unittest.TestCase):
 
-    def test_property_metadata(self):
+    def test_property_construction(self):
 
         sample_symbol_type_dict = {
             'name': 'youngs_modulus',
@@ -30,7 +29,21 @@ class PropertiesTest(unittest.TestCase):
         self.assertEqual(sample_symbol_type,
                          SymbolType.from_dict(sample_symbol_type_dict))
 
-    def test_all_properties(self):
+    def test_property_formatting(self):
+        """
+        Goes through the Symbol .yaml files and ensures the definitions are complete.
+        """
+        for st in DEFAULT_SYMBOL_TYPES.values():
+            self.assertTrue(st.name is not None and st.name.isidentifier())
+            self.assertTrue(st.category is not None and st.category in ('property', 'condition', 'object'))
+            self.assertTrue(st.units is not None and type(st.units) == ureg.Quantity)
+            self.assertTrue(st.display_names is not None and isinstance(st.display_names, list) and
+                            len(st.display_names) != 0)
+            self.assertTrue(st.display_symbols is not None and isinstance(st.display_symbols, list) and
+                            len(st.display_symbols) != 0)
+            self.assertTrue(st.dimension is not None)
+            self.assertTrue(st.comment is not None and isinstance(st.comment, str))
 
+    def test_all_properties(self):
         self.assertEqual(str(DEFAULT_SYMBOL_TYPES['density'].units),
                          '1.0 gram / centimeter ** 3')

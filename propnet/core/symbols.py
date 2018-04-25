@@ -6,6 +6,7 @@ from propnet import logger, ureg
 from pybtex.database.input.bibtex import Parser
 from monty.json import MSONable
 
+
 class SymbolType(MSONable):
     """
     Class storing the complete description of a SymbolType.
@@ -84,15 +85,14 @@ class SymbolType(MSONable):
                 except TypeError:
                     raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
 
-        if category in ('property', 'condition'):
-            try:
-                new_units = ureg.Quantity.from_tuple(units)
-                # calling dimensionality explicitly checks units are defined in registry
-                new_units.dimensionality
-                units = new_units
-            except Exception as e:
-                if validate:
-                    raise ValueError('Problem loading units for {}: {}'.format(name, e))
+        try:
+            new_units = ureg.Quantity.from_tuple(units)
+            # calling dimensionality explicitly checks units are defined in registry
+            new_units.dimensionality
+            units = new_units
+        except Exception as e:
+            if validate:
+                raise ValueError('Problem loading units for {}: {}'.format(name, e))
 
         self.name = name
         self.category = category

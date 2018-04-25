@@ -130,49 +130,28 @@ class AbstractModel(metaclass=ABCMeta):
                                  'Exception: {}'
                                  .format(name, self.__class__.__name__, e))
 
-    # constraints and evaluate methods are optional overrides in extending classes
+    # constraint_symbols, meets_constraints, plug_in, and evaluate methods are optional overrides in extending classes
     @property
-    def constraints(self):
+    def constraint_symbols(self):
+        """
+        Returns a set of symbols.
+        These symbols are those whose value needs to be evaluated to determine if the model can be evaluated under the
+        current conditions.
+        Returns: ({str})
+        """
+        return []
+
+    def check_constraints(self, constraint_inputs):
         """
         Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
         indicating whether that Symbol meets all necessary conditions for validity.
 
-        Returns:
-            (dict<str, lambda(Symbol) -> bool>)
-        """
-        return {}
-
-    def plug_in(self, symbol_values):
-        """
-        Given a set of symbol_values, plugs the values into the model and returns a dictionary of outputs representing
-        the result of plugging in the symbol_values. symbol_values must contain a valid set of inputs as indicated in
-        the connections method.
-
         Args:
-            symbol_values (dict<str,float>): Mapping from string symbol to float value, giving inputs.
+            constraint_inputs (dict<str, float>): Mapping from string symbol to symbol value
         Returns:
-            (dict<str,float>) mapping from string symbol to float value giving result of applying the model to the
-                              given inputs.
+            (bool): bool stating whether the constraints of the model are met.
         """
-        # Define sympy equations for the model
-        if not self.equations:
-            raise ValueError('Please implement the _evaluate '
-                             'method for the {} model.'.format(self.name))
-        eqns = [parse_expr(eq) for eq in self.equations]
-        eqns = [eqn.subs(symbol_values) for eqn in eqns]
-        # Generate outputs from the sympy equations.
-        possible_outputs = set()
-        for eqn in eqns:
-            possible_outputs = possible_outputs.union(eqn.free_symbols)
-        outputs = {}
-        for possible_output in possible_outputs:
-            solutions = sp.nonlinsolve(eqns, possible_output)
-            # taking first solution only, and only asking for one output symbol
-            # so know length of output tuple for solutions will be 1
-            solution = list(solutions)[0][0]
-            if not isinstance(solution, sp.EmptySet):
-                outputs[str(possible_output)] = sp.N(solution)
-        return outputs
+        return True
 
     def evaluate(self, symbol_values):
         """
@@ -220,6 +199,38 @@ class AbstractModel(metaclass=ABCMeta):
             out[key] = ureg.Quantity(out[key], self.unit_mapping[key])
 
         return out
+
+    def plug_in(self, symbol_values):
+        """
+        Given a set of symbol_values, plugs the values into the model and returns a dictionary of outputs representing
+        the result of plugging in the symbol_values. symbol_values must contain a valid set of inputs as indicated in
+        the connections method.
+
+        Args:
+            symbol_values (dict<str,float>): Mapping from string symbol to float value, giving inputs.
+        Returns:
+            (dict<str,float>) mapping from string symbol to float value giving result of applying the model to the
+                              given inputs.
+        """
+        # Define sympy equations for the model
+        if not self.equations:
+            raise ValueError('Please implement the _evaluate '
+                             'method for the {} model.'.format(self.name))
+        eqns = [parse_expr(eq) for eq in self.equations]
+        eqns = [eqn.subs(symbol_values) for eqn in eqns]
+        # Generate outputs from the sympy equations.
+        possible_outputs = set()
+        for eqn in eqns:
+            possible_outputs = possible_outputs.union(eqn.free_symbols)
+        outputs = {}
+        for possible_output in possible_outputs:
+            solutions = sp.nonlinsolve(eqns, possible_output)
+            # taking first solution only, and only asking for one output symbol
+            # so know length of output tuple for solutions will be 1
+            solution = list(solutions)[0][0]
+            if not isinstance(solution, sp.EmptySet):
+                outputs[str(possible_output)] = sp.N(solution)
+        return outputs
 
     # Suite of getter methods returning appropriate model data.
     @property
@@ -313,10 +324,6 @@ class AbstractModel(metaclass=ABCMeta):
         refs = self._metadata.get('references', [])
 
         return refs
-
-    @property
-    def constants(self):
-        return self._metadata.get('constants', {})
 
     def __hash__(self):
         """

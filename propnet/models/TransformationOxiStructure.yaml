@@ -7,7 +7,7 @@ symbol_mapping: {
   s_oxi: structure_oxi
 }
 connections:
-- inputs: s_oxi
+- inputs: [s_oxi]
   outputs: [s]
 ---
 This model attempts to work out what oxidation state is on each crystallographic
