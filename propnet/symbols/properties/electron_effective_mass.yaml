@@ -1,9 +1,0 @@
-name: electron_effective_mass
-units:
-- 1.0
-- []
-display_names: ['Electron effective mass']
-display_symbols: ['m_e^*']
-dimension: 1
-comment: ''
-category: property
