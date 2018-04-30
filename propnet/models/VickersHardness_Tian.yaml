@@ -1,0 +1,16 @@
+---
+title: Vicker's Hardness Model Tian et al.
+tags: [mechanical]
+references: []
+symbol_mapping: {
+  k: pugh_ratio,
+  G: shear_modulus,
+  H: vickers_hardness
+}
+connections:
+- inputs: [k, G]
+  outputs: [H]
+equations: [H - 0.92*(1/k)**1.137*G**0.708]
+---
+Model calculating the Vicker's Hardness from bulk and shear moduli.
+Uses model from Y. Tian et al., Int. J. Refract. Met. Hard Matter. 33, 93-106 (2012)
