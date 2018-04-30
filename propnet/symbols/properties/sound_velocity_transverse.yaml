@@ -1,0 +1,10 @@
+name: sound_velocity_transverse
+units:
+- 1.0
+- - [meters, 1.0]
+  - [seconds, -1.0]
+display_names: [Elasticity-Derived Transverse Sound Velocity]
+display_symbols: [v_T]
+dimension: 1
+comment: ''
+category: property

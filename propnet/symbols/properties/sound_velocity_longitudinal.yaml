@@ -1,0 +1,10 @@
+name: sound_velocity_longitudinal
+units:
+- 1.0
+- - [meters, 1.0]
+  - [seconds, -1.0]
+display_names: [Elasticity-Derived Longitudinal Sound Velocity]
+display_symbols: [v_L]
+dimension: 1
+comment: ''
+category: property

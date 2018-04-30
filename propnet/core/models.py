@@ -169,7 +169,7 @@ class AbstractModel(metaclass=ABCMeta):
         # strip units from input
         for symbol in symbol_values:
             if type(symbol_values[symbol]) == ureg.Quantity:
-                symbol_values[symbol] = float(symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude)
+                symbol_values[symbol] = symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude
 
         available_symbols = set(symbol_values.keys())
 

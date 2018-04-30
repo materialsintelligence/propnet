@@ -1,5 +1,5 @@
 from propnet.core.models import AbstractModel
 
 
-class DebyeTemperature(AbstractModel):
+class SoundVelocityElastic_Transverse(AbstractModel):
     pass

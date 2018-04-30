@@ -1,0 +1,9 @@
+name: atomic_density
+units:
+- 1.0
+- - [angstrom, -3.0]
+display_names: [Atomic Density]
+display_symbols: [\rho_a]
+dimension: 1
+comment: ''
+category: property

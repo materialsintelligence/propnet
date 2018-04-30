@@ -1,0 +1,15 @@
+---
+title: Poisson Ratio Model
+tags: [mechanical]
+references: []
+symbol_mapping: {
+  B: bulk_modulus,
+  G: shear_modulus,
+  p: poisson_ratio
+}
+connections:
+- inputs: [B, G]
+  outputs: [p]
+equations: [p - 1/2 * (B - 2/3*G) / (B + 1/3*G)]
+---
+Model calculating the Poisson ratio from bulk and shear moduli.

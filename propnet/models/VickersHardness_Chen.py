@@ -1,5 +1,5 @@
 from propnet.core.models import AbstractModel
 
 
-class DebyeTemperature(AbstractModel):
+class VickersHardness_Chen(AbstractModel):
     pass
