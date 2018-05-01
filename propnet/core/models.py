@@ -416,6 +416,7 @@ class AbstractModel(metaclass=ABCMeta):
             return None
 
         example_inputs = self.test_data[0]['inputs']
+        example_outputs = str(self.test_data[0]['outputs'])
 
         symbol_definitions = []
         evaluate_args = []
@@ -443,9 +444,11 @@ from propnet.models import {model_name}
 model = {model_name}()
 model.evaluate({{
 {evaluate_args}
-}})  # 
+}})  # returns {example_outputs}
 """.format(model_name=self.name,
-                                  symbol_definitions=symbol_definitions,
-                                  evaluate_args=evaluate_args)
+           symbol_definitions=symbol_definitions,
+           evaluate_args=evaluate_args,
+           example_outputs=example_outputs
+           )
 
         return example_code

@@ -99,14 +99,16 @@ class ModelTest(unittest.TestCase):
 
         example_model = models.SemiEmpiricalMobility()
 
-        example_code = """m_e = 0.009  # electron_effective_mass in 1.0 dimensionless
+        example_code = """from propnet.models import SemiEmpiricalMobility
+
+m_e = 0.009  # electron_effective_mass in 1.0 dimensionless
 K = 64  # bulk_modulus in 1.0 gigapascal
 
 model = SemiEmpiricalMobility()
 model.evaluate({
 \t'm_e': m_e
 \t'K': K
-})
+})  # returns {'mu_e': 8994.92312225673}
 """
 
         self.assertEqual(example_model._example_code, example_code)
