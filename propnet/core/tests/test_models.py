@@ -6,8 +6,7 @@ from monty.serialization import loadfn
 
 import propnet.models as models
 
-from propnet.models import DEFAULT_MODELS
-from propnet.models import DEFAULT_MODEL_NAMES
+from propnet.models import DEFAULT_MODELS, DEFAULT_MODEL_NAMES
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
 from propnet.core.models import *
 from propnet.core.symbols import *
@@ -95,3 +94,19 @@ class ModelTest(unittest.TestCase):
 
         self.assertTrue(math.isclose(out['a'].magnitude, 200.0))
         self.assertTrue(out['a'].units == A.units)
+
+    def test_example_code_helper(self):
+
+        example_model = models.SemiEmpiricalMobility()
+
+        example_code = """m_e = 0.009  # electron_effective_mass in 1.0 dimensionless
+K = 64  # bulk_modulus in 1.0 gigapascal
+
+model = SemiEmpiricalMobility()
+model.evaluate({
+\t'm_e': m_e
+\t'K': K
+})
+"""
+
+        self.assertEqual(example_model._example_code, example_code)

@@ -10,7 +10,7 @@ import math
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 from os.path import dirname, join, isfile
-from hashlib import sha256
+from textwrap import dedent
 
 from ruamel.yaml import safe_load
 from monty.serialization import loadfn
@@ -21,6 +21,7 @@ from sympy.parsing.sympy_parser import parse_expr
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 from propnet import logger
 from propnet import ureg
+from propnet.core.utils import uuid
 
 # TODO: add pint integration
 # TODO: decide on interface for conditions, assumptions etc.
@@ -114,7 +115,7 @@ class AbstractModel(metaclass=ABCMeta):
                 path = '{}/../models/{}.yaml'.format(dirname(__file__), self.__class__.__name__)
                 metadata = load_metadata(path)
             except Exception as e:
-                print(e)
+                logger.error(e)
                 metadata = {}
 
         self._metadata = metadata
@@ -233,39 +234,48 @@ class AbstractModel(metaclass=ABCMeta):
         return outputs
 
     # Suite of getter methods returning appropriate model data.
+
     @property
-    def name(self):
+    def name(self) -> str:
         """
-        Returns:
-            (str): Name of model
+
+        Returns: Name of the model (this matches the class name),
+        'title' gives a more human-readable title for the model.
+
         """
         return self.__class__.__name__
 
     @property
-    def title(self):
+    def title(self) -> str:
         """
-        Returns:
-            (str): Title of model
+
+        Returns: A human-readable title for the model.
+
         """
         return self._metadata.get('title', 'undefined')
 
     @property
-    def tags(self):
+    def tags(self) -> List[str]:
         """
-        Returns:
-            (list<str>): List of tags associated with the model
+
+        Returns: A list of tags categories associated with the
+        model.
+
         """
         return self._metadata.get('tags', [])
 
     @property
-    def description(self):
+    def description(self) -> str:
         """
-        Returns:
-            (str): Description of model as Markdown string """
+
+        Returns: A description of the model and how it works,
+        provided as a Markdown-formatted string.
+
+        """
         return self._metadata.get('description', '')
 
     @property
-    def symbol_mapping(self):
+    def symbol_mapping(self) -> Dict[str, str]:
         """
         A mapping of a symbol named used within the model to the canonical symbol name, e.g. {"E": "youngs_modulus"}
         keys are symbols used in the model; values are SymbolType enum values (SymbolType.name field)
@@ -326,21 +336,18 @@ class AbstractModel(metaclass=ABCMeta):
         return refs
 
     def __hash__(self):
-        """
-        A unique model hash, SHA256 hash of the model class name.
+        return self.uuid.__hash__()
 
-        :return (str): 4-digit hex string
+    @property
+    def uuid(self):
         """
-        return int.from_bytes(sha256(self.__class__.__name__.encode('utf-8')).digest(), 'big')
+        A unique model identifier, function of model class name.
+        """
+        return uuid(self.__class__.__name__.encode('utf-8'))
 
     @property
     def model_id(self):
-        """
-        A unique model identifier, function of model class name.
-
-        :return (str): 4-digit hex string
-        """
-        return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
+        return self.uuid #TODO: remove
 
     def __eq__(self, other):
         return self.model_id == getattr(other, "model_id", None)
@@ -351,33 +358,94 @@ class AbstractModel(metaclass=ABCMeta):
     def __str__(self):
         return "{} [{}]".format(self._metadata['title'], self.model_id)
 
-    def test(self, test_file=None):
+    @property
+    def test_data(self):
+
+        test_file = join(dirname(__file__), '../models/test_data/{}.json'
+                         .format(self.__class__.__name__))
+        if not isfile(test_file):
+            return None
+        else:
+            return loadfn(test_file)
+
+    # TODO: rename to test_model
+    def test(self, test_data=None):
         """
 
         Args:
-            test_file: path to file containing test data
+            test_data: list of test data
 
         Returns: False if tests fail or no test data supplied,
         True if tests pass.
 
         """
 
-        if not test_file:
-            test_file = join(dirname(__file__), '../models/test_data/{}.json'
-                             .format(self.__class__.__name__))
-            if not isfile(test_file):
-                return False
+        if not test_data:
+            test_data = self.test_data
 
-        test_data = loadfn(test_file)
-        for d in test_data:
-            try:
-                model_outputs = self.plug_in(d['inputs'])
-                for k, v in d['outputs'].items():
-                    if not math.isclose(model_outputs[k], v):
-                        return False
-            except Exception as e:
-                print(e)
-                print('Testing {} raised an exception.'.format(self.__class__.__name__))
-                return False
+        if test_data:
 
-        return True
+            for d in test_data:
+                try:
+                    model_outputs = self.evaluate(d['inputs'])
+                    for k, v in d['outputs'].items():
+                        if not math.isclose(model_outputs[k].magnitude, v):
+                            return False
+                except Exception as e:
+                    print(e)
+                    print('Testing {} raised an exception.'.format(self.__class__.__name__))
+                    return False
+
+            return True
+
+        else:
+
+            return False
+
+    @property
+    def _example_code(self):
+        """
+        Generates example code from test data, useful for
+        documentation.
+
+        Returns: example code for this model
+
+        """
+
+        if not self.test_data:
+            return None
+
+        example_inputs = self.test_data[0]['inputs']
+
+        symbol_definitions = []
+        evaluate_args = []
+        for input_name, input_value in example_inputs.items():
+
+            symbol_str = "{input_name} = {input_value}  # {symbol_name} in {units}".format(
+                input_name=input_name,
+                input_value=input_value,
+                symbol_name=self.symbol_mapping[input_name],
+                units=self.unit_mapping[input_name]
+            )
+            symbol_definitions.append(symbol_str)
+
+            evaluate_str = "\t'{}': {}".format(input_name, input_name)
+            evaluate_args.append(evaluate_str)
+
+        symbol_definitions = '\n'.join(symbol_definitions)
+        evaluate_args = '\n'.join(evaluate_args)
+
+        example_code = """\
+from propnet.models import {model_name}
+
+{symbol_definitions}
+
+model = {model_name}()
+model.evaluate({{
+{evaluate_args}
+}})  # 
+""".format(model_name=self.name,
+                                  symbol_definitions=symbol_definitions,
+                                  evaluate_args=evaluate_args)
+
+        return example_code

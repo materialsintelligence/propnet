@@ -125,6 +125,8 @@ def model_layout(model_name):
 
         layouts['Equations'] = equations
 
+    layouts['Description'] = dcc.Markdown(model.description)
+
     if model.test_data:
         sample_data_header = html.Div(
             className='row',
@@ -153,9 +155,9 @@ def model_layout(model_name):
             ]
         )
 
-        # layouts['Sample Data'] = html.Div(children=[sample_data_header, *sample_data])
+        #layouts['Sample Data'] = html.Div(children=[sample_data_header, *sample_data])
 
-    layouts['Description'] = dcc.Markdown(model.description)
+        layouts['Sample Code'] = dcc.Markdown('```\n{}```'.format(model._example_code))
 
     sublayouts = []
     for title, layout in layouts.items():
