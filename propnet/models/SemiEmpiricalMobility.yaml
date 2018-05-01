@@ -15,4 +15,4 @@ equations: [mu_e - 1E9 * 1E4 * 1.2E-14 * K**1 * m_e**-1.5]
 The electron mobility is difficult to model purely from first principles.
 This is a semi-empirical model to approximate the electron mobility based on the bulk modulus and the electron
 effective mass - two quantities that are readily accessible from first-principles calculations.
-The accuracy for band conductors is typically within half and orfer of magnitude.
+The accuracy for band conductors is typically within half an order of magnitude.
