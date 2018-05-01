@@ -1,10 +1,11 @@
 from propnet.core.models import AbstractModel
 
+
 class WiedemannFranzLaw(AbstractModel):
 
     @property
-    def constraints(self):
-        """ """
-        return {
-            'is_metallic': lambda is_metallic: is_metallic is True,
-        }
+    def constraint_symbols(self):
+        return ['is_metallic']
+
+    def check_constraints(self, constraint_inputs):
+        return constraint_inputs['is_metallic'].value.magnitude != 0

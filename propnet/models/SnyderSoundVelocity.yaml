@@ -10,9 +10,9 @@ symbol_mapping: {
   v_tot: snyder_total_sound_velocity
 }
 connections:
-- inputs: v_ac
+- inputs: [v_ac]
   outputs: [C_ij, structure]
-- inputs: v_op
+- inputs: [v_op]
   outputs: [C_ij, structure]
 ---
 This model currently uses the implementation in pymatgen.

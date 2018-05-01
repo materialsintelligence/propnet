@@ -1,0 +1,9 @@
+name: pugh_ratio
+units:
+- 1.0
+- []
+display_names: [Pugh's ratio]
+display_symbols: [k]
+dimension: 1
+comment: ''
+category: property

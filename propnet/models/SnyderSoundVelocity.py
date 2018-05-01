@@ -1,5 +1,4 @@
 from propnet.core.models import AbstractModel
-
 from pymatgen.analysis.elasticity import ElasticTensor
 
 class SnyderSoundVelocity(AbstractModel):

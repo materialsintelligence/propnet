@@ -130,17 +130,75 @@ class AbstractModel(metaclass=ABCMeta):
                                  'Exception: {}'
                                  .format(name, self.__class__.__name__, e))
 
-    # constraints and evaluate methods are optional overrides in extending classes
+    # constraint_symbols, meets_constraints, plug_in, and evaluate methods are optional overrides in extending classes
     @property
-    def constraints(self):
+    def constraint_symbols(self):
+        """
+        Returns a set of symbols.
+        These symbols are those whose value needs to be evaluated to determine if the model can be evaluated under the
+        current conditions.
+        Returns: ({str})
+        """
+        return []
+
+    def check_constraints(self, constraint_inputs):
         """
         Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
         indicating whether that Symbol meets all necessary conditions for validity.
 
+        Args:
+            constraint_inputs (dict<str, float>): Mapping from string symbol to symbol value
         Returns:
-            (dict<str, lambda(Symbol) -> bool>)
+            (bool): bool stating whether the constraints of the model are met.
         """
-        return {}
+        return True
+
+    def evaluate(self, symbol_values):
+        """
+        Given a set of symbol_values, performs error checking to see if the input symbol_values represents a valid input
+        set based on the self.connections() method. If so, it returns a dictionary representing the value of plug_in
+        applied to the inputs. The dictionary contains a "successful" key representing if plug_in was successful.
+
+        Args:
+            symbol_values (dict<str,float>): Mapping from string symbol to float value, giving inputs.
+        Returns:
+            (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
+                               given inputs. Additionally contains a "successful" key -> bool pair.
+        """
+
+        # strip units from input
+        for symbol in symbol_values:
+            if type(symbol_values[symbol]) == ureg.Quantity:
+                symbol_values[symbol] = symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude
+
+        available_symbols = set(symbol_values.keys())
+
+        # check we support this combination of inputs
+        available_inputs = [len(set(possible_input_symbols) - available_symbols) == 0
+                            for possible_input_symbols in self.input_symbols]
+        if not any(available_inputs):
+            return {
+                'successful': False,
+                'message': "The {} model cannot generate any outputs for these inputs: {}".format(
+                    self.name, available_symbols)
+            }
+        try:
+            # evaluate is allowed to fail
+            out = self.plug_in(symbol_values)
+            out['successful'] = True
+        except Exception as e:
+            return {
+                'successful': False,
+                'message': str(e)
+            }
+
+        # add units to output
+        for key in out:
+            if key == 'successful':
+                continue
+            out[key] = ureg.Quantity(out[key], self.unit_mapping[key])
+
+        return out
 
     def plug_in(self, symbol_values):
         """
@@ -173,44 +231,6 @@ class AbstractModel(metaclass=ABCMeta):
             if not isinstance(solution, sp.EmptySet):
                 outputs[str(possible_output)] = sp.N(solution)
         return outputs
-
-    def evaluate(self, symbol_values):
-        """
-        Given a set of symbol_values, performs error checking to see if the input symbol_values represents a valid input
-        set based on the self.connections() method. If so, it returns a dictionary representing the value of plug_in
-        applied to the inputs. The dictionary contains a "successful" key representing if plug_in was successful.
-
-        Args:
-            symbol_values (dict<str,float>): Mapping from string symbol to float value, giving inputs.
-        Returns:
-            (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
-                               given inputs. Additionally contains a "successful" key -> bool pair.
-
-        TODO: check our units
-        TODO: make this more robust
-        """
-        available_symbols = set(symbol_values.keys())
-
-        # check we support this combination of inputs
-        available_inputs = [len(set(possible_input_symbols) - available_symbols) == 0
-                            for possible_input_symbols in self.input_symbols]
-        if not any(available_inputs):
-            return {
-                'successful': False,
-                'message': "The {} model cannot generate any outputs for these inputs: {}".format(
-                    self.name, available_symbols)
-            }
-        try:
-            # evaluate is allowed to fail
-            out = self.plug_in(symbol_values)
-            out['successful'] = True
-        except Exception as e:
-            return {
-                'successful': False,
-                'message': str(e)
-            }
-        # add units to output
-        return out
 
     # Suite of getter methods returning appropriate model data.
     @property
@@ -305,10 +325,6 @@ class AbstractModel(metaclass=ABCMeta):
 
         return refs
 
-    @property
-    def constants(self):
-        return self._metadata.get('constants', {})
-
     def __hash__(self):
         """
         A unique model hash, SHA256 hash of the model class name.
@@ -355,7 +371,7 @@ class AbstractModel(metaclass=ABCMeta):
         test_data = loadfn(test_file)
         for d in test_data:
             try:
-                model_outputs = self.evaluate(d['inputs'])
+                model_outputs = self.plug_in(d['inputs'])
                 for k, v in d['outputs'].items():
                     if not math.isclose(model_outputs[k], v):
                         return False

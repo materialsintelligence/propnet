@@ -2,11 +2,11 @@
 title: Metallic Classifier
 tags: [classifier]
 symbol_mapping: {
-  E_g: band_gap_pbe,
+  E_g: band_gap,
   is_metallic: is_metallic
 }
 connections:
-- inputs: is_metallic
-  outputs: [E_g]
+- inputs: [E_g]
+  outputs: [is_metallic]
 ---
 This model returns true if band gap is zero.

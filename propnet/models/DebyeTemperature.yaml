@@ -3,13 +3,14 @@ title: Debye model
 tags: [thermal]
 references: ['']
 symbol_mapping: {
-  C_ij: elastic_tensor_voigt,
-  d: debye_temperature,
-  structure: structure
+  p: atomic_density,
+  v: sound_velocity_mean,
+  T: debye_temperature
 }
 connections:
-- inputs: d
-  outputs: [C_ij, structure]
+- inputs: [p, v]
+  outputs: [T]
+equations: [T - (6*3.14159**2*p*1E10**3*v**3)**(1/3) * 6.626E-34/2/3.14159 / 1.38E-23]
 ---
 Assuming a linear dispersion relationship between angular frequency and
 wave number along with a free particle k-vector density of states, the
@@ -27,5 +28,3 @@ The effective sound velocity is in turn related to the material's bulk modulus.
 At intermediate temperatures, especially those around the debye temperature,
 deviations in heat capacity may occur due to a breakdown in the linearity
 of the dispersion relationship for real materials.
-
-This model currently uses the implementation in pymatgen.

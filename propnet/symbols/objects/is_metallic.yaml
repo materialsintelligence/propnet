@@ -3,7 +3,7 @@ units:
 - 1.0
 - []
 display_names: ['Is Metallic']
-display_symbols: []
+display_symbols: ['Is Metallic']
 dimension: 1
 comment: ''
 category: object

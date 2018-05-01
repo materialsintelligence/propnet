@@ -9,11 +9,11 @@ symbol_mapping: {
 }
 connections:
 - inputs: [A, R]
-  outputs: T
+  outputs: [T]
 - inputs: [T, A]
-  outputs: R
+  outputs: [R]
 - inputs: [T, R]
-  outputs: A
+  outputs: [A]
 equations: [1 - A - T - R]
 ---
 Transmittance T is the portion of the transmitted intencity of the incident light.

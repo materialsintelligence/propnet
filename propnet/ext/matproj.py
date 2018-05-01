@@ -10,19 +10,18 @@ from propnet.core.materials import Material
 
 # maps propnet symbol names to mp (mapidoc) keypath
 MP_FROM_PROPNET_NAME_MAPPING = {
-    'poisson_ratio': 'elasticity.poisson_ratio',
-    'bulk_modulus': 'elasticity.K_Voigt_Reuss_Hill',
+    'pretty_formula': 'anonymous_formula',
     'elastic_tensor_voigt': 'elasticity.elastic_tensor',
+    'elastic_anisotropy': 'elasticity.elastic_anisotropy',
     'relative_permittivity': 'diel.poly_total',
     'density': 'density',
     'refractive_index': 'diel.n',
     'energy_above_hull': 'e_above_hull',
-    'elastic_anisotropy': 'elasticity.elastic_anisotropy',
     'final_energy': 'final_energy',
     'final_energy_per_atom': 'final_energy_per_atom',
     'formation_energy_per_atom': 'formation_energy_per_atom',
     'piezoelectric_tensor': 'piezo.piezoelectric_tensor',
-    'volume_unit_cell': 'volume'
+    'volume_unit_cell': 'volume',
 }
 PROPNET_FROM_MP_NAME_MAPPING = {v: k for k, v in MP_FROM_PROPNET_NAME_MAPPING.items()}
 
@@ -48,8 +47,9 @@ def import_materials(mp_ids, api_key=None):
         # properties of one mp-id
         mat = Material()
         tag_string = data['task_id']
-        mat.add_property(Symbol('structure', data['structure'], [tag_string]))
-        mat.add_property(Symbol('lattice_unit_cell', data['structure'].lattice.matrix, [tag_string]))
+        if not data['structure'] is None:
+            mat.add_property(Symbol('structure', data['structure'], [tag_string]))
+            mat.add_property(Symbol('lattice_unit_cell', data['structure'].lattice.matrix, [tag_string]))
         for key in data:
             if not data[key] is None and key in PROPNET_FROM_MP_NAME_MAPPING.keys():
                 prop_type = DEFAULT_SYMBOL_TYPES[PROPNET_FROM_MP_NAME_MAPPING[key]]

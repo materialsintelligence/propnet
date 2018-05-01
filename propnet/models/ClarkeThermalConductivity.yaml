@@ -8,7 +8,7 @@ symbol_mapping: {
   t: thermal_conductivity
 }
 connections:
-- inputs: t
+- inputs: [t]
   outputs: [C_ij, _structure]
 ---
 Based on the model posited in https://doi.org/10.1016/S0257-8972(02)00593-5,

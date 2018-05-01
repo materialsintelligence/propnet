@@ -3,7 +3,7 @@ units:
 - 1.0
 - []
 display_names: ['Number of atomic sites']
-display_symbols: []
+display_symbols: ['nSites']
 dimension: 1
 comment: ''
 category: property
