@@ -70,7 +70,7 @@ class Material:
         """
         property_node = PropnetNode(node_type=PropnetNodeType.Quantity, node_value=property)
         property_symbol_node = PropnetNode(node_type=PropnetNodeType.Symbol,
-                                           node_value=property.type)
+                                           node_value=property.symbol)
         self.graph.add_edge(self.root_node, property_node)
         self.graph.add_edge(property_node, property_symbol_node)
         if self.parent:

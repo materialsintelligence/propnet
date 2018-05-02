@@ -42,7 +42,8 @@ class Symbol(MSONable):
     def __init__(self, name, display_names,
                  display_symbols, units=None, shape=None,
                  object_type=None,
-                 comment=None, category='property'):
+                 comment=None,
+                 category='property'):
         """
         Parses and validates a series of inputs into a PropertyMetadata tuple, a format that
         PropNet expects.
@@ -81,7 +82,7 @@ class Symbol(MSONable):
             try:
                 np.zeros(shape)
             except TypeError:
-                raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
+                raise TypeError("Shape provided for ({}) is invalid.".format(id))
 
             try:
                 units = ureg.Quantity.from_tuple(units)
@@ -100,7 +101,7 @@ class Symbol(MSONable):
         self.object_type = object_type
         self.display_names = display_names
         self.display_symbols = display_symbols
-        self.shape = shape  # TODO: rename to shape?
+        self.shape = shape
         self.comment = comment
 
     @property

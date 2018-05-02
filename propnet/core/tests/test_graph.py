@@ -131,7 +131,7 @@ class GraphTest(unittest.TestCase):
             Quantity('refractive_index', 1, []), Quantity('relative_permittivity', 2, [])
         ], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [
-            Quantity('refractive_index', 1.3, []).type, Quantity('relative_permittivity', 2, []).type
+            Quantity('refractive_index', 1.3, []).symbol, Quantity('relative_permittivity', 2, []).symbol
         ], 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(p.graph, [Quantity('refractive_index', 1, [])], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(p.graph, [mat2], 'Material'))

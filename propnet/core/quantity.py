@@ -6,6 +6,7 @@ from monty.json import MSONable
 
 from propnet import logger, ureg
 from propnet.core.symbols import Symbol
+from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
 
 class Quantity(MSONable):
@@ -44,12 +45,13 @@ class Quantity(MSONable):
             provenance (id): time of creation of the object.
         """
 
-        # TODO: move Quantity + Symbol to separate files to remove circular import
-        from propnet.symbols import DEFAULT_SYMBOL_TYPES
         if isinstance(symbol_type, str):
             if symbol_type not in DEFAULT_SYMBOL_TYPES.keys():
                 raise ValueError("Quantity type {} not recognized".format(symbol_type))
             symbol_type = DEFAULT_SYMBOL_TYPES[symbol_type]
+
+        if value is None and symbol_type.default is not None:
+            value = symbol_type.default
 
         if type(value) == float or type(value) == int:
             value = ureg.Quantity(value, symbol_type.units)
@@ -61,7 +63,13 @@ class Quantity(MSONable):
         self._tags = tags
         self._provenance = provenance
 
-    # Associated accessor methods.
+    #def as_dict(self):
+    #    return {
+    #        "@module": "propnet.core.quantity",
+    #        "@class": "Quantity",
+    #        "symbol": self.s#ymbol.name
+    #    }
+
     @property
     def value(self):
         """
@@ -71,7 +79,7 @@ class Quantity(MSONable):
         return self._value
 
     @property
-    def type(self):
+    def symbol(self):
         """
         Returns:
             (Symbol): Symbol of the Quantity
@@ -95,12 +103,12 @@ class Quantity(MSONable):
         return self._provenance
 
     def __hash__(self):
-        return hash(self.type.name)
+        return hash(self.symbol.name)
 
     def __eq__(self, other):
         if not isinstance(other, Quantity):
             return False
-        if self.type != other.type:
+        if self.symbol != other.symbol:
             return False
         if type(self.value) == ureg.Quantity:
             val1 = float(self.value.magnitude)
@@ -115,4 +123,4 @@ class Quantity(MSONable):
         return True
 
     def __str__(self):
-        return "<{}, {}, {}>".format(self.type.name, self.value, self.tags)
+        return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)

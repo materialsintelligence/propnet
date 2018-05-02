@@ -228,7 +228,7 @@ class Propnet:
         if property_type:
             # Only Symbol objects in the property_type list are candidates for evaluation.
             symbol_nodes = [node for node in symbol_nodes
-                            if node.node_value.type in property_type]
+                            if node.node_value.symbol in property_type]
 
         # Get set of SymbolTypes that have values provided.
         active_symbol_type_nodes = set()
@@ -253,10 +253,10 @@ class Propnet:
         # Create fast-lookup data structure Dict[Symbol, [Quantity]]:
         lookup_dict = {}
         for node in symbol_nodes:
-            if node.node_value.type not in lookup_dict:
-                lookup_dict[node.node_value.type] = [node.node_value]
+            if node.node_value.symbol not in lookup_dict:
+                lookup_dict[node.node_value.symbol] = [node.node_value]
             else:
-                lookup_dict[node.node_value.type] += [node.node_value]
+                lookup_dict[node.node_value.symbol] += [node.node_value]
 
         # Create fast-lookup data structure Dict[Quantity, MaterialNode]
         symbol_to_material_dict = {}
@@ -421,7 +421,7 @@ class Propnet:
                     symbol_node = PropnetNode(node_type=PropnetNodeType['Quantity'], node_value=symbol)
                     if symbol_node in self.graph:
                         continue
-                    symbol_type_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol.type)
+                    symbol_type_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol.symbol)
                     self.graph.add_edge(symbol_node, symbol_type_node)
                     for source_node in output_sources[i]:
                         self.graph.add_edge(source_node, symbol_node)
@@ -440,11 +440,11 @@ class Propnet:
 
                     # Update helper data structures etc. for next cycle.
                     symbol_to_material_dict[symbol] = get_source_nodes(self.graph, symbol_node)
-                    if symbol.type not in lookup_dict:
-                        lookup_dict[symbol.type] = [symbol]
+                    if symbol.symbol not in lookup_dict:
+                        lookup_dict[symbol.symbol] = [symbol]
                     else:
-                        lookup_dict[symbol.type] += [symbol]
-                    if not property_type or symbol.type in property_type:
+                        lookup_dict[symbol.symbol] += [symbol]
+                    if not property_type or symbol.symbol in property_type:
                         for neighbor in self.graph.neighbors(symbol_type_node):
                             if neighbor.node_type == PropnetNodeType['Model']:
                                 if neighbor.node_value not in original_models:
@@ -520,6 +520,6 @@ class Propnet:
             summary += ["\t " + str(material_node.node_value.uuid)]
             for property in filter(lambda n: n.node_type == PropnetNodeType['Quantity'],
                                    self.graph.neighbors(material_node)):
-                summary += ["\t\t " + property.node_value.type.display_names[0] +
+                summary += ["\t\t " + property.node_value.symbol.display_names[0] +
                             "\t:\t" + str(property.node_value)]
         return "\n".join(summary)
