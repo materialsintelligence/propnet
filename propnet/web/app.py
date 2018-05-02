@@ -1,6 +1,7 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table_experiments as dt
 
 from dash.dependencies import Input, Output, State
 
@@ -109,7 +110,7 @@ layout_menu = html.Div(style={'textAlign': 'center'}, children=[
     html.Span(' • '),
     dcc.Link('All Models', href='/model'),
     html.Span(' • '),
-    dcc.Link('Load Material', href='/load_material'),
+    dcc.Link('Explore with Materials Project', href='/load_material'),
 ])
 
 # home page
@@ -149,7 +150,8 @@ app.layout = html.Div(children=[
     html.Br(),
     layout_menu,
     html.Br(),
-    html.Div(id='page-content')
+    html.Div(id='page-content'),
+    dt.DataTable(rows=[{}])
 ], style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 50})
 
 # standard Dash css, fork this for a custom theme
@@ -185,6 +187,19 @@ def retrieve_material(n_clicks, formula):
 
     available_properties = material.available_properties()
 
+    rows = [
+        {'property': str(property)} for property in available_properties
+    ]
+
+    table = dt.DataTable(
+        rows=rows,
+        row_selectable=True,
+        filterable=True,
+        sortable=True,
+        selected_row_indices=[],
+        id='datatable'
+    )
+
     #p.evaluate(material)
 
     #derivable_properties = []
@@ -217,12 +232,13 @@ def retrieve_material(n_clicks, formula):
     return html.Div([
         html.Div(str(material)),
         #dcc.Link(mpid, href="https://materialsproject.org/materials/{}".format(mpid)),
+        html.H3('Graph'),
         material_graph_component,
-        #html.Br(),
+        html.H3('Table'),
+        table,
         dcc.Markdown('### Available Properties\n\n{}'.format("\n\n".join(available_properties))),
-        #html.Br(),
-        #dcc.Markdown('### Derivable Properties\n\n{}'.format("\n\n".join(derivable_properties))),
     ])
+
 
 material_layout = html.Div([
     dcc.Input(
@@ -231,7 +247,8 @@ material_layout = html.Div([
         value='',
         id='formula-input'
     ),
-    html.Button('Submit', id='submit-formula'),
+    html.Button('Load Material', id='submit-formula'),
+    html.Button('Derive Properties', id='derive-properties'),
     html.Br(),
     html.Br(),
     html.Div(id='material-content')

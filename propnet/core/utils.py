@@ -26,7 +26,7 @@ def uuid(name=None):
         return uuid5(NAMESPACE_PROPNET, str(name))
 
 
-_REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__),'../data/reference_cache.json')
+_REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__), '../data/reference_cache.json')
 _REFERENCE_CACHE = loadfn(_REFERENCE_CACHE_PATH)
 
 
