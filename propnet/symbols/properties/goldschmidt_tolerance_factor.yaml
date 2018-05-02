@@ -4,6 +4,6 @@ units:
 - []
 display_names: ['Goldschmidt tolerance factor']
 display_symbols: ['t']
-dimension: 1
+shape: 1
 comment: ''
 category: property

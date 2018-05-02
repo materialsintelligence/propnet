@@ -4,6 +4,6 @@ units:
 - []
 display_names: ['Imaginary part of relative permittivity']
 display_symbols: ['\epsilon_{c}']
-dimension: 1
+shape: 1
 comment: ''
 category: property

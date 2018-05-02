@@ -23,9 +23,9 @@ class Symbol(MSONable):
         (str) display_names -> (list<str>) list of human-readable strings describing the property.
         (str) display_symbols -> (list<str>) list of latex-able strings producing symbols associated with representing
                                              this property in equations, etc.
-        (str) dimension -> (id) gives the length dimensions of the n-dimensional array required to represent the property.
+        (str) shape -> (id) gives the length dimensions of the n-dimensional array required to represent the property.
                                 This value is a list if multiple length dimensions are required or an integer if only
-                                one length dimension is required.
+                                one length shape is required.
         (str) comment -> (str) Gives any important commentary on the property.
 
     Attributes (see above for descriptions):
@@ -33,14 +33,14 @@ class Symbol(MSONable):
         units: (list<id>)
         display_names: (list<str>)
         display_symbols: (list<str>)
-        dimension: (id)
+        shape: (id)
         comment: (str)
     """
 
     # TODO: this really needs to be rethought, possibly split into separate classes
     # or a base class + subclasses for symbols with units vs those without
     def __init__(self, name, display_names,
-                 display_symbols, units=None, dimension=None,
+                 display_symbols, units=None, shape=None,
                  object_type=None,
                  comment=None, category='property'):
         """
@@ -55,7 +55,7 @@ class Symbol(MSONable):
             the property.
             display_symbols (list<str>): list of strings giving possible human-readable symbols
             for the property.
-            dimension (id): list giving the order of the tensor as the length, and number of
+            shape (id): list giving the order of the tensor as the length, and number of
             dimensions as individual
                             integers in the list.
             comment (str): any useful information on the property including its definitions and
@@ -79,7 +79,7 @@ class Symbol(MSONable):
                 raise ValueError("Cannot define an object type for a {}.".format(category))
 
             try:
-                np.zeros(dimension)
+                np.zeros(shape)
             except TypeError:
                 raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
 
@@ -100,25 +100,25 @@ class Symbol(MSONable):
         self.object_type = object_type
         self.display_names = display_names
         self.display_symbols = display_symbols
-        self.dimension = dimension  # TODO: rename to shape?
+        self.shape = shape  # TODO: rename to shape?
         self.comment = comment
 
     @property
     def dimension_as_string(self):
         """
         Returns:
-            (str): dimension of property (np.shape) as a human-readable string
+            (str): shape of property (np.shape) as a human-readable string
         """
 
-        if isinstance(self.dimension, int):
+        if isinstance(self.shape, int):
             return 'scalar'
-        elif isinstance(self.dimension, list) and len(self.dimension) == 1:
-            return '{} vector'.format(self.dimension)
-        elif isinstance(self.dimension, list) and len(self.dimension) == 2:
-            return '{} matrix'.format(self.dimension)
+        elif isinstance(self.shape, list) and len(self.shape) == 1:
+            return '{} vector'.format(self.shape)
+        elif isinstance(self.shape, list) and len(self.shape) == 2:
+            return '{} matrix'.format(self.shape)
         else:
             # technically might not always be true
-            return '{} tensor'.format(self.dimension)
+            return '{} tensor'.format(self.shape)
 
     @property
     def unit_as_string(self) -> str:

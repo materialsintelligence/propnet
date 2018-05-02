@@ -4,6 +4,6 @@ units:
 - - [angstrom, -3.0]
 display_names: [Atomic Density]
 display_symbols: [\rho_a]
-dimension: 1
+shape: 1
 comment: ''
 category: property

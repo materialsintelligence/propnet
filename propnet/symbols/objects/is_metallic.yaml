@@ -1,7 +1,6 @@
 name: is_metallic
 display_names: ['Is Metallic']
 display_symbols: ['Is Metallic']
-dimension: 1
 comment: ''
 category: object
 object_type: bool

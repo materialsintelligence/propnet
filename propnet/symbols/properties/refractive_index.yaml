@@ -4,6 +4,6 @@ units:
 - []
 display_names: ['Refractive index','Index of Refraction']
 display_symbols: ['n']
-dimension: 1
+shape: 1
 comment: ''
 category: property

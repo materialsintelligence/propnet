@@ -4,6 +4,6 @@ units:
 - - [angstrom, 1.0]
 display_names: ['Interplanar Spacing']
 display_symbols: ['a']
-dimension: 1
+shape: 1
 comment: ''
 category: property

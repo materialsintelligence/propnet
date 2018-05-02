@@ -4,6 +4,6 @@ units:
 - - [electron_volt, 1.0]
 display_names: ["Quasiparticle band gap (GW)"]
 display_symbols: ["E_{g, GW}"]
-dimension: 1
+shape: 1
 comment: ''
 category: property

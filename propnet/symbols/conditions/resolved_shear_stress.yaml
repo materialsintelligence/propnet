@@ -4,6 +4,6 @@ units:
 - - [gigapascal, 1.0]
 display_names: [Resolved shear stress]
 display_symbols: [\tau]
-dimension: 1
+shape: 1
 comment: ''
 category: condition

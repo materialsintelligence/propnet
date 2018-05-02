@@ -76,8 +76,8 @@ class ModelTest(unittest.TestCase):
         Returns:
             None
         """
-        L = Symbol('l', ['L'], ['L'], units=[1.0, [['centimeter', 1.0]]], dimension=[1])
-        A = Symbol('a', ['A'], ['A'], units=[1.0, [['centimeter', 2.0]]], dimension=[1])
+        L = Symbol('l', ['L'], ['L'], units=[1.0, [['centimeter', 1.0]]], shape=[1])
+        A = Symbol('a', ['A'], ['A'], units=[1.0, [['centimeter', 2.0]]], shape=[1])
 
         class GetArea(AbstractModel):
             def __init__(self):

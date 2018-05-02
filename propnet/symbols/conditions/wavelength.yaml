@@ -4,6 +4,6 @@ units:
 - - [nanometer, 1.0]
 display_names: [Wavelength]
 display_symbols: [\lambda]
-dimension: 1
+shape: 1
 comment: 'wavelength of light'
 category: condition

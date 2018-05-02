@@ -4,6 +4,6 @@ units:
 - []
 display_names: [Pugh's ratio]
 display_symbols: [k]
-dimension: 1
+shape: 1
 comment: ''
 category: property

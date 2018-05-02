@@ -75,7 +75,7 @@ class GraphTest(unittest.TestCase):
         """
         # Setup
         p = Propnet()
-        A = Symbol('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        A = Symbol('a', ['A'], ['A'], units=[1.0, []], shape=[1])
         mat1 = Material()
         mat1.add_property(Quantity(A, 2, []))
         mat1.add_property(Quantity(A, 3, []))
@@ -268,10 +268,10 @@ class GraphTest(unittest.TestCase):
 
         # Setup
 
-        a = Symbol('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        b = Symbol('b', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        c = Symbol('c', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        e = Symbol('e', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        a = Symbol('a', ['A'], ['A'], units=[1.0, []], shape=[1])
+        b = Symbol('b', ['A'], ['A'], units=[1.0, []], shape=[1])
+        c = Symbol('c', ['A'], ['A'], units=[1.0, []], shape=[1])
+        e = Symbol('e', ['A'], ['A'], units=[1.0, []], shape=[1])
         symbol_type_dict = {'a': a, 'b': b, 'c': c, 'e': e}
 
         mat1 = Material()
@@ -366,9 +366,9 @@ class GraphTest(unittest.TestCase):
 
         # Setup
 
-        a = Symbol('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        b = Symbol('b', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        c = Symbol('c', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        a = Symbol('a', ['A'], ['A'], units=[1.0, []], shape=[1])
+        b = Symbol('b', ['A'], ['A'], units=[1.0, []], shape=[1])
+        c = Symbol('c', ['A'], ['A'], units=[1.0, []], shape=[1])
         constraint = Symbol('constraint', ['C'], ['C'], category='object')
         symbol_type_dict = {'a': a, 'b': b, 'c': c, 'constraint': constraint}
 

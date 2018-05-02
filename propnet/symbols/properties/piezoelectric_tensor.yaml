@@ -5,6 +5,6 @@ units:
   - [meter, -2.0]
 display_names: ['Piezoelectric Tensor']
 display_symbols: ['d_{ij}']
-dimension: [3, 6]
+shape: [3, 6]
 comment: ''
 category: property

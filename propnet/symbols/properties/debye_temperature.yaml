@@ -4,6 +4,6 @@ units:
 - - [kelvin, 1.0]
 display_names: [Temperature]
 display_symbols: [T]
-dimension: 1
+shape: 1
 comment: ''
 category: property

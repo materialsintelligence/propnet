@@ -5,6 +5,6 @@ units:
   - [second, -1.0]
 display_names: [Snyder's optical sound velocity]
 display_symbols: [v_op]
-dimension: 1
+shape: 1
 comment: ''
 category: property

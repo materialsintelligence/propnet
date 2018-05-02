@@ -4,6 +4,6 @@ units:
 - - [gigapascal, 1.0]
 display_names: ['Minimum stress needed for dislocation movement']
 display_symbols: ['/sigma_{0}']
-dimension: 1
+shape: 1
 comment: ''
 category: property

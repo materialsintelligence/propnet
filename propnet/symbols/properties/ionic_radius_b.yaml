@@ -4,6 +4,6 @@ units:
 - - [picometer, 1.0]
 display_names: [Ionic radius of B site in perovskite]
 display_symbols: [r_B]
-dimension: 1
+shape: 1
 comment: 'This property is only relevant for perovskite structures.'
 category: property

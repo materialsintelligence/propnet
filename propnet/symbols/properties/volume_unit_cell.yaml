@@ -4,6 +4,6 @@ units:
 - - [angstrom, 3.0]
 display_names: [Volume per Unit Cell]
 display_symbols: ["V_{cell}"]
-dimension: 1
+shape: 1
 comment: ''
 category: property

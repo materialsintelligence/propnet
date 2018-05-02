@@ -5,6 +5,6 @@ units:
   - [second, -1.0]
 display_names: [Elasticity-Derived Longitudinal Sound Velocity]
 display_symbols: [v_L]
-dimension: 1
+shape: 1
 comment: ''
 category: property

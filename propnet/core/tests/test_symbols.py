@@ -15,7 +15,7 @@ class PropertiesTest(unittest.TestCase):
             'units': [1.0, [["gigapascal", 1.0]]],
             'display_names': ["Young's modulus", "Elastic modulus"],
             'display_symbols': ["E"],
-            'dimension': 1,
+            'shape': 1,
             'comment': ""
         }
 
@@ -24,7 +24,7 @@ class PropertiesTest(unittest.TestCase):
             units= [1.0, [["gigapascal", 1.0]]], #ureg.parse_expression("GPa"),
             display_names=["Young's modulus", "Elastic modulus"],
             display_symbols=["E"],
-            dimension=1,
+            shape=1,
             comment=""
         )
 
