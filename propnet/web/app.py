@@ -215,7 +215,6 @@ def retrieve_material(n_clicks, formula):
                                                    height=350)
 
     return html.Div([
-        #dcc.Link(mpid, href="https://materialsproject.org/materials/{}".format(mpid)),
         html.H3('Graph'),
         material_graph_component,
         html.H3('Table'),

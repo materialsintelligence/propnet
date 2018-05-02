@@ -94,6 +94,7 @@ class Symbol(MSONable):
         else:
             if units is not None:
                 raise ValueError("Cannot define units for generic objects.")
+            units = ureg.parse_expression("")  # dimensionless
 
         self.name = name
         self.category = category
@@ -156,8 +157,8 @@ class Symbol(MSONable):
 
     def __str__(self):
         to_return = self.name + ":\n"
-        for item in self.__slots__:
-            to_return += "\t" + item + ":\t" + str(self.__getattribute__(item)) + "\n"
+        for k, v in self.__dict__.items():
+            to_return += "\t" + k + ":\t" + str(v) + "\n"
         return to_return
 
     def __repr__(self):
