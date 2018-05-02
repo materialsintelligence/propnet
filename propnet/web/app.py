@@ -62,7 +62,7 @@ def hightlight_node_for_content(pathname):
     """
 
     Args:
-      pathname: 
+      pathname:
 
     Returns:
 
@@ -83,7 +83,7 @@ def show_content_for_selected_node(node):
     """
 
     Args:
-      node: 
+      node:
 
     Returns:
 
@@ -170,10 +170,11 @@ app.scripts.append_script({
 
 @app.callback(
     Output('material-content', 'children'),
-    [Input('submit-formula', 'n_clicks')],
+    [Input('submit-formula', 'n_clicks'),
+     Input('derive-properties', 'n_clicks')],
     [State('formula-input', 'value')]
 )
-def retrieve_material(n_clicks, formula):
+def retrieve_material(n_clicks, n_clicks_derive, formula):
 
     materials = materials_from_formula(formula)
 
@@ -183,9 +184,13 @@ def retrieve_material(n_clicks, formula):
     material = materials[0]
 
     p = Propnet()
+    p.add_material(material)
     g = p.graph
 
     available_properties = material.available_properties()
+
+    if n_clicks_derive is not None:
+        p.evaluate()
 
     rows = []
     for node in material.available_property_nodes():
@@ -194,7 +199,7 @@ def retrieve_material(n_clicks, formula):
                 {
                     'Symbol': str(node.node_value.symbol.name),
                     'Value': str(node.node_value.value),  # TODO: node.node_value.value? this has to make sense
-                    'Units': str(node.node_value.symbol.unit_as_string)
+                    #'Units': str(node.node_value.symbol.unit_as_string)
                 }
             )
 
@@ -220,7 +225,6 @@ def retrieve_material(n_clicks, formula):
         html.H3('Table'),
         table
     ])
-
 
 material_layout = html.Div([
     dcc.Input(
@@ -256,7 +260,7 @@ def display_page(pathname):
     """
 
     Args:
-      pathname: 
+      pathname:
 
     Returns:
 
@@ -285,4 +289,4 @@ def display_page(pathname):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)

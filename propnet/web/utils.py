@@ -46,6 +46,8 @@ def graph_conversion(graph, highlight=False,
 
     for n in graph.nodes():
 
+        id = None
+
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
         if n.node_type.name == 'Symbol':
@@ -63,13 +65,14 @@ def graph_conversion(graph, highlight=False,
             shape = 'square'
             radius = 6.0
 
-        nodes.append({
-            'id': id,
-            'label': label,
-            'fill': fill,
-            'shape': shape,
-            'radius': radius
-        })
+        if id:
+            nodes.append({
+                'id': id,
+                'label': label,
+                'fill': fill,
+                'shape': shape,
+                'radius': radius
+            })
 
     if highlight:
         for node in nodes:
@@ -84,21 +87,24 @@ def graph_conversion(graph, highlight=False,
 
     for n1, n2 in graph.edges():
 
+        id_n1 = None
         if n1.node_type.name == 'Symbol':
             id_n1 = n1.node_value.name
         elif n1.node_type.name == 'Model':
             id_n1 = n1.node_value.__class__.__name__
 
+        id_n2 = None
         if n2.node_type.name == 'Symbol':
             id_n2 = n2.node_value.name
         elif n2.node_type.name == 'Model':
             id_n2 = n2.node_value.__class__.__name__
 
-        links.append({
-            'source': id_n1,
-            'target': id_n2,
-            'value': 1.0
-        })
+        if id_n1 and id_n2:
+            links.append({
+                'source': id_n1,
+                'target': id_n2,
+                'value': 1.0
+            })
 
     graph_data = {
         'nodes': nodes,
