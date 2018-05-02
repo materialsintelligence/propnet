@@ -38,20 +38,12 @@ class PropertiesTest(unittest.TestCase):
         for st in DEFAULT_SYMBOL_TYPES.values():
             self.assertTrue(st.name is not None and st.name.isidentifier())
             self.assertTrue(st.category is not None and st.category in ('property', 'condition', 'object'))
-            self.assertTrue(st.units is not None and type(st.units) == ureg.Quantity)
             self.assertTrue(st.display_names is not None and isinstance(st.display_names, list) and
                             len(st.display_names) != 0)
             self.assertTrue(st.display_symbols is not None and isinstance(st.display_symbols, list) and
                             len(st.display_symbols) != 0)
-            self.assertTrue(st.dimension is not None)
             self.assertTrue(st.comment is not None and isinstance(st.comment, str))
 
     def test_all_properties(self):
         self.assertEqual(str(DEFAULT_SYMBOL_TYPES['density'].units),
                          '1.0 gram / centimeter ** 3')
-
-    #def test_serialization(self):
-#
-    #    symbol = Quantity('band_gap', 3.0)
-#
-    #    self.assertDictEqual(symbol.as_dict(), {})
