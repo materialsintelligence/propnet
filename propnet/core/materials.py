@@ -102,7 +102,7 @@ class Material:
             None
         """
         for node in self.graph.neighbors(self.root_node):
-            if node.node_value.type.name == property_type:
+            if node.node_value.symbol.name == property_type:
                 self.graph.remove_node(node)
                 if self.parent:
                     self.parent.graph.remove_node(node)
@@ -117,7 +117,7 @@ class Material:
         available_propertes = []
         for node in self.graph.nodes:
             if node.node_type == PropnetNodeType.Quantity:
-                available_propertes.append(node.node_value.type.name)
+                available_propertes.append(node.node_value.symbol.name)
         return available_propertes
 
     def available_property_nodes(self):
@@ -139,6 +139,6 @@ class Material:
     def __str__(self):
         to_return = "Material: " + str(self.uuid) + "\n"
         for node in self.available_property_nodes():
-            to_return += "\t" + node.node_value.type.name + ":\t"
+            to_return += "\t" + node.node_value.symbol.name + ":\t"
             to_return += str(node.node_value.value) + "\n"
         return to_return

@@ -188,9 +188,16 @@ def retrieve_material(n_clicks, formula):
 
     available_properties = material.available_properties()
 
-    rows = [
-        {'property': str(property)} for property in available_properties
-    ]
+    rows = []
+    for node in material.available_property_nodes():
+        if node.node_value.symbol.category != 'object':
+            rows.append(
+                {
+                    'Symbol': str(node.node_value.symbol.name),
+                    'Value': str(node.node_value.value),  # TODO: node.node_value.value? this has to make sense
+                    'Units': str(node.node_value.symbol.unit_as_string)
+                }
+            )
 
     table = dt.DataTable(
         rows=rows,
@@ -213,31 +220,9 @@ def retrieve_material(n_clicks, formula):
         html.H3('Graph'),
         material_graph_component,
         html.H3('Table'),
-        table,
-        dcc.Markdown('### Available Properties\n\n{}'.format("\n\n".join(available_properties))),
+        table
     ])
 
-
-material_layout = html.Div([
-    dcc.Input(
-        placeholder='Enter a formula...',
-        type='text',
-        value='',
-        id='formula-input'
-    ),
-    html.Button('Load Material', id='submit-formula'),
-    html.Button('Derive Properties', id='derive-properties'),
-    dcc.Checklist(
-        options=[
-            {'label': 'Aggregate Derived Properties', 'value': 'aggregate'}
-        ],
-        values=[],
-        labelStyle={'display': 'inline-block'}
-    ),
-    html.Br(),
-    html.Br(),
-    html.Div(id='material-content')
-])
 
 # routing, current routes defined are:
 # / for home page
