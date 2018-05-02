@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pymatgen import MPRester
 from pymatgen.core.structure import IStructure
-from propnet.core.symbols import Quantity
+from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 

@@ -19,7 +19,7 @@ class PropertiesTest(unittest.TestCase):
             'comment': ""
         }
 
-        sample_symbol_type = SymbolType(
+        sample_symbol_type = Symbol(
             name='youngs_modulus',#
             units= [1.0, [["gigapascal", 1.0]]], #ureg.parse_expression("GPa"),
             display_names=["Young's modulus", "Elastic modulus"],
@@ -29,7 +29,7 @@ class PropertiesTest(unittest.TestCase):
         )
 
         self.assertEqual(sample_symbol_type,
-                         SymbolType.from_dict(sample_symbol_type_dict))
+                         Symbol.from_dict(sample_symbol_type_dict))
 
     def test_property_formatting(self):
         """

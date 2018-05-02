@@ -9,7 +9,7 @@ from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
 from pybtex.style.labels import BaseLabelStyle
 
-from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, SymbolType
+from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, Symbol
 from propnet.models import DEFAULT_MODEL_NAMES
 
 from monty.serialization import loadfn
@@ -48,7 +48,7 @@ def graph_conversion(graph, highlight=False,
 
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
-        if n.node_type.name == 'SymbolType':
+        if n.node_type.name == 'Symbol':
             # property
             id = n.node_value.name
             label = n.node_value.display_names[0]
@@ -84,12 +84,12 @@ def graph_conversion(graph, highlight=False,
 
     for n1, n2 in graph.edges():
 
-        if n1.node_type.name == 'SymbolType':
+        if n1.node_type.name == 'Symbol':
             id_n1 = n1.node_value.name
         elif n1.node_type.name == 'Model':
             id_n1 = n1.node_value.__class__.__name__
 
-        if n2.node_type.name == 'SymbolType':
+        if n2.node_type.name == 'Symbol':
             id_n2 = n2.node_value.name
         elif n2.node_type.name == 'Model':
             id_n2 = n2.node_value.__class__.__name__

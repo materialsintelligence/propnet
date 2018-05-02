@@ -5,7 +5,7 @@ Module containing classes and methods for Material functionality in propnet code
 import networkx as nx
 
 from propnet.core.graph import PropnetNodeType, PropnetNode
-from propnet.core.symbols import Quantity
+from propnet.core.quantity import Quantity
 from propnet.core.utils import uuid
 
 
@@ -15,7 +15,7 @@ class Material:
 
     Under the Propnet infrastructure, Materials are the medium through which properties are
     communicated. While Model
-    and SymbolType nodes create a web of interconnected properties, Materials, as collections of
+    and Symbol nodes create a web of interconnected properties, Materials, as collections of
     Quantity nodes, provide
     concrete numbers to those properties. At runtime, a Material can be constructed and added to
     a Propnet instance,
@@ -69,7 +69,7 @@ class Material:
             void
         """
         property_node = PropnetNode(node_type=PropnetNodeType.Quantity, node_value=property)
-        property_symbol_node = PropnetNode(node_type=PropnetNodeType.SymbolType,
+        property_symbol_node = PropnetNode(node_type=PropnetNodeType.Symbol,
                                            node_value=property.type)
         self.graph.add_edge(self.root_node, property_node)
         self.graph.add_edge(property_node, property_symbol_node)
@@ -94,7 +94,7 @@ class Material:
 
     def remove_property_type(self, property_type):
         """
-        Removes all Quantity Nodes attached to this Material whose SymbolType matches the indicated
+        Removes all Quantity Nodes attached to this Material whose Symbol matches the indicated
         property_type text.
         Args:
             property_type (str): String indicating which property type is to be removed from this material.

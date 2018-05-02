@@ -16,7 +16,7 @@ class GraphTest(unittest.TestCase):
         Args:
             to_test: (networkx.multiDiGraph) graph instance to check.
             values: (list<id>) list of all node_type types that should be present in the graph.
-            node_type: (str) type of node being checked (ie. Quantity vs. SymbolType)
+            node_type: (str) type of node being checked (ie. Quantity vs. Symbol)
         Returns: (bool) indicating whether the graph passed or not.
         """
         checked = list()
@@ -65,17 +65,17 @@ class GraphTest(unittest.TestCase):
     def test_add_material(self):
         """
         Adding a material to a Propnet instance should lead to all the
-        Quantity, SymbolType, and Material nodes of the material getting
+        Quantity, Symbol, and Material nodes of the material getting
         added to the Propnet instance -- a disjoint union.
 
         Given a general Propnet instance, we add a material with custom
-        SymbolType, A, and two Quantity nodes of type A with different values.
+        Symbol, A, and two Quantity nodes of type A with different values.
 
         Returns: None
         """
         # Setup
         p = Propnet()
-        A = SymbolType('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        A = Symbol('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
         mat1 = Material()
         mat1.add_property(Quantity(A, 2, []))
         mat1.add_property(Quantity(A, 3, []))
@@ -91,13 +91,13 @@ class GraphTest(unittest.TestCase):
         # 2) Propnet instance should be appropriately updated.
 
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [Quantity(A, 2, []), Quantity(A, 3, [])], 'Quantity'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A], 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
 
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, [Quantity(A, 2, []), Quantity(A, 3, []), Quantity(A, 4, [])], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(
-            p.graph, list(DEFAULT_SYMBOL_TYPES.values()) + [A], 'SymbolType'))
+            p.graph, list(DEFAULT_SYMBOL_TYPES.values()) + [A], 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, [mat1, mat2], 'Material'))
 
@@ -132,7 +132,7 @@ class GraphTest(unittest.TestCase):
         ], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [
             Quantity('refractive_index', 1.3, []).type, Quantity('relative_permittivity', 2, []).type
-        ], 'SymbolType'))
+        ], 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(p.graph, [Quantity('refractive_index', 1, [])], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(p.graph, [mat2], 'Material'))
 
@@ -179,7 +179,7 @@ class GraphTest(unittest.TestCase):
         # Test
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m_outputs, 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, st_outputs, 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, st_outputs, 'Symbol'))
 
         self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, m_outputs, 'Material'))
@@ -241,11 +241,11 @@ class GraphTest(unittest.TestCase):
         # Test
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, st_outputs, 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, st_outputs, 'Symbol'))
 
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, st_outputs, 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, st_outputs, 'Symbol'))
 
         self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, m_outputs, 'Material'))
@@ -268,10 +268,10 @@ class GraphTest(unittest.TestCase):
 
         # Setup
 
-        a = SymbolType('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        b = SymbolType('b', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        c = SymbolType('c', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        e = SymbolType('e', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        a = Symbol('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        b = Symbol('b', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        c = Symbol('c', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        e = Symbol('e', ['A'], ['A'], units=[1.0, []], dimension=[1])
         symbol_type_dict = {'a': a, 'b': b, 'c': c, 'e': e}
 
         mat1 = Material()
@@ -342,16 +342,16 @@ class GraphTest(unittest.TestCase):
 
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [a, b, c, e], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [a, b, c, e], 'Symbol'))
 
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [b, c, e], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [b, c, e], 'Symbol'))
 
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, m1_s_outputs + m2_s_outputs + joint_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(
-            p.graph, [a, b, c, e], 'SymbolType'))
+            p.graph, [a, b, c, e], 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, [mat1, mat2], 'Material'))
 
@@ -366,10 +366,10 @@ class GraphTest(unittest.TestCase):
 
         # Setup
 
-        a = SymbolType('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        b = SymbolType('b', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        c = SymbolType('c', ['A'], ['A'], units=[1.0, []], dimension=[1])
-        constraint = SymbolType('constraint', ['C'], ['C'], category='object')
+        a = Symbol('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        b = Symbol('b', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        c = Symbol('c', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        constraint = Symbol('constraint', ['C'], ['C'], category='object')
         symbol_type_dict = {'a': a, 'b': b, 'c': c, 'constraint': constraint}
 
         a_example = Quantity(a, 2, [])
@@ -434,8 +434,8 @@ class GraphTest(unittest.TestCase):
 
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [a, b, c, constraint], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [a, b, c, constraint], 'Symbol'))
 
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [a, b, constraint], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [a, b, constraint], 'Symbol'))

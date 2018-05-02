@@ -57,7 +57,7 @@ class AbstractModel(metaclass=ABCMeta):
         (str) tags -> (list<str>) list of categories applicable to the model.
         (str) references -> (list<str>) list of informational links explaining / supporting the model
         (str) symbol_mapping -> (dict<str,str>) keys are symbols used in equations of the model,
-                                                values are SymbolType enum values (SymbolType.name field)
+                                                values are Symbol enum values (Symbol.name field)
         (str) connections -> (list<dict<str,list<str>>>)
                                                 Forms the list of outputs that can be generated from different sets of
                                                 inputs. The outer list contains dictionaries. These dictionaries contain
@@ -274,7 +274,7 @@ class AbstractModel(metaclass=ABCMeta):
     def symbol_mapping(self) -> Dict[str, str]:
         """
         A mapping of a symbol named used within the model to the canonical symbol name, e.g. {"E": "youngs_modulus"}
-        keys are symbols used in the model; values are SymbolType enum values (SymbolType.name field)
+        keys are symbols used in the model; values are Symbol enum values (Symbol.name field)
 
         Returns:
             (dict<str,str>): symbol mapping dictionary

@@ -10,7 +10,7 @@ from propnet import logger
 from propnet.models import DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
-from propnet.core.symbols import Quantity
+from propnet.core.quantity import Quantity
 from propnet.core.models import AbstractModel
 
 from enum import Enum
@@ -18,7 +18,7 @@ from collections import Counter, namedtuple
 from uuid import UUID, uuid4
 
 
-_ALLOWED_NODE_TYPES = ('Material', 'SymbolType', 'Quantity', 'Model')
+_ALLOWED_NODE_TYPES = ('Material', 'Symbol', 'Quantity', 'Model')
 
 
 # TODO: this should be replaced with a proper class
@@ -36,7 +36,7 @@ class Propnet:
     the nodes.
 
     Upon initialization a base graph is constructed consisting of all valid SymbolTypes and Models found in surrounding
-    folders. These are SymbolType and Model node_types respectively. Connections are formed between the nodes based on
+    folders. These are Symbol and Model node_types respectively. Connections are formed between the nodes based on
     given inputs and outputs of the models. At this stage the graph represents a symbolic web of properties without
     any actual input values.
 
@@ -89,13 +89,13 @@ class Propnet:
 
                 for input in inputs:
                     symbol_type = symbol_types[model.symbol_mapping[input]]
-                    input_node = PropnetNode(node_type=PropnetNodeType.SymbolType,
+                    input_node = PropnetNode(node_type=PropnetNodeType.Symbol,
                                              node_value=symbol_type)
                     self.graph.add_edge(input_node, model_node, route=idx)
 
                 for output in outputs:
                     symbol_type = symbol_types[model.symbol_mapping[output]]
-                    output_node = PropnetNode(node_type=PropnetNodeType.SymbolType,
+                    output_node = PropnetNode(node_type=PropnetNodeType.Symbol,
                                               node_value=symbol_type)
                     self.graph.add_edge(model_node, output_node, route=idx)
 
@@ -122,13 +122,13 @@ class Propnet:
         """
 
         Args:
-            symbol_types: {name:SymbolType}
+            symbol_types: {name:Symbol}
 
         Returns:
 
         """
         self._symbol_types.update(symbol_types)
-        symbol_type_nodes = [PropnetNode(node_type=PropnetNodeType.SymbolType,
+        symbol_type_nodes = [PropnetNode(node_type=PropnetNodeType.Symbol,
                                          node_value=symbol_type)
                              for symbol_type in symbol_types.values()]
 
@@ -186,7 +186,7 @@ class Propnet:
         Optional arguments limit the scope of which models or properties are tested.
             material parameter: produces output from models only if the input properties come from the specified material.
                                 mutated graph will modify the Material's graph instance as well as this graph instance.
-                                mutated graph will include edges from Material to Quantity to SymbolType.
+                                mutated graph will include edges from Material to Quantity to Symbol.
             property_type parameter: produces output from models only if the input properties are in the list.
 
         If no material parameter is specified, the generated SymbolNodes will be added with edges to and from
@@ -196,13 +196,13 @@ class Propnet:
 
         Args:
             material (Material): optional limit on which material's properties will be expanded (default: all materials)
-            property_type (list<SymbolType>): optional limit on which Symbols will be considered as input.
+            property_type (list<Symbol>): optional limit on which Symbols will be considered as input.
         Returns:
             void
         """
 
         ##
-        # Get existing Quantity nodes, 'active' SymbolType nodes, and 'candidate' Models.
+        # Get existing Quantity nodes, 'active' Symbol nodes, and 'candidate' Models.
         # Filter by provided material and property_type arguments.
         ##
 
@@ -226,7 +226,7 @@ class Propnet:
                     symbol_nodes.append(node)
 
         if property_type:
-            # Only SymbolType objects in the property_type list are candidates for evaluation.
+            # Only Symbol objects in the property_type list are candidates for evaluation.
             symbol_nodes = [node for node in symbol_nodes
                             if node.node_value.type in property_type]
 
@@ -234,7 +234,7 @@ class Propnet:
         active_symbol_type_nodes = set()
         for node in symbol_nodes:
             for neighbor in self.graph.neighbors(node):
-                if neighbor.node_type != PropnetNodeType.SymbolType:
+                if neighbor.node_type != PropnetNodeType.Symbol:
                     continue
                 active_symbol_type_nodes.add(neighbor)
 
@@ -250,7 +250,7 @@ class Propnet:
         # Define helper data structures and methods.
         ##
 
-        # Create fast-lookup data structure Dict[SymbolType, [Quantity]]:
+        # Create fast-lookup data structure Dict[Symbol, [Quantity]]:
         lookup_dict = {}
         for node in symbol_nodes:
             if node.node_value.type not in lookup_dict:
@@ -261,8 +261,8 @@ class Propnet:
         # Create fast-lookup data structure Dict[Quantity, MaterialNode]
         symbol_to_material_dict = {}
 
-        # Create fast-lookup data structure (str (SymbolType name) -> SymbolType)
-        symbol_type_nodes = self.nodes_by_type('SymbolType')
+        # Create fast-lookup data structure (str (Symbol name) -> Symbol)
+        symbol_type_nodes = self.nodes_by_type('Symbol')
         symbol_types = {x.node_value.name: x.node_value for x in symbol_type_nodes}
 
         def get_source_nodes(graph, node):
@@ -320,7 +320,7 @@ class Propnet:
                             i.append(c)
 
                 def get_types(symbols_in, legend, symbol_types):
-                    """Converts symbols used in equations to SymbolType objects"""
+                    """Converts symbols used in equations to Symbol objects"""
                     # TODO: move to model
                     to_return = []
                     for l in symbols_in:
@@ -330,13 +330,13 @@ class Propnet:
                         for i in l:
                             to_append = symbol_types.get(legend[i])
                             if not to_append:
-                                raise Exception('Error evaluating graph: Model references SymbolType'
+                                raise Exception('Error evaluating graph: Model references Symbol'
                                                 'objects that do not appear in the graph.')
                             out.append(to_append)
                         to_return.append(out)
                     return to_return
 
-                # list<list<SymbolType>>, representing sets of input properties the model accepts.
+                # list<list<Symbol>>, representing sets of input properties the model accepts.
                 type_inputs = get_types(sym_inputs, legend, symbol_types)
 
                 # Recursive helper method.
@@ -421,7 +421,7 @@ class Propnet:
                     symbol_node = PropnetNode(node_type=PropnetNodeType['Quantity'], node_value=symbol)
                     if symbol_node in self.graph:
                         continue
-                    symbol_type_node = PropnetNode(node_type=PropnetNodeType['SymbolType'], node_value=symbol.type)
+                    symbol_type_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol.type)
                     self.graph.add_edge(symbol_node, symbol_type_node)
                     for source_node in output_sources[i]:
                         self.graph.add_edge(source_node, symbol_node)
@@ -495,7 +495,7 @@ class Propnet:
             (str) representation of this Propnet object.
         """
         summary = ["Propnet Graph", ""]
-        property_type_nodes = self.nodes_by_type('SymbolType')
+        property_type_nodes = self.nodes_by_type('Symbol')
         summary += ["Quantity Types:"]
         for property_type_node in property_type_nodes:
             summary += ["\t " + property_type_node.node_value.display_names[0]]
@@ -510,7 +510,7 @@ class Propnet:
             summary += ["\t " + model_node.node_value.title]
             neighbors = self.graph.neighbors(model_node)
             for neighbor in neighbors:
-                if neighbor.node_type != PropnetNodeType['SymbolType']:
+                if neighbor.node_type != PropnetNodeType['Symbol']:
                     continue
                 summary += ["\t\t " + neighbor.node_value.display_names[0]]
         materials = list(self.nodes_by_type('Material'))
