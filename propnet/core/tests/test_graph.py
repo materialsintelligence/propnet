@@ -16,7 +16,7 @@ class GraphTest(unittest.TestCase):
         Args:
             to_test: (networkx.multiDiGraph) graph instance to check.
             values: (list<id>) list of all node_type types that should be present in the graph.
-            node_type: (str) type of node being checked (ie. Symbol vs. SymbolType)
+            node_type: (str) type of node being checked (ie. Quantity vs. SymbolType)
         Returns: (bool) indicating whether the graph passed or not.
         """
         checked = list()
@@ -65,11 +65,11 @@ class GraphTest(unittest.TestCase):
     def test_add_material(self):
         """
         Adding a material to a Propnet instance should lead to all the
-        Symbol, SymbolType, and Material nodes of the material getting
+        Quantity, SymbolType, and Material nodes of the material getting
         added to the Propnet instance -- a disjoint union.
 
         Given a general Propnet instance, we add a material with custom
-        SymbolType, A, and two Symbol nodes of type A with different values.
+        SymbolType, A, and two Quantity nodes of type A with different values.
 
         Returns: None
         """
@@ -77,10 +77,10 @@ class GraphTest(unittest.TestCase):
         p = Propnet()
         A = SymbolType('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
         mat1 = Material()
-        mat1.add_property(Symbol(A, 2, []))
-        mat1.add_property(Symbol(A, 3, []))
+        mat1.add_property(Quantity(A, 2, []))
+        mat1.add_property(Quantity(A, 3, []))
         mat2 = Material()
-        mat2.add_property(Symbol(A, 4, []))
+        mat2.add_property(Quantity(A, 4, []))
         p.add_material(mat2)
 
         # Add Material
@@ -90,12 +90,12 @@ class GraphTest(unittest.TestCase):
         # 1) Material's graph should be unchanged.
         # 2) Propnet instance should be appropriately updated.
 
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [Symbol(A, 2, []), Symbol(A, 3, [])], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [Quantity(A, 2, []), Quantity(A, 3, [])], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A], 'SymbolType'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
 
         self.assertTrue(GraphTest.check_graph_symbols(
-            p.graph, [Symbol(A, 2, []), Symbol(A, 3, []), Symbol(A, 4, [])], 'Symbol'))
+            p.graph, [Quantity(A, 2, []), Quantity(A, 3, []), Quantity(A, 4, [])], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, list(DEFAULT_SYMBOL_TYPES.values()) + [A], 'SymbolType'))
         self.assertTrue(GraphTest.check_graph_symbols(
@@ -104,7 +104,7 @@ class GraphTest(unittest.TestCase):
     def test_remove_material(self):
         """
         Adding a removing a material from a Propnet instance should lead
-        to all the Symbol nodes from the specific material being removed
+        to all the Quantity nodes from the specific material being removed
         from the Propnet instance, along with the material's node. The
         material's graph should not be altered.
 
@@ -118,22 +118,22 @@ class GraphTest(unittest.TestCase):
         # Setup
         p = Propnet()
         mat1 = Material()
-        mat1.add_property(Symbol('refractive_index', 1, []))
-        mat1.add_property(Symbol('relative_permittivity', 2, []))
+        mat1.add_property(Quantity('refractive_index', 1, []))
+        mat1.add_property(Quantity('relative_permittivity', 2, []))
         mat2 = Material()
-        mat2.add_property(Symbol('refractive_index', 1, []))
+        mat2.add_property(Quantity('refractive_index', 1, []))
         p.add_material(mat1)
         p.add_material(mat2)
         p.remove_material(mat1)
 
         # Test Graph
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [
-            Symbol('refractive_index', 1, []), Symbol('relative_permittivity', 2, [])
-        ], 'Symbol'))
+            Quantity('refractive_index', 1, []), Quantity('relative_permittivity', 2, [])
+        ], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [
-            Symbol('refractive_index', 1.3, []).type, Symbol('relative_permittivity', 2, []).type
+            Quantity('refractive_index', 1.3, []).type, Quantity('relative_permittivity', 2, []).type
         ], 'SymbolType'))
-        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [Symbol('refractive_index', 1, [])], 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(p.graph, [Quantity('refractive_index', 1, [])], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(p.graph, [mat2], 'Material'))
 
     def testSingleMaterialDegeneratePropertySinglePropagationProperties(self):
@@ -150,24 +150,24 @@ class GraphTest(unittest.TestCase):
         # Setup
         propnet = Propnet()
         mat1 = Material()
-        mat1.add_property(Symbol(DEFAULT_SYMBOL_TYPES['relative_permeability'], 1, None))
-        mat1.add_property(Symbol(DEFAULT_SYMBOL_TYPES['relative_permeability'], 2, None))
-        mat1.add_property(Symbol(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 3, None))
-        mat1.add_property(Symbol(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 5, None))
+        mat1.add_property(Quantity(DEFAULT_SYMBOL_TYPES['relative_permeability'], 1, None))
+        mat1.add_property(Quantity(DEFAULT_SYMBOL_TYPES['relative_permeability'], 2, None))
+        mat1.add_property(Quantity(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 3, None))
+        mat1.add_property(Quantity(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 5, None))
         propnet.add_material(mat1)
 
         propnet.evaluate(material=mat1)
 
         # Expected outputs
         s_outputs = []
-        s_outputs.append(Symbol('relative_permeability', 1, None))
-        s_outputs.append(Symbol('relative_permeability', 2, None))
-        s_outputs.append(Symbol('relative_permittivity', 3, None))
-        s_outputs.append(Symbol('relative_permittivity', 5, None))
-        s_outputs.append(Symbol('refractive_index', 3 ** 0.5, None))
-        s_outputs.append(Symbol('refractive_index', 5 ** 0.5, None))
-        s_outputs.append(Symbol('refractive_index', 6 ** 0.5, None))
-        s_outputs.append(Symbol('refractive_index', 10 ** 0.5, None))
+        s_outputs.append(Quantity('relative_permeability', 1, None))
+        s_outputs.append(Quantity('relative_permeability', 2, None))
+        s_outputs.append(Quantity('relative_permittivity', 3, None))
+        s_outputs.append(Quantity('relative_permittivity', 5, None))
+        s_outputs.append(Quantity('refractive_index', 3 ** 0.5, None))
+        s_outputs.append(Quantity('refractive_index', 5 ** 0.5, None))
+        s_outputs.append(Quantity('refractive_index', 6 ** 0.5, None))
+        s_outputs.append(Quantity('refractive_index', 10 ** 0.5, None))
 
         m_outputs = [mat1]
 
@@ -177,11 +177,11 @@ class GraphTest(unittest.TestCase):
         st_outputs.append(DEFAULT_SYMBOL_TYPES['refractive_index'])
 
         # Test
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m_outputs, 'Material'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, st_outputs, 'SymbolType'))
 
-        self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, m_outputs, 'Material'))
 
     def testDoubleMaterialNonDegeneratePropertySinglePropagationProperties(self):
@@ -199,10 +199,10 @@ class GraphTest(unittest.TestCase):
         propnet = Propnet()
         mat1 = Material()
         mat2 = Material()
-        mat1.add_property(Symbol('relative_permeability', 1, None))
-        mat2.add_property(Symbol('relative_permeability', 2, None))
-        mat1.add_property(Symbol('relative_permittivity', 3, None))
-        mat2.add_property(Symbol('relative_permittivity', 5, None))
+        mat1.add_property(Quantity('relative_permeability', 1, None))
+        mat2.add_property(Quantity('relative_permeability', 2, None))
+        mat1.add_property(Quantity('relative_permittivity', 3, None))
+        mat2.add_property(Quantity('relative_permittivity', 5, None))
         propnet.add_material(mat1)
         propnet.add_material(mat2)
 
@@ -210,28 +210,28 @@ class GraphTest(unittest.TestCase):
 
         # Expected propnet outputs
         s_outputs = []
-        s_outputs.append(Symbol('relative_permeability', 1, None))
-        s_outputs.append(Symbol('relative_permeability', 2, None))
-        s_outputs.append(Symbol('relative_permittivity', 3, None))
-        s_outputs.append(Symbol('relative_permittivity', 5, None))
-        s_outputs.append(Symbol('refractive_index', 3 ** 0.5, None))
-        s_outputs.append(Symbol('refractive_index', 5 ** 0.5, None))
-        s_outputs.append(Symbol('refractive_index', 6 ** 0.5, None))
-        s_outputs.append(Symbol('refractive_index', 10 ** 0.5, None))
+        s_outputs.append(Quantity('relative_permeability', 1, None))
+        s_outputs.append(Quantity('relative_permeability', 2, None))
+        s_outputs.append(Quantity('relative_permittivity', 3, None))
+        s_outputs.append(Quantity('relative_permittivity', 5, None))
+        s_outputs.append(Quantity('refractive_index', 3 ** 0.5, None))
+        s_outputs.append(Quantity('refractive_index', 5 ** 0.5, None))
+        s_outputs.append(Quantity('refractive_index', 6 ** 0.5, None))
+        s_outputs.append(Quantity('refractive_index', 10 ** 0.5, None))
 
         m_outputs = [mat1, mat2]
 
         # Expected mat_1 outputs
         m1_s_outputs = []
-        m1_s_outputs.append(Symbol('relative_permeability', 1, None))
-        m1_s_outputs.append(Symbol('relative_permittivity', 3, None))
-        m1_s_outputs.append(Symbol('refractive_index', 3 ** 0.5, None))
+        m1_s_outputs.append(Quantity('relative_permeability', 1, None))
+        m1_s_outputs.append(Quantity('relative_permittivity', 3, None))
+        m1_s_outputs.append(Quantity('refractive_index', 3 ** 0.5, None))
 
         #Expected mat_2 outputs
         m2_s_outputs = []
-        m2_s_outputs.append(Symbol('relative_permeability', 2, None))
-        m2_s_outputs.append(Symbol('relative_permittivity', 5, None))
-        m2_s_outputs.append(Symbol('refractive_index', 10 ** 0.5, None))
+        m2_s_outputs.append(Quantity('relative_permeability', 2, None))
+        m2_s_outputs.append(Quantity('relative_permittivity', 5, None))
+        m2_s_outputs.append(Quantity('refractive_index', 10 ** 0.5, None))
 
         st_outputs = []
         st_outputs.append(DEFAULT_SYMBOL_TYPES['relative_permeability'])
@@ -239,15 +239,15 @@ class GraphTest(unittest.TestCase):
         st_outputs.append(DEFAULT_SYMBOL_TYPES['refractive_index'])
 
         # Test
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, st_outputs, 'SymbolType'))
 
-        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, st_outputs, 'SymbolType'))
 
-        self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(propnet.graph, m_outputs, 'Material'))
 
     def testDoubleMaterialNonDegeneratePropertyDoublePropagationProperies(self):
@@ -276,10 +276,10 @@ class GraphTest(unittest.TestCase):
 
         mat1 = Material()
         mat2 = Material()
-        mat1.add_property(Symbol(a, 2, []))
-        mat1.add_property(Symbol(b, 3, []))
-        mat2.add_property(Symbol(b, 5, []))
-        mat2.add_property(Symbol(c, 7, []))
+        mat1.add_property(Quantity(a, 2, []))
+        mat1.add_property(Quantity(b, 3, []))
+        mat2.add_property(Quantity(b, 5, []))
+        mat2.add_property(Quantity(c, 7, []))
 
         class Model1 (AbstractModel):
             def __init__(self, symbol_types=None):
@@ -326,30 +326,30 @@ class GraphTest(unittest.TestCase):
 
         # Test
         m1_s_outputs = []
-        m1_s_outputs.append(Symbol(a, 2, []))
-        m1_s_outputs.append(Symbol(b, 3, []))
-        m1_s_outputs.append(Symbol(c, 6, []))
-        m1_s_outputs.append(Symbol(e, 2, []))
+        m1_s_outputs.append(Quantity(a, 2, []))
+        m1_s_outputs.append(Quantity(b, 3, []))
+        m1_s_outputs.append(Quantity(c, 6, []))
+        m1_s_outputs.append(Quantity(e, 2, []))
 
         m2_s_outputs = []
-        m2_s_outputs.append(Symbol(b, 5, []))
-        m2_s_outputs.append(Symbol(c, 7, []))
-        m2_s_outputs.append(Symbol(e, 7/5, []))
+        m2_s_outputs.append(Quantity(b, 5, []))
+        m2_s_outputs.append(Quantity(c, 7, []))
+        m2_s_outputs.append(Quantity(e, 7 / 5, []))
 
         joint_outputs = []
-        joint_outputs.append(Symbol(e, 6/5, []))
-        joint_outputs.append(Symbol(e, 7/3, []))
+        joint_outputs.append(Quantity(e, 6 / 5, []))
+        joint_outputs.append(Quantity(e, 7 / 3, []))
 
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [a, b, c, e], 'SymbolType'))
 
-        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [b, c, e], 'SymbolType'))
 
         self.assertTrue(GraphTest.check_graph_symbols(
-            p.graph, m1_s_outputs + m2_s_outputs + joint_outputs, 'Symbol'))
+            p.graph, m1_s_outputs + m2_s_outputs + joint_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, [a, b, c, e], 'SymbolType'))
         self.assertTrue(GraphTest.check_graph_symbols(
@@ -372,10 +372,10 @@ class GraphTest(unittest.TestCase):
         constraint = SymbolType('constraint', ['C'], ['C'], category='object')
         symbol_type_dict = {'a': a, 'b': b, 'c': c, 'constraint': constraint}
 
-        a_example = Symbol(a, 2, [])
-        b_example = Symbol(b, 3, [])
-        const1 = Symbol(constraint, True, [])
-        const2 = Symbol(constraint, False, [])
+        a_example = Quantity(a, 2, [])
+        b_example = Quantity(b, 3, [])
+        const1 = Quantity(constraint, True, [])
+        const2 = Quantity(constraint, False, [])
 
         class Model1 (AbstractModel):
             def __init__(self, symbol_types=None):
@@ -422,20 +422,20 @@ class GraphTest(unittest.TestCase):
 
         # Test
         m1_s_outputs = []
-        m1_s_outputs.append(Symbol(a, 2, []))
-        m1_s_outputs.append(Symbol(b, 3, []))
-        m1_s_outputs.append(Symbol(c, 6, []))
-        m1_s_outputs.append(Symbol(constraint, True, []))
+        m1_s_outputs.append(Quantity(a, 2, []))
+        m1_s_outputs.append(Quantity(b, 3, []))
+        m1_s_outputs.append(Quantity(c, 6, []))
+        m1_s_outputs.append(Quantity(constraint, True, []))
 
         m2_s_outputs = []
-        m2_s_outputs.append(Symbol(a, 2, []))
-        m2_s_outputs.append(Symbol(b, 3, []))
-        m2_s_outputs.append(Symbol(constraint, False, []))
+        m2_s_outputs.append(Quantity(a, 2, []))
+        m2_s_outputs.append(Quantity(b, 3, []))
+        m2_s_outputs.append(Quantity(constraint, False, []))
 
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [a, b, c, constraint], 'SymbolType'))
 
-        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Symbol'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [a, b, constraint], 'SymbolType'))

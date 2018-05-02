@@ -1,5 +1,5 @@
 from propnet.core.models import AbstractModel
-from propnet.core.symbols import Symbol
+from propnet.core.symbols import Quantity
 
 class PerovskiteClassifier(AbstractModel):
 
@@ -23,6 +23,6 @@ class PerovskiteClassifier(AbstractModel):
                 radii.append(sp.ionic_radius)
 
         return {
-            'r_A': Symbol('ionic_radius', max(radii), tags='anion_A'),
-            'r_B': Symbol('ionic_radius', min(radii), tags='anion_B')
+            'r_A': Quantity('ionic_radius', max(radii), tags='anion_A'),
+            'r_B': Quantity('ionic_radius', min(radii), tags='anion_B')
         }

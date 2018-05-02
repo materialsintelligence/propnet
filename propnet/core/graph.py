@@ -10,7 +10,7 @@ from propnet import logger
 from propnet.models import DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
-from propnet.core.symbols import Symbol
+from propnet.core.symbols import Quantity
 from propnet.core.models import AbstractModel
 
 from enum import Enum
@@ -18,7 +18,7 @@ from collections import Counter, namedtuple
 from uuid import UUID, uuid4
 
 
-_ALLOWED_NODE_TYPES = ('Material', 'SymbolType', 'Symbol', 'Model')
+_ALLOWED_NODE_TYPES = ('Material', 'SymbolType', 'Quantity', 'Model')
 
 
 # TODO: this should be replaced with a proper class
@@ -41,7 +41,7 @@ class Propnet:
     any actual input values.
 
     Materials and Properties / Conditions can be added at runtime using appropriate support methods. These methods
-    dynamically create additional PropnetNodes and edges on the graph of Material and Symbol node_types respectively.
+    dynamically create additional PropnetNodes and edges on the graph of Material and Quantity node_types respectively.
 
     Given a set of Materials and Properties / Conditions, the symbolic web of properties can be utilized to predict
     values of connected properties on demand.
@@ -186,12 +186,12 @@ class Propnet:
         Optional arguments limit the scope of which models or properties are tested.
             material parameter: produces output from models only if the input properties come from the specified material.
                                 mutated graph will modify the Material's graph instance as well as this graph instance.
-                                mutated graph will include edges from Material to Symbol to SymbolType.
+                                mutated graph will include edges from Material to Quantity to SymbolType.
             property_type parameter: produces output from models only if the input properties are in the list.
 
         If no material parameter is specified, the generated SymbolNodes will be added with edges to and from
         corresponding SymbolTypeNodes specifically. No connections will be made to existing Material nodes because
-        a Symbol might be derived from a combination of materials in this case. Likewise existing Material nodes' graph
+        a Quantity might be derived from a combination of materials in this case. Likewise existing Material nodes' graph
         instances will not be mutated in this case.
 
         Args:
@@ -202,13 +202,13 @@ class Propnet:
         """
 
         ##
-        # Get existing Symbol nodes, 'active' SymbolType nodes, and 'candidate' Models.
+        # Get existing Quantity nodes, 'active' SymbolType nodes, and 'candidate' Models.
         # Filter by provided material and property_type arguments.
         ##
 
         if not material:
             # All symbol_nodes are candidates for evaluation.
-            symbol_nodes = list(self.nodes_by_type('Symbol'))
+            symbol_nodes = list(self.nodes_by_type('Quantity'))
         else:
             # Only symbol_nodes connected to the given Material object are candidates for evaluation.
             material_nodes = self.nodes_by_type('Material')
@@ -222,7 +222,7 @@ class Propnet:
                 raise ValueError('Specified material not found.')
             symbol_nodes = []
             for node in self.graph.neighbors(material_node):
-                if node.node_type == PropnetNodeType['Symbol'] and node not in symbol_nodes:
+                if node.node_type == PropnetNodeType['Quantity'] and node not in symbol_nodes:
                     symbol_nodes.append(node)
 
         if property_type:
@@ -250,7 +250,7 @@ class Propnet:
         # Define helper data structures and methods.
         ##
 
-        # Create fast-lookup data structure Dict[SymbolType, [Symbol]]:
+        # Create fast-lookup data structure Dict[SymbolType, [Quantity]]:
         lookup_dict = {}
         for node in symbol_nodes:
             if node.node_value.type not in lookup_dict:
@@ -258,7 +258,7 @@ class Propnet:
             else:
                 lookup_dict[node.node_value.type] += [node.node_value]
 
-        # Create fast-lookup data structure Dict[Symbol, MaterialNode]
+        # Create fast-lookup data structure Dict[Quantity, MaterialNode]
         symbol_to_material_dict = {}
 
         # Create fast-lookup data structure (str (SymbolType name) -> SymbolType)
@@ -268,8 +268,8 @@ class Propnet:
         def get_source_nodes(graph, node):
             # TODO: store material uuid(s) in symbol (?)
             """
-            Given a Symbol node on the graph, returns a list of connected material nodes.
-            This list symbolizes the set of materials for which this Symbol is a property.
+            Given a Quantity node on the graph, returns a list of connected material nodes.
+            This list symbolizes the set of materials for which this Quantity is a property.
             Args:
                 graph (networkx.MultiDiGraph): graph on which the node is stored.
                 node (PropnetNode): node on the graph whose connected material nodes are to be found.
@@ -348,7 +348,7 @@ class Propnet:
                     Args:
                         symbols (list<str>):
                             one set of input symbols required by the model.
-                        candidate_props (list<list<Symbol>>):
+                        candidate_props (list<list<Quantity>>):
                             list of potential values that can be plugged into each symbol,
                             the outer list corresponds by ordering to the symbols list,
                             the inner list gives values that can be plugged in to each symbol.
@@ -356,7 +356,7 @@ class Propnet:
                             internal parameter used for recursion, says which symbol is being enumerated, should
                                      be set to the final index value of symbols.
                     Returns:
-                        (list<dict<String, Symbol>>) list of dictionaries giving symbol strings mapped to values.
+                        (list<dict<String, Quantity>>) list of dictionaries giving symbol strings mapped to values.
                     """
                     current_level = []
                     candidates = candidate_props[level]
@@ -378,7 +378,7 @@ class Propnet:
                         return to_return
 
                 # Get candidate input Symbols for the given model.
-                # Skip over any input Symbol lists that have already been evaluated.
+                # Skip over any input Quantity lists that have already been evaluated.
                 for i in range(0, len(type_inputs)):
                     candidate_properties = []
                     for j in range(0, len(type_inputs[i])):
@@ -413,12 +413,12 @@ class Propnet:
                         prop_type = symbol_types.get(legend.get(k))
                         if not prop_type:
                             continue
-                        symbol_outputs.append(Symbol(prop_type, v, None))
+                        symbol_outputs.append(Quantity(prop_type, v, None))
                         output_sources.append(entry['source'])
                 for i in range(0, len(symbol_outputs)):
                     # Add outputs to graph.
                     symbol = symbol_outputs[i]
-                    symbol_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol)
+                    symbol_node = PropnetNode(node_type=PropnetNodeType['Quantity'], node_value=symbol)
                     if symbol_node in self.graph:
                         continue
                     symbol_type_node = PropnetNode(node_type=PropnetNodeType['SymbolType'], node_value=symbol.type)
@@ -496,7 +496,7 @@ class Propnet:
         """
         summary = ["Propnet Graph", ""]
         property_type_nodes = self.nodes_by_type('SymbolType')
-        summary += ["Symbol Types:"]
+        summary += ["Quantity Types:"]
         for property_type_node in property_type_nodes:
             summary += ["\t " + property_type_node.node_value.display_names[0]]
             neighbors = self.graph.neighbors(property_type_node)
@@ -518,7 +518,7 @@ class Propnet:
             summary += ["Materials:"]
         for material_node in materials:
             summary += ["\t " + str(material_node.node_value.uuid)]
-            for property in filter(lambda n: n.node_type == PropnetNodeType['Symbol'],
+            for property in filter(lambda n: n.node_type == PropnetNodeType['Quantity'],
                                    self.graph.neighbors(material_node)):
                 summary += ["\t\t " + property.node_value.type.display_names[0] +
                             "\t:\t" + str(property.node_value)]

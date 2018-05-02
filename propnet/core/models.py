@@ -69,9 +69,9 @@ class AbstractModel(metaclass=ABCMeta):
         (str) description -> (str) markdown-formatted text further describing / explaining the model.
 
     The following methods may be overridden for custom model behavior:
-        constraints () -> dict<str,lambda(Symbol)->bool>
-            Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
-            indicating whether that Symbol meets all necessary conditions for validity.
+        constraints () -> dict<str,lambda(Quantity)->bool>
+            Returns a dictionary mapping symbol to a lambda function that takes in a Quantity object and returns a bool
+            indicating whether that Quantity meets all necessary conditions for validity.
         plug_in (dict<str,id>) -> dict<str,id>
             Given a dictionary specifying a value for a set of input symbols, returns the predicted value of the model
             for those inputs.
@@ -140,8 +140,8 @@ class AbstractModel(metaclass=ABCMeta):
 
     def check_constraints(self, constraint_inputs):
         """
-        Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
-        indicating whether that Symbol meets all necessary conditions for validity.
+        Returns a dictionary mapping symbol to a lambda function that takes in a Quantity object and returns a bool
+        indicating whether that Quantity meets all necessary conditions for validity.
 
         Args:
             constraint_inputs (dict<str, float>): Mapping from string symbol to symbol value

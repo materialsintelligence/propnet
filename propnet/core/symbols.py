@@ -167,13 +167,13 @@ class SymbolType(MSONable):
         return self.name.__hash__()
 
 
-class Symbol(MSONable):
+class Quantity(MSONable):
     """
     Class storing the value of a property.
 
-    Constructed by the user to assign values to abstract SymbolType types. Represents the fact that a given Symbol
+    Constructed by the user to assign values to abstract SymbolType types. Represents the fact that a given Quantity
     has a given value. They are added to the PropertyNetwork graph in the context of Material objects that store
-    collections of Symbol objects representing that a given material has those properties.
+    collections of Quantity objects representing that a given material has those properties.
 
     Attributes:
         type: (SymbolType) the type of information that is represented by the associated value.
@@ -196,15 +196,15 @@ class Symbol(MSONable):
                     the name of a SymbolType object, identifies the type of data stored
                     in the property.
             value (id): value of the property.
-            tags (list<str>): list of strings storing metadata from Symbol evaluation.
+            tags (list<str>): list of strings storing metadata from Quantity evaluation.
             provenance (id): time of creation of the object.
         """
 
-        # TODO: move Symbol + SymbolType to separate files to remove circular import
+        # TODO: move Quantity + SymbolType to separate files to remove circular import
         from propnet.symbols import DEFAULT_SYMBOL_TYPES
         if isinstance(symbol_type, str):
             if symbol_type not in DEFAULT_SYMBOL_TYPES.keys():
-                raise ValueError("Symbol type {} not recognized".format(symbol_type))
+                raise ValueError("Quantity type {} not recognized".format(symbol_type))
             symbol_type = DEFAULT_SYMBOL_TYPES[symbol_type]
         
         if type(value) == float or type(value) == int:
@@ -222,7 +222,7 @@ class Symbol(MSONable):
     def value(self):
         """
         Returns:
-            (id): value of the Symbol
+            (id): value of the Quantity
         """
         return self._value
 
@@ -230,7 +230,7 @@ class Symbol(MSONable):
     def type(self):
         """
         Returns:
-            (SymbolType): SymbolType of the Symbol
+            (SymbolType): SymbolType of the Quantity
         """
         return self._symbol_type
 
@@ -238,7 +238,7 @@ class Symbol(MSONable):
     def tags(self):
         """
         Returns:
-            (list<str>): tags of the Symbol
+            (list<str>): tags of the Quantity
         """
         return self._tags
 
@@ -246,7 +246,7 @@ class Symbol(MSONable):
     def provenance(self):
         """
         Returns:
-            (id): time of creation of the Symbol
+            (id): time of creation of the Quantity
         """
         return self._provenance
 
@@ -254,7 +254,7 @@ class Symbol(MSONable):
         return hash(self.type.name)
 
     def __eq__(self, other):
-        if not isinstance(other, Symbol):
+        if not isinstance(other, Quantity):
             return False
         if self.type != other.type:
             return False

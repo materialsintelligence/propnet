@@ -33,7 +33,7 @@ class PropertiesTest(unittest.TestCase):
 
     def test_property_formatting(self):
         """
-        Goes through the Symbol .yaml files and ensures the definitions are complete.
+        Goes through the Quantity .yaml files and ensures the definitions are complete.
         """
         for st in DEFAULT_SYMBOL_TYPES.values():
             self.assertTrue(st.name is not None and st.name.isidentifier())
@@ -52,6 +52,6 @@ class PropertiesTest(unittest.TestCase):
 
     #def test_serialization(self):
 #
-    #    symbol = Symbol('band_gap', 3.0)
+    #    symbol = Quantity('band_gap', 3.0)
 #
     #    self.assertDictEqual(symbol.as_dict(), {})
