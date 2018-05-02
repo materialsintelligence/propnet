@@ -168,7 +168,6 @@ app.scripts.append_script({
 })
 
 
-
 @app.callback(
     Output('material-content', 'children'),
     [Input('submit-formula', 'n_clicks')],
@@ -222,6 +221,28 @@ def retrieve_material(n_clicks, formula):
         html.H3('Table'),
         table
     ])
+
+
+material_layout = html.Div([
+    dcc.Input(
+        placeholder='Enter a formula...',
+        type='text',
+        value='',
+        id='formula-input'
+    ),
+    html.Button('Load Material', id='submit-formula'),
+    html.Button('Derive Properties', id='derive-properties'),
+    dcc.Checklist(
+        options=[
+            {'label': 'Aggregate Derived Properties', 'value': 'aggregate'}
+        ],
+        values=[],
+        labelStyle={'display': 'inline-block'}
+    ),
+    html.Br(),
+    html.Br(),
+    html.Div(id='material-content')
+])
 
 
 # routing, current routes defined are:
