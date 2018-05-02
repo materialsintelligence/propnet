@@ -10,7 +10,7 @@ from propnet.core.materials import Material
 
 # maps propnet symbol names to mp (mapidoc) keypath
 MP_FROM_PROPNET_NAME_MAPPING = {
-    'pretty_formula': 'anonymous_formula',
+    'pretty_formula': 'pretty_formula',
     'elastic_tensor_voigt': 'elasticity.elastic_tensor',
     'elastic_anisotropy': 'elasticity.elastic_anisotropy',
     'relative_permittivity': 'diel.poly_total',

@@ -1,7 +1,7 @@
 ---
 title: Debye model
 tags: [thermal]
-references: ['']
+references: []
 symbol_mapping: {
   p: atomic_density,
   v: sound_velocity_mean,

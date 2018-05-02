@@ -21,11 +21,7 @@ from sympy.parsing.sympy_parser import parse_expr
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 from propnet import logger
 from propnet import ureg
-from propnet.core.utils import uuid
-
-# TODO: add pint integration
-# TODO: decide on interface for conditions, assumptions etc.
-# TODO: decide on interface for multiple-material models.
+from propnet.core.utils import uuid, references_to_bib
 
 
 def load_metadata(path):
@@ -333,7 +329,7 @@ class AbstractModel(metaclass=ABCMeta):
 
         refs = self._metadata.get('references', [])
 
-        return refs
+        return references_to_bib(refs)
 
     def __hash__(self):
         return self.uuid.__hash__()

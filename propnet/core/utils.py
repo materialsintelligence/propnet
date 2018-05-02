@@ -40,15 +40,16 @@ def references_to_bib(refs):
         elif ref.startswith('@'):
             parsed_ref = ref
         elif ref.startswith('url:'):
+            # uses arbitrary key
             url = ref.split('url:')[1]
-            parsed_ref = """@article\{{url:{0},
+            parsed_ref = """@misc{{url:{0},
             url = {{{1}}}
-            \}}""".format(url.__hash__(), url)
+            }}""".format(str(abs(url.__hash__()))[0:6], url)
         elif ref.startswith('doi:'):
             doi = ref.split('doi:')[1]
             parsed_ref = content_negotiation(doi, format='bibentry')
         else:
-            raise ValueError('Unknown reference style for'
+            raise ValueError('Unknown reference style for '
                              'reference: {} (please either '
                              'supply a BibTeX string, or a string '
                              'starting with url: followed by a URL or '
@@ -58,6 +59,8 @@ def references_to_bib(refs):
             _REFERENCE_CACHE[ref] = parsed_ref
             dumpfn(_REFERENCE_CACHE, _REFERENCE_CACHE_PATH)
 
-        parsed_refs.append(ref)
+        print(parsed_ref)
 
-    return refs
+        parsed_refs.append(parsed_ref)
+
+    return parsed_refs

@@ -1,6 +1,8 @@
 import unittest
+
 from propnet.core.symbols import *
 from propnet import ureg
+
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
 
@@ -18,7 +20,7 @@ class PropertiesTest(unittest.TestCase):
         }
 
         sample_symbol_type = SymbolType(
-            name='youngs_modulus',
+            name='youngs_modulus',#
             units= [1.0, [["gigapascal", 1.0]]], #ureg.parse_expression("GPa"),
             display_names=["Young's modulus", "Elastic modulus"],
             display_symbols=["E"],
@@ -47,3 +49,9 @@ class PropertiesTest(unittest.TestCase):
     def test_all_properties(self):
         self.assertEqual(str(DEFAULT_SYMBOL_TYPES['density'].units),
                          '1.0 gram / centimeter ** 3')
+
+    #def test_serialization(self):
+#
+    #    symbol = Symbol('band_gap', 3.0)
+#
+    #    self.assertDictEqual(symbol.as_dict(), {})

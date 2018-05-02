@@ -15,10 +15,13 @@ from propnet.core.models import AbstractModel
 
 from enum import Enum
 from collections import Counter, namedtuple
+from uuid import UUID, uuid4
 
 
-_ALLOWED_NODE_TYPES = ['Material', 'SymbolType', 'Symbol', 'Model']
+_ALLOWED_NODE_TYPES = ('Material', 'SymbolType', 'Symbol', 'Model')
 
+
+# TODO: this should be replaced with a proper class
 PropnetNodeType = Enum('PropnetNodeType', _ALLOWED_NODE_TYPES)
 PropnetNode = namedtuple('PropnetNode', ['node_type', 'node_value'])
 PropnetNode.__repr__ = lambda self: "{}<{}>".format(self.node_type.name,
@@ -224,12 +227,8 @@ class Propnet:
 
         if property_type:
             # Only SymbolType objects in the property_type list are candidates for evaluation.
-            c = 0
-            while c < len(symbol_nodes):
-                if symbol_nodes[c].node_value.type not in property_type:
-                    symbol_nodes.remove(symbol_nodes[c])
-                else:
-                    c += 1
+            symbol_nodes = [node for node in symbol_nodes
+                            if node.node_value.type in property_type]
 
         # Get set of SymbolTypes that have values provided.
         active_symbol_type_nodes = set()
@@ -251,7 +250,7 @@ class Propnet:
         # Define helper data structures and methods.
         ##
 
-        # Create fast-lookup data structure (SymbolType -> Symbol):
+        # Create fast-lookup data structure Dict[SymbolType, [Symbol]]:
         lookup_dict = {}
         for node in symbol_nodes:
             if node.node_value.type not in lookup_dict:
@@ -259,14 +258,15 @@ class Propnet:
             else:
                 lookup_dict[node.node_value.type] += [node.node_value]
 
-        # Create fast-lookup data structure (Symbol -> MaterialNode)
-        source_dict = {}
+        # Create fast-lookup data structure Dict[Symbol, MaterialNode]
+        symbol_to_material_dict = {}
 
         # Create fast-lookup data structure (str (SymbolType name) -> SymbolType)
         symbol_type_nodes = self.nodes_by_type('SymbolType')
         symbol_types = {x.node_value.name: x.node_value for x in symbol_type_nodes}
 
         def get_source_nodes(graph, node):
+            # TODO: store material uuid(s) in symbol (?)
             """
             Given a Symbol node on the graph, returns a list of connected material nodes.
             This list symbolizes the set of materials for which this Symbol is a property.
@@ -274,7 +274,7 @@ class Propnet:
                 graph (networkx.MultiDiGraph): graph on which the node is stored.
                 node (PropnetNode): node on the graph whose connected material nodes are to be found.
             Returns:
-                (list<PropnetNode>): list of material type nodes that are connected to this node.
+                (List[PropnetNode]): list of material type nodes that are connected to this node.
             """
             to_return = []
             for n in graph.in_edges(node):
@@ -283,7 +283,7 @@ class Propnet:
             return to_return
 
         for node in symbol_nodes:
-            source_dict[node.node_value] = get_source_nodes(self.graph, node)
+            symbol_to_material_dict[node.node_value] = get_source_nodes(self.graph, node)
 
         ##
         # For each candidate model, check if we have active property types to match inputs and conditions.
@@ -292,18 +292,24 @@ class Propnet:
         # If certain outputs have already been generated, do not generate duplicate outputs.
         ##
 
-        # Keeps track of number of Symbol_Types derived from the current loop iteration.
+        # Keeps track of number of SymbolTypes derived from the current loop iteration.
         # Loop terminates when no new properties are derived from any models.
 
         original_models = {x for x in candidate_models}
         evaluated_models = set()
         next_round_models = candidate_models
-        while True:
+
+        added_on_loop = True
+
+        while added_on_loop:
             added_on_loop = False
             candidate_models = next_round_models
             next_round_models = set()
-            while len(candidate_models) > 0:
-                model = candidate_models.pop()
+
+            for model in candidate_models:
+
+                # TODO: move get_types to model
+
                 outputs = []
                 # Cache necessary data from model_node: input symbols, types, and conditions.
                 legend = model.symbol_mapping
@@ -315,6 +321,7 @@ class Propnet:
 
                 def get_types(symbols_in, legend, symbol_types):
                     """Converts symbols used in equations to SymbolType objects"""
+                    # TODO: move to model
                     to_return = []
                     for l in symbols_in:
                         if not isinstance(l, list):
@@ -334,6 +341,7 @@ class Propnet:
 
                 # Recursive helper method.
                 # Look through all input sets and match with all combinations from lookup_dict.
+                # TODO: look at itertools.permutations
                 def gen_input_dicts(symbols, candidate_props, level):
                     """
                     Recursively generates all possible combinations of input arguments.
@@ -375,7 +383,8 @@ class Propnet:
                     candidate_properties = []
                     for j in range(0, len(type_inputs[i])):
                         candidate_properties.append(lookup_dict.get(type_inputs[i][j], []))
-                    input_sets = gen_input_dicts(sym_inputs[i], candidate_properties, len(candidate_properties)-1)
+                    input_sets = gen_input_dicts(sym_inputs[i], candidate_properties,
+                                                 len(candidate_properties)-1)
                     for input_set in input_sets:
                         if not model.check_constraints(input_set):
                             continue
@@ -383,7 +392,7 @@ class Propnet:
                         sourcing = set()
                         for (k, v) in input_set.items():
                             plug_in_set[k] = v.value
-                            for elem in source_dict[v]:
+                            for elem in symbol_to_material_dict[v]:
                                 sourcing.add(elem)
                         outputs.append({"output": model.evaluate(plug_in_set), "source": sourcing})
 
@@ -430,7 +439,7 @@ class Propnet:
                     """
 
                     # Update helper data structures etc. for next cycle.
-                    source_dict[symbol] = get_source_nodes(self.graph, symbol_node)
+                    symbol_to_material_dict[symbol] = get_source_nodes(self.graph, symbol_node)
                     if symbol.type not in lookup_dict:
                         lookup_dict[symbol.type] = [symbol]
                     else:
@@ -440,8 +449,6 @@ class Propnet:
                             if neighbor.node_type == PropnetNodeType['Model']:
                                 if neighbor.node_value not in original_models:
                                     next_round_models.add(neighbor.node_value)
-            if not added_on_loop:
-                break
 
     def shortest_path(self, property_one: str, property_two: str):
         """ """

@@ -24,6 +24,9 @@ class ModelTest(unittest.TestCase):
                 self.fail('Failed to load model {}: {}'.format(model_name, e))
 
     def test_model_formatting(self):
+
+        # TODO: clean up tests (self.assertNotNone), test reference format too
+
         for m in DEFAULT_MODELS.values():
             m = m()
             self.assertTrue(m.name is not None and m.name.isidentifier())
@@ -36,7 +39,8 @@ class ModelTest(unittest.TestCase):
                 self.assertTrue(isinstance(key, str) and key.isidentifier())
                 self.assertTrue(isinstance(m.symbol_mapping[key], str) and
                                 m.symbol_mapping[key] in DEFAULT_SYMBOL_TYPE_NAMES)
-            self.assertTrue(m.connections is not None and isinstance(m.connections, list) and len(m.connections) > 0)
+            self.assertTrue(m.connections is not None and isinstance(m.connections, list)
+                            and len(m.connections) > 0)
             for item in m.connections:
                 self.assertTrue(item is not None)
                 self.assertTrue(isinstance(item, dict) and 'inputs' in item.keys() and 'outputs' in item.keys())
@@ -72,25 +76,26 @@ class ModelTest(unittest.TestCase):
         Returns:
             None
         """
-        L = SymbolType('L', [1.0, [['centimeter', 1.0]]], ['L'], ['L'], [1], '', validate=False)
-        A = SymbolType('A', [1.0, [['centimeter', 2.0]]], ['A'], ['A'], [1], '', validate=False)
+        L = SymbolType('l', ['L'], ['L'], units=[1.0, [['centimeter', 1.0]]], dimension=[1])
+        A = SymbolType('a', ['A'], ['A'], units=[1.0, [['centimeter', 2.0]]], dimension=[1])
 
         class GetArea(AbstractModel):
             def __init__(self):
                 AbstractModel.__init__(
                     self,
                     metadata={
-                        'symbol_mapping': {'l1': 'L', 'l2': 'L', 'a': 'A'},
+                        'symbol_mapping': {'l1': 'l', 'l2': 'l', 'a': 'a'},
                         'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
                         'equations': ['a - l1 * l2']
                     },
                     symbol_types={
-                        'L': L, 'A': A
+                        'l': L, 'a': A
                     }
                 )
 
         model = GetArea()
-        out = model.evaluate({'l1': 1 * ureg.Quantity.from_tuple([1.0, [['meter', 1.0]]]), 'l2': 2 * L.units})
+        out = model.evaluate({'l1': 1 * ureg.Quantity.from_tuple([1.0, [['meter', 1.0]]]),
+                              'l2': 2 * L.units})
 
         self.assertTrue(math.isclose(out['a'].magnitude, 200.0))
         self.assertTrue(out['a'].units == A.units)

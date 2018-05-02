@@ -16,6 +16,7 @@ from monty.serialization import loadfn
 
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
 
+
 def graph_conversion(graph, highlight=False,
                      highlight_green=(),
                      highlight_yellow=(),
@@ -197,11 +198,11 @@ def parse_path(pathname):
         for property in DEFAULT_SYMBOL_TYPE_NAMES:
             if pathname.startswith('/property/{}'.format(property)):
                 value = property
-    #elif pathname == '/load_material':
-    #    mode = 'load_material'
-    #elif pathname.startswith('/load_material'):
-    #    mode = 'load_material'
-    #    value = pathname.split('/')[-1]
+    elif pathname == '/load_material':
+        mode = 'load_material'
+    elif pathname.startswith('/load_material'):
+        mode = 'load_material'
+        value = pathname.split('/')[-1]
 
     return {
         'mode': mode,

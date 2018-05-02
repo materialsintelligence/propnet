@@ -1,9 +1,7 @@
 name: pretty_formula
-units:
-- 1.0
-- []
 display_names: ['Formula']
 display_symbols: ['Formula']
 dimension: 1
 comment: ''
 category: object
+object_type: str

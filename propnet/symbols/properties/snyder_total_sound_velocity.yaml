@@ -1,7 +1,7 @@
 name: snyder_total_sound_velocity
 units:
 - 1.0
-- - [meters, 1.0]
+- - [meter, 1.0]
   - [seconds, -1.0]
 display_names: [Snyder's total sound velocity]
 display_symbols: [v_tot]

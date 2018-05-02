@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 from propnet import log_stream, ureg
 from propnet.web.layouts_models import model_layout, models_index
-from propnet.web.layouts_properties import property_layout, properties_index
+from propnet.web.layouts_symbols import symbol_layout, symbols_index
 from propnet.models import DEFAULT_MODEL_NAMES
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
 
@@ -18,7 +18,8 @@ from force_graph import ForceGraphComponent
 from propnet.web.utils import graph_conversion, parse_path
 from propnet.core.graph import Propnet
 
-from propnet.ext.matproj import PROPNET_PROPERTIES_ON_MP, MP_FROM_PROPNET_NAME_MAPPING
+from propnet.ext.matproj import PROPNET_PROPERTIES_ON_MP, MP_FROM_PROPNET_NAME_MAPPING,\
+    materials_from_formula
 
 from pymatgen import MPRester
 
@@ -31,7 +32,7 @@ app = dash.Dash()
 server = app.server
 app.config.supress_callback_exceptions = True  # TODO: remove this?
 app.scripts.config.serve_locally = True
-app.title = "The Hitchhikers Guide to Materials Science"
+app.title = ">>snappy title goes here<<"
 route = dcc.Location(id='url', refresh=False)
 
 cache = Cache(app.server, config={
@@ -107,8 +108,8 @@ layout_menu = html.Div(style={'textAlign': 'center'}, children=[
     dcc.Link('All Symbols', href='/property'),
     html.Span(' • '),
     dcc.Link('All Models', href='/model'),
-    #html.Span(' • '),
-    #dcc.Link('Load Material', href='/load_material'),
+    html.Span(' • '),
+    dcc.Link('Load Material', href='/load_material'),
 ])
 
 # home page
@@ -142,7 +143,7 @@ Propnet initialization log:
 # header
 app.layout = html.Div(children=[
     route,
-    html.H3("The Hitchhikers Guide to Materials Science "),
+    html.H3(app.title),
     html.Br(),
     graph_component,
     html.Br(),
@@ -165,61 +166,63 @@ app.scripts.append_script({
 
 
 
-#from enum import Enum
-#@app.callback(
-#    Output('material-content', 'children'),
-#    [Input('submit-formula', 'n_clicks')],
-#    [State('formula-input', 'value')]
-#)
-#def retrieve_material(n_clicks, formula):
-#    mpid = mpid_from_formula(formula)
+@app.callback(
+    Output('material-content', 'children'),
+    [Input('submit-formula', 'n_clicks')],
+    [State('formula-input', 'value')]
+)
+def retrieve_material(n_clicks, formula):
+
+    materials = materials_from_formula(formula)
+
+    if not materials:
+        return "Material not found."
+
+    material = materials[0]
+
+    p = Propnet()
+    g = p.graph
+
+    available_properties = material.available_properties()
+
+    #p.evaluate(material)
+
+    #derivable_properties = []
+    #models_to_evaluate = []
+
+    ## TODO: remove demo code
+    ## this shouldn't be here
+    ## it is also dumb dumb code
+    ## and worse! it's wrong too, doesn't take into account routes
+    #for node in p.graph:
+    #    if not isinstance(node, Enum):
+    #        in_edges = [e1 for e1, e2 in p.graph.in_edges(node)]
+    #        in_edge_names = [in_edge.name for in_edge in in_edges]
+    #        if all([prop_name in available_properties for prop_name in in_edge_names]):
+    #            for e1, e2 in p.graph.out_edges(node):
+    #                if isinstance(e2, Enum):
+    #                    if e2.name not in available_properties:
+    #                        models_to_evaluate.append(node.__name__)
+    #                        models_to_evaluate.append(e2.name)
+    #                        derivable_properties.append(e2.name)
 #
-#    material = materials_from_mp_ids([mpid])[0]
 #
-#    p = Propnet()
-#    g = p.graph
-#
-#    available_properties = material.available_properties()
-#
-#    derivable_properties = []
-#    models_to_evaluate = []
-#
-#    # TODO: remove demo code
-#    # this shouldn't be here
-#    # it is also dumb dumb code
-#    # and worse! it's wrong too, doesn't take into account routes
-#    for node in p.graph:
-#        if not isinstance(node, Enum):
-#            in_edges = [e1 for e1, e2 in p.graph.in_edges(node)]
-#            in_edge_names = [in_edge.name for in_edge in in_edges]
-#            if all([prop_name in available_properties for prop_name in in_edge_names]):
-#                for e1, e2 in p.graph.out_edges(node):
-#                    if isinstance(e2, Enum):
-#                        if e2.name not in available_properties:
-#                            models_to_evaluate.append(node.__name__)
-#                            models_to_evaluate.append(e2.name)
-#                            derivable_properties.append(e2.name)
-#
-#
-#    material_graph_data = graph_conversion(g, highlight=True,
-#                                           highlight_green=available_properties,
-#                                           highlight_yellow=models_to_evaluate)
-#    material_graph_component = ForceGraphComponent(id='propnet-graph',
-#                                                   graphData=material_graph_data,
-#                                                   width=800,
-#                                                   height=350)
-#
-#    if mpid:
-#        return html.Div([
-#            dcc.Link(mpid, href="https://materialsproject.org/materials/{}".format(mpid)),
-#            material_graph_component,
-#            html.Br(),
-#            dcc.Markdown('### Available Properties\n\n{}'.format("\n\n".join(available_properties))),
-#            html.Br(),
-#            dcc.Markdown('### Derivable Properties\n\n{}'.format("\n\n".join(derivable_properties))),
-#        ])
-#    else:
-#        return None
+    material_graph_data = graph_conversion(g, highlight=True,
+                                           highlight_green=available_properties)
+    material_graph_component = ForceGraphComponent(id='propnet-graph',
+                                                   graphData=material_graph_data,
+                                                   width=800,
+                                                   height=350)
+
+    return html.Div([
+        html.Div(str(material)),
+        #dcc.Link(mpid, href="https://materialsproject.org/materials/{}".format(mpid)),
+        material_graph_component,
+        #html.Br(),
+        dcc.Markdown('### Available Properties\n\n{}'.format("\n\n".join(available_properties))),
+        #html.Br(),
+        #dcc.Markdown('### Derivable Properties\n\n{}'.format("\n\n".join(derivable_properties))),
+    ])
 
 material_layout = html.Div([
     dcc.Input(
@@ -263,9 +266,9 @@ def display_page(pathname):
         elif path_info['mode'] == 'property':
             if path_info['value']:
                 property_name = path_info['value']
-                return property_layout(property_name)
+                return symbol_layout(property_name)
             else:
-                return properties_index()
+                return symbols_index()
         elif path_info['mode'] == 'load_material':
             return material_layout
         else:

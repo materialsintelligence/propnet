@@ -1,9 +1,7 @@
 name: structure_oxi
-units:
-- 1.0
-- []
 display_names: ['Crystallographic structure (oxidation-state decorated)']
 display_symbols: ['Structure']
 dimension: 1
 comment: ''
 category: object
+object_type: pymatgen.core.structure.Structure

@@ -2,6 +2,7 @@ import numpy as np
 import sys
 
 from typing import *
+from uuid import UUID
 from propnet import logger, ureg
 from pybtex.database.input.bibtex import Parser
 from monty.json import MSONable
@@ -36,13 +37,12 @@ class SymbolType(MSONable):
         comment: (str)
     """
 
-    __slots__ = ['name', 'units', 'display_names', 'display_symbols',
-                 'dimension', 'comment', 'category']
-
-    # TODO rename to category
-    def __init__(self, name, units, display_names,
-                 display_symbols, dimension,
-                 comment, category='property', validate=True):
+    # TODO: this really needs to be rethought, possibly split into separate classes
+    # or a base class + subclasses for symbols with units vs those without
+    def __init__(self, name, display_names,
+                 display_symbols, units=None, dimension=None,
+                 object_type=None,
+                 comment=None, category='property'):
         """
         Parses and validates a series of inputs into a PropertyMetadata tuple, a format that
         PropNet expects.
@@ -62,41 +62,42 @@ class SymbolType(MSONable):
             possible citations.
             category (str): 'property', if a property of a material, or 'condition' for other
             variables (e.g. temperature)
-            validate (bool): flag indicating if error checking should occur on the inputs.
         """
 
-        if validate:
+        if category not in ('property', 'condition', 'object'):
+            raise ValueError('Unsupported property category')
 
-            if category not in ('property', 'condition', 'object'):
-                raise ValueError('Unsupported property category')
+        if not name.isidentifier() or not name.islower():
+            raise ValueError("The canonical name ({}) is not valid.".format(name))
 
-            if not name.isidentifier() or not name.islower():
-                raise ValueError("The canonical name ({}) is not valid.".format(name))
+        if display_names is None or len(display_names) == 0:
+            raise ValueError("Insufficient display names for ({}).".format(name))
 
-            if display_names is None or len(display_names) == 0:
-                raise ValueError("Insufficient display names for ({}).".format(name))
+        if category in ('property', 'condition'):
 
-            if category in ('property', 'condition'):
+            if object_type is not None:
+                raise ValueError("Cannot define an object type for a {}.".format(category))
 
-                # additional checking
+            try:
+                np.zeros(dimension)
+            except TypeError:
+                raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
 
-                try:
-                    np.zeros(dimension)
-                except TypeError:
-                    raise TypeError("Dimensions provided for ({}) are invalid.".format(id))
+            try:
+                units = ureg.Quantity.from_tuple(units)
+                # calling dimensionality explicitly checks units are defined in registry
+                units.dimensionality
+            except Exception as e:
+                raise ValueError("Problem loading units for {}: {}".format(name, e))
 
-        try:
-            new_units = ureg.Quantity.from_tuple(units)
-            # calling dimensionality explicitly checks units are defined in registry
-            new_units.dimensionality
-            units = new_units
-        except Exception as e:
-            if validate:
-                raise ValueError('Problem loading units for {}: {}'.format(name, e))
+        else:
+            if units is not None:
+                raise ValueError("Cannot define units for generic objects.")
 
         self.name = name
         self.category = category
         self.units = units
+        self.object_type = object_type
         self.display_names = display_names
         self.display_symbols = display_symbols
         self.dimension = dimension  # TODO: rename to shape?
@@ -120,11 +121,13 @@ class SymbolType(MSONable):
             return '{} tensor'.format(self.dimension)
 
     @property
-    def unit_as_string(self):
+    def unit_as_string(self) -> str:
         """
-        Returns:
-            (str): unit of property as human-readable string
+        Returns: unit of property as human-readable string
         """
+
+        if self.units.dimensionless:
+            return "dimensionless"
 
         # self.units has both the units and (sometimes) a
         # prefactor (its magnitude)
@@ -134,6 +137,19 @@ class SymbolType(MSONable):
             unit_str = '{} {}'.format(self.units.magnitude, unit_str)
 
         return unit_str
+
+    @property
+    def compatible_units(self) -> List[str]:
+        """
+        Returns: list of compatible units as strings
+        """
+        try:
+            compatible_units = [str(unit) for unit in self.units.compatible_units()]
+            return compatible_units
+        except KeyError:
+            logger.warn("Could not find compatible units for {}".format(self.name))
+            return []
+
 
     def __eq__(self, other):
         return self.name == other.name
@@ -165,7 +181,12 @@ class Symbol(MSONable):
         tags: (list<str>)
     """
 
-    def __init__(self, symbol_type, value, tags,
+    def __init__(self,
+                 symbol_type: Union[str, SymbolType],
+                 value: Any,
+                 tags: Optional[List[str]]=None,
+                 material: Union[str, UUID]=None,
+                 sources: List=None,
                  provenance=None):
         """
         Parses inputs for constructing a Property object.
@@ -250,5 +271,4 @@ class Symbol(MSONable):
         return True
 
     def __str__(self):
-        to_return = '<' + self._symbol_type.name + ', ' + str(self._value) + ', ' + str(self._tags) + '>'
-        return to_return
+        return "<{}, {}, {}>".format(self.type.name, self.value, self.tags)

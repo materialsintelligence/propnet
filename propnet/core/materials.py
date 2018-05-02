@@ -6,8 +6,7 @@ import networkx as nx
 
 from propnet.core.graph import PropnetNodeType, PropnetNode
 from propnet.core.symbols import Symbol
-
-from uuid import uuid4
+from propnet.core.utils import uuid
 
 
 class Material:
@@ -39,7 +38,7 @@ class Material:
         """
         Creates a Material instance, instantiating a trivial graph of one node.
         """
-        self.uuid = uuid4()
+        self.uuid = uuid()
 
         self.graph = nx.MultiDiGraph()
         self.root_node = PropnetNode(node_type=PropnetNodeType.Material, node_value=self)

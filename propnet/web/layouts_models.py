@@ -113,18 +113,6 @@ def model_layout(model_name):
 
     layouts['Symbols'] = symbols
 
-    if hasattr(model, 'equations'):
-        equations = html.Div(
-            children=[
-                html.Div(
-                    className='row',
-                    children=[equation])
-                for equation in model.equations
-            ]
-        )
-
-        layouts['Equations'] = equations
-
     layouts['Description'] = dcc.Markdown(model.description)
 
     if model.test_data:

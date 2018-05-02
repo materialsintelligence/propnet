@@ -1,6 +1,6 @@
 ---
 title: Approximate electron mobility from effective mass and bulk modulus
-tags: [electronic]
+tags: [electronic, empirical]
 references: ["doi:10.1039/C4EE03157A"]
 symbol_mapping: {
   m_e: electron_effective_mass,
