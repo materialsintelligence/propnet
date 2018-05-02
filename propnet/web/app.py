@@ -33,7 +33,7 @@ app = dash.Dash()
 server = app.server
 app.config.supress_callback_exceptions = True  # TODO: remove this?
 app.scripts.config.serve_locally = True
-app.title = ">>snappy title goes here<<"
+app.title = ">>snappy project name to go here<<"
 route = dcc.Location(id='url', refresh=False)
 
 cache = Cache(app.server, config={
@@ -151,7 +151,8 @@ app.layout = html.Div(children=[
     layout_menu,
     html.Br(),
     html.Div(id='page-content'),
-    dt.DataTable(rows=[{}])
+    # hidden table to make sure table component loads (Dash limitation; may be removed in future)
+    html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'})
 ], style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 50})
 
 # standard Dash css, fork this for a custom theme
@@ -200,28 +201,6 @@ def retrieve_material(n_clicks, formula):
         id='datatable'
     )
 
-    #p.evaluate(material)
-
-    #derivable_properties = []
-    #models_to_evaluate = []
-
-    ## TODO: remove demo code
-    ## this shouldn't be here
-    ## it is also dumb dumb code
-    ## and worse! it's wrong too, doesn't take into account routes
-    #for node in p.graph:
-    #    if not isinstance(node, Enum):
-    #        in_edges = [e1 for e1, e2 in p.graph.in_edges(node)]
-    #        in_edge_names = [in_edge.name for in_edge in in_edges]
-    #        if all([prop_name in available_properties for prop_name in in_edge_names]):
-    #            for e1, e2 in p.graph.out_edges(node):
-    #                if isinstance(e2, Enum):
-    #                    if e2.name not in available_properties:
-    #                        models_to_evaluate.append(node.__name__)
-    #                        models_to_evaluate.append(e2.name)
-    #                        derivable_properties.append(e2.name)
-#
-#
     material_graph_data = graph_conversion(g, highlight=True,
                                            highlight_green=available_properties)
     material_graph_component = ForceGraphComponent(id='propnet-graph',
@@ -230,7 +209,6 @@ def retrieve_material(n_clicks, formula):
                                                    height=350)
 
     return html.Div([
-        html.Div(str(material)),
         #dcc.Link(mpid, href="https://materialsproject.org/materials/{}".format(mpid)),
         html.H3('Graph'),
         material_graph_component,
@@ -249,6 +227,13 @@ material_layout = html.Div([
     ),
     html.Button('Load Material', id='submit-formula'),
     html.Button('Derive Properties', id='derive-properties'),
+    dcc.Checklist(
+        options=[
+            {'label': 'Aggregate Derived Properties', 'value': 'aggregate'}
+        ],
+        values=[],
+        labelStyle={'display': 'inline-block'}
+    ),
     html.Br(),
     html.Br(),
     html.Div(id='material-content')
