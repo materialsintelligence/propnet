@@ -75,7 +75,7 @@ class GraphTest(unittest.TestCase):
         """
         # Setup
         p = Propnet()
-        A = SymbolType('A', [1.0, []], ['A'], ['A'], [1], '', validate=False)
+        A = SymbolType('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
         mat1 = Material()
         mat1.add_property(Symbol(A, 2, []))
         mat1.add_property(Symbol(A, 3, []))
@@ -268,18 +268,18 @@ class GraphTest(unittest.TestCase):
 
         # Setup
 
-        A = SymbolType('A', [1.0, []], ['A'], ['A'], [1], '', validate=False)
-        B = SymbolType('B', [1.0, []], ['B'], ['B'], [1], '', validate=False)
-        C = SymbolType('C', [1.0, []], ['C'], ['C'], [1], '', validate=False)
-        E = SymbolType('E', [1.0, []], ['E'], ['E'], [1], '', validate=False)
-        symbol_type_dict = {'A': A, 'B': B, 'C': C, 'E': E}
+        a = SymbolType('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        b = SymbolType('b', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        c = SymbolType('c', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        e = SymbolType('e', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        symbol_type_dict = {'a': a, 'b': b, 'c': c, 'e': e}
 
         mat1 = Material()
         mat2 = Material()
-        mat1.add_property(Symbol(A, 2, []))
-        mat1.add_property(Symbol(B, 3, []))
-        mat2.add_property(Symbol(B, 5, []))
-        mat2.add_property(Symbol(C, 7, []))
+        mat1.add_property(Symbol(a, 2, []))
+        mat1.add_property(Symbol(b, 3, []))
+        mat2.add_property(Symbol(b, 5, []))
+        mat2.add_property(Symbol(c, 7, []))
 
         class Model1 (AbstractModel):
             def __init__(self, symbol_types=None):
@@ -287,9 +287,9 @@ class GraphTest(unittest.TestCase):
                         'title': 'model1',
                         'tags': [],
                         'references': [],
-                        'symbol_mapping': {'a': 'A',
-                                           'b': 'B',
-                                           'c': 'C'
+                        'symbol_mapping': {'a': 'a',
+                                           'b': 'b',
+                                           'c': 'c'
                                            },
                         'connections': [{
                                          'inputs': ['a', 'b'],
@@ -306,9 +306,9 @@ class GraphTest(unittest.TestCase):
                         'title': 'model2',
                         'tags': [],
                         'references': [],
-                        'symbol_mapping': {'e': 'E',
-                                           'c': 'C',
-                                           'b': 'B'},
+                        'symbol_mapping': {'e': 'e',
+                                           'c': 'c',
+                                           'b': 'b'},
                         'connections': [{'inputs': ['c', 'b'],
                                          'outputs': ['e']
                                          }],
@@ -326,32 +326,32 @@ class GraphTest(unittest.TestCase):
 
         # Test
         m1_s_outputs = []
-        m1_s_outputs.append(Symbol(A, 2, []))
-        m1_s_outputs.append(Symbol(B, 3, []))
-        m1_s_outputs.append(Symbol(C, 6, []))
-        m1_s_outputs.append(Symbol(E, 2, []))
+        m1_s_outputs.append(Symbol(a, 2, []))
+        m1_s_outputs.append(Symbol(b, 3, []))
+        m1_s_outputs.append(Symbol(c, 6, []))
+        m1_s_outputs.append(Symbol(e, 2, []))
 
         m2_s_outputs = []
-        m2_s_outputs.append(Symbol(B, 5, []))
-        m2_s_outputs.append(Symbol(C, 7, []))
-        m2_s_outputs.append(Symbol(E, 7/5, []))
+        m2_s_outputs.append(Symbol(b, 5, []))
+        m2_s_outputs.append(Symbol(c, 7, []))
+        m2_s_outputs.append(Symbol(e, 7/5, []))
 
         joint_outputs = []
-        joint_outputs.append(Symbol(E, 6/5, []))
-        joint_outputs.append(Symbol(E, 7/3, []))
+        joint_outputs.append(Symbol(e, 6/5, []))
+        joint_outputs.append(Symbol(e, 7/3, []))
 
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A, B, C, E], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [a, b, c, e], 'SymbolType'))
 
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [B, C, E], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [b, c, e], 'SymbolType'))
 
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, m1_s_outputs + m2_s_outputs + joint_outputs, 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(
-            p.graph, [A, B, C, E], 'SymbolType'))
+            p.graph, [a, b, c, e], 'SymbolType'))
         self.assertTrue(GraphTest.check_graph_symbols(
             p.graph, [mat1, mat2], 'Material'))
 
@@ -366,16 +366,16 @@ class GraphTest(unittest.TestCase):
 
         # Setup
 
-        A = SymbolType('A', [1.0, []], ['A'], ['A'], [1], '', validate=False)
-        B = SymbolType('B', [1.0, []], ['B'], ['B'], [1], '', validate=False)
-        C = SymbolType('C', [1.0, []], ['C'], ['C'], [1], '', validate=False)
-        Constraint = SymbolType('Constraint', [1.0, []], ['C'], ['C'], [True], '', validate=False)
-        symbol_type_dict = {'A': A, 'B': B, 'C': C, 'Constraint': Constraint}
+        a = SymbolType('a', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        b = SymbolType('b', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        c = SymbolType('c', ['A'], ['A'], units=[1.0, []], dimension=[1])
+        constraint = SymbolType('constraint', ['C'], ['C'], category='object')
+        symbol_type_dict = {'a': a, 'b': b, 'c': c, 'constraint': constraint}
 
-        a = Symbol(A, 2, [])
-        b = Symbol(B, 3, [])
-        const1 = Symbol(Constraint, True, [])
-        const2 = Symbol(Constraint, False, [])
+        a_example = Symbol(a, 2, [])
+        b_example = Symbol(b, 3, [])
+        const1 = Symbol(constraint, True, [])
+        const2 = Symbol(constraint, False, [])
 
         class Model1 (AbstractModel):
             def __init__(self, symbol_types=None):
@@ -383,10 +383,10 @@ class GraphTest(unittest.TestCase):
                         'title': 'model1',
                         'tags': [],
                         'references': [],
-                        'symbol_mapping': {'a': 'A',
-                                           'b': 'B',
-                                           'c': 'C',
-                                           'const': 'Constraint'
+                        'symbol_mapping': {'a': 'a',
+                                           'b': 'b',
+                                           'c': 'c',
+                                           'const': 'constraint'
                                            },
                         'connections': [{
                                          'inputs': ['a', 'b'],
@@ -403,13 +403,13 @@ class GraphTest(unittest.TestCase):
                 return ins['const']
 
         mat1 = Material()
-        mat1.add_property(a)
-        mat1.add_property(b)
+        mat1.add_property(a_example)
+        mat1.add_property(b_example)
         mat1.add_property(const1)
 
         mat2 = Material()
-        mat2.add_property(a)
-        mat2.add_property(b)
+        mat2.add_property(a_example)
+        mat2.add_property(b_example)
         mat2.add_property(const2)
 
         p = Propnet(materials=[mat1, mat2],
@@ -422,20 +422,20 @@ class GraphTest(unittest.TestCase):
 
         # Test
         m1_s_outputs = []
-        m1_s_outputs.append(Symbol(A, 2, []))
-        m1_s_outputs.append(Symbol(B, 3, []))
-        m1_s_outputs.append(Symbol(C, 6, []))
-        m1_s_outputs.append(Symbol(Constraint, True, []))
+        m1_s_outputs.append(Symbol(a, 2, []))
+        m1_s_outputs.append(Symbol(b, 3, []))
+        m1_s_outputs.append(Symbol(c, 6, []))
+        m1_s_outputs.append(Symbol(constraint, True, []))
 
         m2_s_outputs = []
-        m2_s_outputs.append(Symbol(A, 2, []))
-        m2_s_outputs.append(Symbol(B, 3, []))
-        m2_s_outputs.append(Symbol(Constraint, False, []))
+        m2_s_outputs.append(Symbol(a, 2, []))
+        m2_s_outputs.append(Symbol(b, 3, []))
+        m2_s_outputs.append(Symbol(constraint, False, []))
 
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, m1_s_outputs, 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [mat1], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A, B, C, Constraint], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [a, b, c, constraint], 'SymbolType'))
 
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, m2_s_outputs, 'Symbol'))
         self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [mat2], 'Material'))
-        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [A, B, Constraint], 'SymbolType'))
+        self.assertTrue(GraphTest.check_graph_symbols(mat2.graph, [a, b, constraint], 'SymbolType'))
