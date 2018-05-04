@@ -48,13 +48,13 @@ def import_materials(mp_ids, api_key=None):
         mat = Material()
         tag_string = data['task_id']
         if not data['structure'] is None:
-            mat.add_property(Quantity('structure', data['structure'], [tag_string]))
-            mat.add_property(Quantity('lattice_unit_cell', data['structure'].lattice.matrix, [tag_string]))
+            mat.add_quantity(Quantity('structure', data['structure'], [tag_string]))
+            mat.add_quantity(Quantity('lattice_unit_cell', data['structure'].lattice.matrix, [tag_string]))
         for key in data:
             if not data[key] is None and key in PROPNET_FROM_MP_NAME_MAPPING.keys():
                 prop_type = DEFAULT_SYMBOL_TYPES[PROPNET_FROM_MP_NAME_MAPPING[key]]
                 p = Quantity(prop_type, data[key], [tag_string])
-                mat.add_property(p)
+                mat.add_quantity(p)
         to_return.append(mat)
     return to_return
 

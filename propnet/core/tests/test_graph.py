@@ -77,10 +77,10 @@ class GraphTest(unittest.TestCase):
         p = Propnet()
         A = Symbol('a', ['A'], ['A'], units=[1.0, []], shape=[1])
         mat1 = Material()
-        mat1.add_property(Quantity(A, 2, []))
-        mat1.add_property(Quantity(A, 3, []))
+        mat1.add_quantity(Quantity(A, 2, []))
+        mat1.add_quantity(Quantity(A, 3, []))
         mat2 = Material()
-        mat2.add_property(Quantity(A, 4, []))
+        mat2.add_quantity(Quantity(A, 4, []))
         p.add_material(mat2)
 
         # Add Material
@@ -118,10 +118,10 @@ class GraphTest(unittest.TestCase):
         # Setup
         p = Propnet()
         mat1 = Material()
-        mat1.add_property(Quantity('refractive_index', 1, []))
-        mat1.add_property(Quantity('relative_permittivity', 2, []))
+        mat1.add_quantity(Quantity('refractive_index', 1, []))
+        mat1.add_quantity(Quantity('relative_permittivity', 2, []))
         mat2 = Material()
-        mat2.add_property(Quantity('refractive_index', 1, []))
+        mat2.add_quantity(Quantity('refractive_index', 1, []))
         p.add_material(mat1)
         p.add_material(mat2)
         p.remove_material(mat1)
@@ -150,10 +150,10 @@ class GraphTest(unittest.TestCase):
         # Setup
         propnet = Propnet()
         mat1 = Material()
-        mat1.add_property(Quantity(DEFAULT_SYMBOL_TYPES['relative_permeability'], 1, None))
-        mat1.add_property(Quantity(DEFAULT_SYMBOL_TYPES['relative_permeability'], 2, None))
-        mat1.add_property(Quantity(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 3, None))
-        mat1.add_property(Quantity(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 5, None))
+        mat1.add_quantity(Quantity(DEFAULT_SYMBOL_TYPES['relative_permeability'], 1, None))
+        mat1.add_quantity(Quantity(DEFAULT_SYMBOL_TYPES['relative_permeability'], 2, None))
+        mat1.add_quantity(Quantity(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 3, None))
+        mat1.add_quantity(Quantity(DEFAULT_SYMBOL_TYPES['relative_permittivity'], 5, None))
         propnet.add_material(mat1)
 
         propnet.evaluate(material=mat1)
@@ -199,10 +199,10 @@ class GraphTest(unittest.TestCase):
         propnet = Propnet()
         mat1 = Material()
         mat2 = Material()
-        mat1.add_property(Quantity('relative_permeability', 1, None))
-        mat2.add_property(Quantity('relative_permeability', 2, None))
-        mat1.add_property(Quantity('relative_permittivity', 3, None))
-        mat2.add_property(Quantity('relative_permittivity', 5, None))
+        mat1.add_quantity(Quantity('relative_permeability', 1, None))
+        mat2.add_quantity(Quantity('relative_permeability', 2, None))
+        mat1.add_quantity(Quantity('relative_permittivity', 3, None))
+        mat2.add_quantity(Quantity('relative_permittivity', 5, None))
         propnet.add_material(mat1)
         propnet.add_material(mat2)
 
@@ -276,10 +276,10 @@ class GraphTest(unittest.TestCase):
 
         mat1 = Material()
         mat2 = Material()
-        mat1.add_property(Quantity(a, 2, []))
-        mat1.add_property(Quantity(b, 3, []))
-        mat2.add_property(Quantity(b, 5, []))
-        mat2.add_property(Quantity(c, 7, []))
+        mat1.add_quantity(Quantity(a, 2, []))
+        mat1.add_quantity(Quantity(b, 3, []))
+        mat2.add_quantity(Quantity(b, 5, []))
+        mat2.add_quantity(Quantity(c, 7, []))
 
         class Model1 (AbstractModel):
             def __init__(self, symbol_types=None):
@@ -403,14 +403,14 @@ class GraphTest(unittest.TestCase):
                 return ins['const']
 
         mat1 = Material()
-        mat1.add_property(a_example)
-        mat1.add_property(b_example)
-        mat1.add_property(const1)
+        mat1.add_quantity(a_example)
+        mat1.add_quantity(b_example)
+        mat1.add_quantity(const1)
 
         mat2 = Material()
-        mat2.add_property(a_example)
-        mat2.add_property(b_example)
-        mat2.add_property(const2)
+        mat2.add_quantity(a_example)
+        mat2.add_quantity(b_example)
+        mat2.add_quantity(const2)
 
         p = Propnet(materials=[mat1, mat2],
                     models={'model1': Model1},

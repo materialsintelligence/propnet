@@ -4,10 +4,13 @@ Module containing classes and methods for Material functionality in propnet code
 
 import networkx as nx
 
-from propnet.core.graph import PropnetNodeType, PropnetNode
-from propnet.core.quantity import Quantity
-from propnet.core.utils import uuid
+from collections import defaultdict
+from typing import *
 
+from propnet.core.graph import PropnetNodeType, PropnetNode
+from propnet.core.symbols import Symbol
+from propnet.core.quantity import Quantity, weighted_mean
+from propnet.core.utils import uuid
 
 class Material:
     """
@@ -56,7 +59,7 @@ class Material:
                          + list(self.graph.successors(self.root_node))
         return self.graph.subgraph(material_nodes)
 
-    def add_property(self, property):
+    def add_quantity(self, property):
         """
         Adds a property to this material's property graph.
         If the material has been bound to a Propnet instance, correctly adds the property to that
@@ -77,7 +80,7 @@ class Material:
             self.parent.graph.add_edge(self.root_node, property_node)
             self.parent.graph.add_edge(property_node, property_symbol_node)
 
-    def remove_property(self, property):
+    def remove_quantity(self, property):
         """
         Removes the Quantity object attached to this Material.
         Args:
@@ -86,11 +89,14 @@ class Material:
         Returns:
             None
         """
+        nodes_to_remove = []
         for node in self.graph.neighbors(self.root_node):
             if node.node_value == property:
-                self.graph.remove_node(node)
+                nodes_to_remove.append(node)
                 if self.parent:
                     self.parent.graph.remove_node(node)
+        for node in nodes_to_remove:
+            self.graph.remove_node(node)
 
     def remove_property_type(self, property_type):
         """
@@ -120,7 +126,7 @@ class Material:
                 available_propertes.append(node.node_value.symbol.name)
         return available_propertes
 
-    def available_property_nodes(self):
+    def available_quantity_nodes(self):
         """
         Method obtains all Quantity objects bound to this Material.
 
@@ -138,7 +144,33 @@ class Material:
 
     def __str__(self):
         to_return = "Material: " + str(self.uuid) + "\n"
-        for node in self.available_property_nodes():
+        for node in self.available_quantity_nodes():
             to_return += "\t" + node.node_value.symbol.name + ":\t"
             to_return += str(node.node_value.value) + "\n"
         return to_return
+
+    @property
+    def quantities_grouped_by_symbol(self) ->  Dict[Symbol, List[Quantity]]:
+        grouped_quantities = defaultdict(list)
+        for node in self.available_quantity_nodes():
+            symbol = node.node_value.symbol
+            grouped_quantities[symbol].append(node.node_value)
+        return grouped_quantities
+
+    def aggregate(self):
+
+        new_qs = {}
+        for symbol, quantities in self.quantities_grouped_by_symbol.items():
+
+            if len(quantities) > 1:
+
+                new_quantity = weighted_mean(quantities)
+
+                if new_quantity:
+                    new_qs[symbol.name] = new_quantity
+                    for quantity in quantities:
+                        self.remove_quantity(quantity)
+                    self.add_quantity(new_quantity)
+
+        # fake for demo
+        return new_qs

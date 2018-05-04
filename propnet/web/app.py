@@ -172,11 +172,15 @@ app.scripts.append_script({
     Output('material-content', 'children'),
     [Input('submit-formula', 'n_clicks'),
      Input('derive-properties', 'n_clicks')],
-    [State('formula-input', 'value')]
+    [State('formula-input', 'value'),
+     State('aggregate', 'values')]
 )
-def retrieve_material(n_clicks, n_clicks_derive, formula):
+def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
 
     materials = materials_from_formula(formula)
+
+    if n_clicks is None:
+        return ""
 
     if not materials:
         return "Material not found."
@@ -192,16 +196,33 @@ def retrieve_material(n_clicks, n_clicks_derive, formula):
     if n_clicks_derive is not None:
         p.evaluate()
 
+    new_qs = {}
+    if aggregate:
+        new_qs = material.aggregate()
+    print(new_qs)
+
     rows = []
-    for node in material.available_property_nodes():
+    for node in material.available_quantity_nodes():
         if node.node_value.symbol.category != 'object':
-            rows.append(
-                {
-                    'Symbol': str(node.node_value.symbol.name),
-                    'Value': str(node.node_value.value),  # TODO: node.node_value.value? this has to make sense
-                    #'Units': str(node.node_value.symbol.unit_as_string)
-                }
-            )
+            if str(node.node_value.symbol.name) not in new_qs:
+                rows.append(
+                    {
+                        'Symbol': str(node.node_value.symbol.name),
+                        'Value': str(node.node_value.value),  # TODO: node.node_value.value? this has to make sense
+                        #'Units': str(node.node_value.symbol.unit_as_string)
+                    }
+                )
+
+    # demo hack
+    for symbol, quantity in new_qs.items():
+        rows.append(
+            {
+                'Symbol': str(symbol),
+                'Value': str(quantity.value),
+            # TODO: node.node_value.value? this has to make sense
+                # 'Units': str(node.node_value.symbol.unit_as_string)
+            }
+        )
 
     table = dt.DataTable(
         rows=rows,
@@ -213,7 +234,7 @@ def retrieve_material(n_clicks, n_clicks_derive, formula):
     )
 
     material_graph_data = graph_conversion(g, highlight=True,
-                                           highlight_green=available_properties)
+                                           highlight_green=material.available_properties())
     material_graph_component = ForceGraphComponent(id='propnet-graph',
                                                    graphData=material_graph_data,
                                                    width=800,
@@ -236,10 +257,11 @@ material_layout = html.Div([
     html.Button('Load Material', id='submit-formula'),
     html.Button('Derive Properties', id='derive-properties'),
     dcc.Checklist(
+        id='aggregate',
         options=[
             {'label': 'Aggregate Derived Properties', 'value': 'aggregate'}
         ],
-        values=[],
+        values=['aggregate'],
         labelStyle={'display': 'inline-block'}
     ),
     html.Br(),
