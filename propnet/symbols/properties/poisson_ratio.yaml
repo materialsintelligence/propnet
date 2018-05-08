@@ -4,6 +4,6 @@ units:
 - []
 display_names: [Poisson ratio]
 display_symbols: [\nu]
-dimension: 1
+shape: 1
 comment: ''
 category: property

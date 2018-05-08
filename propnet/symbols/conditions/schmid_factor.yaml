@@ -4,6 +4,6 @@ units:
 - []
 display_names: ['Schmid factor']
 display_symbols: ['m']
-dimension: 1
+shape: 1
 comment: ''
 category: condition

@@ -5,6 +5,6 @@ units:
   - [atom, -1.0]
 display_names: [Energy above hull]
 display_symbols: [e above hull]
-dimension: 1
+shape: 1
 comment: ''
 category: property

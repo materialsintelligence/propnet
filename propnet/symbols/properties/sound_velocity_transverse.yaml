@@ -5,6 +5,6 @@ units:
   - [seconds, -1.0]
 display_names: [Elasticity-Derived Transverse Sound Velocity]
 display_symbols: [v_T]
-dimension: 1
+shape: 1
 comment: ''
 category: property

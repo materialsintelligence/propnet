@@ -4,6 +4,6 @@ units:
 - []
 display_names: ['Transmittance']
 display_symbols: ['T']
-dimension: 1
+shape: 1
 comment: 'the intensity of transmitted light relative to the incident intensity'
 category: property

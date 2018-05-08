@@ -9,12 +9,13 @@ from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
 from pybtex.style.labels import BaseLabelStyle
 
-from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, SymbolType
+from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, Symbol
 from propnet.models import DEFAULT_MODEL_NAMES
 
 from monty.serialization import loadfn
 
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
+
 
 def graph_conversion(graph, highlight=False,
                      highlight_green=(),
@@ -45,9 +46,11 @@ def graph_conversion(graph, highlight=False,
 
     for n in graph.nodes():
 
+        id = None
+
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
-        if n.node_type.name == 'SymbolType':
+        if n.node_type.name == 'Symbol':
             # property
             id = n.node_value.name
             label = n.node_value.display_names[0]
@@ -62,13 +65,14 @@ def graph_conversion(graph, highlight=False,
             shape = 'square'
             radius = 6.0
 
-        nodes.append({
-            'id': id,
-            'label': label,
-            'fill': fill,
-            'shape': shape,
-            'radius': radius
-        })
+        if id:
+            nodes.append({
+                'id': id,
+                'label': label,
+                'fill': fill,
+                'shape': shape,
+                'radius': radius
+            })
 
     if highlight:
         for node in nodes:
@@ -83,21 +87,24 @@ def graph_conversion(graph, highlight=False,
 
     for n1, n2 in graph.edges():
 
-        if n1.node_type.name == 'SymbolType':
+        id_n1 = None
+        if n1.node_type.name == 'Symbol':
             id_n1 = n1.node_value.name
         elif n1.node_type.name == 'Model':
             id_n1 = n1.node_value.__class__.__name__
 
-        if n2.node_type.name == 'SymbolType':
+        id_n2 = None
+        if n2.node_type.name == 'Symbol':
             id_n2 = n2.node_value.name
         elif n2.node_type.name == 'Model':
             id_n2 = n2.node_value.__class__.__name__
 
-        links.append({
-            'source': id_n1,
-            'target': id_n2,
-            'value': 1.0
-        })
+        if id_n1 and id_n2:
+            links.append({
+                'source': id_n1,
+                'target': id_n2,
+                'value': 1.0
+            })
 
     graph_data = {
         'nodes': nodes,
@@ -197,11 +204,11 @@ def parse_path(pathname):
         for property in DEFAULT_SYMBOL_TYPE_NAMES:
             if pathname.startswith('/property/{}'.format(property)):
                 value = property
-    #elif pathname == '/load_material':
-    #    mode = 'load_material'
-    #elif pathname.startswith('/load_material'):
-    #    mode = 'load_material'
-    #    value = pathname.split('/')[-1]
+    elif pathname == '/load_material':
+        mode = 'load_material'
+    elif pathname.startswith('/load_material'):
+        mode = 'load_material'
+        value = pathname.split('/')[-1]
 
     return {
         'mode': mode,

@@ -11,6 +11,7 @@ dash = "*"
 dash-core-components = "*"
 dash-html-components = "*"
 dash-renderer = "*"
+dash-table-experiments = "*"
 gunicorn = "*"
 frozendict = "*"
 habanero = "*"
@@ -23,6 +24,7 @@ pydash = "*"
 pylatexenc = "*"
 pymatgen = "*"
 flask-caching = "*"
+uncertainties = "*"
 "8834a26" = {path = "./components/force-graph", editable = true}
 
 

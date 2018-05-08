@@ -4,6 +4,6 @@ units:
 - []
 display_names: [Vicker's Hardness]
 display_symbols: [H_v]
-dimension: 1
+shape: 1
 comment: ''
 category: property

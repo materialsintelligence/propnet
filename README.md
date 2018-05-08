@@ -52,10 +52,10 @@ Symbols are defined in [YAML](http://yaml.org) syntax, with key fields are as fo
 
 * `name`: A unique, canonical name for the property, lowercase, must be a valid Python identifier (no spaces)
 * `category`: `property`, `condition` or `object`
-* `unit`: A list of of lists, from [pint's serialization format](http://pint.readthedocs.io/en/latest/serialization.html)
 * `display_names`: List of human-readable name(s), LaTeX syntax allowed, first name will be the preferred name
 * `display_symbols`: As above, but for symbols
-* `dimension`: The expected dimension (using the same definition as [numpy ndarray shape](https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.ndarray.shape.html)) of the property. If there are multiple ways to define the property (e.g. vector, scalar), define multiple properties with a simple model to convert between them.
+* `unit`: (only for `property`, or `condition`) A list of of lists, from [pint's serialization format](http://pint.readthedocs.io/en/latest/serialization.html)
+* `shape`: (only for `property`, or `condition`) The expected shape (using the same definition as [numpy ndarray shape](https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.ndarray.shape.html)) of the property. If there are multiple ways to define the property (e.g. vector, scalar), define multiple properties with a simple model to convert between them.
 * `comment`: Optional string with additional information.
 
 If you want to check your unit definitions, the easiest way is to try it interactively:

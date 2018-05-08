@@ -4,6 +4,6 @@ units:
 - []
 display_names: [Elastic Anisotropy]
 display_symbols: ['E_{anisotropy}']
-dimension: 1
+shape: 1
 comment: ''
 category: property

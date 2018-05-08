@@ -4,6 +4,6 @@ units:
 - - [gigapascal, 1.0]
 display_names: [Young's modulus, Elastic modulus]
 display_symbols: [E]
-dimension: 1
+shape: 1
 comment: ''
 category: property

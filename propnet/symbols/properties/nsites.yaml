@@ -4,6 +4,6 @@ units:
 - []
 display_names: ['Number of atomic sites']
 display_symbols: ['nSites']
-dimension: 1
+shape: 1
 comment: ''
 category: property

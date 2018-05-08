@@ -4,6 +4,6 @@ units:
 - - [gigapascal, 1]
 display_names: ['Peierls Stress']
 display_symbols: ['/tau_{PN}']
-dimension: 1
+shape: 1
 comment: ''
 category: property

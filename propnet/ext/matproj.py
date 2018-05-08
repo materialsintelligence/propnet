@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pymatgen import MPRester
 from pymatgen.core.structure import IStructure
-from propnet.core.symbols import Symbol
+from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.symbols import DEFAULT_SYMBOL_TYPES
 
@@ -10,7 +10,7 @@ from propnet.core.materials import Material
 
 # maps propnet symbol names to mp (mapidoc) keypath
 MP_FROM_PROPNET_NAME_MAPPING = {
-    'pretty_formula': 'anonymous_formula',
+    'pretty_formula': 'pretty_formula',
     'elastic_tensor_voigt': 'elasticity.elastic_tensor',
     'elastic_anisotropy': 'elasticity.elastic_anisotropy',
     'relative_permittivity': 'diel.poly_total',
@@ -48,13 +48,13 @@ def import_materials(mp_ids, api_key=None):
         mat = Material()
         tag_string = data['task_id']
         if not data['structure'] is None:
-            mat.add_property(Symbol('structure', data['structure'], [tag_string]))
-            mat.add_property(Symbol('lattice_unit_cell', data['structure'].lattice.matrix, [tag_string]))
+            mat.add_quantity(Quantity('structure', data['structure'], [tag_string]))
+            mat.add_quantity(Quantity('lattice_unit_cell', data['structure'].lattice.matrix, [tag_string]))
         for key in data:
             if not data[key] is None and key in PROPNET_FROM_MP_NAME_MAPPING.keys():
                 prop_type = DEFAULT_SYMBOL_TYPES[PROPNET_FROM_MP_NAME_MAPPING[key]]
-                p = Symbol(prop_type, data[key], [tag_string])
-                mat.add_property(p)
+                p = Quantity(prop_type, data[key], [tag_string])
+                mat.add_quantity(p)
         to_return.append(mat)
     return to_return
 

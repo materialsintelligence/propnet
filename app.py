@@ -6,4 +6,4 @@ app.server.secret_key = environ.get('FLASK_SECRET_KEY', str(uuid4()))
 server = app.server
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)

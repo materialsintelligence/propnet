@@ -1,7 +1,7 @@
 ---
 title: Clarke thermal conductivity
 tags: [thermal]
-references: ["url:https://doi.org/10.1016/S0257-8972(02)00593-5"]
+references: ["doi:10.1016/S0257-8972(02)00593-5"]
 symbol_mapping: {
   C_ij: elastic_tensor_voigt,
   _structure: structure,

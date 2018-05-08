@@ -4,6 +4,6 @@ units:
 - - [gigapascal, -1.0]
 display_names: ['Compliance tensor (in Voigt notation)']
 display_symbols: ['S_{ij}']
-dimension: [6, 6]
+shape: [6, 6]
 comment: ''
 category: property
