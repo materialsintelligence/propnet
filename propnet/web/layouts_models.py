@@ -5,7 +5,7 @@ import dash_core_components as dcc
 
 import propnet.models as models
 
-from propnet.symbols import DEFAULT_SYMBOL_TYPES
+from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.web.utils import references_to_markdown
 
 
@@ -101,7 +101,7 @@ def model_layout(model_name):
                     html.Div(
                         className='ten columns',
                         children=[
-                            dcc.Link(DEFAULT_SYMBOL_TYPES[symbol_name].display_names[0],
+                            dcc.Link(DEFAULT_SYMBOLS[symbol_name].display_names[0],
                                      href='/property/{}'.format(symbol_name))
                         ]
                     )

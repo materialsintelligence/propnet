@@ -7,7 +7,7 @@ from uncertainties import unumpy
 
 from propnet import logger, ureg
 from propnet.core.symbols import Symbol
-from propnet.symbols import DEFAULT_SYMBOL_TYPES
+from propnet.symbols import DEFAULT_SYMBOLS
 
 class Quantity(MSONable):
     """
@@ -46,9 +46,9 @@ class Quantity(MSONable):
         """
 
         if isinstance(symbol_type, str):
-            if symbol_type not in DEFAULT_SYMBOL_TYPES.keys():
+            if symbol_type not in DEFAULT_SYMBOLS.keys():
                 raise ValueError("Quantity type {} not recognized".format(symbol_type))
-            symbol_type = DEFAULT_SYMBOL_TYPES[symbol_type]
+            symbol_type = DEFAULT_SYMBOLS[symbol_type]
 
         if value is None and symbol_type.default is not None:
             value = symbol_type.default

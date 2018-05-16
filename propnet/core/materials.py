@@ -7,7 +7,7 @@ import networkx as nx
 from collections import defaultdict
 from typing import *
 
-from propnet.core.graph import PropnetNodeType, PropnetNode
+from propnet.core.graph import NodeType, Node
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import Quantity, weighted_mean
 from propnet.core.utils import uuid
@@ -30,10 +30,10 @@ class Material:
     materials at runtime.
 
     Attributes:
-        graph (nx.MultiDiGraph<PropnetNode>): data structure storing all Quantity nodes of the
+        graph (nx.MultiDiGraph<Node>): data structure storing all Quantity nodes of the
         Material.
         uuid (int): unique hash number used as an identifier for this object.
-        root_node (PropnetNode): the Material node associated with this material, has a unique
+        root_node (Node): the Material node associated with this material, has a unique
         hash id.
         parent (Propnet): Stores a pointer to the Propnet instance this Material has been bound to.
     """
@@ -44,7 +44,7 @@ class Material:
         self.uuid = uuid()
 
         self.graph = nx.MultiDiGraph()
-        self.root_node = PropnetNode(node_type=PropnetNodeType.Material, node_value=self)
+        self.root_node = Node(node_type=NodeType.Material, node_value=self)
         self.graph.add_node(self.root_node)
 
         self.parent = None
@@ -71,9 +71,9 @@ class Material:
         Returns:
             void
         """
-        property_node = PropnetNode(node_type=PropnetNodeType.Quantity, node_value=property)
-        property_symbol_node = PropnetNode(node_type=PropnetNodeType.Symbol,
-                                           node_value=property.symbol)
+        property_node = Node(node_type=NodeType.Quantity, node_value=property)
+        property_symbol_node = Node(node_type=NodeType.Symbol,
+                                    node_value=property.symbol)
         self.graph.add_edge(self.root_node, property_node)
         self.graph.add_edge(property_node, property_symbol_node)
         if self.parent:
@@ -122,7 +122,7 @@ class Material:
         """
         available_propertes = []
         for node in self.graph.nodes:
-            if node.node_type == PropnetNodeType.Quantity:
+            if node.node_type == NodeType.Quantity:
                 available_propertes.append(node.node_value.symbol.name)
         return available_propertes
 
@@ -131,11 +131,11 @@ class Material:
         Method obtains all Quantity objects bound to this Material.
 
         Returns:
-            (list<PropnetNode<Quantity>>) list of all Quantity objects bound to this Material.
+            (list<Node<Quantity>>) list of all Quantity objects bound to this Material.
         """
         to_return = []
         for node in self.graph.nodes:
-            if node.node_type == PropnetNodeType['Quantity']:
+            if node.node_type == NodeType['Quantity']:
                 to_return.append(node)
         return to_return
 

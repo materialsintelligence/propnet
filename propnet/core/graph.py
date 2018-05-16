@@ -8,31 +8,30 @@ import networkx as nx
 
 from propnet import logger
 from propnet.models import DEFAULT_MODELS
-from propnet.symbols import DEFAULT_SYMBOL_TYPES
+from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
 from propnet.core.models import AbstractModel
 
 from enum import Enum
 from collections import Counter, namedtuple
-from uuid import UUID, uuid4
 
 
 _ALLOWED_NODE_TYPES = ('Material', 'Symbol', 'Quantity', 'Model')
 
 
 # TODO: this should be replaced with a proper class
-PropnetNodeType = Enum('PropnetNodeType', _ALLOWED_NODE_TYPES)
-PropnetNode = namedtuple('PropnetNode', ['node_type', 'node_value'])
-PropnetNode.__repr__ = lambda self: "{}<{}>".format(self.node_type.name,
-                                                    self.node_value.__repr__())
+NodeType = Enum('NodeType', _ALLOWED_NODE_TYPES)
+Node = namedtuple('Node', ['node_type', 'node_value'])
+Node.__repr__ = lambda self: "{}<{}>".format(self.node_type.name,
+                                             self.node_value.__repr__())
 
 
 class Propnet:
     """
     Class containing methods for creating and interacting with a Property Network.
 
-    The Property Network contains a set of PropnetNode namedtuples with connections stored as directed edges between
+    The Property Network contains a set of Node namedtuples with connections stored as directed edges between
     the nodes.
 
     Upon initialization a base graph is constructed consisting of all valid SymbolTypes and Models found in surrounding
@@ -47,7 +46,7 @@ class Propnet:
     values of connected properties on demand.
 
     Attributes:
-        graph (nx.MultiDiGraph<PropnetNode>): data structure supporting the property network.
+        graph (nx.MultiDiGraph<Node>): data structure supporting the property network.
 
     """
 
@@ -58,7 +57,7 @@ class Propnet:
 
         # set our defaults if no models/symbol types supplied
         models = models or DEFAULT_MODELS
-        symbol_types = symbol_types or DEFAULT_SYMBOL_TYPES
+        symbol_types = symbol_types or DEFAULT_SYMBOLS
 
         # create the graph
         self.graph = nx.MultiDiGraph()
@@ -74,7 +73,7 @@ class Propnet:
         for model in models.values():
 
             model = model(symbol_types=self._symbol_types)  # instantiate model
-            model_node = PropnetNode(node_type=PropnetNodeType.Model, node_value=model)
+            model_node = Node(node_type=NodeType.Model, node_value=model)
 
             # integer idx is used to disambiguate edges when
             # multiple paths exist between the same start and end nodes
@@ -89,14 +88,14 @@ class Propnet:
 
                 for input in inputs:
                     symbol_type = symbol_types[model.symbol_mapping[input]]
-                    input_node = PropnetNode(node_type=PropnetNodeType.Symbol,
-                                             node_value=symbol_type)
+                    input_node = Node(node_type=NodeType.Symbol,
+                                      node_value=symbol_type)
                     self.graph.add_edge(input_node, model_node, route=idx)
 
                 for output in outputs:
                     symbol_type = symbol_types[model.symbol_mapping[output]]
-                    output_node = PropnetNode(node_type=PropnetNodeType.Symbol,
-                                              node_value=symbol_type)
+                    output_node = Node(node_type=NodeType.Symbol,
+                                       node_value=symbol_type)
                     self.graph.add_edge(model_node, output_node, route=idx)
 
         if materials:
@@ -113,8 +112,8 @@ class Propnet:
         Returns:
 
         """
-        model_nodes = [PropnetNode(node_type=PropnetNodeType.Model,
-                                   node_value=model(symbol_types=self._symbol_types))
+        model_nodes = [Node(node_type=NodeType.Model,
+                            node_value=model(symbol_types=self._symbol_types))
                        for model in models.values()]
         self.graph.add_nodes_from(model_nodes)
 
@@ -128,20 +127,20 @@ class Propnet:
 
         """
         self._symbol_types.update(symbol_types)
-        symbol_type_nodes = [PropnetNode(node_type=PropnetNodeType.Symbol,
-                                         node_value=symbol_type)
+        symbol_type_nodes = [Node(node_type=NodeType.Symbol,
+                                  node_value=symbol_type)
                              for symbol_type in symbol_types.values()]
 
         self.graph.add_nodes_from(symbol_type_nodes)
 
     def nodes_by_type(self, node_type):
         """
-        Gathers all PropnetNodes of a given PropnetNodeType.
+        Gathers all PropnetNodes of a given NodeType.
 
         Args:
             node_type (str): type of node that will be returned.
         Returns:
-            (list<PropnetNode>) list of nodes of property types.
+            (list<Node>) list of nodes of property types.
         """
         if node_type not in _ALLOWED_NODE_TYPES:
             raise ValueError("Unsupported node type, choose from: {}"
@@ -222,7 +221,7 @@ class Propnet:
                 raise ValueError('Specified material not found.')
             symbol_nodes = []
             for node in self.graph.neighbors(material_node):
-                if node.node_type == PropnetNodeType['Quantity'] and node not in symbol_nodes:
+                if node.node_type == NodeType['Quantity'] and node not in symbol_nodes:
                     symbol_nodes.append(node)
 
         if property_type:
@@ -234,7 +233,7 @@ class Propnet:
         active_symbol_type_nodes = set()
         for node in symbol_nodes:
             for neighbor in self.graph.neighbors(node):
-                if neighbor.node_type != PropnetNodeType.Symbol:
+                if neighbor.node_type != NodeType.Symbol:
                     continue
                 active_symbol_type_nodes.add(neighbor)
 
@@ -242,7 +241,7 @@ class Propnet:
         candidate_models = set()
         for node in active_symbol_type_nodes:
             for neighbor in self.graph.neighbors(node):
-                if neighbor.node_type != PropnetNodeType.Model:
+                if neighbor.node_type != NodeType.Model:
                     continue
                 candidate_models.add(neighbor.node_value)
 
@@ -272,13 +271,13 @@ class Propnet:
             This list symbolizes the set of materials for which this Quantity is a property.
             Args:
                 graph (networkx.MultiDiGraph): graph on which the node is stored.
-                node (PropnetNode): node on the graph whose connected material nodes are to be found.
+                node (Node): node on the graph whose connected material nodes are to be found.
             Returns:
-                (List[PropnetNode]): list of material type nodes that are connected to this node.
+                (List[Node]): list of material type nodes that are connected to this node.
             """
             to_return = []
             for n in graph.in_edges(node):
-                if n[0].node_type == PropnetNodeType['Material']:
+                if n[0].node_type == NodeType['Material']:
                     to_return.append(n[0])
             return to_return
 
@@ -418,10 +417,10 @@ class Propnet:
                 for i in range(0, len(symbol_outputs)):
                     # Add outputs to graph.
                     symbol = symbol_outputs[i]
-                    symbol_node = PropnetNode(node_type=PropnetNodeType['Quantity'], node_value=symbol)
+                    symbol_node = Node(node_type=NodeType['Quantity'], node_value=symbol)
                     if symbol_node in self.graph:
                         continue
-                    symbol_type_node = PropnetNode(node_type=PropnetNodeType['Symbol'], node_value=symbol.symbol)
+                    symbol_type_node = Node(node_type=NodeType['Symbol'], node_value=symbol.symbol)
                     self.graph.add_edge(symbol_node, symbol_type_node)
                     for source_node in output_sources[i]:
                         self.graph.add_edge(source_node, symbol_node)
@@ -446,7 +445,7 @@ class Propnet:
                         lookup_dict[symbol.symbol] += [symbol]
                     if not property_type or symbol.symbol in property_type:
                         for neighbor in self.graph.neighbors(symbol_type_node):
-                            if neighbor.node_type == PropnetNodeType['Model']:
+                            if neighbor.node_type == NodeType['Model']:
                                 if neighbor.node_value not in original_models:
                                     next_round_models.add(neighbor.node_value)
 
@@ -501,7 +500,7 @@ class Propnet:
             summary += ["\t " + property_type_node.node_value.display_names[0]]
             neighbors = self.graph.neighbors(property_type_node)
             for neighbor in neighbors:
-                if neighbor.node_type != PropnetNodeType['Model']:
+                if neighbor.node_type != NodeType['Model']:
                     continue
                 summary += ["\t\t " + neighbor.node_value.title]
         model_nodes = list(self.nodes_by_type('Model'))
@@ -510,7 +509,7 @@ class Propnet:
             summary += ["\t " + model_node.node_value.title]
             neighbors = self.graph.neighbors(model_node)
             for neighbor in neighbors:
-                if neighbor.node_type != PropnetNodeType['Symbol']:
+                if neighbor.node_type != NodeType['Symbol']:
                     continue
                 summary += ["\t\t " + neighbor.node_value.display_names[0]]
         materials = list(self.nodes_by_type('Material'))
@@ -518,7 +517,7 @@ class Propnet:
             summary += ["Materials:"]
         for material_node in materials:
             summary += ["\t " + str(material_node.node_value.uuid)]
-            for property in filter(lambda n: n.node_type == PropnetNodeType['Quantity'],
+            for property in filter(lambda n: n.node_type == NodeType['Quantity'],
                                    self.graph.neighbors(material_node)):
                 summary += ["\t\t " + property.node_value.symbol.display_names[0] +
                             "\t:\t" + str(property.node_value)]

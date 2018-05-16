@@ -88,9 +88,7 @@ class ModelTest(unittest.TestCase):
                         'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
                         'equations': ['a - l1 * l2']
                     },
-                    symbol_types={
-                        'l': L, 'a': A
-                    }
+                    symbol_types={'l': L, 'a': A}
                 )
 
         model = GetArea()

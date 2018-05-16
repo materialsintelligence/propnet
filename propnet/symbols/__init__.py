@@ -10,7 +10,7 @@ from propnet.core.symbols import Symbol
 
 # stores all loaded properties as PropertyMetadata instances in a dictionary,
 # mapped to their names
-DEFAULT_SYMBOL_TYPES = {}
+DEFAULT_SYMBOLS = {}
 
 _DEFAULT_SYMBOL_TYPE_FILES = glob(os.path.join(os.path.dirname(__file__),
                                            '../symbols/**/*.yaml'),
@@ -19,11 +19,11 @@ _DEFAULT_SYMBOL_TYPE_FILES = glob(os.path.join(os.path.dirname(__file__),
 for f in _DEFAULT_SYMBOL_TYPE_FILES:
     try:
         symbol_type = Symbol.from_dict(loadfn(f))
-        DEFAULT_SYMBOL_TYPES[symbol_type.name] = symbol_type
+        DEFAULT_SYMBOLS[symbol_type.name] = symbol_type
         if "{}.yaml".format(symbol_type.name) not in f:
             raise ValueError('Name/filename mismatch in {}'.format(f))
     except Exception as e:
         logger.error('Failed to parse {}, {}.'.format(os.path.basename(f), e))
 
 # Stores all loaded properties' names in a tuple in the global scope.
-DEFAULT_SYMBOL_TYPE_NAMES = tuple(DEFAULT_SYMBOL_TYPES.keys())
+DEFAULT_SYMBOL_TYPE_NAMES = tuple(DEFAULT_SYMBOLS.keys())

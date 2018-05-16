@@ -6,7 +6,10 @@ from monty.json import MSONable
 
 from propnet import logger, ureg
 from propnet.core.utils import uuid
+from ruamel.yaml import safe_dump
 
+
+from io import StringIO
 
 class Symbol(MSONable):
     """
@@ -39,8 +42,8 @@ class Symbol(MSONable):
 
     # TODO: this really needs to be rethought, possibly split into separate classes
     # or a base class + subclasses for symbols with units vs those without
-    def __init__(self, name, display_names,
-                 display_symbols, units=None, shape=None,
+    def __init__(self, name, display_names=None,
+                 display_symbols=None, units=None, shape=None,
                  object_type=None,
                  comment=None,
                  category='property'):
@@ -50,7 +53,8 @@ class Symbol(MSONable):
         Parameters correspond exactly with those of a PropertyMetadata tuple.
 
         Args:
-            name (str): string ASCII identifying the property uniquely as an internal identifier.
+            name (str): string ASCII identifying the property uniquely as an internal
+            identifier.
             units (id): units of the property as a Quantity supported by the Pint package.
             display_names (list<str>): list of strings giving possible human-readable names for
             the property.
@@ -73,6 +77,11 @@ class Symbol(MSONable):
 
         if display_names is None or len(display_names) == 0:
             raise ValueError("Insufficient display names for ({}).".format(name))
+
+        if isinstance(units, str):
+            units = ureg.parse_expression(units).to_tuple()
+            logger.warn("Units have been parsed from a string format automatically, "
+                        "do these look correct? {}".format(units))
 
         if category in ('property', 'condition'):
 
@@ -166,3 +175,25 @@ class Symbol(MSONable):
 
     def __hash__(self):
         return self.name.__hash__()
+
+    def from_yaml(self, filename):
+        return NotImplementedError
+
+    def to_yaml(self, filename=None):
+
+        data = {
+            "name": self.name,
+            "category": self.category,
+            "display_names": self.display_names,
+            "display_symbols": self.display_symbols,
+            "comment": self.comment
+        }
+
+        if self.units:
+            data["units"] = self.units.to_tuple()
+        if self.shape:
+            data["shape"] = self.shape
+        if self.object_type:
+            data["object_type"] = self.object_type
+
+        return safe_dump(data)

@@ -12,13 +12,13 @@ from functools import wraps
 from os.path import dirname, join, isfile
 from textwrap import dedent
 
-from ruamel.yaml import safe_load
+from ruamel.yaml import safe_load, safe_dump
 from monty.serialization import loadfn
 
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
-from propnet.symbols import DEFAULT_SYMBOL_TYPES
+from propnet.symbols import DEFAULT_SYMBOLS
 from propnet import logger
 from propnet import ureg
 from propnet.core.utils import uuid, references_to_bib
@@ -46,7 +46,7 @@ def load_metadata(path):
     return metadata
 
 
-class AbstractModel(metaclass=ABCMeta):
+class AbstractModel:
     """
     Baseclass for all models appearing in Propnet.
 
@@ -91,7 +91,7 @@ class AbstractModel(metaclass=ABCMeta):
         unit_mapping (dict<str,Pint.unit>): mapping from symbols used in the model to their corresponding units.
     """
 
-    def __init__(self, metadata=None, symbol_types=None):
+    def __init__(self, metadata=None, symbol_types=None, additional_symbols=None):
         """
         Constructs a Model object with the provided metadata.
 
@@ -103,7 +103,12 @@ class AbstractModel(metaclass=ABCMeta):
             metadata (dict<str,id>): metadata defining the model.
         """
 
-        symbol_types = symbol_types or DEFAULT_SYMBOL_TYPES
+        if additional_symbols:
+            symbol_types = {symbol.name:symbol for symbol in symbol_types}
+            DEFAULT_SYMBOLS.update(symbol_types)
+
+        if symbol_types is None:
+            symbol_types = DEFAULT_SYMBOLS
 
         if not metadata:
             try:
@@ -384,8 +389,12 @@ class AbstractModel(metaclass=ABCMeta):
             for d in test_data:
                 try:
                     model_outputs = self.evaluate(d['inputs'])
-                    for k, v in d['outputs'].items():
-                        if not math.isclose(model_outputs[k].magnitude, v):
+                    for k, known_output in d['outputs'].items():
+                        model_output = model_outputs[k]
+                        # TODO: remove, here temporarily
+                        if hasattr(model_output, 'magnitude'):
+                            model_output = model_output.magnitude
+                        if not math.isclose(model_output, known_output):
                             return False
                 except Exception as e:
                     print(e)
@@ -397,6 +406,23 @@ class AbstractModel(metaclass=ABCMeta):
         else:
 
             return False
+
+    def to_yaml(self):
+
+        data = {
+            "title": self.name,
+            "tags": self.tags,
+            "references": self._metadata.get('references', []),
+            "symbol_mapping": self.symbol_mapping,
+            "connections": self.connections
+        }
+
+        if self.equations:
+            data["equations"] = self.equations
+
+        header = safe_dump(data)
+
+        return "{}---\n{}".format(header, self.description)
 
     @property
     def _example_code(self):
