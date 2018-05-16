@@ -3,7 +3,7 @@ import unittest
 from propnet.core.symbols import *
 from propnet import ureg
 
-from propnet.symbols import DEFAULT_SYMBOL_TYPES
+from propnet.symbols import DEFAULT_SYMBOLS
 
 
 class PropertiesTest(unittest.TestCase):
@@ -35,7 +35,7 @@ class PropertiesTest(unittest.TestCase):
         """
         Goes through the Quantity .yaml files and ensures the definitions are complete.
         """
-        for st in DEFAULT_SYMBOL_TYPES.values():
+        for st in DEFAULT_SYMBOLS.values():
             self.assertTrue(st.name is not None and st.name.isidentifier())
             self.assertTrue(st.category is not None and st.category in ('property', 'condition', 'object'))
             self.assertTrue(st.display_names is not None and isinstance(st.display_names, list) and
@@ -45,5 +45,5 @@ class PropertiesTest(unittest.TestCase):
             self.assertTrue(st.comment is not None and isinstance(st.comment, str))
 
     def test_all_properties(self):
-        self.assertEqual(str(DEFAULT_SYMBOL_TYPES['density'].units),
+        self.assertEqual(str(DEFAULT_SYMBOLS['density'].units),
                          '1.0 gram / centimeter ** 3')

@@ -4,7 +4,7 @@ from pymatgen import MPRester
 from pymatgen.core.structure import IStructure
 from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
-from propnet.symbols import DEFAULT_SYMBOL_TYPES
+from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.materials import Material
 
@@ -52,7 +52,7 @@ def import_materials(mp_ids, api_key=None):
             mat.add_quantity(Quantity('lattice_unit_cell', data['structure'].lattice.matrix, [tag_string]))
         for key in data:
             if not data[key] is None and key in PROPNET_FROM_MP_NAME_MAPPING.keys():
-                prop_type = DEFAULT_SYMBOL_TYPES[PROPNET_FROM_MP_NAME_MAPPING[key]]
+                prop_type = DEFAULT_SYMBOLS[PROPNET_FROM_MP_NAME_MAPPING[key]]
                 p = Quantity(prop_type, data[key], [tag_string])
                 mat.add_quantity(p)
         to_return.append(mat)

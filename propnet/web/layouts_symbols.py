@@ -2,14 +2,14 @@ import dash_html_components as html
 import dash_core_components as dcc
 import plotly.graph_objs as go
 
-from propnet.symbols import DEFAULT_SYMBOL_TYPES
+from propnet.symbols import DEFAULT_SYMBOLS
 
 
 # layouts for symbol detail pages
 
 def symbol_layout(symbol_name):
 
-    symbol = DEFAULT_SYMBOL_TYPES[symbol_name]
+    symbol = DEFAULT_SYMBOLS[symbol_name]
 
     main_name = symbol.display_names[0]
 
@@ -70,11 +70,11 @@ def symbols_index(available_hists=None):
         available_hists = {}
 
     symbol_links = {}
-    for symbol_name in DEFAULT_SYMBOL_TYPES:
+    for symbol_name in DEFAULT_SYMBOLS:
 
         # group by tag
-        symbol_type = DEFAULT_SYMBOL_TYPES[symbol_name].category
-        display_name = DEFAULT_SYMBOL_TYPES[symbol_name].display_names[0]
+        symbol_type = DEFAULT_SYMBOLS[symbol_name].category
+        display_name = DEFAULT_SYMBOLS[symbol_name].display_names[0]
 
         if symbol_type not in symbol_links:
             symbol_links[symbol_type] = []
