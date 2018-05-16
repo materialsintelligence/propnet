@@ -4,12 +4,15 @@ tags: [optical, historical, empirical]
 references: [doi:10.1016/j.infrared.2006.04.001, doi:10.1002/pssb.2221310202, doi:10.1002/pssb.2221000240 ]
 symbol_mapping: {
   Eg: band_gap,
-  n: refractive_index
+  n_ravindra: refractive_index,
+  n_moss: refractive_index
 }
 connections:
 - inputs: [Eg]
-  outputs: [n]
-equations: ["4.16 - 1.12*Eg + 0.31*Eg**2 - 0.08*Eg**2 - n"]
+  outputs: [n_ravindra]
+- inputs: [Eg]
+  outputs: [n_moss]
+equations: ["4.16 - 1.12*Eg + 0.31*Eg**2 - 0.08*Eg**2 - n_ravindra", "Eg*n_moss**4 - 95"]
 ---
 
 Proposed as an empirical model relating a material's band gap to its refractive index,
