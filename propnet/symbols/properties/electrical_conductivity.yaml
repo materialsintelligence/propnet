@@ -5,6 +5,6 @@ units:
   - [meter, -1.0]
 display_names: ['Electrical conductivity']
 display_symbols: ['\sigma']
-dimension: 1
-test_value: 1.6
+shape: 1
 comment: ''
+category: property

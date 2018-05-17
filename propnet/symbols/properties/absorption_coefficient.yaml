@@ -4,6 +4,6 @@ units:
 - - [meter, -1.0]
 display_names: ['Absorption Coefficient']
 display_symbols: ['\alpha']
-dimension: 1
-test_value: 0.0007
+shape: 1
 comment: 'characterizes exponential decay of light intensity inside the material'
+category: property

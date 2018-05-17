@@ -8,9 +8,9 @@ symbol_mapping: {
   E_g_expt: band_gap
 }
 connections:
-- inputs: E_g_expt
+- inputs: [E_g_expt, E_g_PBE]
   outputs: [E_g_GW]
-- inputs: E_g_GW
+- inputs: [E_g_GW, E_g_expt]
   outputs: [E_g_PBE]
 equations: [E_g_expt - 0.998*E_g_GW + 0.014, E_g_expt - 1.358*E_g_PBE + 0.904]
 ---

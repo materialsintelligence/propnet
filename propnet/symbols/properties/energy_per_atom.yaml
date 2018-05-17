@@ -5,6 +5,6 @@ units:
   - [atom, -1.0]
 display_names: [Energy per atom]
 display_symbols: ["E_{a}"]
-dimension: 1
-test_value: 4.75
+shape: 1
 comment: ''
+category: property

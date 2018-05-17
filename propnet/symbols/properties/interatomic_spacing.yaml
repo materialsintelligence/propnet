@@ -4,6 +4,6 @@ units:
 - - [angstrom, 1.0]
 display_names: ['Interatomic Spacing']
 display_symbols: ['b']
-dimension: 1
-test_value: 1.2
+shape: 1
 comment: ''
+category: property

@@ -2,26 +2,26 @@
 Module containing classes and methods for Model functionality in Propnet code.
 """
 
-import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr
-
 # typing information, for type hinting only
 from typing import *
 
+import math
+
 from abc import ABCMeta, abstractmethod
 from functools import wraps
-from hashlib import sha256
+from os.path import dirname, join, isfile
+from textwrap import dedent
 
-from propnet.symbols import SymbolType
+from ruamel.yaml import safe_load, safe_dump
+from monty.serialization import loadfn
+
+import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
+
+from propnet.symbols import DEFAULT_SYMBOLS
 from propnet import logger
 from propnet import ureg
-
-from os.path import dirname
-from ruamel.yaml import safe_load
-
-# TODO: add pint integration
-# TODO: decide on interface for conditions, assumptions etc.
-# TODO: decide on interface for multiple-material models.
+from propnet.core.utils import uuid, references_to_bib
 
 
 def load_metadata(path):
@@ -46,7 +46,7 @@ def load_metadata(path):
     return metadata
 
 
-class AbstractModel(metaclass=ABCMeta):
+class AbstractModel:
     """
     Baseclass for all models appearing in Propnet.
 
@@ -57,7 +57,7 @@ class AbstractModel(metaclass=ABCMeta):
         (str) tags -> (list<str>) list of categories applicable to the model.
         (str) references -> (list<str>) list of informational links explaining / supporting the model
         (str) symbol_mapping -> (dict<str,str>) keys are symbols used in equations of the model,
-                                                values are SymbolType enum values (SymbolMetadata.name field)
+                                                values are Symbol enum values (Symbol.name field)
         (str) connections -> (list<dict<str,list<str>>>)
                                                 Forms the list of outputs that can be generated from different sets of
                                                 inputs. The outer list contains dictionaries. These dictionaries contain
@@ -69,9 +69,9 @@ class AbstractModel(metaclass=ABCMeta):
         (str) description -> (str) markdown-formatted text further describing / explaining the model.
 
     The following methods may be overridden for custom model behavior:
-        constraints () -> dict<str,lambda(Symbol)->bool>
-            Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
-            indicating whether that Symbol meets all necessary conditions for validity.
+        constraints () -> dict<str,lambda(Quantity)->bool>
+            Returns a dictionary mapping symbol to a lambda function that takes in a Quantity object and returns a bool
+            indicating whether that Quantity meets all necessary conditions for validity.
         plug_in (dict<str,id>) -> dict<str,id>
             Given a dictionary specifying a value for a set of input symbols, returns the predicted value of the model
             for those inputs.
@@ -91,14 +91,24 @@ class AbstractModel(metaclass=ABCMeta):
         unit_mapping (dict<str,Pint.unit>): mapping from symbols used in the model to their corresponding units.
     """
 
-    def __init__(self, metadata=None):
+    def __init__(self, metadata=None, symbol_types=None, additional_symbols=None):
         """
-        Constructs a Model object with the provided metadata. If the metadata is None, it attempts to load in the
-        appropriate .yaml file at this time. Such a .yaml file must have a name equal to the class name.
+        Constructs a Model object with the provided metadata.
+
+        If the metadata is None, it attempts to load in the
+        appropriate .yaml file at this time.
+        Such a .yaml file must have a name equal to the class name.
 
         Args:
             metadata (dict<str,id>): metadata defining the model.
         """
+
+        if additional_symbols:
+            symbol_types = {symbol.name:symbol for symbol in symbol_types}
+            DEFAULT_SYMBOLS.update(symbol_types)
+
+        if symbol_types is None:
+            symbol_types = DEFAULT_SYMBOLS
 
         if not metadata:
             try:
@@ -106,7 +116,7 @@ class AbstractModel(metaclass=ABCMeta):
                 path = '{}/../models/{}.yaml'.format(dirname(__file__), self.__class__.__name__)
                 metadata = load_metadata(path)
             except Exception as e:
-                print(e)
+                logger.error(e)
                 metadata = {}
 
         self._metadata = metadata
@@ -115,24 +125,82 @@ class AbstractModel(metaclass=ABCMeta):
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
             try:
-                self.unit_mapping[symbol] = SymbolType[name].value.units
+                self.unit_mapping[symbol] = symbol_types[name].units
             except Exception as e:
                 raise ValueError('Please check your property names in your symbol mapping, '
                                  'for property {} and model {}, are they all valid? '
                                  'Exception: {}'
                                  .format(name, self.__class__.__name__, e))
 
-    # constraints and evaluate methods are optional overrides in extending classes
+    # constraint_symbols, meets_constraints, plug_in, and evaluate methods are optional overrides in extending classes
     @property
-    def constraints(self):
+    def constraint_symbols(self):
         """
-        Returns a dictionary mapping symbol to a lambda function that takes in a Symbol object and returns a bool
-        indicating whether that Symbol meets all necessary conditions for validity.
+        Returns a set of symbols.
+        These symbols are those whose value needs to be evaluated to determine if the model can be evaluated under the
+        current conditions.
+        Returns: ({str})
+        """
+        return []
 
-        Returns:
-            (dict<str, lambda(Symbol) -> bool>)
+    def check_constraints(self, constraint_inputs):
         """
-        return {}
+        Returns a dictionary mapping symbol to a lambda function that takes in a Quantity object and returns a bool
+        indicating whether that Quantity meets all necessary conditions for validity.
+
+        Args:
+            constraint_inputs (dict<str, float>): Mapping from string symbol to symbol value
+        Returns:
+            (bool): bool stating whether the constraints of the model are met.
+        """
+        return True
+
+    def evaluate(self, symbol_values):
+        """
+        Given a set of symbol_values, performs error checking to see if the input symbol_values represents a valid input
+        set based on the self.connections() method. If so, it returns a dictionary representing the value of plug_in
+        applied to the inputs. The dictionary contains a "successful" key representing if plug_in was successful.
+
+        Args:
+            symbol_values (dict<str,float>): Mapping from string symbol to float value, giving inputs.
+        Returns:
+            (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
+                               given inputs. Additionally contains a "successful" key -> bool pair.
+        """
+
+        # strip units from input
+        for symbol in symbol_values:
+            if type(symbol_values[symbol]) == ureg.Quantity:
+                symbol_values[symbol] = symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude
+
+        available_symbols = set(symbol_values.keys())
+
+        # check we support this combination of inputs
+        available_inputs = [len(set(possible_input_symbols) - available_symbols) == 0
+                            for possible_input_symbols in self.input_symbols]
+        if not any(available_inputs):
+            return {
+                'successful': False,
+                'message': "The {} model cannot generate any outputs for these inputs: {}".format(
+                    self.name, available_symbols)
+            }
+        try:
+            # evaluate is allowed to fail
+            out = self.plug_in(symbol_values)
+            out['successful'] = True
+        except Exception as e:
+            return {
+                'successful': False,
+                'message': str(e)
+            }
+
+        # add units to output
+        for key in out:
+            if key == 'successful':
+                continue
+            out[key] = ureg.Quantity(out[key], self.unit_mapping[key])
+
+        return out
 
     def plug_in(self, symbol_values):
         """
@@ -166,81 +234,52 @@ class AbstractModel(metaclass=ABCMeta):
                 outputs[str(possible_output)] = sp.N(solution)
         return outputs
 
-    def evaluate(self, symbol_values):
-        """
-        Given a set of symbol_values, performs error checking to see if the input symbol_values represents a valid input
-        set based on the self.connections() method. If so, it returns a dictionary representing the value of plug_in
-        applied to the inputs. The dictionary contains a "successful" key representing if plug_in was successful.
-
-        Args:
-            symbol_values (dict<str,float>): Mapping from string symbol to float value, giving inputs.
-        Returns:
-            (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
-                               given inputs. Additionally contains a "successful" key -> bool pair.
-
-        TODO: check our units
-        TODO: make this more robust
-        """
-        available_symbols = set(symbol_values.keys())
-
-        # check we support this combination of inputs
-        available_inputs = [len(set(possible_input_symbols) - available_symbols) == 0
-                            for possible_input_symbols in self.input_symbols]
-        if not any(available_inputs):
-            return {
-                'successful': False,
-                'message': "The {} model cannot generate any outputs for these inputs: {}".format(
-                    self.name, available_symbols)
-            }
-        try:
-            # evaluate is allowed to fail
-            out = self.plug_in(symbol_values)
-            out['successful'] = True
-        except Exception as e:
-            return {
-                'successful': False,
-                'message': str(e)
-            }
-        # add units to output
-        return out
-
     # Suite of getter methods returning appropriate model data.
+
     @property
-    def name(self):
+    def name(self) -> str:
         """
-        Returns:
-            (str): Name of model
+
+        Returns: Name of the model (this matches the class name),
+        'title' gives a more human-readable title for the model.
+
         """
         return self.__class__.__name__
 
     @property
-    def title(self):
+    def title(self) -> str:
         """
-        Returns:
-            (str): Title of model
+
+        Returns: A human-readable title for the model.
+
         """
         return self._metadata.get('title', 'undefined')
 
     @property
-    def tags(self):
+    def tags(self) -> List[str]:
         """
-        Returns:
-            (list<str>): List of tags associated with the model
+
+        Returns: A list of tags categories associated with the
+        model.
+
         """
         return self._metadata.get('tags', [])
 
     @property
-    def description(self):
+    def description(self) -> str:
         """
-        Returns:
-            (str): Description of model as Markdown string """
+
+        Returns: A description of the model and how it works,
+        provided as a Markdown-formatted string.
+
+        """
         return self._metadata.get('description', '')
 
     @property
-    def symbol_mapping(self):
+    def symbol_mapping(self) -> Dict[str, str]:
         """
         A mapping of a symbol named used within the model to the canonical symbol name, e.g. {"E": "youngs_modulus"}
-        keys are symbols used in the model; values are SymbolType enum values (SymbolMetadata.name field)
+        keys are symbols used in the model; values are Symbol enum values (Symbol.name field)
 
         Returns:
             (dict<str,str>): symbol mapping dictionary
@@ -295,113 +334,143 @@ class AbstractModel(metaclass=ABCMeta):
 
         refs = self._metadata.get('references', [])
 
-        return refs
-
-        # TODO: see below
-
-        def retrieve_from_library(ref):
-            """
-            Retrieves a reference from library distributed with
-            Propnet.
-
-            Args:
-                ref: reference string
-
-            Returns: BibTeX string
-
-            """
-
-            return None
-
-        def update_library(ref, parsed_ref):
-            return None
-
-        def parse_doi(doi):
-            """
-            Parses a DOI into a BibTeX-formatted referenced.
-
-            Args:
-                doi: DOI
-
-            Returns: BibTeX string
-
-            """
-
-        def parse_url(url):
-            """
-            Parses a url into a BibTeX-formatted referenced.
-
-            Args:
-                url: url string
-
-            Returns:
-
-            """
-
-        parsed_refs = []
-        for ref in refs:
-
-            already_parsed = retrieve_from_library(ref)
-
-            if already_parsed:
-                parsed_ref = already_parsed
-            elif ref.startswith('url:'):
-                url = ref.split('url:')[1]
-                parsed_ref = parse_url(url)
-            elif ref.startswith('doi:'):
-                doi = ref.split('doi:')[1]
-                parsed_ref = parse_url(doi)
-            else:
-                raise ValueError('Unknown reference style for'
-                                 'model {}: {}'.format(self.name, ref))
-
-            if not already_parsed:
-                update_library(ref, parsed_ref)
-                logger.warn("Please commit changes to reference library.")
-
-            parsed_refs.append(ref)
-
-        return refs
-
-    @property
-    def constants(self):
-        return self._metadata.get('constants', {})
+        return references_to_bib(refs)
 
     def __hash__(self):
-        """
-        A unique model hash, SHA256 hash of the model class name.
+        return self.uuid.__hash__()
 
-        :return (str): 4-digit hex string
+    @property
+    def uuid(self):
         """
-        return int.from_bytes(sha256(self.__class__.__name__.encode('utf-8')).digest(), 'big')
+        A unique model identifier, function of model class name.
+        """
+        return uuid(self.__class__.__name__.encode('utf-8'))
 
     @property
     def model_id(self):
-        """
-        A unique model identifier, function of model class name.
+        return self.uuid #TODO: remove
 
-        :return (str): 4-digit hex string
-        """
-        return sha256(self.__class__.__name__.encode('utf-8')).hexdigest()[0:4]
+    def __eq__(self, other):
+        return self.model_id == getattr(other, "model_id", None)
 
     def __repr__(self):
-        return str(self._metadata)
+        return self.name
 
-    #def __str__(self):
-    #    return NotImplementedError
-    #    return Markdown-formatted text
-    #    """
-    #    Model: model_name (model_id)
-    #
-    #    Associated Symbols:
-    #
-    #    Properties:
-    #    Conditions:
-    #    Objects:
-    #
-    #    Equations:
-    #
-    #    Inputs/outputs:
-    #
-    #    Description:
-    #    """#
+    def __str__(self):
+        return "{} [{}]".format(self._metadata['title'], self.model_id)
+
+    @property
+    def test_data(self):
+
+        test_file = join(dirname(__file__), '../models/test_data/{}.json'
+                         .format(self.__class__.__name__))
+        if not isfile(test_file):
+            return None
+        else:
+            return loadfn(test_file)
+
+    # TODO: rename to test_model
+    def test(self, test_data=None):
+        """
+
+        Args:
+            test_data: list of test data
+
+        Returns: False if tests fail or no test data supplied,
+        True if tests pass.
+
+        """
+
+        if not test_data:
+            test_data = self.test_data
+
+        if test_data:
+
+            for d in test_data:
+                try:
+                    model_outputs = self.evaluate(d['inputs'])
+                    for k, known_output in d['outputs'].items():
+                        model_output = model_outputs[k]
+                        # TODO: remove, here temporarily
+                        if hasattr(model_output, 'magnitude'):
+                            model_output = model_output.magnitude
+                        if not math.isclose(model_output, known_output):
+                            return False
+                except Exception as e:
+                    print(e)
+                    print('Testing {} raised an exception.'.format(self.__class__.__name__))
+                    return False
+
+            return True
+
+        else:
+
+            return False
+
+    def to_yaml(self):
+
+        data = {
+            "title": self.name,
+            "tags": self.tags,
+            "references": self._metadata.get('references', []),
+            "symbol_mapping": self.symbol_mapping,
+            "connections": self.connections
+        }
+
+        if self.equations:
+            data["equations"] = self.equations
+
+        header = safe_dump(data)
+
+        return "{}---\n{}".format(header, self.description)
+
+    @property
+    def _example_code(self):
+        """
+        Generates example code from test data, useful for
+        documentation.
+
+        Returns: example code for this model
+
+        """
+
+        if not self.test_data:
+            return None
+
+        example_inputs = self.test_data[0]['inputs']
+        example_outputs = str(self.test_data[0]['outputs'])
+
+        symbol_definitions = []
+        evaluate_args = []
+        for input_name, input_value in example_inputs.items():
+
+            symbol_str = "{input_name} = {input_value}  # {symbol_name} in {units}".format(
+                input_name=input_name,
+                input_value=input_value,
+                symbol_name=self.symbol_mapping[input_name],
+                units=self.unit_mapping[input_name]
+            )
+            symbol_definitions.append(symbol_str)
+
+            evaluate_str = "\t'{}': {}".format(input_name, input_name)
+            evaluate_args.append(evaluate_str)
+
+        symbol_definitions = '\n'.join(symbol_definitions)
+        evaluate_args = '\n'.join(evaluate_args)
+
+        example_code = """\
+from propnet.models import {model_name}
+
+{symbol_definitions}
+
+model = {model_name}()
+model.evaluate({{
+{evaluate_args}
+}})  # returns {example_outputs}
+""".format(model_name=self.name,
+           symbol_definitions=symbol_definitions,
+           evaluate_args=evaluate_args,
+           example_outputs=example_outputs
+           )
+
+        return example_code

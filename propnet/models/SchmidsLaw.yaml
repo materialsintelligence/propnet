@@ -8,7 +8,7 @@ symbol_mapping: {
   σ: applied_stress
 }
 connections:
-- inputs: T
+- inputs: [T]
   outputs: [m, σ]
 equations: ["T-mσ"]
 ---

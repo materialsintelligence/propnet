@@ -11,7 +11,7 @@ symbol_mapping: {
 }
 connections:
 - inputs: [alpha, t, R]
-  outputs: A
+  outputs: [A]
 equations: [A - (1 - R) * (1 - exp(-alpha * t))]
 ---
 Absorbance A quantifies the reduction of light intensity as it passes through the material,

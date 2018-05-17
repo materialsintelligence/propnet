@@ -4,7 +4,6 @@ units:
 - - [kelvin, 1.0]
 display_names: [Temperature]
 display_symbols: [T]
-dimension: 1
-test_value: 346
+shape: 1
 comment: ''
-type: condition
+category: condition

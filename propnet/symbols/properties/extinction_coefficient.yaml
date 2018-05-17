@@ -4,6 +4,6 @@ units:
 - []
 display_names: ['Extinction Coefficient']
 display_symbols: ['k']
-dimension: 1
-test_value: 0.05
+shape: 1
 comment: 'complex part of the refractive index'
+category: property

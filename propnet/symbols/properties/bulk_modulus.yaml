@@ -4,6 +4,6 @@ units:
 - - [gigapascal, 1.0]
 display_names: [Bulk modulus]
 display_symbols: [K]
-dimension: 1
-test_value: 97.0
+shape: 1
 comment: ''
+category: property

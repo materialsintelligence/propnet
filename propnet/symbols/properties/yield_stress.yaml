@@ -4,6 +4,6 @@ units:
 - - [gigapascal, 1.0]
 display_names: ['Yield Stress']
 display_symbols: ['/sigma_{y}']
-dimension: 1
-test_value: 34.8
+shape: 1
 comment: ''
+category: property

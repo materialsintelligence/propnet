@@ -4,6 +4,6 @@ units:
 - - [electron_volt, 1.0]
 display_names: [Band gap]
 display_symbols: ["E_g"]
-dimension: 1
-test_value: 0.6
+shape: 1
 comment: ''
+category: property

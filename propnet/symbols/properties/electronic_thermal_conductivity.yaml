@@ -4,8 +4,8 @@ units:
 - - [watt, 1.0]
   - [meter, -1.0]
   - [kelvin, -1.0]
-display_names: ['Thermal conductivity, electronic contribution']
+display_names: ['Thermal conductivity', 'electronic contribution']
 display_symbols: ['\kappa_{e}']
-dimension: 1
-test_value: 1.6
+shape: 1
 comment: ''
+category: property

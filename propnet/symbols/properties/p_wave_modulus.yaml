@@ -4,6 +4,6 @@ units:
 - - [gigapascal, 1.0]
 display_names: [P-wave modulus]
 display_symbols: [M]
-dimension: 1
-test_value: 10.0
+shape: 1
 comment: ''
+category: property

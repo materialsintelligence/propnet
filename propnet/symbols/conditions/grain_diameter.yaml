@@ -4,7 +4,6 @@ units:
 - - [nanometer, 1.0]
 display_names: [Average grain diameter]
 display_symbols: [d]
-dimension: 1
-test_value: 8
+shape: 1
 comment: ''
-type: condition
+category: condition

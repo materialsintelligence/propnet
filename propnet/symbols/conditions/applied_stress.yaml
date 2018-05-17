@@ -4,7 +4,6 @@ units:
 - - [gigapascal, 1]
 display_names: ['Applied stress']
 display_symbols: ['/sigma']
-dimension: 1
-test_value: 2.2
+shape: 1
 comment: ''
-type: condition
+category: condition

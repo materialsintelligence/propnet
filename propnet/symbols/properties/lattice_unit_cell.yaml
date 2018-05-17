@@ -4,6 +4,6 @@ units:
 - - [angstrom, 1.0]
 display_names: [Lattice vectors for unit cell]
 display_symbols: ["m"]
-dimension: [3,3]
-test_value: [[4,0,0],[0,4,0],[0,0,4]]
+shape: [3,3]
 comment: ''
+category: property

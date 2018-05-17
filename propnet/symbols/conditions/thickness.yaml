@@ -4,7 +4,6 @@ units:
 - - [nanometer, 1.0]
 display_names: [Thickness]
 display_symbols: [t]
-dimension: 1
-test_value: 100
+shape: 1
 comment: 'thickness of the material'
-type: condition
+category: condition

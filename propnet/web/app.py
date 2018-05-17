@@ -1,6 +1,7 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table_experiments as dt
 
 from dash.dependencies import Input, Output, State
 
@@ -10,16 +11,19 @@ from urllib.parse import urlparse
 
 from propnet import log_stream, ureg
 from propnet.web.layouts_models import model_layout, models_index
-from propnet.web.layouts_properties import property_layout, properties_index
-from propnet.models import all_model_names
-from propnet.symbols import all_symbol_names
+from propnet.web.layouts_symbols import symbol_layout, symbols_index
+from propnet.models import DEFAULT_MODEL_NAMES
+from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
 
 from force_graph import ForceGraphComponent
 from propnet.web.utils import graph_conversion, parse_path
 from propnet.core.graph import Propnet
 
-from propnet.ext.matproj import mpr, PROPNET_PROPERTIES_ON_MP, MP_FROM_PROPNET_NAME_MAPPING, \
-    mpid_from_formula, materials_from_mp_ids
+from propnet.ext.matproj import PROPNET_PROPERTIES_ON_MP, MP_FROM_PROPNET_NAME_MAPPING,\
+    materials_from_formula
+
+from pymatgen import MPRester
+
 import numpy as np
 from scipy.stats import describe
 
@@ -29,12 +33,14 @@ app = dash.Dash()
 server = app.server
 app.config.supress_callback_exceptions = True  # TODO: remove this?
 app.scripts.config.serve_locally = True
-app.title = "The Hitchhikers Guide to Materials Science"
+app.title = ">>snappy project name to go here<<"
 route = dcc.Location(id='url', refresh=False)
 
 cache = Cache(app.server, config={
     'CACHE_TYPE': 'filesystem', 'CACHE_DIR': '.tmp'
 })
+
+mpr = MPRester()
 
 g = Propnet().graph
 graph_data = graph_conversion(g)
@@ -56,7 +62,7 @@ def hightlight_node_for_content(pathname):
     """
 
     Args:
-      pathname: 
+      pathname:
 
     Returns:
 
@@ -77,7 +83,7 @@ def show_content_for_selected_node(node):
     """
 
     Args:
-      node: 
+      node:
 
     Returns:
 
@@ -91,20 +97,20 @@ def show_content_for_selected_node(node):
     print(node)
     if node == 'home':
         return '/'
-    elif node in all_symbol_names:
+    elif node in DEFAULT_SYMBOL_TYPE_NAMES:
         return '/property/{}'.format(node)
-    elif node in all_model_names:
+    elif node in DEFAULT_MODEL_NAMES:
         return '/model/{}'.format(node)
     else:
         return '/'
 
 
 layout_menu = html.Div(style={'textAlign': 'center'}, children=[
-    dcc.Link('All Properties', href='/property'),
+    dcc.Link('All Symbols', href='/property'),
     html.Span(' • '),
     dcc.Link('All Models', href='/model'),
     html.Span(' • '),
-    dcc.Link('Load Material', href='/load_material'),
+    dcc.Link('Explore with Materials Project', href='/load_material'),
 ])
 
 # home page
@@ -138,13 +144,15 @@ Propnet initialization log:
 # header
 app.layout = html.Div(children=[
     route,
-    html.H3("The Hitchhikers Guide to Materials Science "),
+    html.H3(app.title),
     html.Br(),
     graph_component,
     html.Br(),
     layout_menu,
     html.Br(),
-    html.Div(id='page-content')
+    html.Div(id='page-content'),
+    # hidden table to make sure table component loads (Dash limitation; may be removed in future)
+    html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'})
 ], style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 50})
 
 # standard Dash css, fork this for a custom theme
@@ -160,62 +168,84 @@ app.scripts.append_script({
 })
 
 
-
-from enum import Enum
 @app.callback(
     Output('material-content', 'children'),
-    [Input('submit-formula', 'n_clicks')],
-    [State('formula-input', 'value')]
+    [Input('submit-formula', 'n_clicks'),
+     Input('derive-properties', 'n_clicks')],
+    [State('formula-input', 'value'),
+     State('aggregate', 'values')]
 )
-def retrieve_material(n_clicks, formula):
-    mpid = mpid_from_formula(formula)
+def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
 
-    material = materials_from_mp_ids([mpid])[0]
+    materials = materials_from_formula(formula)
+
+    if n_clicks is None:
+        return ""
+
+    if not materials:
+        return "Material not found."
+
+    material = materials[0]
 
     p = Propnet()
+    p.add_material(material)
     g = p.graph
 
     available_properties = material.available_properties()
 
-    derivable_properties = []
-    models_to_evaluate = []
+    if n_clicks_derive is not None:
+        p.evaluate()
 
-    # TODO: remove demo code
-    # this shouldn't be here
-    # it is also dumb dumb code
-    # and worse! it's wrong too, doesn't take into account routes
-    for node in p.graph:
-        if not isinstance(node, Enum):
-            in_edges = [e1 for e1, e2 in p.graph.in_edges(node)]
-            in_edge_names = [in_edge.name for in_edge in in_edges]
-            if all([prop_name in available_properties for prop_name in in_edge_names]):
-                for e1, e2 in p.graph.out_edges(node):
-                    if isinstance(e2, Enum):
-                        if e2.name not in available_properties:
-                            models_to_evaluate.append(node.__name__)
-                            models_to_evaluate.append(e2.name)
-                            derivable_properties.append(e2.name)
+    new_qs = {}
+    if aggregate:
+        new_qs = material.aggregate()
+    print(new_qs)
 
+    rows = []
+    for node in material.available_quantity_nodes():
+        if node.node_value.symbol.category != 'object':
+            if str(node.node_value.symbol.name) not in new_qs:
+                rows.append(
+                    {
+                        'Symbol': str(node.node_value.symbol.name),
+                        'Value': str(node.node_value.value),  # TODO: node.node_value.value? this has to make sense
+                        #'Units': str(node.node_value.symbol.unit_as_string)
+                    }
+                )
+
+    # demo hack
+    for symbol, quantity in new_qs.items():
+        rows.append(
+            {
+                'Symbol': str(symbol),
+                'Value': str(quantity.value),
+            # TODO: node.node_value.value? this has to make sense
+                # 'Units': str(node.node_value.symbol.unit_as_string)
+            }
+        )
+
+    table = dt.DataTable(
+        rows=rows,
+        row_selectable=True,
+        filterable=True,
+        sortable=True,
+        selected_row_indices=[],
+        id='datatable'
+    )
 
     material_graph_data = graph_conversion(g, highlight=True,
-                                           highlight_green=available_properties,
-                                           highlight_yellow=models_to_evaluate)
+                                           highlight_green=material.available_properties())
     material_graph_component = ForceGraphComponent(id='propnet-graph',
                                                    graphData=material_graph_data,
                                                    width=800,
                                                    height=350)
 
-    if mpid:
-        return html.Div([
-            dcc.Link(mpid, href="https://materialsproject.org/materials/{}".format(mpid)),
-            material_graph_component,
-            html.Br(),
-            dcc.Markdown('### Available Properties\n\n{}'.format("\n\n".join(available_properties))),
-            html.Br(),
-            dcc.Markdown('### Derivable Properties\n\n{}'.format("\n\n".join(derivable_properties))),
-        ])
-    else:
-        return None
+    return html.Div([
+        html.H3('Graph'),
+        material_graph_component,
+        html.H3('Table'),
+        table
+    ])
 
 material_layout = html.Div([
     dcc.Input(
@@ -224,11 +254,21 @@ material_layout = html.Div([
         value='',
         id='formula-input'
     ),
-    html.Button('Submit', id='submit-formula'),
+    html.Button('Load Material', id='submit-formula'),
+    html.Button('Derive Properties', id='derive-properties'),
+    dcc.Checklist(
+        id='aggregate',
+        options=[
+            {'label': 'Aggregate Derived Properties', 'value': 'aggregate'}
+        ],
+        values=['aggregate'],
+        labelStyle={'display': 'inline-block'}
+    ),
     html.Br(),
     html.Br(),
     html.Div(id='material-content')
 ])
+
 
 # routing, current routes defined are:
 # / for home page
@@ -242,7 +282,7 @@ def display_page(pathname):
     """
 
     Args:
-      pathname: 
+      pathname:
 
     Returns:
 
@@ -259,9 +299,9 @@ def display_page(pathname):
         elif path_info['mode'] == 'property':
             if path_info['value']:
                 property_name = path_info['value']
-                return property_layout(property_name)
+                return symbol_layout(property_name)
             else:
-                return properties_index()
+                return symbols_index()
         elif path_info['mode'] == 'load_material':
             return material_layout
         else:
@@ -271,4 +311,4 @@ def display_page(pathname):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)

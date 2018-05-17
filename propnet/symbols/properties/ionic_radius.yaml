@@ -4,6 +4,6 @@ units:
 - - [picometer, 1.0]
 display_names: [Ionic radius]
 display_symbols: [r]
-dimension: 1
-test_value: 116
+shape: 1
 comment: ''
+category: property

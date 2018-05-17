@@ -1,10 +1,6 @@
 name: prototype
-units:
-- 1.0
-- []
 display_names: ['Crystal Prototype']
-display_symbols: []
-dimension: 1
-test_value: '(Cubic) Perovskite'
+display_symbols: ['Crystal Prototype']
 comment: ''
-type: object
+category: object
+object_type: str

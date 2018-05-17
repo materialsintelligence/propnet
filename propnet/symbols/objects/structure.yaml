@@ -1,10 +1,6 @@
 name: structure
-units:
-- 1.0
-- []
 display_names: ['Crystallographic structure']
-display_symbols: []
-dimension: 1
+display_symbols: ['Structure']
 comment: ''
-type: object
-test_value: 1
+category: object
+object_type: pymatgen.core.structure.Structure

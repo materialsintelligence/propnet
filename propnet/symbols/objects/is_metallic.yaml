@@ -1,10 +1,6 @@
 name: is_metallic
-units:
-- 1.0
-- []
 display_names: ['Is Metallic']
-display_symbols: []
-dimension: 1
-test_value: true
+display_symbols: ['Is Metallic']
 comment: ''
-type: object
+category: object
+object_type: bool

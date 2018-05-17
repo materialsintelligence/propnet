@@ -6,6 +6,6 @@ units:
   - [kelvin, -1.0]
 display_names: [Thermal conductivity]
 display_symbols: [\kappa]
-dimension: 1
-test_value: 65.0
+shape: 1
 comment: ''
+category: property

@@ -1,0 +1,15 @@
+---
+title: Voight's Shear Modulus
+tags: [mechanical]
+references: []
+symbol_mapping: {
+  C: elastic_tensor_voigt,
+  G: shear_modulus
+}
+connections:
+- inputs: [C]
+  outputs: [G]
+equations: []
+---
+Model calculating an upper bound for Shear Modulus based on the Voight calculation, derived from the full elastic
+tensor.

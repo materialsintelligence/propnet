@@ -4,6 +4,6 @@ units:
 - []
 display_names: ['Relative permittivity','Dielectric constant']
 display_symbols: ['\epsilon_{r}']
-dimension: 1
-test_value: 0.8
+shape: 1
 comment: ''
+category: property

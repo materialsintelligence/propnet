@@ -4,6 +4,6 @@ units:
 - []
 display_names: ['Reflectance']
 display_symbols: ['R']
-dimension: 1
-test_value: 0.2
-comment: 'the intensity of reflected light relative to the incident intensity'
+shape: 1
+comment: 'Intensity of reflected light relative to incident intensity'
+category: property

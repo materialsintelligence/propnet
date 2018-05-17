@@ -4,6 +4,6 @@ units:
 - []
 display_names: [Elastic Anisotropy]
 display_symbols: ['E_{anisotropy}']
-dimension: 1
-test_value: 0.27
+shape: 1
 comment: ''
+category: property

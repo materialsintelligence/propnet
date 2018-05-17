@@ -1,10 +1,10 @@
 name: snyder_acoustic_sound_velocity
 units:
 - 1.0
-- - [meters, 1.0]
-  - [seconds, -1.0]
+- - [meter, 1.0]
+  - [second, -1.0]
 display_names: [Snyder's acoustic sound velocity]
 display_symbols: [v_ac]
-dimension: 1
-test_value: 65.0
+shape: 1
 comment: ''
+category: property
