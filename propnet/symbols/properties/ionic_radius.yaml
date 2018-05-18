@@ -1,7 +1,7 @@
 name: ionic_radius
 units:
 - 1.0
-- - [picometer, 1.0]
+- - [angstrom, 1.0]
 display_names: [Ionic radius]
 display_symbols: [r]
 shape: 1

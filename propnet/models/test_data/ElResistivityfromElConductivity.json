@@ -1,3 +1,2 @@
-[{"inputs": {"rho": 1.0}, "outputs": {"sigma": 1.0}},
-{"inputs": {"rho": 1.0}, "outputs": {"sigma": 1.0}}]
+[{"inputs": {"rho": 2.0}, "outputs": {"sigma": 0.5}}]
 

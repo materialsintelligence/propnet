@@ -1,7 +1,7 @@
 name: ionic_radius_b
 units:
 - 1.0
-- - [picometer, 1.0]
+- - [angstrom, 1.0]
 display_names: [Ionic radius of B site in perovskite]
 display_symbols: [r_B]
 shape: 1

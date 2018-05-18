@@ -4,11 +4,11 @@ tags: [thermal]
 references: ["doi:10.1016/S0257-8972(02)00593-5"]
 symbol_mapping: {
   C_ij: elastic_tensor_voigt,
-  _structure: structure,
+  structure: structure,
   t: thermal_conductivity
 }
 connections:
-- inputs: [C_ij, _structure]
+- inputs: [C_ij, structure]
   outputs: [t]
 ---
 Based on the model posited in https://doi.org/10.1016/S0257-8972(02)00593-5,
