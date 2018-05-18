@@ -1,0 +1,21 @@
+---
+title: Dielectric Figure of Merit Energy Calculator
+tags: [electrical]
+references: []
+symbol_mapping: {
+  epsilon: relative_permittivity,
+  E_g: band_gap,
+  c: dielectric_figure_of_merit_energy
+}
+connections:
+- inputs: [epsilon, E_g]
+  outputs: [c]
+equations: [c - epsilon**(1/2)*E_g]
+---
+Relation from Yim, K. et al. Novel high-κ dielectrics for next-generation electronic devices
+screened by automated ab initio calculations. NPG Asia Mater. 7, e190 (2015).
+
+Gives an indication as to the fitness of the dielectric for use in a capacitor.
+
+Balances the resistance of the dielectric to leakage current as well as the increase in
+energy density afforded by the linear response.

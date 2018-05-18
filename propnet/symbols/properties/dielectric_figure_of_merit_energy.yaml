@@ -1,0 +1,11 @@
+name: dielectric_figure_of_merit_energy
+units:
+- 1.0
+- []
+display_names: ['Dielectric Figure of Merit: Energy']
+display_symbols: ['c']
+shape: 1
+comment: "Empirical value representing the material's utility for use in a capacitor \
+          accounting for minimization of leakage current and enhancement of field \
+          energy density."
+category: property
