@@ -1,0 +1,50 @@
+---
+title: Materials Project Interface
+tags: [external interface]
+references: []
+symbol_mapping: {
+  task_id: external_identifier_mp,
+  band_gap: band_gap_pbe,
+  band_structure: null_symbol, # TODO: add property
+  band_structure_uniform: null_symbol, # TODO: add property
+  diel.n: refractive_index,
+  diel.poly_total: relative_permittivity,
+  diel.e_electronic: null_symbol, # TODO: add property
+  diel.e_total: null_symbol, # TODO: add property
+  diel.poly_electronic: null_symbol, # TODO: add property
+  diel.pot_ferroelectric: potentially_ferroelectric,
+  pretty_formula: formula,
+  e_above_hull: energy_above_hull,
+  elasticity.elastic_tensor: elastic_tensor_voigt,
+  elasticity.G_Reuss: shear_modulus,
+  elasticity.G_VRH: shear_modulus,
+  elasticity.G_Voigt: shear_modulus,
+  elasticity.K_Reuss: bulk_modulus,
+  elasticity.K_VRH: bulk_modulus,
+  elasticity.K_Voigt: bulk_modulus,
+  elasticity.elastic_anisotropy: elastic_anisotropy,
+  elasticity.poisson_ratio: poisson_ratio,
+  formation_energy_per_atom: formation_energy_per_atom,
+  magnetic_type: magnetic_order,
+  oxide_type: oxide_type,
+  piezo.piezoelectric_tensor: piezoelectric_tensor,
+  piezo.v_max: null_symbol, # TODO: add property
+  piezo.eij_max: null_symbol, # TODO: add property
+  structure: structure,
+  total_magnetization: null_symbol, # TODO: add property total_magnetization_per_unit_cell
+}
+connections:
+- inputs: [task_id]
+  outputs: [band_gap, band_structure, band_structure_uniform, diel.n, diel.poly_total, diel.e_electronic,
+  diel.e_total, diel.poly_electronic, diel.pot_ferroelectric, pretty_formula, e_above_hull, elasticity.elastic_tensor,
+  elasticity.G_Reuss, elasticity.G_VRH, elasticity.G_Voigt, elasticity.K_Reuss, elasticity.K_VRH, elasticity.K_Voigt,
+  elasticity.elastic_anisotropy, elasticity.poisson_ratio, formation_energy_per_atom, magnetic_type, oxide_type,
+  piezo.piezoelectric_tensor, piezo.v_max, piezo.eij_max, structure, total_magnetization]
+- inputs: [pretty_formula]
+  outputs: [task_id]
+---
+The Materials Project is a repository of many computed materials,
+with each material given a unique identifier (mp-id).
+
+This model retrieves a material from the Materials Project via its
+mp-id or formula
