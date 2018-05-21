@@ -24,8 +24,8 @@ class MaterialsProject(AbstractModel):
 
         """
         q = self.mpr.query(criteria={'pretty_formula': formula},
-                           properties=['task_id'])
-        return q[0]['task_id']
+                           properties=['material_id'])
+        return q[0]['material_id']
 
     def get_properties_for_mpids(self, mpids: List[str]) -> List[Dict]:
         """
@@ -39,11 +39,21 @@ class MaterialsProject(AbstractModel):
 
         """
 
-        all_properties = list(self.symbol_mapping.keys())
-        q = self.mpr.query(criteria={'task_id': {'$in': mpids}},
-                           properties=all_properties)
+        all_properties = set(self.symbol_mapping.keys())
+        # some keys require specific API queries
+        special_properties = {'band_structure', 'band_structure_uniform', 'dos', 'computed_entry'}
+        all_properties = list(all_properties-special_properties)
 
-        return q
+        q = {d['material_id']:d for d in
+             self.mpr.query(criteria={'material_id': {'$in': mpids}}, properties=all_properties)}
+
+        computed_entries = {e.entry_id:e for e in
+                            self.mpr.get_entries({'material_id': {'$in': mpids}})}
+
+        for mpid, doc in q.items():
+            doc['computed_entry'] = computed_entries[mpid]
+
+        return list(q.values())
 
     def get_properties_for_mpid(self, mpid: str) -> Dict:
         """
