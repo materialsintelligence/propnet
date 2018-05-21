@@ -1,7 +1,7 @@
 ---
 title: Relations Between Heat Capacities
 tags: [thermal]
-references: [https://en.wikipedia.org/wiki/Relations_between_heat_capacities]
+references: [url:https://en.wikipedia.org/wiki/Relations_between_heat_capacities]
 symbol_mapping: {
   alpha: thermal_expansion_coefficient,
   beta_T: isothermal_compressibility,
