@@ -3,7 +3,7 @@ units:
 - 1.0
 - - [kelvin, -1.0]
 display_names: [Coefficient of Thermal Expansion]
-display_symbols: ["alpha"]
+display_symbols: [\alpha]
 shape: 1
 comment: ''
 category: property
