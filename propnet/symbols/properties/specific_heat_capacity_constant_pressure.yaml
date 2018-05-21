@@ -5,7 +5,7 @@ units:
   - [kilogram, -1.0]
   - [kelvin, -1.0]
 display_names: [Specific heat capacity (constant pressure)]
-display_symbols: [$c_{p}]
+display_symbols: [c_{p}]
 shape: 1
 comment: ''
 category: property
