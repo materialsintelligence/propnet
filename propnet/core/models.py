@@ -19,10 +19,9 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 from propnet.symbols import DEFAULT_SYMBOLS
-from propnet import logger
-from propnet import ureg
+from propnet import logger, ureg
 from propnet.core.utils import uuid, references_to_bib
-
+from propnet.core.exceptions import ModelEvaluationError, IncompleteData
 
 def load_metadata(path):
     """
@@ -359,7 +358,7 @@ class AbstractModel:
         test_file = join(dirname(__file__), '../models/test_data/{}.json'
                          .format(self.__class__.__name__))
         if not isfile(test_file):
-            return None
+            raise IncompleteData("Test data file is missing for {}".format(self.name))
         else:
             return loadfn(test_file)
 
@@ -389,17 +388,12 @@ class AbstractModel:
                         if hasattr(model_output, 'magnitude'):
                             model_output = model_output.magnitude
                         if not math.isclose(model_output, known_output):
-                            return False
+                            raise ModelEvaluationError("Model output does not match known output "
+                                                       "for {}".format(self.name))
                 except Exception as e:
-                    print(e)
-                    print('Testing {} raised an exception.'.format(self.__class__.__name__))
-                    return False
+                    raise ModelEvaluationError(e)
 
             return True
-
-        else:
-
-            return False
 
     def to_yaml(self):
 
