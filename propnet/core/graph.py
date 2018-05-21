@@ -12,19 +12,9 @@ from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
 from propnet.core.models import AbstractModel
+from propnet.core.node import NodeType, ALLOWED_NODE_TYPES
 
-from enum import Enum
-from collections import Counter, namedtuple
-
-
-_ALLOWED_NODE_TYPES = ('Material', 'Symbol', 'Quantity', 'Model')
-
-
-# TODO: this should be replaced with a proper class
-NodeType = Enum('NodeType', _ALLOWED_NODE_TYPES)
-Node = namedtuple('Node', ['node_type', 'node_value'])
-Node.__repr__ = lambda self: "{}<{}>".format(self.node_type.name,
-                                             self.node_value.__repr__())
+from collections import Counter
 
 
 class Graph:
@@ -142,9 +132,9 @@ class Graph:
         Returns:
             (list<Node>) list of nodes of property types.
         """
-        if node_type not in _ALLOWED_NODE_TYPES:
+        if node_type not in ALLOWED_NODE_TYPES:
             raise ValueError("Unsupported node type, choose from: {}"
-                             .format(_ALLOWED_NODE_TYPES))
+                             .format(ALLOWED_NODE_TYPES))
         return filter(lambda n: n.node_type.name == node_type, self.graph.nodes)
 
     def add_material(self, material):
