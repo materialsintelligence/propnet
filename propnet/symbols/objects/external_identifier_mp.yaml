@@ -1,0 +1,6 @@
+name: external_identifier_mp
+display_names: ['Materials Project ID']
+display_symbols: ['mpid']
+comment: 'The unique identifier given by the Materials Project to a given material.'
+category: object
+object_type: str

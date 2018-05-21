@@ -1,0 +1,6 @@
+name: magnetic_order
+display_names: ['Magnetic Order']
+display_symbols: []
+comment: 'The magnetic ordering of a material, e.g. FM or AFM.'
+category: object
+object_type: str
