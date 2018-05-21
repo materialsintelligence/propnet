@@ -124,13 +124,7 @@ class AbstractModel:
         # retrieve units for each symbol
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
-            try:
-                self.unit_mapping[symbol] = symbol_types[name].units
-            except Exception as e:
-                raise ValueError('Please check your property names in your symbol mapping, '
-                                 'for property {} and model {}, are they all valid? '
-                                 'Exception: {}'
-                                 .format(name, self.__class__.__name__, e))
+            self.unit_mapping[symbol] = symbol_types[name].units
 
     # constraint_symbols, meets_constraints, plug_in, and evaluate methods are optional overrides in extending classes
     @property
