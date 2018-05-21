@@ -1,0 +1,11 @@
+name: specific_heat_capacity_constant_pressure
+units:
+- 1.0
+- - [joule, 1.0]
+  - [kilogram, -1.0]
+  - [kelvin, -1.0]
+display_names: [Specific heat capacity (constant pressure)]
+display_symbols: [C_p]
+shape: 1
+comment: ''
+category: property
