@@ -24,7 +24,7 @@ def graph_conversion(graph, highlight=False,
     """Utility function to
 
     Args:
-      graph: from Propnet.graph
+      graph: from Graph.graph
       selected_node:  (Default value = None)
       highlighted_nodes:  (Default value = None)
 

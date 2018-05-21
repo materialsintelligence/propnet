@@ -27,7 +27,7 @@ Node.__repr__ = lambda self: "{}<{}>".format(self.node_type.name,
                                              self.node_value.__repr__())
 
 
-class Propnet:
+class Graph:
     """
     Class containing methods for creating and interacting with a Property Network.
 
@@ -52,7 +52,7 @@ class Propnet:
 
     def __init__(self, materials=None, models=None, symbol_types=None):
         """
-        Creates a Propnet instance
+        Creates a Graph instance
         """
 
         # set our defaults if no models/symbol types supplied
@@ -104,7 +104,7 @@ class Propnet:
 
     def add_models(self, models):
         """
-        Add a user-defined model to the Propnet graph.
+        Add a user-defined model to the Graph.
 
         Args:
             models: An instance of a model class (subclasses AbstractModel)
@@ -149,7 +149,7 @@ class Propnet:
 
     def add_material(self, material):
         """
-        Add a material and any of its associated properties to the Propnet graph.
+        Add a material and any of its associated properties to the Graph.
         Mutates the graph instance variable.
 
         Args:
@@ -162,7 +162,7 @@ class Propnet:
 
     def remove_material(self, material):
         """
-        Removes a material and any of its associated properties from the Propnet graph.
+        Removes a material and any of its associated properties from the Graph.
         Mutates the graph instance variable.
 
         Args:
@@ -491,9 +491,9 @@ class Propnet:
         that it contains. Connections are shown as nesting within the printout.
 
         Returns:
-            (str) representation of this Propnet object.
+            (str) representation of this Graph object.
         """
-        summary = ["Propnet Graph", ""]
+        summary = ["Graph", ""]
         property_type_nodes = self.nodes_by_type('Symbol')
         summary += ["Quantity Types:"]
         for property_type_node in property_type_nodes:
