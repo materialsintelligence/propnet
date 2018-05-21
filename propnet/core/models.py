@@ -358,7 +358,8 @@ class AbstractModel:
         test_file = join(dirname(__file__), '../models/test_data/{}.json'
                          .format(self.__class__.__name__))
         if not isfile(test_file):
-            raise IncompleteData("Test data file is missing for {}".format(self.name))
+            logger.warn(IncompleteData("Test data file is missing for {}".format(self.name)))
+            return None
         else:
             return loadfn(test_file)
 
@@ -394,6 +395,10 @@ class AbstractModel:
                     raise ModelEvaluationError(e)
 
             return True
+
+        else:
+
+            return False
 
     def to_yaml(self):
 

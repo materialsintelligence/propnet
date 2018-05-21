@@ -8,6 +8,6 @@ class ModelEvaluationError(RuntimeError):
     pass
 
 
-class IncompleteData(Exception):
+class IncompleteData(Warning):
     """When necessary data is missing for a given model or symbol."""
     pass
