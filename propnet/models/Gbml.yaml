@@ -1,0 +1,17 @@
+---
+title: Gbml
+tags: [mechanical]
+references: []
+symbol_mapping: {
+  K: bulk_modulus,
+  G: shear_modulus,
+  computed_entry: computed_entry,
+  volume: volume_unit_cell,
+  nsites: nsites,
+  formula: formula
+}
+connections:
+- inputs: [computed_entry, volume, nsites, formula]
+  outputs: [K, G]
+---
+Model calculating the Poisson ratio from bulk and shear moduli.
