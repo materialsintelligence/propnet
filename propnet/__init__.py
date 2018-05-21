@@ -25,8 +25,3 @@ ureg = UnitRegistry()
 ureg.define('atom = []')
 ureg.define('Rydberg = 13.605693009 * eV = Ry')  # from CODATA 13.605 693 009(84) eV
 ureg.define('USD = [currency]')
-
-# convenience imports
-from propnet.core.materials import Material
-from propnet.core.graph import Graph
-from propnet.core.quantity import Quantity

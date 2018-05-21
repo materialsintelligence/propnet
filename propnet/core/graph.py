@@ -12,7 +12,7 @@ from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
 from propnet.core.models import AbstractModel
-from propnet.core.node import NodeType, ALLOWED_NODE_TYPES
+from propnet.core.node import Node, NodeType, ALLOWED_NODE_TYPES
 
 from collections import Counter
 

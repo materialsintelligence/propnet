@@ -7,7 +7,7 @@ import networkx as nx
 from collections import defaultdict
 from typing import *
 
-from propnet.core.graph import NodeType, Node
+from propnet.core.node import NodeType, Node
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import Quantity, weighted_mean
 from propnet.core.utils import uuid
