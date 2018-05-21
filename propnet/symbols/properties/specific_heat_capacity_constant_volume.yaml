@@ -5,7 +5,7 @@ units:
   - [kilogram, -1.0]
   - [kelvin, -1.0]
 display_names: [Specific heat capacity (constant volume)]
-display_symbols: [c_V]
+display_symbols: [c_v]
 shape: 1
 comment: ''
 category: property
