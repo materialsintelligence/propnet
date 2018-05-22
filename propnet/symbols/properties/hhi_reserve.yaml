@@ -2,7 +2,7 @@ category: property
 comment: A metric of how geographically dispersed elements in a chemical compound are (including those in reserve).
 display_names: [Herfindahl-Hirschman Index (Reserve)]
 display_symbols: [HHI_reserve]
-name: hhi_production
+name: hhi_reserve
 shape: 1
 units:
 - 1
