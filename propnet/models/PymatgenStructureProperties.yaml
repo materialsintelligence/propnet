@@ -10,7 +10,7 @@ symbol_mapping: {
 }
 connections:
 - inputs: [structure]
-  outputs: [nsites, volume]
+  outputs: [num_sites, volume]
 equations: []
 ---
 Properties of a crystal structure, such as the number of sites in its unit cell and its space group,
