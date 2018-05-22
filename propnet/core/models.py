@@ -5,12 +5,9 @@ Module containing classes and methods for Model functionality in Propnet code.
 # typing information, for type hinting only
 from typing import *
 
-import math
+import numpy as np
 
-from abc import ABCMeta, abstractmethod
-from functools import wraps
 from os.path import dirname, join, isfile
-from textwrap import dedent
 
 from ruamel.yaml import safe_load, safe_dump
 from monty.serialization import loadfn
@@ -224,7 +221,7 @@ class AbstractModel:
             # so know length of output tuple for solutions will be 1
             solution = list(solutions)[0][0]
             if not isinstance(solution, sp.EmptySet):
-                outputs[str(possible_output)] = sp.N(solution)
+                outputs[str(possible_output)] = float(sp.N(solution))
         return outputs
 
     # Suite of getter methods returning appropriate model data.
@@ -388,7 +385,7 @@ class AbstractModel:
                         # TODO: remove, here temporarily
                         if hasattr(model_output, 'magnitude'):
                             model_output = model_output.magnitude
-                        if not math.isclose(model_output, known_output):
+                        if not np.allclose(model_output, known_output):
                             raise ModelEvaluationError("Model output does not match known output "
                                                        "for {}".format(self.name))
                 except Exception as e:

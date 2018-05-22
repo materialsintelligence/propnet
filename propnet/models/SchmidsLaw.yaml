@@ -3,14 +3,14 @@ title: Schmid's Law
 tags: [mechanical]
 references: ["url:https://en.wikipedia.org/wiki/Schmid%27s_law"]
 symbol_mapping: {
-  T: resolved_shear_stress,
+  tau: resolved_shear_stress,
   m: schmid_factor,
-  σ: applied_stress
+  sigma: applied_stress
 }
 connections:
-- inputs: [T]
-  outputs: [m, σ]
-equations: ["T-mσ"]
+- inputs: [m, sigma]
+  outputs: [tau]
+equations: ["tau - m * sigma"]
 ---
 Schmid's Law states that the critically resolved shear stress is equal
 to the stress applied to the material multipled by a geometric factor combining

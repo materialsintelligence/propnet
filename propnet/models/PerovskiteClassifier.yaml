@@ -7,8 +7,8 @@ symbol_mapping: {
   s: structure_oxi
 }
 connections:
-- inputs: [r_A, r_B]
-  outputs: [s]
+- inputs: [s]
+  outputs: [r_A, r_B]
 ---
 This model classifies whether a crystal is a perovskite, and returns information
 on the A-site ionic radius and B-site ionic radius.

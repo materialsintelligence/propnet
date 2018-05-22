@@ -9,6 +9,8 @@ symbol_mapping: {
 connections:
 - inputs: [E_g_expt]
   outputs: [E_g_pbe]
+- inputs: [E_g_pbe]
+  outputs: [E_g_expt]
 equations: [E_g_expt - 1.348*E_g_pbe + 0.913]
 ---
 Band gaps estimated using Density Functional Theory (and the PBE exchange-correlation

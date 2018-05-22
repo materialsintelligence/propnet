@@ -7,8 +7,12 @@ class ClarkeThermalConductivity(AbstractModel):
    def plug_in(self, symbol_values):
 
        tensor = ElasticTensor.from_voigt(symbol_values["C_ij"])
-       structure = symbol_values["_structure"]
+       structure = symbol_values["structure"]
+
+       to_return = tensor.clarke_thermalcond(structure)
+       if not isinstance(to_return, float):
+           to_return = float(to_return)
 
        return {
-           't': tensor.clarke_thermalcond(structure)
+           't': to_return
        }

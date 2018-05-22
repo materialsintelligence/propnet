@@ -1,0 +1,9 @@
+name: isothermal_compressibility
+units:
+- 1.0
+- - [gigapascal, -1.0]
+display_names: [Isothermal compressibility]
+display_symbols: [\beta_T]
+shape: 1
+comment: ''
+category: property
