@@ -1,6 +1,6 @@
 name: null_symbol
 display_names: ['null_symbol']
-display_symbols: []
+display_symbols: ['null_symbol']
 comment: 'A dummy symbol, used for testing.'
 category: object
 object_type: NoneType

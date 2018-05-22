@@ -41,7 +41,7 @@ class PropertiesTest(unittest.TestCase):
             self.assertTrue(st.display_names is not None and isinstance(st.display_names, list) and
                             len(st.display_names) != 0)
             self.assertTrue(st.display_symbols is not None and isinstance(st.display_symbols, list) and
-                            len(st.display_symbols) != 0)
+                            len(st.display_symbols) != 0, st.name)
             self.assertTrue(st.comment is not None and isinstance(st.comment, str))
 
     def test_all_properties(self):

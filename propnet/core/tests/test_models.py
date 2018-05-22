@@ -38,7 +38,8 @@ class ModelTest(unittest.TestCase):
             self.assertTrue(m.symbol_mapping is not None and isinstance(m.symbol_mapping, dict) and
                             len(m.symbol_mapping.keys()) > 0)
             for key in m.symbol_mapping.keys():
-                self.assertTrue(isinstance(key, str) and key.isidentifier())
+                self.assertTrue(isinstance(key, str),
+                                'Invalid symbol_mapping key: ' + str(key))
                 self.assertTrue(isinstance(m.symbol_mapping[key], str) and
                                 m.symbol_mapping[key] in DEFAULT_SYMBOL_TYPE_NAMES)
             self.assertTrue(m.connections is not None and isinstance(m.connections, list)
@@ -63,7 +64,7 @@ class ModelTest(unittest.TestCase):
             if model_name in DEFAULT_MODEL_NAMES:
                 model = getattr(models, model_name)()
                 self.assertTrue(model.test())
-            else:
+            elif '_' != model_name[0]:
                 raise ValueError("Model matching test data not found: {}".format(model_name))
 
     def test_unit_handling(self):

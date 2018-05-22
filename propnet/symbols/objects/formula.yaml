@@ -1,6 +1,6 @@
 name: formula
 display_names: ['Formula']
-display_symbols: []
+display_symbols: ['Formula']
 comment: 'The formula of a given material, for example NiO or GaN.'
 category: object
 object_type: str

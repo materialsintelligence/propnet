@@ -6,8 +6,8 @@ symbol_mapping: {
   alpha: thermal_expansion_coefficient,
   beta_T: isothermal_compressibility,
   beta_S: isentropic_compressibility,
-  T: temperature, 
-  rho: density, 
+  T: temperature,
+  rho: density,
   cv: specific_heat_capacity_constant_volume,
   cp: specific_heat_capacity_constant_pressure
 }

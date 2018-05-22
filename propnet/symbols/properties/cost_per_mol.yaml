@@ -2,7 +2,7 @@ category: property
 comment: Cost per mol is highly dependent on sample purity and volume, so this is
   usually only very approximate.
 display_names: [Cost (USD) per mol]
-display_symbols: []
+display_symbols: ['Cost ($) per Mol']
 name: cost_per_mol
 shape: 1
 units:
