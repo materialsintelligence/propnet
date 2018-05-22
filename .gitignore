@@ -111,4 +111,4 @@ ENV/
 .tmp/
 
 # testing notebook
-demo/vtshitoyan_test.ipynb
+demo/test.ipynb

@@ -1,9 +1,0 @@
-name: final_energy
-units:
-- 1.0
-- - [eV, 1.0]
-display_names: [Final Energy]
-display_symbols: [E]
-shape: 1
-comment: ''
-category: property

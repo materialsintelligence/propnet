@@ -12,4 +12,4 @@ connections:
   outputs: [k]
 equations: [k - B/G]
 ---
-Model calculating the Poisson ratio from bulk and shear moduli.
+Model calculating the Pugh ratio (an indicator of ductility) from bulk and shear moduli.

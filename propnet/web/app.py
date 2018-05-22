@@ -17,7 +17,7 @@ from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
 
 from force_graph import ForceGraphComponent
 from propnet.web.utils import graph_conversion, parse_path
-from propnet.core.graph import Propnet
+from propnet.core.graph import Graph
 
 from propnet.ext.matproj import PROPNET_PROPERTIES_ON_MP, MP_FROM_PROPNET_NAME_MAPPING,\
     materials_from_formula
@@ -42,7 +42,7 @@ cache = Cache(app.server, config={
 
 mpr = MPRester()
 
-g = Propnet().graph
+g = Graph().graph
 graph_data = graph_conversion(g)
 graph_component = html.Div(id='graph', children=[
     ForceGraphComponent(
@@ -136,7 +136,7 @@ existing models will help train further machine-learned models in the future.
     '''),
     dcc.Markdown('''
 ```
-Propnet initialization log:
+Graph initialization log:
 {}
 ```'''.format(log_stream.getvalue()))
 ])
@@ -187,7 +187,7 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
 
     material = materials[0]
 
-    p = Propnet()
+    p = Graph()
     p.add_material(material)
     g = p.graph
 

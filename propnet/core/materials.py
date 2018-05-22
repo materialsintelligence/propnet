@@ -7,7 +7,7 @@ import networkx as nx
 from collections import defaultdict
 from typing import *
 
-from propnet.core.graph import NodeType, Node
+from propnet.core.node import NodeType, Node
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import Quantity, weighted_mean
 from propnet.core.utils import uuid
@@ -21,7 +21,7 @@ class Material:
     and Symbol nodes create a web of interconnected properties, Materials, as collections of
     Quantity nodes, provide
     concrete numbers to those properties. At runtime, a Material can be constructed and added to
-    a Propnet instance,
+    a Graph instance,
     merging the two graphs and allowing for propagation of concrete numbers through the property
     web.
 
@@ -35,7 +35,7 @@ class Material:
         uuid (int): unique hash number used as an identifier for this object.
         root_node (Node): the Material node associated with this material, has a unique
         hash id.
-        parent (Propnet): Stores a pointer to the Propnet instance this Material has been bound to.
+        parent (Graph): Stores a pointer to the Graph instance this Material has been bound to.
     """
     def __init__(self):
         """
@@ -62,7 +62,7 @@ class Material:
     def add_quantity(self, property):
         """
         Adds a property to this material's property graph.
-        If the material has been bound to a Propnet instance, correctly adds the property to that
+        If the material has been bound to a Graph instance, correctly adds the property to that
         instance.
         Mutates graph instance variable.
 

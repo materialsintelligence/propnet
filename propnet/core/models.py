@@ -16,10 +16,9 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 from propnet.symbols import DEFAULT_SYMBOLS
-from propnet import logger
-from propnet import ureg
+from propnet import logger, ureg
 from propnet.core.utils import uuid, references_to_bib
-
+from propnet.core.exceptions import ModelEvaluationError, IncompleteData
 
 def load_metadata(path):
     """
@@ -121,13 +120,7 @@ class AbstractModel:
         # retrieve units for each symbol
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
-            try:
-                self.unit_mapping[symbol] = symbol_types[name].units
-            except Exception as e:
-                raise ValueError('Please check your property names in your symbol mapping, '
-                                 'for property {} and model {}, are they all valid? '
-                                 'Exception: {}'
-                                 .format(name, self.__class__.__name__, e))
+            self.unit_mapping[symbol] = symbol_types[name].units
 
     # constraint_symbols, meets_constraints, plug_in, and evaluate methods are optional overrides in extending classes
     @property
@@ -362,6 +355,7 @@ class AbstractModel:
         test_file = join(dirname(__file__), '../models/test_data/{}.json'
                          .format(self.__class__.__name__))
         if not isfile(test_file):
+            logger.warn(IncompleteData("Test data file is missing for {}".format(self.name)))
             return None
         else:
             return loadfn(test_file)
@@ -392,11 +386,10 @@ class AbstractModel:
                         if hasattr(model_output, 'magnitude'):
                             model_output = model_output.magnitude
                         if not np.allclose(model_output, known_output):
-                            return False
+                            raise ModelEvaluationError("Model output does not match known output "
+                                                       "for {}".format(self.name))
                 except Exception as e:
-                    print(e)
-                    print('Testing {} raised an exception.'.format(self.__class__.__name__))
-                    return False
+                    raise ModelEvaluationError(e)
 
             return True
 

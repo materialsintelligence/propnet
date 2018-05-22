@@ -25,6 +25,7 @@ pylatexenc = "*"
 pymatgen = "*"
 flask-caching = "*"
 uncertainties = "*"
+bidict = "*"
 "8834a26" = {path = "./components/force-graph", editable = true}
 
 

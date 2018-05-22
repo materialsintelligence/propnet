@@ -1,0 +1,17 @@
+---
+title: Properties of a Crystallographic Structure
+tags: [pymatgen]
+references: [doi:10.1016/j.commatsci.2012.10.028]
+symbol_mapping: {
+  structure: structure,
+  num_sites: nsites,
+  volume: volume_unit_cell,
+  composition: composition
+}
+connections:
+- inputs: [structure]
+  outputs: [nsites, volume]
+equations: []
+---
+Properties of a crystal structure, such as the number of sites in its unit cell and its space group,
+as calculated by pymatgen.

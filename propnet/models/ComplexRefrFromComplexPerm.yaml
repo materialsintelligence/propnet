@@ -1,7 +1,7 @@
 ---
 title: Refractive Index and Extinction Coefficient from Comlex Permittivity
 tags: [optical]
-references: ["url:https://en.wikipedia.org/wiki/Refractive_index#Complex_refractive_indexf",
+references: ["url:https://en.wikipedia.org/wiki/Refractive_index#Complex_refractive_index",
              "url:https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability"]
 symbol_mapping: {
   e1: relative_permittivity,

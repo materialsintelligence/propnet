@@ -50,9 +50,6 @@ class Quantity(MSONable):
                 raise ValueError("Quantity type {} not recognized".format(symbol_type))
             symbol_type = DEFAULT_SYMBOLS[symbol_type]
 
-        if value is None and symbol_type.default is not None:
-            value = symbol_type.default
-
         if type(value) == float or type(value) == int:
             value = ureg.Quantity(value, symbol_type.units)
         elif type(value) == ureg.Quantity:
@@ -106,21 +103,11 @@ class Quantity(MSONable):
         return hash(self.symbol.name)
 
     def __eq__(self, other):
-        if not isinstance(other, Quantity):
+        if not isinstance(other, Quantity) \
+                or self.symbol != other.symbol \
+                or self.symbol.category != other.symbol.category:
             return False
-        if self.symbol != other.symbol:
-            return False
-        if type(self.value) == ureg.Quantity:
-            val1 = float(self.value.magnitude)
-        else:
-            val1 = self.value
-        if type(other.value) == ureg.Quantity:
-            val2 = float(other.value.magnitude)
-        else:
-            val2 = other.value
-        if not np.isclose(val1, val2):
-            return False
-        return True
+        return self.value == other.value
 
     def __str__(self):
         return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)

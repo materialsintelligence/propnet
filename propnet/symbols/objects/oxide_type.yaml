@@ -1,0 +1,6 @@
+name: oxide_type
+display_names: ['Oxide Type']
+display_symbols: []
+comment: 'The type of oxide of a material (if appropriate).'
+category: object
+object_type: str
