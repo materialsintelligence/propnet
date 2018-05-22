@@ -385,7 +385,13 @@ class AbstractModel:
                         # TODO: remove, here temporarily
                         if hasattr(model_output, 'magnitude'):
                             model_output = model_output.magnitude
-                        if not np.allclose(model_output, known_output):
+                        if (not isinstance(known_output, float)) and \
+                                (not isinstance(known_output, list)):
+                            if model_output != known_output:
+                                raise ModelEvaluationError(
+                                    "Model output does not match known output "
+                                    "for {}".format(self.name))
+                        elif not np.allclose(model_output, known_output):
                             raise ModelEvaluationError("Model output does not match known output "
                                                        "for {}".format(self.name))
                 except Exception as e:
