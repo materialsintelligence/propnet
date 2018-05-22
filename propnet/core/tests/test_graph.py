@@ -51,7 +51,7 @@ class GraphTest(unittest.TestCase):
         return True
 
     def setUp(self):
-        self.p = Propnet()
+        self.p = Graph()
 
     def test_graph_construction(self):
         self.assertGreaterEqual(self.p.graph.number_of_nodes(), 1)
@@ -64,17 +64,17 @@ class GraphTest(unittest.TestCase):
 
     def test_add_material(self):
         """
-        Adding a material to a Propnet instance should lead to all the
+        Adding a material to a Graph instance should lead to all the
         Quantity, Symbol, and Material nodes of the material getting
-        added to the Propnet instance -- a disjoint union.
+        added to the Graph instance -- a disjoint union.
 
-        Given a general Propnet instance, we add a material with custom
+        Given a general Graph instance, we add a material with custom
         Symbol, A, and two Quantity nodes of type A with different values.
 
         Returns: None
         """
         # Setup
-        p = Propnet()
+        p = Graph()
         A = Symbol('a', ['A'], ['A'], units=[1.0, []], shape=[1])
         mat1 = Material()
         mat1.add_quantity(Quantity(A, 2, []))
@@ -88,7 +88,7 @@ class GraphTest(unittest.TestCase):
 
         # Test Graph
         # 1) Material's graph should be unchanged.
-        # 2) Propnet instance should be appropriately updated.
+        # 2) Graph instance should be appropriately updated.
 
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [Quantity(A, 2, []), Quantity(A, 3, [])], 'Quantity'))
         self.assertTrue(GraphTest.check_graph_symbols(mat1.graph, [A], 'Symbol'))
@@ -103,20 +103,20 @@ class GraphTest(unittest.TestCase):
 
     def test_remove_material(self):
         """
-        Adding a removing a material from a Propnet instance should lead
+        Adding a removing a material from a Graph instance should lead
         to all the Quantity nodes from the specific material being removed
-        from the Propnet instance, along with the material's node. The
+        from the Graph instance, along with the material's node. The
         material's graph should not be altered.
 
-        Given a general Propnet instance, we add a material with Symbols.
+        Given a general Graph instance, we add a material with Symbols.
         We ensure that adding and removing does not alter its graph.
         We ensure that adding and then removing the material does not
-        alter the Propnet instance.
+        alter the Graph instance.
 
         Returns: None
         """
         # Setup
-        p = Propnet()
+        p = Graph()
         mat1 = Material()
         mat1.add_quantity(Quantity('refractive_index', 1, []))
         mat1.add_quantity(Quantity('relative_permittivity', 2, []))
@@ -148,7 +148,7 @@ class GraphTest(unittest.TestCase):
 
         """
         # Setup
-        propnet = Propnet()
+        propnet = Graph()
         mat1 = Material()
         mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permeability'], 1, None))
         mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permeability'], 2, None))
@@ -196,7 +196,7 @@ class GraphTest(unittest.TestCase):
         We expect each property jointly calculated to have a joint_material tag element.
         """
         # Setup
-        propnet = Propnet()
+        propnet = Graph()
         mat1 = Material()
         mat2 = Material()
         mat1.add_quantity(Quantity('relative_permeability', 1, None))
@@ -317,9 +317,9 @@ class GraphTest(unittest.TestCase):
                     },
                                        symbol_types=symbol_types)
 
-        p = Propnet(materials=[mat1, mat2],
-                    models={'model1': Model1, 'model2': Model2},
-                    symbol_types=symbol_type_dict)
+        p = Graph(materials=[mat1, mat2],
+                  models={'model1': Model1, 'model2': Model2},
+                  symbol_types=symbol_type_dict)
 
         # Evaluate
         p.evaluate()
@@ -412,9 +412,9 @@ class GraphTest(unittest.TestCase):
         mat2.add_quantity(b_example)
         mat2.add_quantity(const2)
 
-        p = Propnet(materials=[mat1, mat2],
-                    models={'model1': Model1},
-                    symbol_types=symbol_type_dict)
+        p = Graph(materials=[mat1, mat2],
+                  models={'model1': Model1},
+                  symbol_types=symbol_type_dict)
 
         # Evaluate
         p.evaluate(material=mat1)

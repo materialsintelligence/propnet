@@ -1,0 +1,6 @@
+name: computed_entry
+display_names: ['Computed Entry']
+display_symbols: []
+comment: 'A computed entry stores information on the output of a DFT calculation, such as total energy, if Hubbard U corrections were used and any relevant corrections.'
+category: object
+object_type: pymatgen.entries.computed_entries.ComputedEntry

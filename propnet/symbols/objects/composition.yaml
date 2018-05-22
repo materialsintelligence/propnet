@@ -1,0 +1,6 @@
+name: composition
+display_names: ['Composition']
+display_symbols: []
+comment: 'The composition of a material, such as {"Ni": 1.0, "O": 1.0} for NiO, where numbers refer to the number of each atom in the unit cell or formula.'
+category: object
+object_type: pymatgen.core.composition.Composition

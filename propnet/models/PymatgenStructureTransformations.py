@@ -2,9 +2,10 @@ from propnet.core.models import AbstractModel
 
 from pymatgen.transformations.standard_transformations import AutoOxiStateDecorationTransformation
 
-class TransformationOxiStructure(AbstractModel):
 
-    def _evaluate(self, symbol_values):
+class PymatgenStructureTransformations(AbstractModel):
+
+    def plug_in(self, symbol_values):
 
         s = symbol_values['s']
 

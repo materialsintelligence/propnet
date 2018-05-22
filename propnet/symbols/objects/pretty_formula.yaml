@@ -1,6 +1,0 @@
-name: pretty_formula
-display_names: ['Formula']
-display_symbols: ['Formula']
-comment: ''
-category: object
-object_type: str
