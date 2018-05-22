@@ -1,0 +1,11 @@
+category: property
+comment: Cost per kg is highly dependent on sample purity and volume, so this is usually
+  only very approximate.
+display_names: [Cost (USD) per mol]
+display_symbols: []
+name: cost_per_kg
+shape: 1
+units:
+- 1.0
+- - [USD, 1.0]
+  - [kilogram, -1.0]
