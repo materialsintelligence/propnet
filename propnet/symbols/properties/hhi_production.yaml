@@ -1,0 +1,9 @@
+category: property
+comment: A metric of how geographically dispersed elements in a chemical compound are (for current production).
+display_names: [Herfindahl-Hirschman Index (Production)]
+display_symbols: [HHI_production]
+name: hhi_production
+shape: 1
+units:
+- 1
+- []

@@ -68,7 +68,7 @@ class MaterialsProject(AbstractModel):
         """
         return self.get_properties_for_mpids([mpid])[0]
 
-    def get_materials(self, mpids: List[str]) -> List[Material]:
+    def get_materials_for_mpids(self, mpids: List[str]) -> List[Material]:
         """
         Retrieve a list of Materials from the materials
         Project for a given list of Materials Project IDs.
@@ -92,7 +92,7 @@ class MaterialsProject(AbstractModel):
 
         return materials
 
-    def get_material(self, mpid: str) -> Material:
+    def get_material_for_mpid(self, mpid: str) -> Material:
         """
         A version of get_materials for a single mpid.
 
@@ -102,7 +102,7 @@ class MaterialsProject(AbstractModel):
         Returns: a Material object
 
         """
-        return self.get_materials([mpid])[0]
+        return self.get_materials_for_mpids([mpid])[0]
 
     def plug_in(self, symbol_values):
 

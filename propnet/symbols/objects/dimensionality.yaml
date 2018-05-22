@@ -1,0 +1,6 @@
+name: dimensionality
+display_names: ['Dimensionality']
+display_symbols: []
+comment: 'The dimensionality of a given structure (e.g. 2D, 3D, or intercalated as a mix of 1D + 3D) as a string.'
+category: object
+object_type: str
