@@ -77,12 +77,24 @@ class Graph:
                     inputs = [inputs]
 
                 for input in inputs:
+
+                    if input not in model.symbol_mapping:
+                        raise ValueError('Symbol mapping incorrect: '
+                                         'input {} not in mapping for model {}'
+                                         .format(input, model.name))
+
                     symbol_type = symbol_types[model.symbol_mapping[input]]
                     input_node = Node(node_type=NodeType.Symbol,
                                       node_value=symbol_type)
                     self.graph.add_edge(input_node, model_node, route=idx)
 
                 for output in outputs:
+
+                    if output not in model.symbol_mapping:
+                        raise ValueError('Symbol mapping incorrect: '
+                                         'output {} not in mapping for model {}'
+                                         .format(output, model.name))
+
                     symbol_type = symbol_types[model.symbol_mapping[output]]
                     output_node = Node(node_type=NodeType.Symbol,
                                        node_value=symbol_type)
