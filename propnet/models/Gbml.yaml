@@ -14,4 +14,5 @@ connections:
 - inputs: [computed_entry, volume, nsites, formula]
   outputs: [K, G]
 ---
-Model calculating the Poisson ratio from bulk and shear moduli.
+This model uses Gradient Boosting Machine-Locfit (GBML) to give
+predictions for bulk and shear moduli given material descriptors and training data.
