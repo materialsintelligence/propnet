@@ -8,7 +8,7 @@ symbol_mapping: {
   structure: structure
 }
 connections:
-- inputs: [dimensionality_cheon, dimensionality_gorai]
-  outputs: [structure]
+- inputs: [structure]
+  outputs: [dimensionality_cheon, dimensionality_gorai]
 ---
 Calculates the dimensionality of a structure using one of two methods implemented in pymatgen.
