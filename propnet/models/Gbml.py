@@ -10,7 +10,7 @@ class Gbml(AbstractModel):
         computed_entry = symbol_values['computed_entry']
 
         entry = {
-            'material_id': 'mp',
+            'material_id': '',
             'energy_per_atom': computed_entry.energy_per_atom,
             'is_hubbard': computed_entry.parameters['is_hubbard'],
             'nsites': symbol_values['nsites'],
