@@ -9,11 +9,17 @@ class Gbml(AbstractModel):
         computed_entry = symbol_values['computed_entry']
 
         entry = {
+            'material_id': 'mp',
             'energy_per_atom': computed_entry.energy_per_atom,
-            'is_hubbard': computed_entry.is_hubbard,
+            'is_hubbard': computed_entry.parameters['is_hubbard'],
             'nsites': symbol_values['nsites'],
-            'pretty_formula': symbol_values['formula'],
+            'pretty_formula': symbol_values['pretty_formula'],
             'volume': symbol_values['volume']
         }
 
         K, G, caveats = predict_k_g_from_entry(entry)
+
+        return {
+            'K': K,
+            'G': G
+        }
