@@ -16,6 +16,7 @@ from monty.serialization import loadfn
 
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
 
+
 def graph_conversion(graph,
                      nodes_to_highlight_green=(),
                      nodes_to_highlight_yellow=(),
@@ -70,15 +71,16 @@ def graph_conversion(graph,
             nodes.append(node)
 
     if nodes_to_highlight_green or nodes_to_highlight_yellow or nodes_to_highlight_red:
+        print(nodes_to_highlight_green)
         for node in nodes:
             if node['id'] in nodes_to_highlight_green:
-                node['fill'] = '#9CDC90'
+                node['color'] = '#9CDC90'
             elif node['id'] in nodes_to_highlight_yellow:
-                node['fill'] = '#FFBF00'
+                node['color'] = '#FFBF00'
             elif node['id'] in nodes_to_highlight_red:
-                node['fill'] = '#FD9998'
+                node['color'] = '#FD9998'
             else:
-                node['fill'] = '#BDBDBD'
+                node['color'] = '#BDBDBD'
 
     connected_nodes = set()
     for n1, n2 in graph.edges():
