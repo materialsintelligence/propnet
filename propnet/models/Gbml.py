@@ -2,6 +2,7 @@ from propnet.core.models import AbstractModel
 
 from gbml.elasticity import predict_k_g_from_entry
 
+
 class Gbml(AbstractModel):
 
     def plug_in(self, symbol_values):
@@ -13,7 +14,7 @@ class Gbml(AbstractModel):
             'energy_per_atom': computed_entry.energy_per_atom,
             'is_hubbard': computed_entry.parameters['is_hubbard'],
             'nsites': symbol_values['nsites'],
-            'pretty_formula': symbol_values['pretty_formula'],
+            'pretty_formula': symbol_values['formula'],
             'volume': symbol_values['volume']
         }
 
