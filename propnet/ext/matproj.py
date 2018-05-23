@@ -1,89 +1,135 @@
-from datetime import datetime
+from typing import Dict, List
 
-from pymatgen import MPRester
-from pymatgen.core.structure import IStructure
+from propnet.core.materials import Material
 from propnet.core.quantity import Quantity
-from propnet.core.materials import Material
-from propnet.symbols import DEFAULT_SYMBOLS
 
-from propnet.core.materials import Material
+from pymatgen import MPRester as _MPRester
 
-# maps propnet symbol names to mp (mapidoc) keypath
-MP_FROM_PROPNET_NAME_MAPPING = {
-    'formula': 'pretty_formula',
-    'elastic_tensor_voigt': 'elasticity.elastic_tensor',
-    'elastic_anisotropy': 'elasticity.elastic_anisotropy',
-    'relative_permittivity': 'diel.poly_total',
-    'density': 'density',
-    'refractive_index': 'diel.n',
-    'energy_above_hull': 'e_above_hull',
-    'final_energy': 'final_energy',
-    'final_energy_per_atom': 'final_energy_per_atom',
-    'formation_energy_per_atom': 'formation_energy_per_atom',
-    'piezoelectric_tensor': 'piezo.piezoelectric_tensor',
-    'volume_unit_cell': 'volume',
+
+class MPRester(_MPRester):
+
+    mapping = {
+    "material_id": "external_identifier_mp",
+    "band_gap": "band_gap_pbe",
+    #"band_structure": "null_symbol",
+    #"band_structure_uniform": "null_symbol",
+    "computed_entry": "computed_entry",
+    #"dos": "null_symbol",
+    "diel.n": "refractive_index",
+    "diel.poly_total": "relative_permittivity",
+    #"diel.e_electronic": "null_symbol",
+    #"diel.e_total": "null_symbol",
+    #"diel.poly_electronic": "null_symbol",
+    "diel.pot_ferroelectric": "potentially_ferroelectric",
+    "pretty_formula": "formula",
+    "e_above_hull": "energy_above_hull",
+    "elasticity.elastic_tensor": "elastic_tensor_voigt",
+    "elasticity.G_Reuss": "shear_modulus",
+    "elasticity.G_VRH": "shear_modulus",
+    "elasticity.G_Voigt": "shear_modulus",
+    "elasticity.K_Reuss": "bulk_modulus",
+    "elasticity.K_VRH": "bulk_modulus",
+    "elasticity.K_Voigt": "bulk_modulus",
+    "elasticity.elastic_anisotropy": "elastic_anisotropy",
+    "elasticity.poisson_ratio": "poisson_ratio",
+    "formation_energy_per_atom": "formation_energy_per_atom",
+    "magnetic_type": "magnetic_order",
+    "oxide_type": "oxide_type",
+    "piezo.piezoelectric_tensor": "piezoelectric_tensor",
+    #"piezo.v_max": "null_symbol", # TODO": "add property
+    #"piezo.eij_max": "null_symbol", # TODO": "add property
+    "structure": "structure",
+    #"total_magnetization": "null_symbol", # TODO": "add property total_magnetization_per_unit_cell
 }
-PROPNET_FROM_MP_NAME_MAPPING = {v: k for k, v in MP_FROM_PROPNET_NAME_MAPPING.items()}
 
-# list of all available properties
-AVAILABLE_MP_PROPERTIES = list(PROPNET_FROM_MP_NAME_MAPPING.keys()) + ['task_id', 'structure']
-PROPNET_PROPERTIES_ON_MP = list(MP_FROM_PROPNET_NAME_MAPPING.keys())
+    def __init__(self):
+        super(MPRester, self).__init__()
 
+    def get_mpid_from_formula(self, formula: str) -> str:
+        """
+        Returns a Materials Project ID from a formula, assuming
+        the most stable structure for that formula.
 
-def import_materials(mp_ids, api_key=None):
-    """
-    Given a list of material ids, returns a list of Material objects with all
-    available properties from the Materials Project.
-    Args:
-        mp_ids (list<str>): list of material ids whose information will be retrieved.
-        api_key (str): api key to be used to conduct the query.
-    Returns:
-        (list<Material>): list of material objects with associated data.
-    """
-    mpr = MPRester(api_key)
-    to_return = []
-    query = mpr.query(criteria={"task_id": {'$in': mp_ids}}, properties=AVAILABLE_MP_PROPERTIES)
-    for data in query:
-        # properties of one mp-id
-        mat = Material()
-        tag_string = data['task_id']
-        if not data['structure'] is None:
-            mat.add_quantity(Quantity('structure', data['structure'], [tag_string]))
-            mat.add_quantity(Quantity('lattice_unit_cell', data['structure'].lattice.matrix, [tag_string]))
-        for key in data:
-            if not data[key] is None and key in PROPNET_FROM_MP_NAME_MAPPING.keys():
-                prop_type = DEFAULT_SYMBOLS[PROPNET_FROM_MP_NAME_MAPPING[key]]
-                p = Quantity(prop_type, data[key], [tag_string])
-                mat.add_quantity(p)
-        to_return.append(mat)
-    return to_return
+        Args:
+            formula: formula string
 
+        Returns: mp-id string
 
-def import_material(mp_id, api_key=None):
-    """
-    Given a material id, returns a Material object with all available properties from
-    the Materials Project
-    Args:
-        mp_id (str): material id whose information will be retrieved.
-        api_key (str): api key to be used to conduct the query.
-    Returns:
-        (Material): material object with associated data.
-    """
-    return import_materials([mp_id], api_key)[0]
+        """
+        q = self.query(criteria={'pretty_formula': formula},
+                           properties=['material_id'])
+        return q[0]['material_id']
 
+    def get_properties_for_mpids(self, mpids: List[str]) -> List[Dict]:
+        """
+        Retrieve properties from the Materials Project
+        for a given list of Materials Project IDs.
 
-def materials_from_formula(formula, api_key=None):
-    """
-    Given a material chemical formula, returns all Material objects with a matching formula
-    with all their available properties from the Materials Project.
-    Args:
-        formula (str): material's formula
-        api_key (str): api key to be used to conduct the query.
-    Returns:
-        (list<Material>): all materials with matching formula
-    """
-    mpr = MPRester(api_key)
-    query_results = mpr.query(criteria={'pretty_formula': formula},
-                              properties=['task_id'])
-    mpids = [entry['task_id'] for entry in query_results]
-    return import_materials(mpids, api_key)
+        Args:
+            mpids: a list of Materials Project IDs
+
+        Returns: a list of property dictionaries
+
+        """
+
+        all_properties = list(self.mapping.keys())
+
+        q = {doc['material_id']:doc for doc in
+             self.query(criteria={'material_id': {'$in': mpids}}, properties=all_properties)}
+
+        computed_entries = {e.entry_id:e for e in
+                            self.get_entries({'material_id': {'$in': mpids}})}
+
+        for mpid, doc in q.items():
+            doc['computed_entry'] = computed_entries[mpid]
+
+        return list(q.values())
+
+    def get_properties_for_mpid(self, mpid: str) -> Dict:
+        """
+        A version of get_properties_for_mpids for a single
+        mpid.
+
+        Args:
+            mpid: a Materials Project ID
+
+        Returns: a property dictionary
+
+        """
+        return self.get_properties_for_mpids([mpid])[0]
+
+    def get_materials_for_mpids(self, mpids: List[str]) -> List[Material]:
+        """
+        Retrieve a list of Materials from the materials
+        Project for a given list of Materials Project IDs.
+
+        Args:
+            mpids: a list of Materials Project IDs
+
+        Returns:
+
+        """
+
+        materials_properties = self.get_properties_for_mpids(mpids)
+        materials = []
+
+        for material_properties in materials_properties:
+            material = Material()
+            for property_name, property_value in material_properties.items():
+                quantity = Quantity(self.mapping[property_name], property_value)
+                material.add_quantity(quantity)
+            materials.append(material)
+
+        return materials
+
+    def get_material_for_mpid(self, mpid: str) -> Material:
+        """
+        A version of get_materials for a single mpid.
+
+        Args:
+            mpid: a Materials Project ID
+
+        Returns: a Material object
+
+        """
+        return self.get_materials_for_mpids([mpid])[0]
