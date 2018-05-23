@@ -1,0 +1,14 @@
+---
+title: Herfindahl-Hirschman Index
+tags: [meta]
+references: [doi:10.1021/cm400893e]
+symbol_mapping: {
+  hhi_production: hhi_production,
+  hhi_reserve: hhi_reserve,
+  formula: formula
+}
+connections:
+- inputs: [formula]
+  outputs: [hhi_production, hhi_reserve]
+---
+The Herfindahl-Hirschman Index is a metric of how geographically dispersed elements in a chemical compound are.

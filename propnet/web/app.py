@@ -19,10 +19,7 @@ from force_graph import ForceGraphComponent
 from propnet.web.utils import graph_conversion, parse_path
 from propnet.core.graph import Graph
 
-from propnet.ext.matproj import PROPNET_PROPERTIES_ON_MP, MP_FROM_PROPNET_NAME_MAPPING,\
-    materials_from_formula
-
-from pymatgen import MPRester
+from propnet.ext.matproj import MPRester
 
 import numpy as np
 from scipy.stats import describe
@@ -177,15 +174,14 @@ app.scripts.append_script({
 )
 def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
 
-    materials = materials_from_formula(formula)
+    mpid = mpr.get_mpid_from_formula(formula)
+    materials = mpr.get_material_for_mpid(mpid)
 
     if n_clicks is None:
         return ""
 
-    if not materials:
+    if not material:
         return "Material not found."
-
-    material = materials[0]
 
     p = Graph()
     p.add_material(material)
