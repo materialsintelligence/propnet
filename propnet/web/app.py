@@ -175,7 +175,7 @@ app.scripts.append_script({
 def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
 
     mpid = mpr.get_mpid_from_formula(formula)
-    materials = mpr.get_material_for_mpid(mpid)
+    material = mpr.get_material_for_mpid(mpid)
 
     if n_clicks is None:
         return ""
