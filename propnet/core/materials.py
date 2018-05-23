@@ -11,6 +11,8 @@ from propnet.core.node import NodeType, Node
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import Quantity, weighted_mean
 from propnet.core.utils import uuid
+from propnet.core.graph import Graph
+
 
 class Material:
     """
@@ -157,7 +159,14 @@ class Material:
             grouped_quantities[symbol].append(node.node_value)
         return grouped_quantities
 
-    def aggregate(self):
+    def evaluate(self):
+        # convenience method, an alternative way to get to Graph.evaluate()
+        g = Graph()
+        g.add_material(self)
+        g.evaluate()
+        g.remove_material(self)
+
+    def get_aggregated_properties(self):
 
         new_qs = {}
         for symbol, quantities in self.quantities_grouped_by_symbol.items():
