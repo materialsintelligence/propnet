@@ -176,10 +176,12 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
 
     material_graph_data = graph_conversion(g,
                                            nodes_to_highlight_green=material.available_properties())
+    options = AESTHETICS['global_options']
+    options['edges']['color'] = '#000000'
     material_graph_component = html.Div(GraphComponent(
         id='material-graph',
         graph=material_graph_data,
-        options=AESTHETICS['global_options']
+        options=options
     ), style={'width': '100%', 'height': '400px'})
 
     return html.Div([
