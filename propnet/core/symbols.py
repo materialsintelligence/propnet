@@ -1,15 +1,11 @@
 import numpy as np
 
 from typing import *
-from uuid import UUID
 from monty.json import MSONable
-
-from propnet import logger, ureg
-from propnet.core.utils import uuid
 from ruamel.yaml import safe_dump
 
+from propnet import logger, ureg
 
-from io import StringIO
 
 class Symbol(MSONable):
     """
@@ -30,23 +26,15 @@ class Symbol(MSONable):
                                 This value is a list if multiple length dimensions are required or an integer if only
                                 one length shape is required.
         (str) comment -> (str) Gives any important commentary on the property.
-
-    Attributes (see above for descriptions):
-        name: (str)
-        units: (list<id>)
-        display_names: (list<str>)
-        display_symbols: (list<str>)
-        shape: (id)
-        comment: (str)
     """
 
     # TODO: this really needs to be rethought, possibly split into separate classes
     # or a base class + subclasses for symbols with units vs those without
-    def __init__(self, name, display_names=None,
-                 display_symbols=None, units=None, shape=None,
+    def __init__(self, name, category='property',
+                 display_names=None, display_symbols=None,
+                 units=None, shape=None,
                  object_type=None,
-                 comment=None,
-                 category='property'):
+                 comment=None):
         """
         Parses and validates a series of inputs into a PropertyMetadata tuple, a format that
         PropNet expects.
@@ -176,10 +164,7 @@ class Symbol(MSONable):
     def __hash__(self):
         return self.name.__hash__()
 
-    def from_yaml(self, filename):
-        return NotImplementedError
-
-    def to_yaml(self, filename=None):
+    def to_yaml(self) -> str:
 
         data = {
             "name": self.name,

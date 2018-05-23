@@ -16,75 +16,71 @@ from monty.serialization import loadfn
 
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
 
-
-def graph_conversion(graph, highlight=False,
-                     highlight_green=(),
-                     highlight_yellow=(),
-                     highlight_red=()):
-    """Utility function to
+def graph_conversion(graph,
+                     nodes_to_highlight_green=(),
+                     nodes_to_highlight_yellow=(),
+                     nodes_to_highlight_red=(),
+                     hide_unconnected_nodes=True,
+                     aesthetics=None):
+    """Utility function to render a networkx graph
+    from Graph.graph for use in GraphComponent
 
     Args:
       graph: from Graph.graph
-      selected_node:  (Default value = None)
-      highlighted_nodes:  (Default value = None)
 
-    Returns:
-
+    Returns: graph dict
     """
 
+    aesthetics = aesthetics or AESTHETICS
+
     nodes = []
-    links = []
-
-    # TODO: this utility function is a prototype, to be replaced!
-
-    colors = {
-        'property': 'orange',
-        'model': 'blue',
-        'condition': '#00ff00',
-        'object': 'purple'
-    }
+    edges = []
 
     for n in graph.nodes():
 
         id = None
 
-        # should do better parsing of nodes here
-        # TODO: this is also horrific code for demo, change
         if n.node_type.name == 'Symbol':
             # property
             id = n.node_value.name
             label = n.node_value.display_names[0]
-            fill = AESTHETICS['color'][n.node_value.category]
-            shape = 'circle'
-            radius = 5.0
         elif n.node_type.name == 'Model':
             # model
             id = n.node_value.__class__.__name__
             label = n.node_value.title
-            fill = AESTHETICS['color']['model']
-            shape = 'square'
-            radius = 6.0
+        #elif n.node_type.name == 'Quantity':
+        #    pass
+        #elif n.node_type.name == 'Material':
+        #    pass
 
         if id:
-            nodes.append({
-                'id': id,
-                'label': label,
-                'fill': fill,
-                'shape': shape,
-                'radius': radius
-            })
 
-    if highlight:
+            node = AESTHETICS['node_aesthetics'][n.node_type.name].copy()
+
+            if n.node_type.name == 'Symbol' and \
+                    AESTHETICS['node_options']['show_symbol_labels']:
+                node['label'] = label
+            if n.node_type.name == 'Model' and \
+                    AESTHETICS['node_options']['show_model_labels']:
+                node['label'] = label
+
+            node['id'] = id
+            node['title'] = label
+
+            nodes.append(node)
+
+    if nodes_to_highlight_green or nodes_to_highlight_yellow or nodes_to_highlight_red:
         for node in nodes:
-            if node['id'] in highlight_green:
+            if node['id'] in nodes_to_highlight_green:
                 node['fill'] = '#9CDC90'
-            elif node['id'] in highlight_yellow:
+            elif node['id'] in nodes_to_highlight_yellow:
                 node['fill'] = '#FFBF00'
-            elif node['id'] in highlight_red:
+            elif node['id'] in nodes_to_highlight_red:
                 node['fill'] = '#FD9998'
             else:
                 node['fill'] = '#BDBDBD'
 
+    connected_nodes = set()
     for n1, n2 in graph.edges():
 
         id_n1 = None
@@ -100,18 +96,24 @@ def graph_conversion(graph, highlight=False,
             id_n2 = n2.node_value.__class__.__name__
 
         if id_n1 and id_n2:
-            links.append({
-                'source': id_n1,
-                'target': id_n2,
-                'value': 1.0
+            connected_nodes.add(id_n1)
+            connected_nodes.add(id_n2)
+            edges.append({
+                'from': id_n1,
+                'to': id_n2
             })
+
+    if hide_unconnected_nodes:
+        for node in nodes:
+            if node['id'] not in connected_nodes:
+                node['hidden'] = True
 
     graph_data = {
         'nodes': nodes,
-        'links': links
+        'edges': edges
     }
 
-    return dumps(graph_data)
+    return graph_data
 
 
 def references_to_markdown(references):
@@ -209,6 +211,8 @@ def parse_path(pathname):
     elif pathname.startswith('/load_material'):
         mode = 'load_material'
         value = pathname.split('/')[-1]
+    elif pathname.startswith('/graph'):
+        mode = 'graph'
 
     return {
         'mode': mode,

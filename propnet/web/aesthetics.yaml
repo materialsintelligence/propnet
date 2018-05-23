@@ -1,2 +1,31 @@
-color: {condition: "#43A1F8", model: "orange", property: "#43A1F8", object: "#43A1F8"}
-radius: {property: 5.0}
+node_aesthetics:  # http://visjs.org/docs/network/nodes.html
+  Symbol:
+    color: "#43A1F8"
+    size: 30
+    shape: box
+    font:
+      color: "#ffffff"
+      face: "Helvetica"
+      size: 20
+  Model:
+    color: orange
+    size: 8.0
+    shape: diamond
+  Material:
+    color: green
+  Quantity:
+    color: red
+node_options:
+  show_symbol_labels: true
+  show_model_labels: false
+global_options:  # http://visjs.org/docs/network/
+  nodes:
+    labelHighlightBold: true
+  edges:
+    arrows: ""
+    color:
+      color: "#43A1F8"
+      highlight: "#43A1F8"
+      inherit: false
+  physics:
+    avoidOverlap: 1
