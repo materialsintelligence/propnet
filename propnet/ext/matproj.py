@@ -99,7 +99,10 @@ class MPRester(_MPRester):
         Returns: a property dictionary
 
         """
-        return self.get_properties_for_mpids([mpid])[0]
+        if len(self.get_properties_for_mpids([mpid])) > 0:
+            return self.get_properties_for_mpids([mpid])[0]
+        else:
+            return []
 
     def get_materials_for_mpids(self, mpids: List[str]) -> List[Material]:
         """
@@ -135,4 +138,7 @@ class MPRester(_MPRester):
         Returns: a Material object
 
         """
-        return self.get_materials_for_mpids([mpid])[0]
+        if len(self.get_materials_for_mpids([mpid])) > 0:
+            return self.get_materials_for_mpids([mpid])[0]
+        else:
+            return None
