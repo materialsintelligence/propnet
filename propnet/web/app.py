@@ -47,59 +47,6 @@ graph_component = html.Div(id='graph', children=[
     )
 ], style={'width': '100%', 'height': '800px'})
 
-
-# highlight node for corresponding content
-@app.callback(
-    Output('propnet-graph', 'selectedNode'),
-    [Input('url', 'pathname')]
-)
-def hightlight_node_for_content(pathname):
-    """
-
-    Args:
-      pathname:
-
-    Returns:
-
-    """
-    path_info = parse_path(pathname)
-    if path_info and path_info['value']:
-        return path_info['value']
-    else:
-        return 'none'
-
-
-# display corresponding content when node clicked
-@app.callback(
-    Output('url', 'pathname'),
-    [Input('propnet-graph', 'requestContent')]
-)
-def show_content_for_selected_node(node):
-    """
-
-    Args:
-      node:
-
-    Returns:
-
-    """
-    if not node:
-        # This is a hack to get around a circular dependency
-        # It is not nice!
-        # It should be replaced.
-        requesting_path = request.environ.get('HTTP_REFERER')
-        return urlparse(requesting_path).path
-    print(node)
-    if node == 'home':
-        return '/'
-    elif node in DEFAULT_SYMBOL_TYPE_NAMES:
-        return '/property/{}'.format(node)
-    elif node in DEFAULT_MODEL_NAMES:
-        return '/model/{}'.format(node)
-    else:
-        return '/'
-
-
 layout_menu = html.Div( children=[
     dcc.Link('Explore Graph', href='/graph'),
     html.Span(' • '),
@@ -194,7 +141,6 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
     new_qs = {}
     if aggregate:
         new_qs = material.aggregate()
-    print(new_qs)
 
     rows = []
     for node in material.available_quantity_nodes():
@@ -228,9 +174,13 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
         id='datatable'
     )
 
-    material_graph_data = graph_conversion(g, highlight=True,
+    material_graph_data = graph_conversion(g,
                                            nodes_to_highlight_green=material.available_properties())
-    material_graph_component = html.Div()
+    material_graph_component = html.Div(GraphComponent(
+        id='material-graph',
+        graph=material_graph_data,
+        options=AESTHETICS['global_options']
+    ), style={'width': '100%', 'height': '400px'})
 
     return html.Div([
         html.H3('Graph'),
@@ -238,6 +188,7 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
         html.H3('Table'),
         table
     ])
+
 
 material_layout = html.Div([
     dcc.Input(
