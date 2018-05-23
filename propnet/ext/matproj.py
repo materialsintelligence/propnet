@@ -58,7 +58,10 @@ class MPRester(_MPRester):
         """
         q = self.query(criteria={'pretty_formula': formula},
                            properties=['material_id'])
-        return q[0]['material_id']
+        if len(q) > 0:
+            return q[0]['material_id']
+        else:
+            return None
 
     def get_properties_for_mpids(self, mpids: List[str]) -> List[Dict]:
         """
