@@ -1,6 +1,6 @@
 name: potentially_ferroelectric
 display_names: ['Potentially Ferroelectric']
-display_symbols: []
+display_symbols: ['Potentially Ferroelectric']
 comment: 'If a material is potentially a ferroelectric or not.'
 category: object
 object_type: bool
