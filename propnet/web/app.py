@@ -15,14 +15,11 @@ from propnet.web.layouts_symbols import symbol_layout, symbols_index
 from propnet.models import DEFAULT_MODEL_NAMES
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
 
-from force_graph import ForceGraphComponent
-from propnet.web.utils import graph_conversion, parse_path
+from dash_react_graph_vis import GraphComponent
+from propnet.web.utils import graph_conversion, parse_path, AESTHETICS
 from propnet.core.graph import Graph
 
 from propnet.ext.matproj import MPRester
-
-import numpy as np
-from scipy.stats import describe
 
 from flask_caching import Cache
 
@@ -30,7 +27,7 @@ app = dash.Dash()
 server = app.server
 app.config.supress_callback_exceptions = True  # TODO: remove this?
 app.scripts.config.serve_locally = True
-app.title = ">>snappy project name to go here<<"
+app.title = "Property Network Project"
 route = dcc.Location(id='url', refresh=False)
 
 cache = Cache(app.server, config={
@@ -41,68 +38,18 @@ mpr = MPRester()
 
 g = Graph().graph
 graph_data = graph_conversion(g)
+
 graph_component = html.Div(id='graph', children=[
-    ForceGraphComponent(
+    GraphComponent(
         id='propnet-graph',
-        graphData=graph_data,
-        width=800,
-        height=350
-    )], className='box')
+        graph=graph_data,
+        options=AESTHETICS['global_options']
+    )
+], style={'width': '100%', 'height': '800px'})
 
-
-# highlight node for corresponding content
-@app.callback(
-    Output('propnet-graph', 'selectedNode'),
-    [Input('url', 'pathname')]
-)
-def hightlight_node_for_content(pathname):
-    """
-
-    Args:
-      pathname:
-
-    Returns:
-
-    """
-    path_info = parse_path(pathname)
-    if path_info and path_info['value']:
-        return path_info['value']
-    else:
-        return 'none'
-
-
-# display corresponding content when node clicked
-@app.callback(
-    Output('url', 'pathname'),
-    [Input('propnet-graph', 'requestContent')]
-)
-def show_content_for_selected_node(node):
-    """
-
-    Args:
-      node:
-
-    Returns:
-
-    """
-    if not node:
-        # This is a hack to get around a circular dependency
-        # It is not nice!
-        # It should be replaced.
-        requesting_path = request.environ.get('HTTP_REFERER')
-        return urlparse(requesting_path).path
-    print(node)
-    if node == 'home':
-        return '/'
-    elif node in DEFAULT_SYMBOL_TYPE_NAMES:
-        return '/property/{}'.format(node)
-    elif node in DEFAULT_MODEL_NAMES:
-        return '/model/{}'.format(node)
-    else:
-        return '/'
-
-
-layout_menu = html.Div(style={'textAlign': 'center'}, children=[
+layout_menu = html.Div( children=[
+    dcc.Link('Explore Graph', href='/graph'),
+    html.Span(' • '),
     dcc.Link('All Symbols', href='/property'),
     html.Span(' • '),
     dcc.Link('All Models', href='/model'),
@@ -141,16 +88,15 @@ Graph initialization log:
 # header
 app.layout = html.Div(children=[
     route,
-    html.H3(app.title),
-    html.Br(),
-    graph_component,
-    html.Br(),
-    layout_menu,
-    html.Br(),
+    html.Div([
+        html.H3(app.title),
+        layout_menu,
+        html.Br(),
+    ], style={'textAlign': 'center'}),
     html.Div(id='page-content'),
     # hidden table to make sure table component loads (Dash limitation; may be removed in future)
-    html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'})
-], style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 50})
+    html.Div(children=[dt.DataTable(rows=[{}]), graph_component], style={'display': 'none'})
+], style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 30})
 
 # standard Dash css, fork this for a custom theme
 app.css.append_css({
@@ -194,8 +140,7 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
 
     new_qs = {}
     if aggregate:
-        new_qs = material.aggregate()
-    print(new_qs)
+        new_qs = material.get_aggregated_properties()
 
     rows = []
     for node in material.available_quantity_nodes():
@@ -229,12 +174,15 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
         id='datatable'
     )
 
-    material_graph_data = graph_conversion(g, highlight=True,
-                                           highlight_green=material.available_properties())
-    material_graph_component = ForceGraphComponent(id='propnet-graph',
-                                                   graphData=material_graph_data,
-                                                   width=800,
-                                                   height=350)
+    material_graph_data = graph_conversion(g,
+                                           nodes_to_highlight_green=material.available_properties())
+    options = AESTHETICS['global_options']
+    options['edges']['color'] = '#000000'
+    material_graph_component = html.Div(GraphComponent(
+        id='material-graph',
+        graph=material_graph_data,
+        options=options
+    ), style={'width': '100%', 'height': '400px'})
 
     return html.Div([
         html.H3('Graph'),
@@ -242,6 +190,7 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
         html.H3('Table'),
         table
     ])
+
 
 material_layout = html.Div([
     dcc.Input(
@@ -300,6 +249,8 @@ def display_page(pathname):
                 return symbols_index()
         elif path_info['mode'] == 'load_material':
             return material_layout
+        elif path_info['mode'] == 'graph':
+            return graph_component
         else:
             return '404'
     else:

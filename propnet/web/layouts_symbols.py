@@ -1,63 +1,81 @@
+from collections import OrderedDict
+
 import dash_html_components as html
 import dash_core_components as dcc
-import plotly.graph_objs as go
+from dash_react_graph_vis import GraphComponent
+
+import networkx as nx
+from propnet.core.graph import Graph
+from propnet.core.node import Node, NodeType
 
 from propnet.symbols import DEFAULT_SYMBOLS
-
+from propnet.web.utils import graph_conversion, AESTHETICS
 
 # layouts for symbol detail pages
 
 def symbol_layout(symbol_name):
+    """Create a Dash layout for a provided symbol.
+
+    Args:
+      model: a symbol name
+
+    Returns:
+      Dash layout
+
+    """
+
+    # list to hold layouts for each section
+    layouts = []
 
     symbol = DEFAULT_SYMBOLS[symbol_name]
 
     main_name = symbol.display_names[0]
 
-    # TODO: clean up this layout (will probably be easier if symbol is refactored)
+    layouts.append(html.H6('Graph'))
+    # TODO: costly, should just construct subgraph directly?
+    g = Graph()
+    n = Node(node_type=NodeType.Symbol, node_value=symbol)
+    subgraph = nx.ego_graph(g.graph, n, undirected=True)
+    options=AESTHETICS['global_options']
+    if "arrows" in options["edges"]:
+        options["edges"]["arrows"] = "to"
+    AESTHETICS["node_options"]["show_model_labels"] = True
+    layouts.append(html.Div(
+        GraphComponent(
+            id="model_graph",
+            graph=graph_conversion(subgraph, aesthetics=AESTHETICS),
+            options=AESTHETICS['global_options']
+        ),
+        style={'width': '100%', 'height': '300px'}
+    ))
 
     if len(symbol.display_names) > 1:
         display_names = ", ".join(symbol.display_names[1:])
         other_names = dcc.Markdown("Also known as: {}".format(display_names))
-    else:
-        other_names = html.Div()
+        layouts.append(other_names)
 
     if len(symbol.display_symbols) > 1:
         symbols = " ".join(symbol.display_symbols)
         symbols = dcc.Markdown("Common symbols: {}".format(symbols))
-    else:
-        symbols = html.Div()
+        layouts.append(symbols)
 
     if symbol.category in ('property', 'condition'):
         units = dcc.Markdown("Canonical units: **{}**".format(symbol.unit_as_string))
-        if symbol.compatible_units:
-            compatible_units = dcc.Markdown('Compatible units:\n\n{}'
-                                            .format('\n\n'.join(map("* {}".format,
-                                                                    symbol.compatible_units))))
-        else:
-            compatible_units = html.Div()
         dimension = dcc.Markdown("**{}**".format(symbol.dimension_as_string))
-    else:
-        units = html.Div()
-        compatible_units = html.Div()
-        dimension = html.Div()
+        layouts.append(units)
+        layouts.append(dimension)
 
     if symbol.comment:
-        comment = dcc.Markdown(symbol.comment)
-    else:
-        comment = html.Div()
+        layouts.append(dcc.Markdown(symbol.comment))
 
     return html.Div([
-        html.H3(main_name),
-        other_names,
-        symbols,
-        dimension,
-        comment,
-        units,
-        compatible_units,
+        main_name,
+        html.Br(),
+        html.Div(layouts),
         html.Br(),
         dcc.Link('< Back to Properties', href='/property'),
         html.Br(),
-        dcc.Link('<< Back to Propnet Home', href='/')
+        dcc.Link('<< Back to Home', href='/')
     ])
 
 

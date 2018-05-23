@@ -51,16 +51,6 @@ class Material:
 
         self.parent = None
 
-    @property
-    def subgraph(self):
-        """
-        Returns just the root material node + its associated symbols.
-        """
-        material_nodes = [self.root_node] \
-                         + list(self.graph.predecessors(self.root_node))\
-                         + list(self.graph.successors(self.root_node))
-        return self.graph.subgraph(material_nodes)
-
     def add_quantity(self, property):
         """
         Adds a property to this material's property graph.
