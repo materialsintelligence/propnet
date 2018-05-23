@@ -30,11 +30,11 @@ class Symbol(MSONable):
 
     # TODO: this really needs to be rethought, possibly split into separate classes
     # or a base class + subclasses for symbols with units vs those without
-    def __init__(self, name, category='property',
+    def __init__(self, name,
                  display_names=None, display_symbols=None,
                  units=None, shape=None,
                  object_type=None,
-                 comment=None):
+                 comment=None, category='property',):
         """
         Parses and validates a series of inputs into a PropertyMetadata tuple, a format that
         PropNet expects.
@@ -58,7 +58,7 @@ class Symbol(MSONable):
         """
 
         if category not in ('property', 'condition', 'object'):
-            raise ValueError('Unsupported property category')
+            raise ValueError('Unsupported category: {}'.format(category))
 
         if not name.isidentifier() or not name.islower():
             raise ValueError("The canonical name ({}) is not valid.".format(name))

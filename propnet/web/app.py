@@ -140,7 +140,7 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
 
     new_qs = {}
     if aggregate:
-        new_qs = material.aggregate()
+        new_qs = material.get_aggregated_properties()
 
     rows = []
     for node in material.available_quantity_nodes():
