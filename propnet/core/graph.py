@@ -524,3 +524,4 @@ class Graph:
                 summary += ["\t\t " + property.node_value.symbol.display_names[0] +
                             "\t:\t" + str(property.node_value)]
         return "\n".join(summary)
+
