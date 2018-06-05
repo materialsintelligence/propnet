@@ -7,7 +7,6 @@ import networkx as nx
 from collections import defaultdict
 from typing import *
 
-from propnet.core.node import NodeType, Node
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import Quantity, weighted_mean
 from propnet.core.utils import uuid
@@ -32,154 +31,147 @@ class Material:
     materials at runtime.
 
     Attributes:
-        graph (nx.MultiDiGraph<Node>): data structure storing all Quantity nodes of the
-        Material.
         uuid (int): unique hash number used as an identifier for this object.
-        root_node (Node): the Material node associated with this material, has a unique
-        hash id.
         parent (Graph): Stores a pointer to the Graph instance this Material has been bound to.
+        _symbol_to_quantity (dict<Symbol, set<Quantity>>): data structure mapping Symbols to a list of corresponding
+                                                           Quantity objects of that type.
+
     """
     def __init__(self):
         """
         Creates a Material instance, instantiating a trivial graph of one node.
         """
         self.uuid = uuid()
-
-        self.graph = nx.MultiDiGraph()
-        self.root_node = Node(node_type=NodeType.Material, node_value=self)
-        self.graph.add_node(self.root_node)
-
         self.parent = None
+        self._symbol_to_quantity = DefaultDict(set)
 
-    @property
-    def subgraph(self):
-        """
-        Returns just the root material node + its associated symbols.
-        """
-        material_nodes = [self.root_node] \
-                         + list(self.graph.predecessors(self.root_node))\
-                         + list(self.graph.successors(self.root_node))
-        return self.graph.subgraph(material_nodes)
-
-    def add_quantity(self, property):
+    def add_quantity(self, quantity):
         """
         Adds a property to this material's property graph.
-        If the material has been bound to a Graph instance, correctly adds the property to that
-        instance.
-        Mutates graph instance variable.
-
+        If the material has been bound to a Graph instance, correctly adds the property to that instance.
+        Mutates this graph instance variable and its parent.
         Args:
-            property (Quantity): property to be bound to the material.
+            quantity (Quantity): property to be bound to the material.
         Returns:
             void
         """
-        property_node = Node(node_type=NodeType.Quantity, node_value=property)
-        property_symbol_node = Node(node_type=NodeType.Symbol,
-                                    node_value=property.symbol)
-        self.graph.add_edge(self.root_node, property_node)
-        self.graph.add_edge(property_node, property_symbol_node)
+        self._symbol_to_quantity[quantity.symbol].add(quantity)
         if self.parent:
-            self.parent.graph.add_edge(self.root_node, property_node)
-            self.parent.graph.add_edge(property_node, property_symbol_node)
+            self.parent._add_quantity(quantity)
+        quantity._material.add(self)
 
-    def remove_quantity(self, property):
+    def remove_quantity(self, quantity):
         """
         Removes the Quantity object attached to this Material.
         Args:
-            property (Quantity): Quantity object reference indicating with property is to be
+            quantity (Quantity): Quantity object reference indicating with property is to be
             removed from this Material.
         Returns:
             None
         """
-        nodes_to_remove = []
-        for node in self.graph.neighbors(self.root_node):
-            if node.node_value == property:
-                nodes_to_remove.append(node)
-                if self.parent:
-                    self.parent.graph.remove_node(node)
-        for node in nodes_to_remove:
-            self.graph.remove_node(node)
+        if quantity.symbol not in self._symbol_to_quantity:
+            raise Exception("Attempting to remove quantity not present in the material.")
+        if self.parent:
+            self.parent._remove_quantity(quantity)
+        self._symbol_to_quantity[quantity.symbol].remove(quantity)
+        quantity._material.remove(self)
 
-    def remove_property_type(self, property_type):
+    def remove_symbol(self, symbol):
         """
-        Removes all Quantity Nodes attached to this Material whose Symbol matches the indicated
-        property_type text.
+        Removes all Quantity Nodes attached to this Material of type symbol.
         Args:
-            property_type (str): String indicating which property type is to be removed from this material.
+            symbol (Symbol): object indicating which property type is to be removed from this material.
         Returns:
             None
         """
-        for node in self.graph.neighbors(self.root_node):
-            if node.node_value.symbol.name == property_type:
-                self.graph.remove_node(node)
-                if self.parent:
-                    self.parent.graph.remove_node(node)
+        if symbol not in self._symbol_to_quantity:
+            raise Exception("Attempting to remove Symbol not present in the material.")
+        for q in self._symbol_to_quantity[symbol]:
+            self.remove_quantity(q)
+        del self._symbol_to_quantity[symbol]
 
-    def available_properties(self):
+    def get_symbols(self):
         """
-        Method obtains the names of all properties bound to this Material.
-
+        Method obtains all Symbol objects bound to this Material.
         Returns:
-            (list<str>) list of all properties bound to this Material.
+            (set<Symbol>) list of all properties bound to this Material.
         """
-        available_propertes = []
-        for node in self.graph.nodes:
-            if node.node_type == NodeType.Quantity:
-                available_propertes.append(node.node_value.symbol.name)
-        return available_propertes
+        to_return = set()
+        for symbol in self._symbol_to_quantity.keys():
+            to_return.add(symbol)
 
-    def available_quantity_nodes(self):
+    def get_quantities(self):
         """
         Method obtains all Quantity objects bound to this Material.
-
         Returns:
-            (list<Node<Quantity>>) list of all Quantity objects bound to this Material.
+            (list<Quantity>) list of all Quantity objects bound to this Material.
         """
         to_return = []
-        for node in self.graph.nodes:
-            if node.node_type == NodeType['Quantity']:
-                to_return.append(node)
+        for q_list in self._symbol_to_quantity.values():
+            for q in q_list:
+                to_return.append(q)
         return to_return
+
+    def get_unique_quantities(self):
+        """
+        Returns a set of Quantities that belong ONLY to this material.
+        Returns:
+            (set<Quantity>)
+        """
+        pass
+
+    def get_aggregated_quantities(self):
+        """
+        Summarize statistics over sets of quantities.
+        Returns:
+            (dict<Symbol, weighted_mean) mapping from a Symbol to an aggregated statistic.
+        """
+        new_qs = {}
+        for symbol in self._symbol_to_quantity.keys():
+            qs = [x for x in self._symbol_to_quantity[symbol]]
+            new_qs[symbol] = weighted_mean(qs)
+        return new_qs
+
+    @property
+    def graph(self):
+        """
+        Generates a networkX data structure representing the property network and returns
+        this object.
+        Returns:
+            (networkX.multidigraph)
+        """
+        graph = nx.MultiDiGraph()
+        for symbol in self._symbol_to_quantity:
+            quantity = self._symbol_to_quantity[symbol]
+            graph.add_edge(quantity, symbol)
+            graph.add_edge(self, quantity)
+        return graph
+
+    def evaluate(self):
+        """
+        Convenience method to expand this material's properties.
+        Creates a Graph instance behind the scenes.
+        Mutates this material.
+        Returns:
+            (None)
+        """
+        g = Graph()
+        g.add_material(self)
+        g.evaluate()
 
     def __repr__(self):
         return str(self.uuid)
 
     def __str__(self):
-        to_return = "Material: " + str(self.uuid) + "\n"
-        for node in self.available_quantity_nodes():
-            to_return += "\t" + node.node_value.symbol.name + ":\t"
-            to_return += str(node.node_value.value) + "\n"
-        return to_return
-
-    @property
-    def quantities_grouped_by_symbol(self) ->  Dict[Symbol, List[Quantity]]:
-        grouped_quantities = defaultdict(list)
-        for node in self.available_quantity_nodes():
-            symbol = node.node_value.symbol
-            grouped_quantities[symbol].append(node.node_value)
-        return grouped_quantities
-
-    def evaluate(self):
-        # convenience method, an alternative way to get to Graph.evaluate()
-        g = Graph()
-        g.add_material(self)
-        g.evaluate()
-        g.remove_material(self)
-
-    def get_aggregated_properties(self):
-
-        new_qs = {}
-        for symbol, quantities in self.quantities_grouped_by_symbol.items():
-
-            if len(quantities) > 1:
-
-                new_quantity = weighted_mean(quantities)
-
-                if new_quantity:
-                    new_qs[symbol.name] = new_quantity
-                    for quantity in quantities:
-                        self.remove_quantity(quantity)
-                    self.add_quantity(new_quantity)
-
-        # fake for demo
-        return new_qs
+        QUANTITY_LENGTH_CAP = 35
+        building = []
+        building += ["Material: " + str(self.uuid), ""]
+        for symbol in self._symbol_to_quantity.keys():
+            building += ["\t" + symbol.name]
+            for quantity in self._symbol_to_quantity[symbol]:
+                qs = str(quantity)
+                if "\n" in qs or len(qs) > QUANTITY_LENGTH_CAP:
+                    qs = "..."
+                building += ["\t\t" + qs]
+            building += [""]
+        return "\n".join(building)

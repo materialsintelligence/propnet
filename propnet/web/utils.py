@@ -11,6 +11,7 @@ from pybtex.style.labels import BaseLabelStyle
 
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, Symbol
 from propnet.models import DEFAULT_MODEL_NAMES
+from propnet.core.models import AbstractModel
 
 from monty.serialization import loadfn
 
@@ -50,17 +51,17 @@ def graph_conversion(graph, highlight=False,
 
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
-        if n.node_type.name == 'Symbol':
+        if isinstance(n, Symbol):
             # property
-            id = n.node_value.name
-            label = n.node_value.display_names[0]
-            fill = AESTHETICS['color'][n.node_value.category]
+            id = n.name
+            label = n.display_names[0]
+            fill = AESTHETICS['color'][n.category]
             shape = 'circle'
             radius = 5.0
-        elif n.node_type.name == 'Model':
+        elif isinstance(n, AbstractModel):
             # model
-            id = n.node_value.__class__.__name__
-            label = n.node_value.title
+            id = n.__class__.__name__
+            label = n.title
             fill = AESTHETICS['color']['model']
             shape = 'square'
             radius = 6.0
@@ -88,16 +89,16 @@ def graph_conversion(graph, highlight=False,
     for n1, n2 in graph.edges():
 
         id_n1 = None
-        if n1.node_type.name == 'Symbol':
-            id_n1 = n1.node_value.name
-        elif n1.node_type.name == 'Model':
-            id_n1 = n1.node_value.__class__.__name__
+        if isinstance(n1, Symbol):
+            id_n1 = n1.name
+        elif isinstance(n1, AbstractModel):
+            id_n1 = n1.__class__.__name__
 
         id_n2 = None
-        if n2.node_type.name == 'Symbol':
-            id_n2 = n2.node_value.name
-        elif n2.node_type.name == 'Model':
-            id_n2 = n2.node_value.__class__.__name__
+        if isinstance(n2, Symbol):
+            id_n2 = n2.name
+        elif isinstance(n2, AbstractModel):
+            id_n2 = n2.__class__.__name__
 
         if id_n1 and id_n2:
             links.append({

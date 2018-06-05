@@ -100,7 +100,7 @@ class AbstractModel:
         """
 
         if additional_symbols:
-            symbol_types = {symbol.name:symbol for symbol in symbol_types}
+            symbol_types = {symbol.name: symbol for symbol in symbol_types}
             DEFAULT_SYMBOLS.update(symbol_types)
 
         if symbol_types is None:
@@ -122,16 +122,186 @@ class AbstractModel:
         for symbol, name in self.symbol_mapping.items():
             self.unit_mapping[symbol] = symbol_types[name].units
 
-    # constraint_symbols, meets_constraints, plug_in, and evaluate methods are optional overrides in extending classes
+    # Suite of getter methods returning appropriate model data.
+
+    @property
+    def name(self) -> str:
+        """
+
+        Returns: Name of the model (this matches the class name),
+        'title' gives a more human-readable title for the model.
+
+        """
+        return self.__class__.__name__
+
+    @property
+    def title(self) -> str:
+        """
+
+        Returns: A human-readable title for the model.
+
+        """
+        return self._metadata.get('title', 'undefined')
+
+    @property
+    def tags(self) -> List[str]:
+        """
+
+        Returns: A list of tags categories associated with the
+        model.
+
+        """
+        return self._metadata.get('tags', [])
+
+    @property
+    def description(self) -> str:
+        """
+
+        Returns: A description of the model and how it works,
+        provided as a Markdown-formatted string.
+
+        """
+        return self._metadata.get('description', '')
+
+    @property
+    def references(self):
+        """
+        References for a model. When defining a model, these should be given as a list of strings with either the
+        prefix "url:" or "doi:", and a formatted BibTeX string will be generated
+
+        Returns:
+            (list<str>): list of BibTeX strings
+        """
+
+        refs = self._metadata.get('references', [])
+
+        return references_to_bib(refs)
+
+    @property
+    def uuid(self):
+        """
+        A unique model identifier, function of model class name.
+        """
+        return uuid(self.__class__.__name__.encode('utf-8'))
+
+    @property
+    def model_id(self):
+        return self.uuid
+
+    @property
+    def symbol_mapping(self) -> Dict[str, str]:
+        """
+        A mapping of a symbol named used within the model to the canonical symbol name, e.g. {"E": "youngs_modulus"}
+        keys are symbols used in the model; values are Symbol enum values (Symbol.name field)
+
+        Returns:
+            (dict<str,str>): symbol mapping dictionary
+        """
+        return self._metadata.get('symbol_mapping', {})
+
+    @property
+    def connections(self):
+        """
+        Forms the list of outputs that can be generated from different sets of inputs. The outer list contains
+        dictionaries. These dictionaries contain two keys: "inputs" and "outputs". Each key maps to a list of symbol
+        strings that serve as the list of input / output property types required for evaluation by the model.
+
+        Returns:
+             (list<dict<str,list<str>>>): List of connections
+        """
+        return self._metadata.get('connections', [])
+
+    @property
+    def type_connections(self):
+        """
+        Froms the list of outputs that can be generated from different sets of inputs. The outer list contains
+        dictionaries. These dictionaries contain two keys: "inputs" and "outputs". Each key maps to a list of
+        Symbol_type strings that serve as the list of input / output propperty types required for evaluation.
+
+        Returns:
+            (list<dict<str,list<str>>>): List of connections
+        """
+        to_return = []
+        for d in self.connections:
+            building = dict()
+            building['inputs'] = [self.symbol_mapping[x] for x in d['inputs']]
+            building['outputs'] = [self.symbol_mapping[x] for x in d['outputs']]
+            to_return.append(building)
+        return to_return
+
+    def gen_evaluation_lists(self):
+        """
+        Convenience method.
+        Returns (list<tuple<list<str>>, list<str>>>))
+                gives corresponding sets of model input symbols and input Symbol objects.
+        """
+        to_return = []
+        for d in self.connections:
+            l = []
+            for i in d['inputs']:
+                l.append(i)
+            for i in self.constraint_symbols:
+                l.append(i)
+            l_types = [self.symbol_mapping[x] for x in l]
+            to_return.append((l, l_types))
+        return to_return
+
+    
+    @property
+    def input_symbols(self):
+        """
+        Returns:
+            (list<str>): all sets of input symbols for the model
+        """
+        return [d['inputs'] for d in self.connections]
+    
+    @property
+    def input_symbol_types(self):
+        """
+        Returns:
+            (set<str>): all sets of input Symbol objects for the model
+        """
+        return {self.symbol_mapping[x] for x in self.input_symbols}
+
+    @property
+    def output_symbols(self):
+        """
+        Returns:
+            (list<str>): all sets of output symbols for the model
+        """
+        return [d['outputs'] for d in self.connections]
+
+    @property
+    def output_symbol_types(self):
+        """
+        Returns:
+            (list<str>): all sets of output Symbol objects for the model
+        """
+        to_return = set()
+        for l in self.output_symbols:
+            for i in l:
+                to_return.add(self.symbol_mapping[i])
+        return to_return
+
     @property
     def constraint_symbols(self):
         """
-        Returns a set of symbols.
+        Returns a list of symbols.
         These symbols are those whose value needs to be evaluated to determine if the model can be evaluated under the
         current conditions.
-        Returns: ({str})
+        Returns: ([str])
         """
         return []
+
+    def type_constraint_symbols(self):
+        """
+        Returns the Symbols required for evaluation of constraints.
+        Returns: ([Symbol])
+        """
+        to_return = list()
+        for s in self.constraint_symbols:
+            to_return.append(self.symbol_mapping[s])
+        return to_return
 
     def check_constraints(self, constraint_inputs):
         """
@@ -145,6 +315,16 @@ class AbstractModel:
         """
         return True
 
+
+
+    @property
+    def equations(self):
+        """
+        Returns:
+            (list<str>): equations that define the model
+        """
+        return self._metadata.get('equations', [])
+
     def evaluate(self, symbol_values):
         """
         Given a set of symbol_values, performs error checking to see if the input symbol_values represents a valid input
@@ -152,9 +332,9 @@ class AbstractModel:
         applied to the inputs. The dictionary contains a "successful" key representing if plug_in was successful.
 
         Args:
-            symbol_values (dict<str,float>): Mapping from string symbol to float value, giving inputs.
+            symbol_values (dict<str,pint.Quantity>): Mapping from string symbol to float value, giving inputs.
         Returns:
-            (dict<str,float>), mapping from string symbol to float value giving result of applying the model to the
+            (dict<str,pint.Quantity>), mapping from string symbol to float value giving result of applying the model to the
                                given inputs. Additionally contains a "successful" key -> bool pair.
         """
 
@@ -224,121 +404,9 @@ class AbstractModel:
                 outputs[str(possible_output)] = float(sp.N(solution))
         return outputs
 
-    # Suite of getter methods returning appropriate model data.
-
-    @property
-    def name(self) -> str:
-        """
-
-        Returns: Name of the model (this matches the class name),
-        'title' gives a more human-readable title for the model.
-
-        """
-        return self.__class__.__name__
-
-    @property
-    def title(self) -> str:
-        """
-
-        Returns: A human-readable title for the model.
-
-        """
-        return self._metadata.get('title', 'undefined')
-
-    @property
-    def tags(self) -> List[str]:
-        """
-
-        Returns: A list of tags categories associated with the
-        model.
-
-        """
-        return self._metadata.get('tags', [])
-
-    @property
-    def description(self) -> str:
-        """
-
-        Returns: A description of the model and how it works,
-        provided as a Markdown-formatted string.
-
-        """
-        return self._metadata.get('description', '')
-
-    @property
-    def symbol_mapping(self) -> Dict[str, str]:
-        """
-        A mapping of a symbol named used within the model to the canonical symbol name, e.g. {"E": "youngs_modulus"}
-        keys are symbols used in the model; values are Symbol enum values (Symbol.name field)
-
-        Returns:
-            (dict<str,str>): symbol mapping dictionary
-        """
-        return self._metadata.get('symbol_mapping', {})
-
-    @property
-    def connections(self):
-        """
-        Forms the list of outputs that can be generated from different sets of inputs. The outer list contains
-        dictionaries. These dictionaries contain two keys: "inputs" and "outputs". Each key maps to a list of symbol
-        strings that serve as the list of input / output property types required for evaluation by the model.
-
-        Returns:
-             (list<dict<str,list<str>>>): List of connections
-        """
-        return self._metadata.get('connections', [])
-
-    @property
-    def input_symbols(self):
-        """
-        Returns:
-            (list<str>): all sets of input symbols for the model
-        """
-        return [d['inputs'] for d in self.connections]
-
-    @property
-    def output_symbols(self):
-        """
-        Returns:
-            (list<str>): all sets of output symbols for the model
-        """
-        return [d['outputs'] for d in self.connections]
-
-    @property
-    def equations(self):
-        """
-        Returns:
-            (list<str>): equations that define the model
-        """
-        return self._metadata.get('equations', [])
-
-    @property
-    def references(self):
-        """
-        References for a model. When defining a model, these should be given as a list of strings with either the
-        prefix "url:" or "doi:", and a formatted BibTeX string will be generated
-
-        Returns:
-            (list<str>): list of BibTeX strings
-        """
-
-        refs = self._metadata.get('references', [])
-
-        return references_to_bib(refs)
 
     def __hash__(self):
         return self.uuid.__hash__()
-
-    @property
-    def uuid(self):
-        """
-        A unique model identifier, function of model class name.
-        """
-        return uuid(self.__class__.__name__.encode('utf-8'))
-
-    @property
-    def model_id(self):
-        return self.uuid #TODO: remove
 
     def __eq__(self, other):
         return self.model_id == getattr(other, "model_id", None)

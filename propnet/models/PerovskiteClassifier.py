@@ -1,5 +1,4 @@
 from propnet.core.models import AbstractModel
-from propnet.core.quantity import Quantity
 
 class PerovskiteClassifier(AbstractModel):
 
