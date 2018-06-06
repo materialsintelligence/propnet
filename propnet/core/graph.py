@@ -6,15 +6,10 @@ from typing import *
 
 import networkx as nx
 
-from propnet import logger
 from propnet.models import DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
-from propnet.core.models import AbstractModel
-from propnet.core.node import Node, NodeType, ALLOWED_NODE_TYPES
-
-from collections import Counter
 
 
 class Graph:
@@ -36,7 +31,18 @@ class Graph:
     values of connected properties on demand.
 
     Attributes:
-        graph (nx.MultiDiGraph<Node>): data structure supporting the property network.
+        _symbol_types ({str: Symbol}): data structure mapping Symbol name to Symbol object.
+        _models ({str: Symbol}): data structure mapping Model name to Model object.
+        _materials ({Material}):    data structure storing the set of all materials present on the graph.
+        _input_to_model ({Symbol: {Model}}): data structure mapping Symbol inputs to a set of corresponding Model
+                                             objects that input that Symbol.
+        _output_to_model ({Symbol: {Model}}): data structure mapping Symbol outputs to a set of corresponding Model
+                                              objects that output that Symbol.
+        _symbol_to_quantity ({Symbol: {Quantity}}): data structure mapping Symbols to a list of corresponding Quantity
+                                                    objects of that type.
+
+
+    *** Dictionaries can be searched by supplying Symbol objects or Strings as to their names.
 
     """
 
@@ -46,121 +52,184 @@ class Graph:
         """
 
         # set our defaults if no models/symbol types supplied
-        models = models or DEFAULT_MODELS
+        if models is None:
+            defaults = dict()
+            for (k, v) in DEFAULT_MODELS.items():
+                defaults[k] = v()
+            models = defaults
         symbol_types = symbol_types or DEFAULT_SYMBOLS
 
         # create the graph
-        self.graph = nx.MultiDiGraph()
+        self._symbol_types = dict()
+        self._models = dict()
+        self._materials = set()
+        self._input_to_model = DefaultDict(set)
+        self._output_to_model = DefaultDict(set)
+        self._symbol_to_quantity = DefaultDict(set)
 
-        # add our symbols
-        self._symbol_types = symbol_types
-        self.add_symbol_types(symbol_types)
+        if symbol_types:
+            self.update_symbol_types(symbol_types)
 
-        # add our models
-        self.add_models(models)
-
-        # add appropriate edges to the graph
-        for model in models.values():
-
-            model = model(symbol_types=self._symbol_types)  # instantiate model
-            model_node = Node(node_type=NodeType.Model, node_value=model)
-
-            # integer idx is used to disambiguate edges when
-            # multiple paths exist between the same start and end nodes
-            for idx, connection in enumerate(model.connections):
-
-                outputs, inputs = connection['outputs'], connection['inputs']
-
-                if isinstance(outputs, str):
-                    outputs = [outputs]
-                if isinstance(inputs, str):
-                    inputs = [inputs]
-
-                for input in inputs:
-
-                    if input not in model.symbol_mapping:
-                        raise ValueError('Symbol mapping incorrect: '
-                                         'input {} not in mapping for model {}'
-                                         .format(input, model.name))
-
-                    symbol_type = symbol_types[model.symbol_mapping[input]]
-                    input_node = Node(node_type=NodeType.Symbol,
-                                      node_value=symbol_type)
-                    self.graph.add_edge(input_node, model_node, route=idx)
-
-                for output in outputs:
-
-                    if output not in model.symbol_mapping:
-                        raise ValueError('Symbol mapping incorrect: '
-                                         'output {} not in mapping for model {}'
-                                         .format(output, model.name))
-
-                    symbol_type = symbol_types[model.symbol_mapping[output]]
-                    output_node = Node(node_type=NodeType.Symbol,
-                                       node_value=symbol_type)
-                    self.graph.add_edge(model_node, output_node, route=idx)
+        if models:
+            self.update_models(models)
 
         if materials:
             for material in materials:
                 self.add_material(material)
 
-    def add_models(self, models):
+    def __str__(self):
         """
-        Add a user-defined model to the Graph.
-
-        Args:
-            models: An instance of a model class (subclasses AbstractModel)
+        Returns a full summary of the graph in terms of the SymbolTypes, Symbols, Materials, and Models
+        that it contains. Connections are shown as nesting within the printout.
 
         Returns:
-
+            (str) representation of this Graph object.
         """
-        model_nodes = [Node(node_type=NodeType.Model,
-                            node_value=model(symbol_types=self._symbol_types))
-                       for model in models.values()]
-        self.graph.add_nodes_from(model_nodes)
+        QUANTITY_LENGTH_CAP = 35
+        summary = ["Propnet Printout", ""]
+        summary += ["Properties"]
+        for property in self._symbol_types.keys():
+            summary += ["\t" + property]
+            if property not in self._symbol_to_quantity.keys():
+                continue
+            for quantity in self._symbol_to_quantity[self._symbol_types[property]]:
+                qs = str(quantity)
+                if "\n" in qs or len(qs) > QUANTITY_LENGTH_CAP:
+                    qs = "..."
+                summary += ["\t\tValue: " + qs]
+        summary += [""]
+        summary += ["Models"]
+        for model in self._models.keys():
+            summary += ["\t" + model]
+        summary += [""]
+        return "\n".join(summary)
 
-    def add_symbol_types(self, symbol_types):
+    def update_symbol_types(self, symbol_types):
         """
-
+        Add / redefine user-defined symbol types to the graph.
+        If the input, symbol_types, includes keys in self._symbol_types, they are redefined.
         Args:
-            symbol_types: {name:Symbol}
-
+            symbol_types (dict<str, Symbol>): {name:Symbol}
         Returns:
-
+            None
         """
-        self._symbol_types.update(symbol_types)
-        symbol_type_nodes = [Node(node_type=NodeType.Symbol,
-                                  node_value=symbol_type)
-                             for symbol_type in symbol_types.values()]
+        for (k, v) in symbol_types.items():
+            self._symbol_types[k] = v
 
-        self.graph.add_nodes_from(symbol_type_nodes)
-
-    def nodes_by_type(self, node_type):
+    def remove_symbol_types(self, symbol_types):
         """
-        Gathers all PropnetNodes of a given NodeType.
-
+        Removes user-defined Symbol objects to the Graph.
+        Removes any models that input or output this Symbol because they are no longer defined
+        without the given symbol_types.
         Args:
-            node_type (str): type of node that will be returned.
+            symbol_types (dict<str, Symbol>): {name:Symbol}
         Returns:
-            (list<Node>) list of nodes of property types.
+            None
         """
-        if node_type not in ALLOWED_NODE_TYPES:
-            raise ValueError("Unsupported node type, choose from: {}"
-                             .format(ALLOWED_NODE_TYPES))
-        return filter(lambda n: n.node_type.name == node_type, self.graph.nodes)
+        models_to_remove = {}
+        for symbol in symbol_types.keys():
+            if symbol not in self._symbol_types.keys():
+                raise Exception("Trying to remove a symbol that is not currently defined.")
+            if symbol_types[symbol] != self._symbol_types[symbol]:
+                raise Exception("Trying to remove a symbol that is not currently defined.")
+            s1 = self._input_to_model[symbol]
+            s2 = self._output_to_model[symbol]
+            for m in s1:
+                models_to_remove[m.name] = m
+            for m in s2:
+                models_to_remove[m.name] = m
+            del self._symbol_types[symbol]
+            del self._input_to_model[symbol]
+            del self._output_to_model[symbol]
+        self.remove_models(models_to_remove)
+
+    def get_symbol_types(self):
+        """
+        Getter method, returns a set of all Symbol objects present on the graph.
+        Returns:
+            (set<Symbol>)
+        """
+        to_return = set()
+        for s in self._symbol_types.values():
+            to_return.add(s)
+        return to_return
+
+    def update_models(self, models):
+        """
+        Add / redefine user-defined models to the graph.
+        If the input, models, includes keys in self._models, they are redefined.
+        The addition of a model may fail if appropriate Symbol objects are not already on the graph.
+        If any addition operation fails, the entire update is aborted.
+        Args:
+            models (dict<str, Model>): Instances of the model class (subclasses AbstractModel)
+        Returns:
+            None
+        """
+        added = {}
+        for model in models.values():
+            self._models[model.name] = model
+            added[model.name] = model
+            for d in model.type_connections:
+                try:
+                    symbol_inputs = [self._symbol_types[symb_str] for symb_str in d['inputs']]
+                    symbol_outputs = [self._symbol_types[symb_str] for symb_str in d['outputs']]
+                    for symbol in symbol_inputs:
+                        self._input_to_model[symbol].add(model)
+                    for symbol in symbol_outputs:
+                        self._output_to_model[symbol].add(model)
+                except KeyError as e:
+                    self.remove_models(added)
+                    raise KeyError('Attempted to add a model to the property network with an unrecognized Symbol.\
+                                    Add {} Symbol to the property network before adding this model.'.format(e))
+
+    def remove_models(self, models):
+        """
+        Remove user-defined models from the Graph.
+        Args:
+            models (dict<str, Model>): Instances of the model class
+        Returns:
+            None
+        """
+        for model in models.keys():
+            if model not in self._models.keys():
+                raise Exception("Attempted to remove a model not currently present in the graph.")
+            del self._models[model]
+        for s in self._input_to_model.values():
+            for model in models.values():
+                if model in s:
+                    s.remove(model)
+        for s in self._output_to_model.values():
+            for model in models.values():
+                if model in s:
+                    s.remove(model)
+
+    def get_models(self):
+        """
+        Getter method, returns a set of all model objects present on the graph.
+        Returns:
+            (set<Model>)
+        """
+        to_return = set()
+        for model in self._models.values():
+            to_return.add(model)
+        return to_return
 
     def add_material(self, material):
         """
         Add a material and any of its associated properties to the Graph.
         Mutates the graph instance variable.
-
         Args:
             material (Material) Material whose information will be added to the graph.
         Returns:
             void
         """
+        if material in self._materials:
+            raise Exception("Material has already been added to the graph.")
+        self._materials.add(material)
         material.parent = self
-        self.graph = nx.compose(material.graph, self.graph)
+        for qs in material._symbol_to_quantity.values():
+            for q in qs:
+                self._add_quantity(q)
 
     def remove_material(self, material):
         """
@@ -172,12 +241,248 @@ class Graph:
         Returns:
             void
         """
-        symbol_nodes = self.graph.neighbors(material.root_node)
-        self.graph.remove_node(material.root_node)
-        for symbol_node in symbol_nodes:
-            if any([x.node_type == 'Material' for x in self.graph.neighbors(symbol_node)]):
-                continue
-            self.graph.remove_node(symbol_node)
+        if material not in self._materials:
+            raise Exception("Trying to remove material that is not part of the graph.")
+        self._materials.remove(material)
+        for qs in list(material._symbol_to_quantity.values()):
+            for q in qs:
+                self._remove_quantity(q)
+        material.parent = None
+
+    def get_materials(self):
+        """
+        Getter method returning all materials on the graph.
+        Returns:
+            (set<Material>)
+        """
+        return {m for m in self._materials}
+
+    def _add_quantity(self, property):
+        """
+        PRIVATE METHOD!
+        Adds a property to this graph. Properties should be added to Material objects ONLY.
+        This method is called ONLY by Material objects to ensure consistency of data structures.
+        Args:
+            property (Quantity):
+        Returns:
+            None
+        """
+        if property.symbol.name not in self._symbol_types:
+            raise KeyError("Attempted to add a Quantity to the graph for which no corresponding Symbol exists.\
+                            Please add the appropriate Symbol to the property network and try again.")
+        self._symbol_to_quantity[property.symbol].add(property)
+
+    def _remove_quantity(self, property):
+        """
+        PRIVATE METHOD!
+        Removes this property from the graph. Properties should be removed from Material objects ONLY.
+        This method is called ONLY by Material objects to ensure consistency of data structures.
+        Args:
+            property (Quantity): the property to be removed
+
+        Returns:
+            None
+        """
+        if property.symbol.name not in self._symbol_types:
+            raise Exception("Attempted to remove a quantity not part of the graph.")
+        self._symbol_to_quantity[property.symbol].remove(property)
+        if len(self._symbol_to_quantity[property.symbol]) == 0:
+            del self._symbol_to_quantity[property.symbol]
+
+    @property
+    def graph(self):
+        """
+        Generates a networkX data structure representing the property network and returns
+        this object.
+        Returns:
+            (networkX.multidigraph)
+        """
+        graph = nx.MultiDiGraph()
+
+        # Create the abstract graph.
+        for symbol in self._input_to_model:
+            for model in self._input_to_model[symbol]:
+                graph.add_edge(symbol, model)
+        for symbol in self._output_to_model:
+            for model in self._output_to_model[symbol]:
+                graph.add_edge(model, symbol)
+
+        # Add the concrete graph.
+        for symbol in self._symbol_to_quantity:
+            for quantity in self._symbol_to_quantity[symbol]:
+                for material in quantity._material:
+                    graph.add_edge(material, quantity)
+                graph.add_edge(quantity, symbol)
+
+        return graph
+
+    def calculable_properties(self, property_type_set):
+        """
+        Given a set of Symbol objects, returns all new Symbol objects that may be calculable from the inputs.
+        Resulting set contains only those new Symbol objects derivable.
+        The result should be used with caution:
+            1) Models may not produce an output if their input conditions are not met.
+            2) Models may require more than one Quantity of a given Symbol type to generate an output.
+
+        Args:
+            property_type_set (set<Symbol>): the set of Symbol objects taken as starting properties.
+        Returns:
+            ((set<Symbol>, set<Model>)) the set of all Symbol objects that can be derived from the property_type_set,
+                                        the set of all Model objects that are used in deriving the new Symbol objects.
+        """
+        # Set of theoretically derivable properties.
+        derivable = set()
+
+        # Set of theoretically available properties.
+        working = set()
+        for p in property_type_set:
+            working.add(p)
+
+        # Set of all models that could produce output.
+        all_models = set()
+        c_models = set()
+        for p in property_type_set:
+            for m in self._input_to_model[p]:
+                all_models.add(m)
+                c_models.add(m)
+
+        to_add = set()
+        to_remove = set()
+
+        has_changed = True
+        while has_changed:
+            # Add any new models to investigate.
+            for m in to_add:
+                c_models.add(m)
+            to_add = set()
+            # Remove any models that can't augment the Symbols set.
+            for m in to_remove:
+                c_models.remove(m)
+            to_remove = set()
+            # Check if any models generate new Symbol objects as outputs.
+            has_changed = False
+            for m in c_models:
+                # Check if model can add a new Symbols
+                can_contribute = False
+                for s in m.output_symbol_types:
+                    if s not in working:
+                        can_contribute = True
+                        break
+                if not can_contribute:
+                    to_remove.add(m)
+                    continue
+                # Check if model has all constraint Symbols provided.
+                has_inputs = True
+                for s in m.type_constraint_symbols():
+                    if s not in working:
+                        has_inputs = False
+                        break
+                if not has_inputs:
+                    continue
+                # Check if any model input sets are met.
+                for d in m.type_connections:
+                    has_inputs = True
+                    for s in d['inputs']:
+                        if s not in working:
+                            has_inputs = False
+                            break
+                    if not has_inputs:
+                        continue
+                    # Check passed -- add model outputs to the available properties.
+                    #              -- add any new models working with these newly available properties
+                    for s in d['outputs']:
+                        if s not in working:
+                            for new_model in self._input_to_model[s]:
+                                if new_model not in all_models:
+                                    all_models.add(new_model)
+                                    to_add.add(new_model)
+                            working.add(s)
+                            derivable.add(self._symbol_types[s])
+                            has_changed = True
+
+        return derivable
+
+    def required_inputs_for_property(self, property):
+        """
+        Determines all potential paths leading to a given symbol object. Answers the question:
+            What sets of properties are required to calculate this given property?
+        Paths are represented as a series of models and required input Symbol objects.
+        Paths can be searched to determine specifically how to get from one property to another.
+
+        Warning: Method indicates sets of Symbol objects required to calculate the property.
+                 It does not indicate how many of each Symbol is required.
+                 It does not guarantee that supplying Quantities of these types will result in a
+                 new Symbol output as conditions / assumptions may not be met.
+
+        Returns:
+            SymbolTree
+        """
+        head = TreeElement(None, {property}, None, None)
+        self._tree_builder(head)
+        return SymbolTree(head)
+
+    def _tree_builder(self, to_expand):
+        """
+        Recursive helper method to build a SymbolTree.
+        Fills in the children of to_expand by all possible model substitutions.
+        Args:
+            to_expand: (TreeElement) element that will be expanded
+        Returns:
+            None
+        """
+
+        # Get set of symbols that no longer need to be replaced and symbls that are candidates for replacement.
+        replaced_symbols = set()    # set of all symbols that have already been replaced.
+                                    # equal to all parents' symbols minus to_expand's symbols.
+        parent = to_expand.parent
+        while parent is not None:
+            replaced_symbols.update(parent.inputs)
+            parent = parent.parent
+        replaced_symbols -= to_expand.inputs
+        candidate_symbols = to_expand.inputs - replaced_symbols
+
+        # Attempt to replace candidate_symbols
+        # Replace them with inputs to models that output the candidate_symbols.
+        # Store replacements.
+        outputs = []
+        prev = DefaultDict(list)
+        for symbol in candidate_symbols:
+            c_models = self._output_to_model[symbol]
+            for model in c_models:
+                for d in model.type_connections:
+                    can_continue = True
+                    for input_symbol in d['inputs']:
+                        if input_symbol in replaced_symbols:
+                            can_continue = False
+                            break
+                    if not can_continue:
+                        continue
+                    s_inputs = set(d['inputs'] + model.type_constraint_symbols())
+                    s_outputs = set(d['outputs'])
+                    new_types = (to_expand.inputs - s_outputs)
+                    new_types.update(s_inputs)
+                    new_types = {self._symbol_types[x] for x in new_types}
+                    if new_types in prev[model]:
+                        continue
+                    prev[model].append(new_types)
+                    new_element = TreeElement(model, new_types, to_expand, None)
+                    self._tree_builder(new_element)
+                    outputs.append(new_element)
+
+        # Add outputs to children and fill in their elements.
+        to_expand.children = outputs
+
+    def get_paths(self, start_property, end_property):
+        """
+        Returns all Paths
+        Args:
+            start_property: (Symbol) starting Symbol type
+            end_property: (Symbol) ending Symbol type
+        Returns:
+            (list<SymbolPath>) list enumerating the features of all paths.
+        """
+        tree = self.required_inputs_for_property(end_property)
+        return tree.get_paths_from(start_property)
 
     def evaluate(self, material=None, property_type=None):
         """
@@ -192,8 +497,8 @@ class Graph:
 
         If no material parameter is specified, the generated SymbolNodes will be added with edges to and from
         corresponding SymbolTypeNodes specifically. No connections will be made to existing Material nodes because
-        a Quantity might be derived from a combination of materials in this case. Likewise existing Material nodes' graph
-        instances will not be mutated in this case.
+        a Quantity might be derived from a combination of materials in this case. Likewise existing Material nodes'
+        graph instances will not be mutated in this case.
 
         Args:
             material (Material): optional limit on which material's properties will be expanded (default: all materials)
@@ -201,326 +506,245 @@ class Graph:
         Returns:
             void
         """
+        
+        # Determine which Quantity objects are up for evaluation.
+        # Generate the necessary initial datastructures.
+        
+        quantity_pool = DefaultDict(set)   # Dict<Symbol, set<Quantity>>, available Quantity objects.
+        plug_in_dict = DefaultDict(set)    # Dict<Quantity, set<Model>>, where the Quantities have been plugged in.
+        output_dict = DefaultDict(set)     # Dict<Quantity, set<Model>>, where the Quantities have been generated.
+        candidate_models = set()           # set<Model>, which could generate additional outputs.
+        
+        for qs in self._symbol_to_quantity.values():
+            for quantity in qs:
+                if (material is None or material in quantity._material) and \
+                        (property_type is None or quantity.symbol_type in property_type):
+                    quantity_pool[quantity.symbol].add(quantity)
+            
+        for symbol in quantity_pool.keys():
+            for m in self._input_to_model[symbol]:
+                candidate_models.add(m)
 
-        ##
-        # Get existing Quantity nodes, 'active' Symbol nodes, and 'candidate' Models.
-        # Filter by provided material and property_type arguments.
-        ##
+        # Define helper closures for later use
 
-        if not material:
-            # All symbol_nodes are candidates for evaluation.
-            symbol_nodes = list(self.nodes_by_type('Quantity'))
-        else:
-            # Only symbol_nodes connected to the given Material object are candidates for evaluation.
-            material_nodes = self.nodes_by_type('Material')
-            material_node = None
-            for node in material_nodes:
-                if node.node_value == material:
-                    if material_node:
-                        raise ValueError('Multiple identical materials found.')
-                    material_node = node
-            if not material_node:
-                raise ValueError('Specified material not found.')
-            symbol_nodes = []
-            for node in self.graph.neighbors(material_node):
-                if node.node_type == NodeType['Quantity'] and node not in symbol_nodes:
-                    symbol_nodes.append(node)
-
-        if property_type:
-            # Only Symbol objects in the property_type list are candidates for evaluation.
-            symbol_nodes = [node for node in symbol_nodes
-                            if node.node_value.symbol in property_type]
-
-        # Get set of SymbolTypes that have values provided.
-        active_symbol_type_nodes = set()
-        for node in symbol_nodes:
-            for neighbor in self.graph.neighbors(node):
-                if neighbor.node_type != NodeType.Symbol:
-                    continue
-                active_symbol_type_nodes.add(neighbor)
-
-        # Get set of Models that have values provided to inputs.
-        candidate_models = set()
-        for node in active_symbol_type_nodes:
-            for neighbor in self.graph.neighbors(node):
-                if neighbor.node_type != NodeType.Model:
-                    continue
-                candidate_models.add(neighbor.node_value)
-
-        ##
-        # Define helper data structures and methods.
-        ##
-
-        # Create fast-lookup data structure Dict[Symbol, [Quantity]]:
-        lookup_dict = {}
-        for node in symbol_nodes:
-            if node.node_value.symbol not in lookup_dict:
-                lookup_dict[node.node_value.symbol] = [node.node_value]
-            else:
-                lookup_dict[node.node_value.symbol] += [node.node_value]
-
-        # Create fast-lookup data structure Dict[Quantity, MaterialNode]
-        symbol_to_material_dict = {}
-
-        # Create fast-lookup data structure (str (Symbol name) -> Symbol)
-        symbol_type_nodes = self.nodes_by_type('Symbol')
-        symbol_types = {x.node_value.name: x.node_value for x in symbol_type_nodes}
-
-        def get_source_nodes(graph, node):
-            # TODO: store material uuid(s) in symbol (?)
+        def gen_input_sets(symb_list, req_types, this_quantity_pool):
             """
-            Given a Quantity node on the graph, returns a list of connected material nodes.
-            This list symbolizes the set of materials for which this Quantity is a property.
+            Generates all combinatorially-unique sets of input dictionaries.
             Args:
-                graph (networkx.MultiDiGraph): graph on which the node is stored.
-                node (Node): node on the graph whose connected material nodes are to be found.
+                symb_list (list<str>): list of model symbols mapped to Symbol objects.
+                req_types (list<str>): list of Symbols that must be retrieved from the quantity_pool.
             Returns:
-                (List[Node]): list of material type nodes that are connected to this node.
+                (list<dict<str, Quantity>>): list of symbol strings mapped to Quantity values.
             """
-            to_return = []
-            for n in graph.in_edges(node):
-                if n[0].node_type == NodeType['Material']:
-                    to_return.append(n[0])
-            return to_return
+            if len(symb_list) != len(req_types):
+                raise Exception("Symbol and Type sets must be the same length.")
+            type_mapping = DefaultDict(list)
+            for i in range(0, len(symb_list)):
+                # Create mapping Symbol to list<Model.Symbol.name>
+                type_mapping[req_types[i]].append(symb_list[i])
+            return gen_quantity_combos(type_mapping, this_quantity_pool)
 
-        for node in symbol_nodes:
-            symbol_to_material_dict[node.node_value] = get_source_nodes(self.graph, node)
+        def gen_quantity_combos(type_mapping, this_quantity_pool):
+            """
+            Generates all combinatorially-unique sets of input dictionaries.
+            """
+            if len(type_mapping) == 0:
+                return []
+            key = type_mapping.__iter__().__next__()
+            val = type_mapping[key]
+            opt = list(this_quantity_pool[key])
+            if len(val) > len(opt):
+                return []
+            if len(type_mapping) == 1:
+                return gen_dict_combos(val, opt)
+            elif len(type_mapping) > 1:
+                next = gen_dict_combos(val, opt)
+                del type_mapping[key]
+                remaining = gen_quantity_combos(type_mapping, this_quantity_pool)
+                to_return = [None]*len(next)*len(remaining)
+                for i in range(0, len(next)):
+                    for j in range(0, len(remaining)):
+                        building = dict()
+                        for (k, v) in next[i].items():
+                            building[k] = v
+                        for (k, v) in remaining[j].items():
+                            building[k] = v
+                        to_return[i*len(remaining) + j] = building
+                return to_return
+            
+        def gen_dict_combos(val, opt):
+            """
+            Generates all combinatorial sets of mappings from Model symbol to Quantity
+            """
+            if len(val) == 1:
+                to_return = [None]*len(opt)
+                for i in range(0, len(opt)):
+                    to_return[i] = {val[0]: opt[i]}
+                return to_return
+            else:
+                first = gen_dict_combos([val[0]], opt)
+                nexts = [None]*len(first)
+                for i in range(0, len(first)):
+                    next_val = val[1:len(val)]
+                    next_opt = opt[0:i] + opt[(i+1):len(opt)]
+                    p = 0
+                    for j in range(0, len(opt)):
+                        if i == j:
+                            continue
+                        next_opt[p] = opt[j]
+                        p += 1
+                    nexts[i] = gen_dict_combos(next_val, next_opt)
+                to_return = [None]*(len(nexts)*len(nexts[0]))
+                p = 0
+                for i in range(0, len(nexts)):
+                    for j in range(0, len(nexts[i])):
+                        adding = dict()
+                        for (k, v) in first[i].items():
+                            adding[k] = v
+                        for (k, v) in nexts[i][j].items():
+                            adding[k] = v
+                        to_return[p] = adding
+                        p += 1
+                return to_return
+                    
+        # Derive new Quantities
+        # Loop util no new Quantity objects are derived.
 
-        ##
-        # For each candidate model, check if we have active property types to match inputs and conditions.
-        # If so, produce the available output properties using all possible permutations of inputs & add
-        #     new models that can be calculated from previously-derived properties.
-        # If certain outputs have already been generated, do not generate duplicate outputs.
-        ##
+        add_set = set()
 
-        # Keeps track of number of SymbolTypes derived from the current loop iteration.
-        # Loop terminates when no new properties are derived from any models.
-
-        original_models = {x for x in candidate_models}
-        evaluated_models = set()
-        next_round_models = candidate_models
-
-        added_on_loop = True
-
-        while added_on_loop:
-            added_on_loop = False
-            candidate_models = next_round_models
-            next_round_models = set()
-
+        continue_loop = True
+        while continue_loop:
+            continue_loop = False
+            # Check if model inputs are supplied.
+            for model in add_set:
+                candidate_models.add(model)
+            add_set = set()
             for model in candidate_models:
-
-                # TODO: move get_types to model
-
-                outputs = []
-                # Cache necessary data from model_node: input symbols, types, and conditions.
-                legend = model.symbol_mapping
-                sym_inputs = model.input_symbols
-                for i in sym_inputs:
-                    for c in model.constraint_symbols:
-                        if c not in i:
-                            i.append(c)
-
-                def get_types(symbols_in, legend, symbol_types):
-                    """Converts symbols used in equations to Symbol objects"""
-                    # TODO: move to model
-                    to_return = []
-                    for l in symbols_in:
-                        if not isinstance(l, list):
-                            l = [l]
-                        out = []
-                        for i in l:
-                            to_append = symbol_types.get(legend[i])
-                            if not to_append:
-                                raise Exception('Error evaluating graph: Model references Symbol'
-                                                'objects that do not appear in the graph.')
-                            out.append(to_append)
-                        to_return.append(out)
-                    return to_return
-
-                # list<list<Symbol>>, representing sets of input properties the model accepts.
-                type_inputs = get_types(sym_inputs, legend, symbol_types)
-
-                # Recursive helper method.
-                # Look through all input sets and match with all combinations from lookup_dict.
-                # TODO: look at itertools.permutations
-                def gen_input_dicts(symbols, candidate_props, level):
-                    """
-                    Recursively generates all possible combinations of input arguments.
-                    Args:
-                        symbols (list<str>):
-                            one set of input symbols required by the model.
-                        candidate_props (list<list<Quantity>>):
-                            list of potential values that can be plugged into each symbol,
-                            the outer list corresponds by ordering to the symbols list,
-                            the inner list gives values that can be plugged in to each symbol.
-                        level (int):
-                            internal parameter used for recursion, says which symbol is being enumerated, should
-                                     be set to the final index value of symbols.
-                    Returns:
-                        (list<dict<String, Quantity>>) list of dictionaries giving symbol strings mapped to values.
-                    """
-                    current_level = []
-                    candidates = candidate_props[level]
-                    for candidate in candidates:
-                        current_level.append({symbols[level]: candidate})
-                    if level == 0:
-                        return current_level
-                    else:
-                        others = gen_input_dicts(symbols, candidate_props, level-1)
-                        to_return = []
-                        for entry1 in current_level:
-                            for entry2 in others:
-                                merged_dict = {}
-                                for (k, v) in entry1.items():
-                                    merged_dict[k] = v
-                                for (k, v) in entry2.items():
-                                    merged_dict[k] = v
-                                to_return.append(merged_dict)
-                        return to_return
-
-                # Get candidate input Symbols for the given model.
-                # Skip over any input Quantity lists that have already been evaluated.
-                for i in range(0, len(type_inputs)):
-                    candidate_properties = []
-                    for j in range(0, len(type_inputs[i])):
-                        candidate_properties.append(lookup_dict.get(type_inputs[i][j], []))
-                    input_sets = gen_input_dicts(sym_inputs[i], candidate_properties,
-                                                 len(candidate_properties)-1)
+                inputs = model.gen_evaluation_lists()
+                for l in inputs:
+                    input_sets = gen_input_sets(l[0], l[1], quantity_pool)
                     for input_set in input_sets:
+                        can_evaluate = False
+                        for q in input_set.values():
+                            if model not in plug_in_dict[q] and model not in output_dict[q]:
+                                can_evaluate = True
+                        if not can_evaluate:
+                            continue
                         if not model.check_constraints(input_set):
                             continue
-                        plug_in_set = {}
-                        sourcing = set()
+                        mats = set()
+                        for value in input_set.values():
+                            for mat in value._material:
+                                mats.add(mat)
+                        evaluate_set = dict()
                         for (k, v) in input_set.items():
-                            plug_in_set[k] = v.value
-                            for elem in symbol_to_material_dict[v]:
-                                sourcing.add(elem)
-                        outputs.append({"output": model.evaluate(plug_in_set), "source": sourcing})
-
-                # For any new outputs generated, create the appropriate SymbolNode and connections to SymbolTypeNodes
-                # For any new outputs generated, create the appropriate connections from Material Nodes
-                # For any new outputs generated, add new models connected to the derived SymbolTypeNodes to the
-                #     candidate_models list & update convenience data structures.
-                # Mutates this graph.
-                symbol_outputs = []
-                output_sources = []
-                if len(outputs) == 0:
-                    next_round_models.add(model)
-                else:
-                    added_on_loop = True
-                    evaluated_models.add(model)
-                for entry in outputs:
-                    for (k, v) in entry['output'].items():
-                        prop_type = symbol_types.get(legend.get(k))
-                        if not prop_type:
+                            evaluate_set[k] = v.value
+                        output = model.evaluate(evaluate_set)
+                        if not output['successful']:
                             continue
-                        symbol_outputs.append(Quantity(prop_type, v, None))
-                        output_sources.append(entry['source'])
-                for i in range(0, len(symbol_outputs)):
-                    # Add outputs to graph.
-                    symbol = symbol_outputs[i]
-                    symbol_node = Node(node_type=NodeType['Quantity'], node_value=symbol)
-                    if symbol_node in self.graph:
-                        continue
-                    symbol_type_node = Node(node_type=NodeType['Symbol'], node_value=symbol.symbol)
-                    self.graph.add_edge(symbol_node, symbol_type_node)
-                    for source_node in output_sources[i]:
-                        self.graph.add_edge(source_node, symbol_node)
-
-                    # Strategy A:
-
-                    if len(output_sources[i]) == 1:
-                        store = output_sources[i].__iter__().__next__()
-                        store.node_value.graph.add_edge(store.node_value.root_node, symbol_node)
-
-                    # Strategy B:
-                    """
-                    for store in output_sources[i]:
-                        store.node_value.graph.add_edge(store.node_value.root_node, symbol_node)
-                    """
-
-                    # Update helper data structures etc. for next cycle.
-                    symbol_to_material_dict[symbol] = get_source_nodes(self.graph, symbol_node)
-                    if symbol.symbol not in lookup_dict:
-                        lookup_dict[symbol.symbol] = [symbol]
-                    else:
-                        lookup_dict[symbol.symbol] += [symbol]
-                    if not property_type or symbol.symbol in property_type:
-                        for neighbor in self.graph.neighbors(symbol_type_node):
-                            if neighbor.node_type == NodeType['Model']:
-                                if neighbor.node_value not in original_models:
-                                    next_round_models.add(neighbor.node_value)
-
-    def shortest_path(self, property_one: str, property_two: str):
-        """ """
-        # very easy to do with networkx, use in-built algo
-        return NotImplementedError
-
-    def populate_with_test_values(self):
-        """ """
-        # takes test values from the property definitions
-        return NotImplementedError
+                        # Model produced output -- gather output
+                        #                       -- add output to the graph
+                        #                       -- add additional candidate models
+                        continue_loop = True
+                        for (k, v) in output.items():
+                            st = self._symbol_types.get(model.symbol_mapping.get(k))
+                            if not st:
+                                continue
+                            for m in self._input_to_model[st]:
+                                add_set.add(m)
+                            q = Quantity(st, v, set())
+                            for mat in mats:
+                                mat.add_quantity(q)
+                            quantity_pool[st].add(q)
+                            output_dict[q].add(model)
+                            for input_quantity in input_set.values():
+                                for link in output_dict[input_quantity]:
+                                    output_dict[q].add(link)
+                    for input_set in input_sets:
+                        for value in input_set.values():
+                            plug_in_dict[value].add(model)
 
 
-    @property
-    def all_models(self):
-        """:return: Return a list of nodes of models."""
-        return list(filter(lambda x: issubclass(x, AbstractModel), self.graph.nodes))
+class SymbolPath:
+    """
+    Utility class to store elements of a Symbol path through various inputs and outputs.
+    """
 
-    @property
-    def model_tags(self):
-        """Collates tags present in models.
-        :return: Returns list of tags
+    __slots__ = ['symbol_set', 'model_path']
 
+    def __init__(self, symbol_set, model_path):
+        """
         Args:
+            symbol_set: (set<Symbol>) set of all inputs required to complete the path
+            model_path: (list<Model>) list of models, in order, required to complete the path
+        """
+        self.symbol_set = symbol_set
+        self.model_path = model_path
 
+    def __eq__(self, other):
+        if not isinstance(other, SymbolPath):
+            return False
+        if not self.symbol_set == other.symbol_set:
+            return False
+        if not self.model_path == other.model_path:
+            return False
+        return True
+
+
+class SymbolTree:
+    """
+    Wrapper around TreeElement data structure for export from the method, encapsulating functionality.
+    """
+
+    __slots__ = ['head']
+
+    def __init__(self, head):
+        """
+        Args:
+            head: (TreeElement) head of the tree.
+        """
+        self.head = head
+
+    def get_paths_from(self, symbol):
+        """
+        Gets all paths from input to symbol
+        Args:
+            symbol: (Symbol) we are searching for paths from this symbol to head.
         Returns:
-
+            (list<SymbolPath>)
         """
-        all_tags = [tag for tags in self.all_models for tag in tags]
-        unique_tags = sorted(list(set(all_tags)))
-        return Counter(all_tags)
+        to_return = []
+        visitation_queue = [self.head]
+        while len(visitation_queue) != 0:
+            visiting = visitation_queue.pop(0)
+            for elem in visiting.children:
+                visitation_queue.append(elem)
+            if symbol in visiting.inputs:
+                v = visiting
+                model_trail = []
+                while v.parent is not None:
+                    model_trail.append(v.m)
+                    v = v.parent
+                to_return.append(SymbolPath(visiting.inputs, model_trail))
+        return to_return
 
-    def __repr__(self):
-        nodes = "\n".join([n.__repr__() for n in self.graph.nodes()])
-        edges = "\n".join(["\t{}-->{}".format(u.__repr__(), v.__repr__())
-                           for u, v in self.graph.edges()])
-        return "Nodes:\n{}\nEdges:\n{}".format(nodes, edges)
 
-    def __str__(self):
+class TreeElement:
+    """
+    Tree-like data structure for representing property relationship paths.
+    """
+
+    __slots__ = ['m', 'inputs', 'parent', 'children']
+
+    def __init__(self, m, inputs, parent, children):
         """
-        Returns a full summary of the graph in terms of the SymbolTypes, Symbols, Materials, and Models
-        that it contains. Connections are shown as nesting within the printout.
-
-        Returns:
-            (str) representation of this Graph object.
+        Args:
+            m: (Model) model outputting the parent from children inputs
+            inputs: (set<Symbol>) Symbol inputs required to produce the parent
+            parent: (TreeElement)
+            children: (list<TreeElement>) all PathElements derivable from this one
         """
-        summary = ["Graph", ""]
-        property_type_nodes = self.nodes_by_type('Symbol')
-        summary += ["Quantity Types:"]
-        for property_type_node in property_type_nodes:
-            summary += ["\t " + property_type_node.node_value.display_names[0]]
-            neighbors = self.graph.neighbors(property_type_node)
-            for neighbor in neighbors:
-                if neighbor.node_type != NodeType['Model']:
-                    continue
-                summary += ["\t\t " + neighbor.node_value.title]
-        model_nodes = list(self.nodes_by_type('Model'))
-        summary += ["Models:"]
-        for model_node in model_nodes:
-            summary += ["\t " + model_node.node_value.title]
-            neighbors = self.graph.neighbors(model_node)
-            for neighbor in neighbors:
-                if neighbor.node_type != NodeType['Symbol']:
-                    continue
-                summary += ["\t\t " + neighbor.node_value.display_names[0]]
-        materials = list(self.nodes_by_type('Material'))
-        if len(materials) != 0:
-            summary += ["Materials:"]
-        for material_node in materials:
-            summary += ["\t " + str(material_node.node_value.uuid)]
-            for property in filter(lambda n: n.node_type == NodeType['Quantity'],
-                                   self.graph.neighbors(material_node)):
-                summary += ["\t\t " + property.node_value.symbol.display_names[0] +
-                            "\t:\t" + str(property.node_value)]
-        return "\n".join(summary)
+        self.m = m
+        self.inputs = inputs
+        self.parent = parent
+        self.children = children

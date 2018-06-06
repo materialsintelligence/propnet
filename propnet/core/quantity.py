@@ -20,16 +20,18 @@ class Quantity(MSONable):
     collections of Quantity objects representing that a given material has those properties.
 
     Attributes:
-        type: (Symbol) the type of information that is represented by the associated value.
+        symbol_type: (Symbol) the type of information that is represented by the associated value.
         value: (id) the value associated with this symbol.
         tags: (list<str>)
+        material (set<Material>): the materials to which this quantity is bound -- indicates which materials
+                                   this quantity is representing.
     """
 
     def __init__(self,
                  symbol_type: Union[str, Symbol],
                  value: Any,
-                 tags: Optional[List[str] ] =None,
-                 material: Union[str, UUID ] =None,
+                 material=None,
+                 tags: Optional[List[str]] =None,
                  sources: List= None,
                  provenance=None):
         """
@@ -58,6 +60,7 @@ class Quantity(MSONable):
         self._symbol_type = symbol_type
         self._value = value
         self._tags = tags
+        self._material = material or set()
         self._provenance = provenance
 
     #def as_dict(self):

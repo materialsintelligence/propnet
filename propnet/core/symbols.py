@@ -60,7 +60,7 @@ class Symbol(MSONable):
         if category not in ('property', 'condition', 'object'):
             raise ValueError('Unsupported category: {}'.format(category))
 
-        if not name.isidentifier() or not name.islower():
+        if not name.isidentifier():
             raise ValueError("The canonical name ({}) is not valid.".format(name))
 
         if display_names is None or len(display_names) == 0:
@@ -149,8 +149,14 @@ class Symbol(MSONable):
             logger.warn("Could not find compatible units for {}".format(self.name))
             return []
 
+    def __hash__(self):
+        return self.name.__hash__()
+
     def __eq__(self, other):
-        return self.name == other.name
+        if isinstance(other, Symbol):
+            return self.name == other.name
+        elif isinstance(other, str):
+            return self.name == other
 
     def __str__(self):
         to_return = self.name + ":\n"
