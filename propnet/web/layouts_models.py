@@ -2,29 +2,17 @@ from collections import OrderedDict
 
 import dash_html_components as html
 import dash_core_components as dcc
+from dash_react_graph_vis import GraphComponent
+
+import networkx as nx
+from propnet.core.graph import Graph
+from propnet.core.node import Node, NodeType
 
 import propnet.models as models
-
 from propnet.symbols import DEFAULT_SYMBOLS
-from propnet.web.utils import references_to_markdown
-
+from propnet.web.utils import references_to_markdown, graph_conversion, AESTHETICS
 
 # layouts for model detail pages
-
-def model_image_component(model):
-    """
-    Get a Robohash of a provided model, to give a
-    face to a name.
-
-    Args:
-      model: instance of an AbstractModel subclass
-
-    Returns: a Dash Img element
-
-    """
-    url = "https://robohash.org/{}".format(model.__hash__())
-    return html.Img(src=url, style={'width': 150, 'border-radius': '50%'})
-
 
 def model_layout(model_name):
     """Create a Dash layout for a provided model.
@@ -37,39 +25,34 @@ def model_layout(model_name):
 
     """
 
+    # dict to hold layouts for each section
+    layouts = OrderedDict()
+
     # instantiate model from name
     model = getattr(models, model_name)()
-
-    badge = html.Div(
-        className='double-val-label',
-        children=[
-            html.Span('model id', className='model'),
-            html.Span(str(model.uuid)[-6:])
-        ]
-    )
 
     model_title = html.Div(
         className='row',
         children=[
-            html.Div(
-                className='three columns',
-                style={'text-align': 'right'},
-                children=[
-                    model_image_component(model)
-                ]
-            ),
-            html.Div(
-                className='nine columns',
-                children=[
-                    html.H3(model.title),
-                    badge
-                ]
-            )
+            html.H3(model.title),
         ]
     )
 
-    # dict to hold layouts for each section
-    layouts = OrderedDict()
+    # TODO: costly, should just construct subgraph directly?
+    g = Graph()
+    n = Node(node_type=NodeType.Model, node_value=model)
+    subgraph = nx.ego_graph(g.graph, n, undirected=True)
+    options=AESTHETICS['global_options']
+    if "arrows" in options["edges"]:
+        options["edges"]["arrows"] = "to"
+    layouts['Graph'] = html.Div(
+        GraphComponent(
+            id="model_graph",
+            graph=graph_conversion(subgraph),
+            options=AESTHETICS['global_options']
+        ),
+        style={'width': '100%', 'height': '300px'}
+    )
 
     if model.tags:
         tags = html.Ul(
@@ -143,8 +126,6 @@ def model_layout(model_name):
             ]
         )
 
-        #layouts['Sample Data'] = html.Div(children=[sample_data_header, *sample_data])
-
         layouts['Sample Code'] = dcc.Markdown('```\n{}```'.format(model._example_code))
 
     sublayouts = []
@@ -155,7 +136,11 @@ def model_layout(model_name):
     return html.Div([
         model_title,
         html.Br(),
-        *sublayouts
+        *sublayouts,
+        html.Br(),
+        dcc.Link('< Back to Models', href='/model'),
+        html.Br(),
+        dcc.Link('<< Back to Home', href='/')
     ])
 
 
