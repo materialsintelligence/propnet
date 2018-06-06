@@ -99,6 +99,7 @@ class Material:
         to_return = set()
         for symbol in self._symbol_to_quantity.keys():
             to_return.add(symbol)
+        return to_return
 
     def get_quantities(self):
         """

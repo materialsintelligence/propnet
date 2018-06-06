@@ -11,4 +11,4 @@ class MatProjTest(unittest.TestCase):
         mpr = MPRester()
         mat = mpr.get_material_for_mpid(mpid)
 
-        self.assertIn('structure', mat.available_properties())
+        self.assertIn('structure', mat.get_symbols())
