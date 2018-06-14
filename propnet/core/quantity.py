@@ -103,9 +103,9 @@ class Quantity(MSONable):
                 or self.symbol != other.symbol \
                 or self.symbol.category != other.symbol.category:
             return False
-        for m in self._material:
-            if m not in other._material:
-                return False
+        #for m in self._material:
+        #    if m not in other._material:
+        #        return False
         return self.value == other.value
 
     def __str__(self):
