@@ -31,8 +31,8 @@ class Quantity(MSONable):
                  symbol_type: Union[str, Symbol],
                  value: Any,
                  material=None,
-                 tags: Optional[List[str]] =None,
-                 sources: List= None,
+                 tags: Optional[List[str]]=None,
+                 sources: List=None,
                  provenance=None):
         """
         Parses inputs for constructing a Property object.
@@ -62,13 +62,6 @@ class Quantity(MSONable):
         self._tags = tags
         self._material = material or set()
         self._provenance = provenance
-
-    #def as_dict(self):
-    #    return {
-    #        "@module": "propnet.core.quantity",
-    #        "@class": "Quantity",
-    #        "symbol": self.s#ymbol.name
-    #    }
 
     @property
     def value(self):
@@ -110,6 +103,9 @@ class Quantity(MSONable):
                 or self.symbol != other.symbol \
                 or self.symbol.category != other.symbol.category:
             return False
+        for m in self._material:
+            if m not in other._material:
+                return False
         return self.value == other.value
 
     def __str__(self):

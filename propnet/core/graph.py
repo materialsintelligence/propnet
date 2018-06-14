@@ -628,6 +628,7 @@ class Graph:
                         for q in input_set.values():
                             if model not in plug_in_dict[q] and model not in output_dict[q]:
                                 can_evaluate = True
+                                break
                         if not can_evaluate:
                             continue
                         if not model.check_constraints(input_set):

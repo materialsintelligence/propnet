@@ -4,7 +4,6 @@ Module containing classes and methods for Material functionality in propnet code
 
 import networkx as nx
 
-from collections import defaultdict
 from typing import *
 
 from propnet.core.symbols import Symbol
@@ -18,17 +17,13 @@ class Material:
     Class containing methods for creating and interacting with Material objects.
 
     Under the Propnet infrastructure, Materials are the medium through which properties are
-    communicated. While Model
-    and Symbol nodes create a web of interconnected properties, Materials, as collections of
-    Quantity nodes, provide
-    concrete numbers to those properties. At runtime, a Material can be constructed and added to
-    a Graph instance,
-    merging the two graphs and allowing for propagation of concrete numbers through the property
-    web.
+    communicated. While Model and Symbol nodes create a web of interconnected properties,
+    Materials, as collections of Quantity nodes, provide concrete numbers to those properties.
+    At runtime, a Material can be constructed and added to a Graph instance, merging the two
+    graphs and allowing for propagation of concrete numbers through the property web.
 
     A unique hashcode is stored with each Material upon instantiation. This is used to
-    differentiate between different
-    materials at runtime.
+    differentiate between different materials at runtime.
 
     Attributes:
         uuid (int): unique hash number used as an identifier for this object.
@@ -44,6 +39,23 @@ class Material:
         self.uuid = uuid()
         self.parent = None
         self._symbol_to_quantity = DefaultDict(set)
+
+    def __repr__(self):
+        return str(self.uuid)
+
+    def __str__(self):
+        QUANTITY_LENGTH_CAP = 35
+        building = []
+        building += ["Material: " + str(self.uuid), ""]
+        for symbol in self._symbol_to_quantity.keys():
+            building += ["\t" + symbol.name]
+            for quantity in self._symbol_to_quantity[symbol]:
+                qs = str(quantity)
+                if "\n" in qs or len(qs) > QUANTITY_LENGTH_CAP:
+                    qs = "..."
+                building += ["\t\t" + qs]
+            building += [""]
+        return "\n".join(building)
 
     def add_quantity(self, quantity):
         """
@@ -86,7 +98,10 @@ class Material:
         """
         if symbol not in self._symbol_to_quantity:
             raise Exception("Attempting to remove Symbol not present in the material.")
+        to_remove = []
         for q in self._symbol_to_quantity[symbol]:
+            to_remove.append(q)
+        for q in to_remove:
             self.remove_quantity(q)
         del self._symbol_to_quantity[symbol]
 
@@ -119,7 +134,12 @@ class Material:
         Returns:
             (set<Quantity>)
         """
-        pass
+        to_return = []
+        for q_list in self._symbol_to_quantity.values():
+            for q in q_list:
+                if len(q._material) == 1 and self in q._material:
+                    to_return.append(q)
+        return to_return
 
     def get_aggregated_quantities(self):
         """
@@ -159,20 +179,3 @@ class Material:
         g = Graph()
         g.add_material(self)
         g.evaluate()
-
-    def __repr__(self):
-        return str(self.uuid)
-
-    def __str__(self):
-        QUANTITY_LENGTH_CAP = 35
-        building = []
-        building += ["Material: " + str(self.uuid), ""]
-        for symbol in self._symbol_to_quantity.keys():
-            building += ["\t" + symbol.name]
-            for quantity in self._symbol_to_quantity[symbol]:
-                qs = str(quantity)
-                if "\n" in qs or len(qs) > QUANTITY_LENGTH_CAP:
-                    qs = "..."
-                building += ["\t\t" + qs]
-            building += [""]
-        return "\n".join(building)
