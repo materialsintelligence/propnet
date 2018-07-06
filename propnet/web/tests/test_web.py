@@ -25,11 +25,11 @@ class WebTest(unittest.TestCase):
         self.assertEqual(home.status_code, 200)
 
     def test_models(self):
-        models = self.client.get('/')
+        models = self.client.get('/models')
         self.assertEqual(models.status_code, 200)
 
     def test_developer(self):
-        developer = self.client.get('/')
+        developer = self.client.get('/developer')
         self.assertEqual(developer.status_code, 200)
 
     def test_utilities(self):
