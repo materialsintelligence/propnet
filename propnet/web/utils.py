@@ -132,9 +132,9 @@ def references_to_markdown(references):
         """
 
         Args:
-          key: 
-          label: 
-          text: 
+          key:
+          label:
+          text:
 
         Returns:
 
@@ -173,7 +173,7 @@ def parse_path(pathname):
 
     Args:
       path: path from URL
-      pathname: 
+      pathname:
 
     Returns:
       dictionary containing 'mode' ('property', 'model' etc.),
