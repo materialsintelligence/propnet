@@ -48,31 +48,19 @@ def graph_conversion(graph,
             # property
             id = n.name
             label = n.display_names[0]
-            fill = AESTHETICS['color'][n.category]
-            shape = 'circle'
-            radius = 5.0
+            node_type = 'Symbol'
         elif isinstance(n, AbstractModel):
             # model
             id = n.__class__.__name__
             label = n.title
-            fill = AESTHETICS['color']['model']
-            shape = 'square'
-            radius = 6.0
-
+            node_type = 'Model'
         if id:
-
-            node = AESTHETICS['node_aesthetics'][n.node_type.name].copy()
-
-            if n.node_type.name == 'Symbol' and \
-                    AESTHETICS['node_options']['show_symbol_labels']:
+            # Get node, labels, id, and title
+            node = aesthetics['node_aesthetics'][node_type].copy()
+            if node.get("show_labels"):
                 node['label'] = label
-            if n.node_type.name == 'Model' and \
-                    AESTHETICS['node_options']['show_model_labels']:
-                node['label'] = label
-
             node['id'] = id
             node['title'] = label
-
             nodes.append(node)
 
     if nodes_to_highlight_green or nodes_to_highlight_yellow or nodes_to_highlight_red:
