@@ -506,26 +506,27 @@ class Graph:
         Returns:
             void
         """
-        
+
         # Determine which Quantity objects are up for evaluation.
         # Generate the necessary initial datastructures.
-        
+
         quantity_pool = DefaultDict(set)   # Dict<Symbol, set<Quantity>>, available Quantity objects.
         plug_in_dict = DefaultDict(set)    # Dict<Quantity, set<Model>>, where the Quantities have been plugged in.
         output_dict = DefaultDict(set)     # Dict<Quantity, set<Model>>, where the Quantities have been generated.
         candidate_models = set()           # set<Model>, which could generate additional outputs.
-        
+
         for qs in self._symbol_to_quantity.values():
             for quantity in qs:
                 if (material is None or material in quantity._material) and \
                         (property_type is None or quantity.symbol_type in property_type):
                     quantity_pool[quantity.symbol].add(quantity)
-            
+
         for symbol in quantity_pool.keys():
             for m in self._input_to_model[symbol]:
                 candidate_models.add(m)
 
         # Define helper closures for later use
+        # TODO: I think these might be rewritten with itertools - montoyjh
 
         def gen_input_sets(symb_list, req_types, this_quantity_pool):
             """
