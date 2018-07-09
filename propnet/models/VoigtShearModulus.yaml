@@ -1,5 +1,5 @@
 ---
-title: Voight's Shear Modulus
+title: Voigt's Shear Modulus
 tags: [mechanical]
 references: []
 symbol_mapping: {
@@ -11,5 +11,5 @@ connections:
   outputs: [G]
 equations: []
 ---
-Model calculating an upper bound for Shear Modulus based on the Voight calculation, derived from the full elastic
-tensor.
+Model calculating an upper bound for Shear Modulus based on
+the Voigt calculation, derived from the full elastic tensor.

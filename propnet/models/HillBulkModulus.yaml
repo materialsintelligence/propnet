@@ -12,5 +12,5 @@ connections:
   outputs: [B]
 equations: []
 ---
-Model calculating an average value for Bulk Modulus based on the Reuss and Voight calculation, derived from the full
-elastic tensor.
+Model calculating an average value for Bulk Modulus based on the
+Reuss and Voigt calculation, derived from the full elastic tensor.
