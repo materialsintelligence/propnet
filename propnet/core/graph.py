@@ -506,21 +506,21 @@ class Graph:
         Returns:
             void
         """
-        
+
         # Determine which Quantity objects are up for evaluation.
         # Generate the necessary initial datastructures.
-        
+
         quantity_pool = DefaultDict(set)   # Dict<Symbol, set<Quantity>>, available Quantity objects.
         plug_in_dict = DefaultDict(set)    # Dict<Quantity, set<Model>>, where the Quantities have been plugged in.
         output_dict = DefaultDict(set)     # Dict<Quantity, set<Model>>, where the Quantities have been generated.
         candidate_models = set()           # set<Model>, which could generate additional outputs.
-        
+
         for qs in self._symbol_to_quantity.values():
             for quantity in qs:
                 if (material is None or material in quantity._material) and \
                         (property_type is None or quantity.symbol_type in property_type):
                     quantity_pool[quantity.symbol].add(quantity)
-            
+
         for symbol in quantity_pool.keys():
             for m in self._input_to_model[symbol]:
                 candidate_models.add(m)
@@ -571,7 +571,7 @@ class Graph:
                             building[k] = v
                         to_return[i*len(remaining) + j] = building
                 return to_return
-            
+
         def gen_dict_combos(val, opt):
             """
             Generates all combinatorial sets of mappings from Model symbol to Quantity
@@ -606,7 +606,7 @@ class Graph:
                         to_return[p] = adding
                         p += 1
                 return to_return
-                    
+
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
 
