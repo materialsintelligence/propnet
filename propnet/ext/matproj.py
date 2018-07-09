@@ -61,7 +61,7 @@ class MPRester(_MPRester):
 
         """
         q = self.query(criteria={'pretty_formula': formula},
-                       properties=['material_id'])
+                       properties=['material_id', 'e_above_hull'])
         # Sort so that most stable is first
         q = sorted(q, key=lambda x: x.get('e_above_hull'))
         if len(q) > 0:

@@ -141,7 +141,7 @@ class Material(object):
                     to_return.append(q)
         return to_return
 
-    def get_aggregated_quantities(self, func=weighted_mean):
+    def get_aggregated_quantities(self):
         """
         Return mean values for all quantities for each symbol.
 
@@ -152,8 +152,12 @@ class Material(object):
             (dict<Symbol, weighted_mean) mapping from a Symbol to
             an aggregated statistic.
         """
-        return {symbol: func(list(quantities)) for
-                symbol, quantities in self._symbol_to_quantity.items()}
+        # TODO: proper weighting system, and more flexibility in object handling
+        aggregated = {}
+        for symbol, quantities in self._symbol_to_quantity.items():
+            if not symbol.category =='object':
+                aggregated[symbol] = weighted_mean(list(quantities))
+        return aggregated
 
     @property
     def graph(self):

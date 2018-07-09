@@ -287,6 +287,7 @@ class GraphTest(unittest.TestCase):
         self.assertTrue(symbols['A'] in t5,
                         "Graph improperly constructed.")
 
+
     def test_add_remove_material_quantity(self):
         """
         Tests adding or removing a quantity from a material attached to a graph.
@@ -1390,7 +1391,7 @@ class GraphTest(unittest.TestCase):
         for i in paths_2:
             self.assertTrue(i in ans_2,
                             "Incorrect paths generated.")
-    
+
     def test_get_path_constraint(self):
         """
         Tests the ability to generate all paths from one symbol to another with constraints.

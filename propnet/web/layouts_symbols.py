@@ -34,8 +34,7 @@ def symbol_layout(symbol_name):
     layouts.append(html.H6('Graph'))
     # TODO: costly, should just construct subgraph directly?
     g = Graph()
-    n = Node(node_type=NodeType.Symbol, node_value=symbol)
-    subgraph = nx.ego_graph(g.graph, n, undirected=True)
+    subgraph = nx.ego_graph(g.graph, symbol, undirected=True, radius=2)
     options=AESTHETICS['global_options']
     if "arrows" in options["edges"]:
         options["edges"]["arrows"] = "to"
