@@ -12,7 +12,7 @@ from propnet.core.utils import uuid
 from propnet.core.graph import Graph
 
 
-class Material:
+class Material(object):
     """
     Class containing methods for creating and interacting with Material objects.
 
