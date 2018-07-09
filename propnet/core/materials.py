@@ -3,6 +3,7 @@ Module containing classes and methods for Material functionality in propnet code
 """
 
 import networkx as nx
+from itertools import chain
 
 from typing import *
 
@@ -75,9 +76,11 @@ class Material(object):
     def remove_quantity(self, quantity):
         """
         Removes the Quantity object attached to this Material.
+
         Args:
             quantity (Quantity): Quantity object reference indicating with property is to be
             removed from this Material.
+
         Returns:
             None
         """
@@ -91,8 +94,11 @@ class Material(object):
     def remove_symbol(self, symbol):
         """
         Removes all Quantity Nodes attached to this Material of type symbol.
+
         Args:
-            symbol (Symbol): object indicating which property type is to be removed from this material.
+            symbol (Symbol): object indicating which property type
+                is to be removed from this material.
+
         Returns:
             None
         """
@@ -107,14 +113,12 @@ class Material(object):
 
     def get_symbols(self):
         """
-        Method obtains all Symbol objects bound to this Material.
+        Obtains all Symbol objects bound to this Material.
+
         Returns:
-            (set<Symbol>) list of all properties bound to this Material.
+            (set<Symbol>) set containing all symbols bound to this Material.
         """
-        to_return = set()
-        for symbol in self._symbol_to_quantity.keys():
-            to_return.add(symbol)
-        return to_return
+        return set(self._symbol_to_quantity.keys())
 
     def get_quantities(self):
         """
@@ -122,11 +126,7 @@ class Material(object):
         Returns:
             (list<Quantity>) list of all Quantity objects bound to this Material.
         """
-        to_return = []
-        for q_list in self._symbol_to_quantity.values():
-            for q in q_list:
-                to_return.append(q)
-        return to_return
+        return list(chain.from_iterable(self._symbol_to_quantity.values()))
 
     def get_unique_quantities(self):
         """
@@ -141,17 +141,19 @@ class Material(object):
                     to_return.append(q)
         return to_return
 
-    def get_aggregated_quantities(self):
+    def get_aggregated_quantities(self, func=weighted_mean):
         """
-        Summarize statistics over sets of quantities.
+        Return mean values for all quantities for each symbol.
+
+        Args:
+            func (callable): function with which to aggregate quantities
+
         Returns:
-            (dict<Symbol, weighted_mean) mapping from a Symbol to an aggregated statistic.
+            (dict<Symbol, weighted_mean) mapping from a Symbol to
+            an aggregated statistic.
         """
-        new_qs = {}
-        for symbol in self._symbol_to_quantity.keys():
-            qs = [x for x in self._symbol_to_quantity[symbol]]
-            new_qs[symbol] = weighted_mean(qs)
-        return new_qs
+        return {symbol: func(list(quantities)) for
+                symbol, quantities in self._symbol_to_quantity.items()}
 
     @property
     def graph(self):

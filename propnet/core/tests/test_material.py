@@ -4,7 +4,6 @@ from propnet.core.materials import Material
 from propnet.core.quantity import Quantity
 from propnet.core.graph import Graph
 from propnet.symbols import DEFAULT_SYMBOLS
-from propnet.models import DEFAULT_MODELS
 
 class MaterialTest(unittest.TestCase):
 
@@ -110,12 +109,12 @@ class MaterialTest(unittest.TestCase):
                         all([m2 not in x._material for x in out2]),
                         "Unique quantities did not correctly filter.")
 
-    def test_get_aggregated_properties(self):
+    def test_get_aggregated_quantities(self):
         self.material.add_quantity(self.q1)
         self.material.add_quantity(self.q2)
         self.material.add_quantity(self.q3)
         agg = self.material.get_aggregated_quantities()
-
+        # TODO: add a meaningful test here
 
     def test_evaluate(self):
         self.material.add_quantity(self.q1)
