@@ -4,7 +4,6 @@ import os
 import math
 
 from glob import glob
-from monty.serialization import loadfn
 
 import propnet.models as models
 
@@ -14,7 +13,7 @@ from propnet.core.models import *
 from propnet.core.symbols import *
 
 
-class ModelTest(unittest.TestCase):
+class AbstractModelTest(unittest.TestCase):
 
     def test_instantiate_all_models(self):
         models_to_test = []
@@ -118,3 +117,13 @@ model.evaluate({
 """
 
         self.assertEqual(example_model._example_code, example_code)
+
+class ModelTest(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_init(self):
+
+
+    def tearDown(self):
+        pass
