@@ -314,6 +314,11 @@ class Graph:
                     graph.add_edge(material, quantity)
                 graph.add_edge(quantity, symbol)
 
+        # Add orphan nodes
+        for symbol in self._symbol_types:
+            if not symbol in graph.nodes:
+                graph.add_node(symbol)
+
         return graph
 
     def calculable_properties(self, property_type_set):
