@@ -1,6 +1,5 @@
 import unittest
-from propnet.web.app import app
-from propnet.web.app import retrieve_material
+from propnet.web.app import app, retrieve_material, symbol_layout, model_layout
 
 routes = [
     '/',
@@ -41,9 +40,6 @@ class WebTest(unittest.TestCase):
         properties = self.client.get('/property')
         self.assertEqual(properties.status_code, 200)
 
-        app_stress = self.client.get('/property/applied_stress')
-        self.assertEqual(properties.status_code, 200)
-
     def test_load_material(self):
         # Test retrieve material method
         material_no_derive = retrieve_material(1, None, "Ag", aggregate=False)
@@ -52,6 +48,17 @@ class WebTest(unittest.TestCase):
         self.assertEqual(material_derive.status_code, 200)
         material_aggregate = retrieve_material(1, 1, "Ag", aggregate=True)
         self.assertEqual(material_aggregate.status_code, 200)
+
+    def test_symbol_layout(self):
+        layout = symbol_layout("applied_stress")
+        self.assertEqual(layout.children[0], "Applied stress")
+        # test symbol layout for single node
+        layout = symbol_layout("grain_diameter")
+        self.assertTrue(layout.children[0], "Average grain diameter")
+
+    def test_model_layout(self):
+        layout = model_layout("AtomicDensity")
+        self.assertTrue(layout.children[0], "Atomic Density")
 
     def tearDown(self):
         pass
