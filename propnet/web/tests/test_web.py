@@ -15,7 +15,6 @@ class WebTest(unittest.TestCase):
     """
     Base class for Selenium-based unit tests.
     """
-
     def setUp(self):
         self.app = app
         self.client = self.app.server.test_client()

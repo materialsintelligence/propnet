@@ -572,7 +572,7 @@ class Graph:
                             building[k] = v
                         to_return[i*len(remaining) + j] = building
                 return to_return
-            
+
         def gen_dict_combos(val, opt):
             """
             Generates all combinatorial sets of mappings from Model symbol to Quantity
@@ -607,7 +607,7 @@ class Graph:
                         to_return[p] = adding
                         p += 1
                 return to_return
-                    
+
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
 
