@@ -113,7 +113,6 @@ class Quantity(MSONable):
 
 
 def weighted_mean(quantities: List[Quantity]) -> List[Quantity]:
-
     # can't run this twice yet ...
     # TODO: remove
     if hasattr(quantities[0].value, "std_dev"):
@@ -133,7 +132,11 @@ def weighted_mean(quantities: List[Quantity]) -> List[Quantity]:
     # TODO: support propagation of uncertainties (this will only work once at present)
 
     # TODO: test this with units, not magnitudes ... remember units may not be canonical units(?)
-    vals = [float(q.value.magnitude) for q in quantities]
+    if isinstance(quantities[0].value, list):
+        # hack to get arrays working for now
+        vals = [q.value for q in quantities]
+    else:
+        vals = [q.value.magnitude for q in quantities]
     new_magnitude = np.mean(vals, axis=0)
     std_dev = np.std(vals, axis=0)
     new_value = unumpy.uarray(new_magnitude, std_dev)
@@ -152,6 +155,5 @@ def weighted_mean(quantities: List[Quantity]) -> List[Quantity]:
                             value=new_value,
                             tags=list(new_tags),
                             provenance=list(new_provenance))
-    print(new_quantity)
 
     return new_quantity

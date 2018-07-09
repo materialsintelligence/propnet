@@ -6,6 +6,9 @@ from propnet.core.quantity import Quantity
 from pymatgen import MPRester as _MPRester
 
 
+# TODO: Distinguish this from the MP rester proper
+# TODO: do we really need the duplicate methods for lists/single material?
+# TODO: a more or less universal query scheme
 class MPRester(_MPRester):
 
     mapping = {
@@ -45,66 +48,75 @@ class MPRester(_MPRester):
     def __init__(self):
         super(MPRester, self).__init__()
 
-    def get_mpid_from_formula(self, formula: str) -> str:
+    def get_mpid_from_formula(self, formula):
         """
         Returns a Materials Project ID from a formula, assuming
         the most stable structure for that formula.
 
         Args:
-            formula: formula string
+            formula (str): formula string
 
-        Returns: mp-id string
+        Returns:
+            mp-id string
 
         """
         q = self.query(criteria={'pretty_formula': formula},
-                           properties=['material_id'])
+                       properties=['material_id', 'e_above_hull'])
+        # Sort so that most stable is first
+        q = sorted(q, key=lambda x: x.get('e_above_hull'))
         if len(q) > 0:
             return q[0]['material_id']
         else:
             return None
 
-    def get_properties_for_mpids(self, mpids: List[str]) -> List[Dict]:
+    def get_properties_for_mpids(self, mpids, filter_null_properties=True):
         """
         Retrieve properties from the Materials Project
         for a given list of Materials Project IDs.
 
         Args:
-            mpids: a list of Materials Project IDs
+            mpids ([str]): a list of Materials Project IDs
 
-        Returns: a list of property dictionaries
+        Returns:
+            ([Dict]) a list of property dictionaries
 
         """
 
         all_properties = list(self.mapping.keys())
+        property_query = self.query(criteria={'material_id': {'$in': mpids}},
+                                  properties=all_properties)
 
-        q = {doc['material_id']:doc for doc in
-             self.query(criteria={'material_id': {'$in': mpids}}, properties=all_properties)}
+        q = {doc['material_id']: doc for doc in property_query}
 
-        computed_entries = {e.entry_id:e for e in
-                            self.get_entries({'material_id': {'$in': mpids}})}
+        entry_query = self.get_entries({'material_id': {'$in': mpids}})
+        computed_entries = {e.entry_id: e for e in entry_query}
 
         for mpid, doc in q.items():
             doc['computed_entry'] = computed_entries[mpid]
+            if filter_null_properties:
+                q[mpid] = {k: v for k, v in doc.items() if v is not None}
 
         return list(q.values())
 
-    def get_properties_for_mpid(self, mpid: str) -> Dict:
+    def get_properties_for_mpid(self, mpid, filter_null_properties=True):
         """
         A version of get_properties_for_mpids for a single
         mpid.
 
         Args:
-            mpid: a Materials Project ID
+            mpid (str): a Materials Project ID
 
-        Returns: a property dictionary
+        Returns:
+            (Dict) a dictionary of property values keyed by property names
 
         """
         if len(self.get_properties_for_mpids([mpid])) > 0:
-            return self.get_properties_for_mpids([mpid])[0]
+            return self.get_properties_for_mpids(
+                [mpid], filter_null_properties=filter_null_properties)[0]
         else:
             return []
 
-    def get_materials_for_mpids(self, mpids: List[str]) -> List[Material]:
+    def get_materials_for_mpids(self, mpids, filter_null_properties=True):
         """
         Retrieve a list of Materials from the materials
         Project for a given list of Materials Project IDs.
@@ -116,7 +128,8 @@ class MPRester(_MPRester):
 
         """
 
-        materials_properties = self.get_properties_for_mpids(mpids)
+        materials_properties = self.get_properties_for_mpids(
+            mpids, filter_null_properties=filter_null_properties)
         materials = []
 
         for material_properties in materials_properties:
@@ -128,7 +141,7 @@ class MPRester(_MPRester):
 
         return materials
 
-    def get_material_for_mpid(self, mpid: str) -> Material:
+    def get_material_for_mpid(self, mpid, filter_null_properties=True):
         """
         A version of get_materials for a single mpid.
 
@@ -139,6 +152,7 @@ class MPRester(_MPRester):
 
         """
         if len(self.get_materials_for_mpids([mpid])) > 0:
-            return self.get_materials_for_mpids([mpid])[0]
+            return self.get_materials_for_mpids(
+                [mpid], filter_null_properties=filter_null_properties)[0]
         else:
             return None

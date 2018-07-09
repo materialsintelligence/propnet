@@ -246,7 +246,7 @@ class AbstractModel:
             to_return.append((l, l_types))
         return to_return
 
-    
+
     @property
     def input_symbols(self):
         """
@@ -254,7 +254,7 @@ class AbstractModel:
             (list<str>): all sets of input symbols for the model
         """
         return [d['inputs'] for d in self.connections]
-    
+
     @property
     def input_symbol_types(self):
         """
@@ -339,9 +339,10 @@ class AbstractModel:
         """
 
         # strip units from input
-        for symbol in symbol_values:
-            if type(symbol_values[symbol]) == ureg.Quantity:
-                symbol_values[symbol] = symbol_values[symbol].to(self.unit_mapping[symbol]).magnitude
+        for symbol, value in symbol_values.items():
+            if isinstance(value, ureg.Quantity):
+                converted = value.to(self.unit_mapping[symbol])
+                symbol_values[symbol] = converted.magnitude
 
         available_symbols = set(symbol_values.keys())
 
@@ -369,7 +370,6 @@ class AbstractModel:
             if key == 'successful':
                 continue
             out[key] = ureg.Quantity(out[key], self.unit_mapping[key])
-
         return out
 
     def plug_in(self, symbol_values):

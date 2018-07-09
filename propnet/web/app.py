@@ -5,15 +5,9 @@ import dash_table_experiments as dt
 
 from dash.dependencies import Input, Output, State
 
-# these two imports may be removed in future
-from flask import request
-from urllib.parse import urlparse
-
-from propnet import log_stream, ureg
+from propnet import log_stream
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_symbols import symbol_layout, symbols_index
-from propnet.models import DEFAULT_MODEL_NAMES
-from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
 
 from dash_react_graph_vis import GraphComponent
 from propnet.web.utils import graph_conversion, parse_path, AESTHETICS
@@ -133,24 +127,24 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
     p.add_material(material)
     g = p.graph
 
-    available_properties = material.available_properties()
+    available_properties = material.get_symbols()
 
     if n_clicks_derive is not None:
         p.evaluate()
 
     new_qs = {}
     if aggregate:
-        new_qs = material.get_aggregated_properties()
+        new_qs = material.get_aggregated_quantities()
 
     rows = []
-    for node in material.available_quantity_nodes():
-        if node.node_value.symbol.category != 'object':
-            if str(node.node_value.symbol.name) not in new_qs:
+    for node in material.get_quantities():
+        if node.symbol.category != 'object':
+            if str(node.symbol.name) not in new_qs:
                 rows.append(
                     {
-                        'Symbol': str(node.node_value.symbol.name),
-                        'Value': str(node.node_value.value),  # TODO: node.node_value.value? this has to make sense
-                        #'Units': str(node.node_value.symbol.unit_as_string)
+                        'Symbol': str(node.symbol.name),
+                        'Value': str(node.value),
+                        'Units': str(node.symbol.unit_as_string)
                     }
                 )
 
@@ -174,8 +168,8 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
         id='datatable'
     )
 
-    material_graph_data = graph_conversion(g,
-                                           nodes_to_highlight_green=material.available_properties())
+    material_graph_data = graph_conversion(
+        g, nodes_to_highlight_green=material.get_quantities())
     options = AESTHETICS['global_options']
     options['edges']['color'] = '#000000'
     material_graph_component = html.Div(GraphComponent(
