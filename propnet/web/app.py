@@ -5,15 +5,9 @@ import dash_table_experiments as dt
 
 from dash.dependencies import Input, Output, State
 
-# these two imports may be removed in future
-from flask import request
-from urllib.parse import urlparse
-
-from propnet import log_stream, ureg
+from propnet import log_stream
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_symbols import symbol_layout, symbols_index
-from propnet.models import DEFAULT_MODEL_NAMES
-from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
 
 from dash_react_graph_vis import GraphComponent
 from propnet.web.utils import graph_conversion, parse_path, AESTHETICS
