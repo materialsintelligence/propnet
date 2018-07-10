@@ -1,9 +1,14 @@
 import unittest
 
 from propnet.ext.matproj import MPRester
+from propnet.core.graph import Graph
 
 
 class MPResterTest(unittest.TestCase):
+    def setUp(self):
+        mpid = 'mp-1153'
+        self.mpr = MPRester()
+        self.mat = self.mpr.get_material_for_mpid(mpid)
 
     def test_load_properties(self):
         mpid = 'mp-1153'
@@ -25,3 +30,8 @@ class MPResterTest(unittest.TestCase):
 
     def test_get_materials_for_mpid(self):
         pass
+
+    def test_apply_material_to_graph(self):
+        g = Graph()
+        g.add_material(self.mat)
+        g.evaluate()
