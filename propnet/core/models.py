@@ -463,7 +463,7 @@ class AbstractModel:
                             raise ModelEvaluationError("Model output does not match known output "
                                                        "for {}".format(self.name))
                 except Exception as e:
-                    raise ModelEvaluationError(e)
+                    raise ModelEvaluationError("Failed testing: " + self.title + ": " + str(e))
 
             return True
 
