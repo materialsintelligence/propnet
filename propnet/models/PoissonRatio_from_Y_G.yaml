@@ -1,0 +1,15 @@
+---
+title: Poisson Ratio from Young's Modulus and Shear Modulus
+tags: [mechanical]
+references: [https://en.wikipedia.org/wiki/Elastic_modulus]
+symbol_mapping: {
+  Y: youngs_modulus,
+  G: shear_modulus,
+  v: poisson_ratio
+}
+connections:
+- inputs: [Y, G]
+  outputs: [v]
+equations: [v - (Y/(2*G) - 1)]
+---
+Model calculating the Poisson Ratio from the Young's Modulus and the Shear Modulus.

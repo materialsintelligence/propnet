@@ -1,0 +1,15 @@
+---
+title: Lame's First Parameter from Shear Modulus and P-Wave Modulus
+tags: [mechanical]
+references: [https://en.wikipedia.org/wiki/Elastic_modulus]
+symbol_mapping: {
+  G: shear_modulus,
+  M: p_wave_modulus,
+  l: lame_first_parameter
+}
+connections:
+- inputs: [G, M]
+  outputs: [l]
+equations: [l - (M - 2*G)]
+---
+Model calculating the Lame's First Parameter from the Shear Modulus and the P-Wave Modulus.

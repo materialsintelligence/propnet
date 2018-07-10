@@ -1,0 +1,15 @@
+---
+title: Lame's First Parameter from Shear Modulus and Poisson Ratio
+tags: [mechanical]
+references: [https://en.wikipedia.org/wiki/Elastic_modulus]
+symbol_mapping: {
+  G: shear_modulus,
+  v: poisson_ratio,
+  l: lame_first_parameter
+}
+connections:
+- inputs: [G, v]
+  outputs: [l]
+equations: [l - (2*G*v)/(1-2*v)]
+---
+Model calculating the Lame's First Parameter from the Shear Modulus and the Poisson Ratio.

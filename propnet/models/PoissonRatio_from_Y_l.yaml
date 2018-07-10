@@ -1,0 +1,15 @@
+---
+title: Poisson Ratio from Young's Modulus and Lame's First Parameter
+tags: [mechanical]
+references: [https://en.wikipedia.org/wiki/Elastic_modulus]
+symbol_mapping: {
+  Y: youngs_modulus,
+  l: lame_first_parameter,
+  v: poisson_ratio
+}
+connections:
+- inputs: [Y, l]
+  outputs: [v]
+equations: [v - (2*l)/(Y+l+(Y*Y + 9*l*l + 2*Y*l)**(0.5))]
+---
+Model calculating the Poisson Ratio from the Young's Modulus and the Lame's First Parameter.

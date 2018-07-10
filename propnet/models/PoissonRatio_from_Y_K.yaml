@@ -1,0 +1,15 @@
+---
+title: Poisson Ratio from Young's Modulus and Bulk Modulus
+tags: [mechanical]
+references: [https://en.wikipedia.org/wiki/Elastic_modulus]
+symbol_mapping: {
+  Y: youngs_modulus,
+  K: bulk_modulus,
+  v: poisson_ratio
+}
+connections:
+- inputs: [Y, K]
+  outputs: [v]
+equations: [v - (3*K-Y)/(6*K)]
+---
+Model calculating the Poisson Ratio from the Young's Modulus and the Bulk Modulus.

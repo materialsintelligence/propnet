@@ -1,0 +1,15 @@
+---
+title: Poisson Ratio from Bulk Modulus and P-Wave Modulus
+tags: [mechanical]
+references: [https://en.wikipedia.org/wiki/Elastic_modulus]
+symbol_mapping: {
+  K: bulk_modulus,
+  M: p_wave_modulus,
+  v: poisson_ratio
+}
+connections:
+- inputs: [K, M]
+  outputs: [v]
+equations: [v - (3*K-M)/(3*K+M)]
+---
+Model calculating the Poisson Ratio from the Bulk Modulus and the P-Wave Modulus.

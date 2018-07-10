@@ -1,0 +1,15 @@
+---
+title: Lame's First Parameter from Young's Modulus and P-Wave Modulus
+tags: [mechanical]
+references: [https://en.wikipedia.org/wiki/Elastic_modulus]
+symbol_mapping: {
+  Y: youngs_modulus,
+  M: p_wave_modulus,
+  l: lame_first_parameter
+}
+connections:
+- inputs: [Y, M]
+  outputs: [l]
+equations: [l - (M-Y+(Y*Y + 9*M*M - 10*Y*M)**(0.5))/4]
+---
+Model calculating the Lame's First Parameter from the Young's Modulus and the P-Wave Modulus.

@@ -1,0 +1,15 @@
+---
+title: P-Wave Modulus from Lame's First Parameter and Poisson Ratio
+tags: [mechanical]
+references: [https://en.wikipedia.org/wiki/Elastic_modulus]
+symbol_mapping: {
+  l: lame_first_parameter,
+  v: poisson_ratio,
+  M: p_wave_modulus
+}
+connections:
+- inputs: [l, v]
+  outputs: [M]
+equations: [M - l*(1-v)/v]
+---
+Model calculating the P-Wave Modulus from the Lame's First Parameter and the Poisson Ratio.

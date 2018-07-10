@@ -1,0 +1,15 @@
+---
+title: Lame's First Parameter from Bulk Modulus and Poisson Ratio
+tags: [mechanical]
+references: [https://en.wikipedia.org/wiki/Elastic_modulus]
+symbol_mapping: {
+  K: bulk_modulus,
+  v: poisson_ratio,
+  l: lame_first_parameter
+}
+connections:
+- inputs: [K, v]
+  outputs: [l]
+equations: [l - 3*K*v/(1+v)]
+---
+Model calculating the Lame's First Parameter from the Bulk Modulus and the Poisson Ratio.
