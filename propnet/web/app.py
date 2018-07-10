@@ -17,6 +17,8 @@ from propnet.ext.matproj import MPRester
 
 from flask_caching import Cache
 
+# TODO: Fix math rendering
+
 app = dash.Dash()
 server = app.server
 app.config.supress_callback_exceptions = True  # TODO: remove this?
@@ -96,14 +98,6 @@ app.layout = html.Div(children=[
 app.css.append_css({
     'external_url': 'https://codepen.io/mkhorton/pen/zPgJJw.css'
 })
-
-# math rendering
-# TODO: plot.ly uses MathJax too; we're probably loading this twice unnecessarily
-app.scripts.append_script({
-    'external_url': 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX'
-                    '-MML-AM_CHTML'
-})
-
 
 @app.callback(
     Output('material-content', 'children'),
