@@ -24,10 +24,8 @@ global_options:  # http://visjs.org/docs/network/
   nodes:
     labelHighlightBold: true
   edges:
-    arrows: ""
+    arrows: to
     color:
       color: "#43A1F8"
       highlight: "#43A1F8"
       inherit: false
-  physics:
-    avoidOverlap: 1

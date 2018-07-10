@@ -37,7 +37,8 @@ def graph_conversion(graph,
 
     nodes = []
     edges = []
-
+    print(aesthetics['node_aesthetics']['Symbol'])
+    print(aesthetics['node_aesthetics']['Model'])
     for n in graph.nodes():
 
         id = None
@@ -59,8 +60,11 @@ def graph_conversion(graph,
             node = aesthetics['node_aesthetics'][node_type].copy()
             if node.get("show_labels"):
                 node['label'] = label
+                node['title'] = label
+            # Pop labels if they exist
+            elif node.get('label'):
+                node.pop('label')
             node['id'] = id
-            node['title'] = label
             nodes.append(node)
 
     if nodes_to_highlight_green or nodes_to_highlight_yellow or nodes_to_highlight_red:
