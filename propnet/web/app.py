@@ -17,6 +17,9 @@ from propnet.ext.matproj import MPRester
 from pydash import set_, get
 
 from flask_caching import Cache
+import logging
+
+log = logging.getLogger(__name__)
 
 # TODO: Fix math rendering
 
@@ -147,43 +150,45 @@ app.css.append_css(
 
 
 @app.callback(Output('material-content', 'children'),
-              [Input('submit-formula', 'n_clicks'),
-               Input('derive-properties', 'n_clicks')],
+              [Input('submit-formula', 'n_clicks')],
               [State('formula-input', 'value'),
-               State('aggregate', 'values')])
-def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
+               State('derive_options', 'values')])
+def retrieve_material(n_clicks, formula, derive_properties):
     """
     Gets the material view from options
 
     Args:
         n_clicks (int): load material click
-        n_clicks_derive (int): derive material properties
         formula (string): formula to find
-        aggregate (bool): whether or not to aggregate derived properties
+        derive_properties ([str]): list of derivation options
 
     Returns:
         Div of graph component with fulfilled options
 
     """
-
-    mpid = mpr.get_mpid_from_formula(formula)
-    material = mpr.get_material_for_mpid(mpid)
-
     if n_clicks is None:
         return ""
 
+    log.info("Fetching data from MP for formula {}".format(formula))
+    mpid = mpr.get_mpid_from_formula(formula)
+    material = mpr.get_material_for_mpid(mpid)
     if not material:
         return "Material not found."
+    log.info("Retrieved material {} for formula {}".format(mpid, formula))
 
+    log.debug("Adding material to graph.")
     p = Graph()
     p.add_material(material)
+    material_quantity_names = [q.symbol.name for q in material.get_quantities()]
     g = p.graph
 
-    if n_clicks_derive is not None:
+    if 'derive' in derive_properties:
+        log.info("Deriving quantities for {}".format(mpid))
         p.evaluate()
 
     new_qs = {}
-    if aggregate:
+    if 'aggregate' in derive_properties:
+        log.debug("Aggregating quantities for material {}".format(mpid))
         new_qs = material.get_aggregated_quantities()
 
     rows = []
@@ -193,7 +198,7 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
                 rows.append(
                     {
                         'Symbol': str(node.symbol.name),
-                        'Value': str(node.value),
+                        'Value': str(node.value).replace("+/-", "\u00B1"),
                         'Units': str(node.symbol.unit_as_string)
                     }
                 )
@@ -203,7 +208,7 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
         rows.append(
             {
                 'Symbol': str(symbol),
-                'Value': str(quantity.value),
+                'Value': str(quantity.value).replace("+/-", "\u00B1"),
             # TODO: node.node_value.value? this has to make sense
                 # 'Units': str(node.node_value.symbol.unit_as_string)
             }
@@ -217,9 +222,10 @@ def retrieve_material(n_clicks, n_clicks_derive, formula, aggregate):
         selected_row_indices=[],
         id='datatable'
     )
-
+    derived_quantity_names = [symbol.name for symbol in new_qs]
     material_graph_data = graph_conversion(
-        g, nodes_to_highlight_green=material.get_quantities())
+        g, nodes_to_highlight_green=material_quantity_names,
+        nodes_to_highlight_yellow=derived_quantity_names)
     options = AESTHETICS['global_options']
     options['edges']['color'] = '#000000'
     material_graph_component = html.Div(GraphComponent(
@@ -244,11 +250,11 @@ material_layout = html.Div([
         id='formula-input'
     ),
     html.Button('Load Material', id='submit-formula'),
-    html.Button('Derive Properties', id='derive-properties'),
     dcc.Checklist(
-        id='aggregate',
+        id='derive_options',
         options=[
-            {'label': 'Aggregate Derived Properties', 'value': 'aggregate'}
+            {'label': 'Derive properties', 'value': 'derive'},
+            {'label': 'Aggregate', 'value': 'aggregate'}
         ],
         values=['aggregate'],
         labelStyle={'display': 'inline-block'}
