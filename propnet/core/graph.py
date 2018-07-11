@@ -625,6 +625,7 @@ class Graph:
 
         continue_loop = True
         logger.debug("Beginning main loop")
+        logger.debug("Quantity pool contains {}".format(quantity_pool))
         while continue_loop:
             continue_loop = False
             # Check if model inputs are supplied.
