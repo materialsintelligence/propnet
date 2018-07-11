@@ -642,12 +642,16 @@ class Graph:
                     logger.debug("Generating input sets")
                     input_sets = gen_input_sets(l[0], l[1], quantity_pool)
                     for input_set in input_sets:
+                        override = False
                         can_evaluate = False
                         for q in input_set.values():
+                            if model in output_dict[q]:
+                                override = True
+                                break
                             if model not in plug_in_dict[q] and model not in output_dict[q]:
                                 can_evaluate = True
                                 break
-                        if not can_evaluate:
+                        if override or not can_evaluate:
                             continue
                         if not model.check_constraints(input_set):
                             continue
