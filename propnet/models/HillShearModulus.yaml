@@ -12,5 +12,5 @@ connections:
   outputs: [G]
 equations: []
 ---
-Model calculating an average value for Shear Modulus based on the Reuss and Voight calculation, derived from the full
-elastic tensor.
+Model calculating an average value for Shear Modulus based on the
+Reuss and Voigt calculation, derived from the full elastic tensor.
