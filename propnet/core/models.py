@@ -237,11 +237,7 @@ class AbstractModel:
         """
         to_return = []
         for d in self.connections:
-            l = []
-            for i in d['inputs']:
-                l.append(i)
-            for i in self.constraint_symbols:
-                l.append(i)
+            l = d['inputs'] + self.constraint_symbols
             l_types = [self.symbol_mapping[x] for x in l]
             to_return.append((l, l_types))
         return to_return
