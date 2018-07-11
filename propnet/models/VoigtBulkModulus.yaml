@@ -1,5 +1,5 @@
 ---
-title: Voight's Bulk Modulus
+title: Voigt's Bulk Modulus
 tags: [mechanical]
 references: []
 symbol_mapping: {
@@ -11,5 +11,5 @@ connections:
   outputs: [B]
 equations: []
 ---
-Model calculating an upper bound for Bulk Modulus based on the Voight calculation, derived from the full elastic
-tensor.
+Model calculating an upper bound for Bulk Modulus based on
+the Voigt calculation, derived from the full elastic tensor.
