@@ -12,7 +12,6 @@ class Density(AbstractModel):
         s = symbol_values['s']
         # TODO: please check this @dmrdjenovic
         return {'p': ureg.Quantity.from_tuple(
-                    [len(s.sites)/s.volume, [['angstroms', -3]]]),
-                'rho': ureg.Quantity.from_tuple(
-                    [s.density, [['grams', 1], ["centimeters", -3]]]),
+                    [len(s.sites)/s.volume, [['angstrom', -3]]]),
+                'rho': float(s.density) * ureg.gram * ureg.centimeter ** -3,
                 'successful': True}
