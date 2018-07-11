@@ -67,13 +67,18 @@ def graph_conversion(graph,
             # Pop labels if they exist
             else:
                 node.update({"size": 8.0,
-                             "shape": "diamond"})
+                             "shape": "diamond",
+                             "label": "",
+                             "title": ""})
 
             node['id'] = id
             nodes.append(node)
 
+    log.info("Nodes to highlight green: {}".format(
+            nodes_to_highlight_green))
     if nodes_to_highlight_green or nodes_to_highlight_yellow or nodes_to_highlight_red:
-        print(nodes_to_highlight_green)
+        log.debug("Nodes to highlight green: {}".format(
+            nodes_to_highlight_green))
         for node in nodes:
             if node['id'] in nodes_to_highlight_green:
                 node['color'] = '#9CDC90'
