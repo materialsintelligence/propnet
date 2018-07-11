@@ -11,5 +11,8 @@ class AtomicDensity(AbstractModel):
     def evaluate(self, symbol_values):
         s = symbol_values['s']
         # TODO: please check this @dmrdjenovic
-        return {'p': ureg.Quantity.from_tuple([len(s.sites)/s.volume, [['angstroms', -3]]]),
+        return {'p': ureg.Quantity.from_tuple(
+                    [len(s.sites)/s.volume, [['angstroms', -3]]]),
+                'rho': ureg.Quantity.from_tuple(
+                    [s.density, [['grams', 1], ["centimeters", -3]]]),
                 'successful': True}
