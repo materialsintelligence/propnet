@@ -1,7 +1,7 @@
 [
   {
     "inputs": {
-      "structure": {
+      "s": {
         "@class": "Structure",
         "@module": "pymatgen.core.structure",
         "charge": null,
@@ -63,8 +63,8 @@
       }
     },
     "outputs": {
-      "num_sites": 1,
-      "volume": 11.55162296798055
+      "p": 0.08656792234059726,
+      "rho": 8.027686061589966
     }
   }
 ]

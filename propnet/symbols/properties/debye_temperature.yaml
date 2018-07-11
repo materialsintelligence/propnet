@@ -1,8 +1,8 @@
-name: debye_temperature 
+name: debye_temperature
 units:
 - 1.0
 - - [kelvin, 1.0]
-display_names: [Temperature]
+display_names: [Debye temperature]
 display_symbols: [T]
 shape: 1
 comment: ''

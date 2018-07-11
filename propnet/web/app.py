@@ -197,9 +197,10 @@ def retrieve_material(n_clicks, formula, derive_properties):
             if str(node.symbol.name) not in new_qs:
                 rows.append(
                     {
-                        'Symbol': str(node.symbol.name),
+                        'Symbol': str(node.symbol.display_names[0]),
                         'Value': str(node.value).replace("+/-", "\u00B1"),
-                        'Units': str(node.symbol.unit_as_string)
+                        # TODO: this breaks because of pint
+                        # 'Units': str(node.symbol.unit_as_string)
                     }
                 )
 
@@ -207,7 +208,7 @@ def retrieve_material(n_clicks, formula, derive_properties):
     for symbol, quantity in new_qs.items():
         rows.append(
             {
-                'Symbol': symbol.name,
+                'Symbol': symbol.display_names[0],
                 'Value': str(quantity.value).replace("+/-", "\u00B1"),
             # TODO: node.node_value.value? this has to make sense
                 # 'Units': str(node.node_value.symbol.unit_as_string)
