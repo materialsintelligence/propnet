@@ -10,6 +10,11 @@ from propnet.models import DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
+import logging
+from itertools import chain
+
+logger = logging.getLogger("graph")
+
 
 
 class Graph:
@@ -514,12 +519,13 @@ class Graph:
 
         # Determine which Quantity objects are up for evaluation.
         # Generate the necessary initial datastructures.
-
+        logger.debug("Beginning evaluation")
         quantity_pool = DefaultDict(set)   # Dict<Symbol, set<Quantity>>, available Quantity objects.
         plug_in_dict = DefaultDict(set)    # Dict<Quantity, set<Model>>, where the Quantities have been plugged in.
         output_dict = DefaultDict(set)     # Dict<Quantity, set<Model>>, where the Quantities have been generated.
         candidate_models = set()           # set<Model>, which could generate additional outputs.
 
+        logger.debug("Refining input set")
         for qs in self._symbol_to_quantity.values():
             for quantity in qs:
                 if (material is None or material in quantity._material) and \
@@ -618,23 +624,34 @@ class Graph:
         add_set = set()
 
         continue_loop = True
+        logger.debug("Beginning main loop")
+        logger.debug("Quantity pool contains {}".format(quantity_pool))
         while continue_loop:
             continue_loop = False
             # Check if model inputs are supplied.
+            logger.debug("Checking if model inputs are supplied")
             for model in add_set:
                 candidate_models.add(model)
             add_set = set()
             for model in candidate_models:
+                logger.debug("Evaluating model {}".format(model.title))
+                logger.debug("Quantity pool contains {} quantities:".format(
+                    len(list(chain.from_iterable(quantity_pool.values())))))
                 inputs = model.gen_evaluation_lists()
                 for l in inputs:
+                    logger.debug("Generating input sets")
                     input_sets = gen_input_sets(l[0], l[1], quantity_pool)
                     for input_set in input_sets:
+                        override = False
                         can_evaluate = False
                         for q in input_set.values():
+                            if model in output_dict[q]:
+                                override = True
+                                break
                             if model not in plug_in_dict[q] and model not in output_dict[q]:
                                 can_evaluate = True
                                 break
-                        if not can_evaluate:
+                        if override or not can_evaluate:
                             continue
                         if not model.check_constraints(input_set):
                             continue
