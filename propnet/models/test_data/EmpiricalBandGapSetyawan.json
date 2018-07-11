@@ -1,1 +1,10 @@
-[{"inputs": {"E_g_expt": 0.5}, "outputs": {"E_g_pbe": 1.0482195846}}]
+[
+  {
+    "inputs": {
+      "E_g_expt": 0.5
+    },
+    "outputs": {
+      "E_g_pbe": 1.0482195846
+    }
+  }
+]

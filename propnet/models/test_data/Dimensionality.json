@@ -1,1 +1,97 @@
-[{"inputs": {"structure": {"@module": "pymatgen.core.structure", "@class": "Structure", "charge": null, "lattice": {"matrix": [[2.46933537, 0.0, 0.0], [-1.23466768, 2.13850716, 0.0], [0.0, 0.0, 3.88751984]], "a": 2.46933537, "b": 2.469335366734913, "c": 3.88751984, "alpha": 90.0, "beta": 90.0, "gamma": 119.9999999097777, "volume": 20.52879246662831}, "sites": [{"species": [{"element": "Fe", "occu": 1}], "abc": [0.33333333, 0.66666667, 0.25], "xyz": [-9.013343539320864e-09, 1.4256714471283574, 0.97187996], "label": "Fe", "properties": {"coordination_no": 11, "forces": [0.0, 0.0, 0.0]}}, {"species": [{"element": "Fe", "occu": 1}], "abc": [0.66666667, 0.33333333, 0.75], "xyz": [1.2346676990133436, 0.7128357128716428, 2.91563988], "label": "Fe", "properties": {"coordination_no": 11, "forces": [0.0, 0.0, 0.0]}}]}}, "outputs": {"dimensionality_cheon": "3D", "dimensionality_gorai": 3}}]
+[
+  {
+    "inputs": {
+      "structure": {
+        "@class": "Structure",
+        "@module": "pymatgen.core.structure",
+        "charge": null,
+        "lattice": {
+          "a": 2.46933537,
+          "alpha": 90.0,
+          "b": 2.469335366734913,
+          "beta": 90.0,
+          "c": 3.88751984,
+          "gamma": 119.9999999097777,
+          "matrix": [
+            [
+              2.46933537,
+              0.0,
+              0.0
+            ],
+            [
+              -1.23466768,
+              2.13850716,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              3.88751984
+            ]
+          ],
+          "volume": 20.52879246662831
+        },
+        "sites": [
+          {
+            "abc": [
+              0.33333333,
+              0.66666667,
+              0.25
+            ],
+            "label": "Fe",
+            "properties": {
+              "coordination_no": 11,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "Fe",
+                "occu": 1
+              }
+            ],
+            "xyz": [
+              -9.013343539320864e-09,
+              1.4256714471283574,
+              0.97187996
+            ]
+          },
+          {
+            "abc": [
+              0.66666667,
+              0.33333333,
+              0.75
+            ],
+            "label": "Fe",
+            "properties": {
+              "coordination_no": 11,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "Fe",
+                "occu": 1
+              }
+            ],
+            "xyz": [
+              1.2346676990133436,
+              0.7128357128716428,
+              2.91563988
+            ]
+          }
+        ]
+      }
+    },
+    "outputs": {
+      "dimensionality_cheon": "3D",
+      "dimensionality_gorai": 3
+    }
+  }
+]

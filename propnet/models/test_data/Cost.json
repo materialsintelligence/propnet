@@ -1,1 +1,11 @@
-[{"inputs": {"formula": "Fe"}, "outputs": {"cost_per_kg": 0.029696231000000003, "cost_per_mol": 0.0016583860197683896}}]
+[
+  {
+    "inputs": {
+      "formula": "Fe"
+    },
+    "outputs": {
+      "cost_per_kg": 0.029696231000000003,
+      "cost_per_mol": 0.0016583860197683896
+    }
+  }
+]
