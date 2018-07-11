@@ -42,11 +42,11 @@ class WebTest(unittest.TestCase):
 
     def test_load_material(self):
         # Test retrieve material method
-        material_no_derive = retrieve_material(1, None, "Ag", aggregate=False)
+        material_no_derive = retrieve_material(1, "Ag", [])
         self.assertEqual(material_no_derive.status_code, 200)
-        material_derive = retrieve_material(1, 1, "Ag", False)
+        material_derive = retrieve_material(1, "Ag", ['derive'])
         self.assertEqual(material_derive.status_code, 200)
-        material_aggregate = retrieve_material(1, 1, "Ag", aggregate=True)
+        material_aggregate = retrieve_material(1, "Ag", ['derive', 'aggregate'])
         self.assertEqual(material_aggregate.status_code, 200)
 
     def test_symbol_layout(self):

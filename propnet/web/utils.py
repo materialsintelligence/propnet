@@ -1,13 +1,10 @@
-import numpy as np
+import logging
 
 from os import path
-from enum import Enum
 from io import StringIO
-from json import dumps
 
 from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
-from pybtex.style.labels import BaseLabelStyle
 
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, Symbol
 from propnet.models import DEFAULT_MODEL_NAMES
@@ -15,6 +12,7 @@ from propnet.core.models import AbstractModel
 
 from monty.serialization import loadfn
 
+log = logging.getLogger(__name__)
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
 
 
@@ -37,7 +35,8 @@ def graph_conversion(graph,
 
     nodes = []
     edges = []
-
+    log.info(aesthetics['node_aesthetics']['Symbol'])
+    log.info(aesthetics['node_aesthetics']['Model'])
     for n in graph.nodes():
 
         id = None
@@ -58,13 +57,28 @@ def graph_conversion(graph,
             # Get node, labels, id, and title
             node = aesthetics['node_aesthetics'][node_type].copy()
             if node.get("show_labels"):
-                node['label'] = label
+                node.update({"label": label,
+                             # "title": label,
+                             "shape": "box",
+                             "font": {"color": "#ffffff",
+                                      "face": "Helvetica",
+                                      "size": 20},
+                             "size": 30})
+            # Pop labels if they exist
+            else:
+                node.update({"size": 8.0,
+                             "shape": "diamond",
+                             "label": "",
+                             "title": ""})
+
             node['id'] = id
-            node['title'] = label
             nodes.append(node)
 
+    log.info("Nodes to highlight green: {}".format(
+            nodes_to_highlight_green))
     if nodes_to_highlight_green or nodes_to_highlight_yellow or nodes_to_highlight_red:
-        print(nodes_to_highlight_green)
+        log.debug("Nodes to highlight green: {}".format(
+            nodes_to_highlight_green))
         for node in nodes:
             if node['id'] in nodes_to_highlight_green:
                 node['color'] = '#9CDC90'
