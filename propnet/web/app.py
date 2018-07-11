@@ -137,8 +137,13 @@ app.layout = html.Div(
     style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 30})
 
 # standard Dash css, fork this for a custom theme
+# we real web devs now
 app.css.append_css(
     {'external_url': 'https://codepen.io/mkhorton/pen/zPgJJw.css'})
+# app.css.append_css(
+#     {'external_url': 'https://codepen.io/montoyjh/pen/YjPKae.css'})
+app.css.append_css(
+    {'external_url': 'https://codepen.io/mikesmith1611/pen/QOKgpG.css'})
 
 
 @app.callback(Output('material-content', 'children'),

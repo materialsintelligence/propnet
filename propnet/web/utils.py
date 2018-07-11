@@ -1,13 +1,10 @@
-import numpy as np
+import logging
 
 from os import path
-from enum import Enum
 from io import StringIO
-from json import dumps
 
 from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
-from pybtex.style.labels import BaseLabelStyle
 
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, Symbol
 from propnet.models import DEFAULT_MODEL_NAMES
@@ -15,6 +12,7 @@ from propnet.core.models import AbstractModel
 
 from monty.serialization import loadfn
 
+log = logging.getLogger(__name__)
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
 
 
@@ -37,8 +35,8 @@ def graph_conversion(graph,
 
     nodes = []
     edges = []
-    print(aesthetics['node_aesthetics']['Symbol'])
-    print(aesthetics['node_aesthetics']['Model'])
+    log.info(aesthetics['node_aesthetics']['Symbol'])
+    log.info(aesthetics['node_aesthetics']['Model'])
     for n in graph.nodes():
 
         id = None
