@@ -2,7 +2,7 @@ from propnet.core.models import AbstractModel
 from propnet import ureg
 
 
-class AtomicDensity(AbstractModel):
+class Density(AbstractModel):
     """
     Returns the atomic density assuming that all sites in the sites dictionary of the structure
     correspond to a single atom in the crystal motif.

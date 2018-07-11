@@ -5,7 +5,7 @@ references: []
 symbol_mapping: {
   s: structure,
   p: atomic_density,
-  d: density
+  rho: density
 }
 connections:
 - inputs: [s]
