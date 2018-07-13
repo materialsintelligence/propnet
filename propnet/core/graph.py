@@ -563,13 +563,10 @@ class Graph:
             for m in self._input_to_model[symbol]:
                 candidate_models.add(m)
 
-        # Define helper closures for later use
-
-
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
 
-        add_set = set()
+        new_models = set()
 
         continue_loop = True
         logger.debug("Beginning main loop")
@@ -578,9 +575,9 @@ class Graph:
             continue_loop = False
             # Check if model inputs are supplied.
             logger.debug("Checking if model inputs are supplied")
-            for model in add_set:
+            for model in new_models:
                 candidate_models.add(model)
-            add_set = set()
+            new_models = set()
             for model in candidate_models:
                 logger.debug("Evaluating model {}".format(model.title))
                 logger.debug("Quantity pool contains {} quantities:".format(
@@ -593,23 +590,30 @@ class Graph:
                         override = False
                         can_evaluate = False
                         for q in input_set.values():
+                            # TODO: refactor
+                            # This block is deciding whether input set should
+                            # be considered for evaluation - i. e. no quantity
+                            # has been produced by this model before and this
+                            # input set hasn't been plugged into the model before
                             if model in output_dict[q]:
                                 override = True
                                 break
                             if model not in plug_in_dict[q] and model not in output_dict[q]:
                                 can_evaluate = True
                                 break
+                        # TODO: maybe revise for readability
                         if override or not can_evaluate:
                             continue
                         if not model.check_constraints(input_set):
                             continue
+                        # TODO: maybe remove with material/supermaterial refactor
                         mats = set()
                         for value in input_set.values():
                             for mat in value._material:
                                 mats.add(mat)
                         evaluate_set = dict()
-                        for (k, v) in input_set.items():
-                            evaluate_set[k] = v.value
+                        for symbol, quantity in input_set.items():
+                            evaluate_set[symbol] = quantity.value
                         output = model.evaluate(evaluate_set)
                         if not output['successful']:
                             continue
@@ -617,23 +621,27 @@ class Graph:
                         #                       -- add output to the graph
                         #                       -- add additional candidate models
                         continue_loop = True
-                        for (k, v) in output.items():
-                            st = self._symbol_types.get(model.symbol_mapping.get(k))
+                        for symbol, quantity in output.items():
+                            st = self._symbol_types.get(
+                                model.symbol_mapping.get(symbol))
                             if not st:
                                 continue
                             for m in self._input_to_model[st]:
-                                add_set.add(m)
-                            q = Quantity(st, v, set())
+                                new_models.add(m)
+                            q = Quantity(st, quantity, set())
+                            # TODO: maybe refactor because of material refactor
                             for mat in mats:
                                 mat.add_quantity(q)
                             quantity_pool[st].add(q)
                             output_dict[q].add(model)
+                            # Derive the chain of all models that were required
+                            # to get to the new quantity
                             for input_quantity in input_set.values():
                                 for link in output_dict[input_quantity]:
                                     output_dict[q].add(link)
                     for input_set in input_sets:
-                        for value in input_set.values():
-                            plug_in_dict[value].add(model)
+                        for quantity in input_set.values():
+                            plug_in_dict[quantity].add(model)
 
 
 class SymbolPath:
