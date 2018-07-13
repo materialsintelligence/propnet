@@ -11,7 +11,7 @@ from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
 import logging
-from itertools import chain
+from itertools import chain, product
 
 logger = logging.getLogger("graph")
 
@@ -494,6 +494,30 @@ class Graph:
         tree = self.required_inputs_for_property(end_property)
         return tree.get_paths_from(start_property)
 
+    @staticmethod
+    def generate_input_sets(symbol_list, req_types, this_quantity_pool):
+            """
+            Generates all combinatorially-unique sets of input dictionaries.
+
+            Args:
+                symb_list ([str]): list of model symbols mapped to Symbol objects.
+                req_types ([str]): list of Symbols that must be retrieved from the quantity_pool.
+                this_quantity_pool ({Symbol: Set(Quantity)}): quantities keyed
+                    by symbols
+
+            Returns:
+                ([{str: Quantity}]): list of symbol strings mapped to Quantity values.
+            """
+            if len(symbol_list) != len(req_types):
+                raise Exception("Symbol and Type sets must be the same length.")
+            symbol_quantity_mappings = {
+                symbol: this_quantity_pool[req_types]
+                for symbol, req_type in zip(symbol_list, req_types)
+            }
+            all_input_sets = product(*symbol_quantity_mappings.items())
+            all_input_sets = [dict(input_set) for input_set in all_input_sets]
+            return all_input_sets
+
     def evaluate(self, material=None, property_type=None):
         """
         Expands the graph, producing the output of models that have the appropriate inputs supplied.
@@ -538,85 +562,6 @@ class Graph:
 
         # Define helper closures for later use
 
-        def gen_input_sets(symb_list, req_types, this_quantity_pool):
-            """
-            Generates all combinatorially-unique sets of input dictionaries.
-            Args:
-                symb_list (list<str>): list of model symbols mapped to Symbol objects.
-                req_types (list<str>): list of Symbols that must be retrieved from the quantity_pool.
-            Returns:
-                (list<dict<str, Quantity>>): list of symbol strings mapped to Quantity values.
-            """
-            if len(symb_list) != len(req_types):
-                raise Exception("Symbol and Type sets must be the same length.")
-            type_mapping = DefaultDict(list)
-            for i in range(0, len(symb_list)):
-                # Create mapping Symbol to list<Model.Symbol.name>
-                type_mapping[req_types[i]].append(symb_list[i])
-            return gen_quantity_combos(type_mapping, this_quantity_pool)
-
-        def gen_quantity_combos(type_mapping, this_quantity_pool):
-            """
-            Generates all combinatorially-unique sets of input dictionaries.
-            """
-            if len(type_mapping) == 0:
-                return []
-            key = type_mapping.__iter__().__next__()
-            val = type_mapping[key]
-            opt = list(this_quantity_pool[key])
-            if len(val) > len(opt):
-                return []
-            if len(type_mapping) == 1:
-                return gen_dict_combos(val, opt)
-            elif len(type_mapping) > 1:
-                next = gen_dict_combos(val, opt)
-                del type_mapping[key]
-                remaining = gen_quantity_combos(type_mapping, this_quantity_pool)
-                to_return = [None]*len(next)*len(remaining)
-                for i in range(0, len(next)):
-                    for j in range(0, len(remaining)):
-                        building = dict()
-                        for (k, v) in next[i].items():
-                            building[k] = v
-                        for (k, v) in remaining[j].items():
-                            building[k] = v
-                        to_return[i*len(remaining) + j] = building
-                return to_return
-
-        def gen_dict_combos(val, opt):
-            """
-            Generates all combinatorial sets of mappings from Model symbol to Quantity
-            """
-            if len(val) == 1:
-                to_return = [None]*len(opt)
-                for i in range(0, len(opt)):
-                    to_return[i] = {val[0]: opt[i]}
-                return to_return
-            else:
-                first = gen_dict_combos([val[0]], opt)
-                nexts = [None]*len(first)
-                for i in range(0, len(first)):
-                    next_val = val[1:len(val)]
-                    next_opt = opt[0:i] + opt[(i+1):len(opt)]
-                    p = 0
-                    for j in range(0, len(opt)):
-                        if i == j:
-                            continue
-                        next_opt[p] = opt[j]
-                        p += 1
-                    nexts[i] = gen_dict_combos(next_val, next_opt)
-                to_return = [None]*(len(nexts)*len(nexts[0]))
-                p = 0
-                for i in range(0, len(nexts)):
-                    for j in range(0, len(nexts[i])):
-                        adding = dict()
-                        for (k, v) in first[i].items():
-                            adding[k] = v
-                        for (k, v) in nexts[i][j].items():
-                            adding[k] = v
-                        to_return[p] = adding
-                        p += 1
-                return to_return
 
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
@@ -640,7 +585,7 @@ class Graph:
                 inputs = model.gen_evaluation_lists()
                 for l in inputs:
                     logger.debug("Generating input sets")
-                    input_sets = gen_input_sets(l[0], l[1], quantity_pool)
+                    input_sets = self.generate_input_sets(l[0], l[1], quantity_pool)
                     for input_set in input_sets:
                         override = False
                         can_evaluate = False
