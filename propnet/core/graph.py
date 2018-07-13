@@ -15,9 +15,8 @@ from itertools import chain, product
 
 logger = logging.getLogger("graph")
 
-
-
-class Graph:
+# TODO: reconsider polymorphism
+class Graph(object):
     """
     Class containing methods for creating and interacting with a Property Network.
 
@@ -294,6 +293,7 @@ class Graph:
         if len(self._symbol_to_quantity[property.symbol]) == 0:
             del self._symbol_to_quantity[property.symbol]
 
+    # TODO: deprecate this and use web app
     @property
     def graph(self):
         """
@@ -328,11 +328,15 @@ class Graph:
 
     def calculable_properties(self, property_type_set):
         """
-        Given a set of Symbol objects, returns all new Symbol objects that may be calculable from the inputs.
-        Resulting set contains only those new Symbol objects derivable.
+        Given a set of Symbol objects, returns all new Symbol objects
+        that may be calculable from the inputs. Resulting set contains
+        only those new Symbol objects derivable.
+
         The result should be used with caution:
-            1) Models may not produce an output if their input conditions are not met.
-            2) Models may require more than one Quantity of a given Symbol type to generate an output.
+            1) Models may not produce an output if their input
+                conditions are not met.
+            2) Models may require more than one Quantity of a
+                given Symbol type to generate an output.
 
         Args:
             property_type_set (set<Symbol>): the set of Symbol objects taken as starting properties.
@@ -644,9 +648,10 @@ class Graph:
                             plug_in_dict[quantity].add(model)
 
 
-class SymbolPath:
+class SymbolPath(object):
     """
-    Utility class to store elements of a Symbol path through various inputs and outputs.
+    Utility class to store elements of a Symbol path through
+    various inputs and outputs.
     """
 
     __slots__ = ['symbol_set', 'model_path']
@@ -670,9 +675,10 @@ class SymbolPath:
         return True
 
 
-class SymbolTree:
+class SymbolTree(object):
     """
-    Wrapper around TreeElement data structure for export from the method, encapsulating functionality.
+    Wrapper around TreeElement data structure for export from
+    the method, encapsulating functionality.
     """
 
     __slots__ = ['head']
@@ -708,9 +714,10 @@ class SymbolTree:
         return to_return
 
 
-class TreeElement:
+class TreeElement(object):
     """
-    Tree-like data structure for representing property relationship paths.
+    Tree-like data structure for representing property
+    relationship paths.
     """
 
     __slots__ = ['m', 'inputs', 'parent', 'children']
