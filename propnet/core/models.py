@@ -46,6 +46,19 @@ class Model(MSONable):
                 return False
         return True
 
+
+# TODO: Might consider these as purely factory methods
+#       this implementation saves us some space on serialization
+def PyModel(Model):
+    def __init__(self, module_path):
+        self._module_path = module_path
+        mod = __import__(module_path, globals(), locals(), ['config'], 0)
+        return super(PyModel, self).__init__(**mod.config)
+
+def MSONModel(Model):
+    def __init__(self, filename):
+        pass
+
     def to_file(self, filename):
         """Dumps model to file"""
         if self._function_string is None:
@@ -62,7 +75,7 @@ class Model(MSONable):
         if isinstance(model, Model):
             return model
         else:
-            return Model.from_dict(model)
+            return cls.from_dict(model)
 
     @classmethod
     def from_preset(cls, name):

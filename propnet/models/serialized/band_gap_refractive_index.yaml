@@ -18,7 +18,7 @@ connections:
     - Eg
   outputs:
     - n_moss
-function:
+equations:
   - 4.16 - 1.12*Eg + 0.31*Eg**2 - 0.08*Eg**2 - n_ravindra
   - n_moss - (95/Eg)**(1/4)
 description: |

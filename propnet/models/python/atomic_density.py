@@ -5,7 +5,6 @@ def evaluate_atomic_density(s):
                                  [['angstroms', -3]])
     return {'p': p}
 
-
 config = {
     "name": "Atomic density model",
     "function": evaluate_atomic_density,
