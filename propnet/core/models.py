@@ -139,8 +139,36 @@ class EquationModel(Model, MSONable):
         if os.path.isfile(loc):
             return cls.from_file(loc)
         else:
-            try:
-                return load_class("models.pymodels.{}".format(name))
-            except ImportError:
-                raise ValueError("No {} model found models or "
-                                 "models.pymodels".format(name))
+            raise ValueError("No {} model found at {}".format(name, loc))
+
+
+class PyModel(Model):
+    """
+    Purely python based model which allows for a flexible "plug_in"
+    method as input, then invokes that method in the defined plug-in
+    method
+    """
+    def __init__(self, name, connections, plug_in, constraints=None,
+                 description=None, categories=None, references=None):
+        self._plug_in = plug_in
+        super(PyModel, self).__init__(
+            name, connections, constraints, description,
+            categories, references)
+
+    def plug_in(self, symbol_value_dict):
+        return self._plug_in(symbol_value_dict)
+
+
+# Note that this class exists purely as a factory method for PyModel
+# which could be implemented as a class method of PyModel
+# but wouldn't serialize as cleanly
+class PyModuleModel(PyModel):
+    def __init__(self, module_path):
+        self._module_path = module_path
+        mod = __import__(module_path, globals(), locals(), ['config'], 0)
+        super(PyModuleModel, self).__init__(**mod.config)
+
+    def as_dict(self):
+        return {"module_path": self._module_path,
+                "@module": "propnet.core.model",
+                "@class": "PyModuleModel"}
