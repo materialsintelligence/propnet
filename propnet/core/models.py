@@ -4,6 +4,7 @@ Module containing classes and methods for Model functionality in Propnet code.
 
 import numpy as np
 import os
+from abc import ABC, abstractmethod
 
 from atomate.utils.utils import load_class
 from monty.serialization import loadfn, dumpfn
@@ -18,55 +19,109 @@ from propnet.core.utils import uuid, references_to_bib
 from propnet.core.exceptions import ModelEvaluationError, IncompleteData
 
 
-class Model(MSONable):
-    def __init__(self, name, symbols, function, constraints=None,
-                 description=None, categories=None, references=None):
-        self.symbols = symbols
+# TODO: Constraints are really just models that output True/False
+#       can we refactor with this?
+class Model(ABC):
+    """
+    Abstract model class for all models appearing in Propnet
+
+    Args:
+        name (str): title of the model
+        connections (dict): list of connections dictionaries,
+            which take the form {"inputs": [Symbols], "outputs": [Symbols]},
+            for example:
+            connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
+                           {"inputs": ["T", "V"], "outputs": ["p"]}]
+        constraints (str): title
+        description (str): long form description of the model
+        categories (str): list of categories applicable to
+            the model
+        references ([str]): list of the informational links
+            explaining / supporting the model
+
+    """
+    def __init__(self, name, connections, constraints=None, description=None,
+                 categories=None, references=None):
         self.name = name
+        self.connections = connections
         self.description = description
         self.categories = categories
         self.references = references
         self.constraints = constraints
-        # If function is a string, process into input function
-        if isinstance(function, str):
-            self._function_string = function
-            self.function = sp.lambdify(function)
-        else:
-            self.function = function
-            self._function_string = None
 
-    def run(self, *args, **kwargs):
-        """Runs the function associated with the model"""
-        return self.function(*args, **kwargs)
+    @abstractmethod
+    def plug_in(self, symbol_value_dict):
+        """
+        Plugs in a symbol to quantity dictionary
 
-    def validate(self, *args, **kwargs):
-        """Validates constraints"""
-        for constraint in self.constraints:
-            if not constraint.validate(*args, **kwargs):
-                return False
-        return True
+        Args:
+            symbol_value_dict ({symbol: value}): a mapping
+                of symbols to values to be substituted
+                into the model to yield output
+
+        Returns:
+            dictionary of output symbols with associated
+                values generated from the input
+        """
+        return
+
+    @property
+    def inputs(self):
+        return [d['inputs'] for d in self.connections]
+
+    @property
+    def outputs(self):
+        return [d['outputs'] for d in self.connections]
 
 
-# TODO: Might consider these as purely factory methods
-#       this implementation saves us some space on serialization
-def PyModel(Model):
-    def __init__(self, module_path):
-        self._module_path = module_path
-        mod = __import__(module_path, globals(), locals(), ['config'], 0)
-        return super(PyModel, self).__init__(**mod.config)
+class EquationModel(Model, MSONable):
+    """
+    Equation model is a Model subclass which is invoked
+    from a list of equations
 
-def MSONModel(Model):
-    def __init__(self, filename):
-        pass
+    Args:
+        name (str): title of the model
+        connections (dict): list of connections dictionaries,
+            which take the form {"inputs": [Symbols], "outputs": [Symbols]},
+            for example:
+            connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
+                           {"inputs": ["T", "V"], "outputs": ["p"]}]
+        constraints (str): title
+        description (str): long form description of the model
+        categories (str): list of categories applicable to
+            the model
+        references ([str]): list of the informational links
+            explaining / supporting the model
 
-    def to_file(self, filename):
-        """Dumps model to file"""
-        if self._function_string is None:
-            raise ValueError("Model can only be serialized if input function "
-                             "is a string")
-        d = self.as_dict()
-        d['function'] = self._function_string
-        dumpfn(d, filename)
+    """
+    def __init__(self, name, equations, connections, symbol_map=None,
+                 constraints=None, description=None, categories=None,
+                 references=None):
+        self.equations = equations
+        self.symbol_map = symbol_map
+        super(EquationModel, self).__init__(
+            name, connections, constraints, description,
+            categories, references)
+
+    # TODO: shouldn't this respect/use connections info,
+    #       or is that done elsewhere?
+    def plug_in(self, symbol_value_dict):
+        # Parse equations and substitute
+        eqns = [parse_expr(eq) for eq in self.equations]
+        eqns = [eqn.subs(symbol_value_dict) for eqn in eqns]
+        possible_outputs = set()
+        for eqn in eqns:
+            possible_outputs = possible_outputs.union(eqn.free_symbols)
+        outputs = {}
+        # Determine outputs from solutions to substituted equations
+        for possible_output in possible_outputs:
+            solutions = sp.nonlinsolve(eqns, possible_output)
+            # taking first solution only, and only asking for one output symbol
+            # so know length of output tuple for solutions will be 1
+            solution = list(solutions)[0][0]
+            if not isinstance(solution, sp.EmptySet):
+                outputs[str(possible_output)] = float(sp.N(solution))
+        return outputs
 
     @classmethod
     def from_file(cls, filename):
