@@ -7,7 +7,7 @@ def evaluate_atomic_density(s):
 
 config = {
     "name": "Atomic density model",
-    "function": evaluate_atomic_density,
+    "plug_in": evaluate_atomic_density,
     "tags": ["mechanical"],
     "references": [],
     "symbol_mapping": {"s": "structure",

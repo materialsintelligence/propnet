@@ -6,7 +6,6 @@ import numpy as np
 import os
 from abc import ABC, abstractmethod
 
-from atomate.utils.utils import load_class
 from monty.serialization import loadfn, dumpfn
 from monty.json import MSONable
 

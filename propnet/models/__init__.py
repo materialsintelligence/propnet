@@ -1,17 +1,20 @@
-from os.path import dirname, basename, isfile
-from glob import glob
+from pkgutil import iter_modules
+import os
+from propnet.core.models import EquationModel, PyModuleModel
+from propnet.models import python
 
-_DEFAULT_MODEL_FILES = glob(dirname(__file__) + "/*.py")
 
-DEFAULT_MODEL_NAMES = [basename(f)[:-3] for f in _DEFAULT_MODEL_FILES
-                       if isfile(f) and not basename(f).startswith('_')]
+DEFAULT_MODELS = []
 
-# auto loading of defined models
-# it's a bit hack-y due to wanting to store each class in a separate file
-# but also have them available in the propnet.models namespace
-DEFAULT_MODELS = {}
-for model in DEFAULT_MODEL_NAMES:
-    model_cls = getattr(__import__('propnet.models.{}'.format(model),
-                                   fromlist=['model']), model)
-    locals()[model] = model_cls
-    DEFAULT_MODELS[model] = model_cls
+# Load equation models
+equation_model_dir = os.path.join(os.path.dirname(__file__), "serialized")
+equation_model_files = os.listdir(equation_model_dir)
+for filename in equation_model_files:
+    model = EquationModel.from_file(filename)
+    DEFAULT_MODELS.append(model)
+
+# Load python models
+modules = iter_modules(python.__file__)
+for _, module_name, _ in modules:
+    module_path = "propnet.models.python.{}".format(module_name)
+    DEFAULT_MODELS.append(PyModuleModel(module_path))
