@@ -40,13 +40,14 @@ class Model(ABC):
 
     """
     def __init__(self, name, connections, constraints=None, description=None,
-                 categories=None, references=None):
+                 categories=None, references=None, symbol_map=None):
         self.name = name
         self.connections = connections
         self.description = description
         self.categories = categories
         self.references = references
         self.constraints = constraints
+        self.symbol_map = symbol_map
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -181,8 +182,6 @@ class EquationModel(Model, MSONable):
             return cls.from_file(loc)
 
 
-
-
 class PyModel(Model):
     """
     Purely python based model which allows for a flexible "plug_in"
@@ -190,7 +189,8 @@ class PyModel(Model):
     method
     """
     def __init__(self, name, connections, plug_in, constraints=None,
-                 description=None, categories=None, references=None):
+                 description=None, categories=None, references=None,
+                 symbol_map=None):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,

@@ -6,12 +6,12 @@ def evaluate_atomic_density(s):
     return {'p': p}
 
 config = {
-    "name": "Atomic density model",
+    "name": "Crystal structure density",
     "plug_in": evaluate_atomic_density,
-    "tags": ["mechanical"],
+    "categories": ["mechanical"],
     "references": [],
-    "symbol_mapping": {"s": "structure",
-                       "p": "atomic_density"},
+    "symbol_map": {"s": "structure",
+                   "p": "atomic_density"},
     "connections": [{"inputs": ["s"],
                      "outputs": ["p"]}]
 }

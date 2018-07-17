@@ -7,19 +7,21 @@ from glob import glob
 
 import propnet.models as models
 
-from propnet.models import DEFAULT_MODELS, DEFAULT_MODEL_NAMES
+from propnet.models import DEFAULT_MODEL_NAMES, DEFAULT_MODEL_DICT, DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
-from propnet.core.models import *
+from propnet.core.models import Model, PyModuleModel, PyModel, EquationModel
 from propnet.core.symbols import *
 
 
-class AbstractModelTest(unittest.TestCase):
+# TODO: separate these into specific tests of model functionality
+#       and validation of default models
+class ModelTest(unittest.TestCase):
 
     def test_instantiate_all_models(self):
         models_to_test = []
         for model_name in DEFAULT_MODEL_NAMES:
             try:
-                model = getattr(models, model_name)()
+                model = DEFAULT_MODEL_DICT.get(model_name)
                 models_to_test.append(model_name)
             except Exception as e:
                 self.fail('Failed to load model {}: {}'.format(model_name, e))
@@ -28,7 +30,7 @@ class AbstractModelTest(unittest.TestCase):
 
         # TODO: clean up tests (self.assertNotNone), test reference format too
 
-        for m in DEFAULT_MODELS.values():
+        for m in DEFAULT_MODELS:
             m = m()
             self.assertTrue(m.name is not None and m.name.isidentifier())
             self.assertTrue(m.title is not None and m.title != 'undefined')
@@ -118,12 +120,11 @@ model.evaluate({
 
         self.assertEqual(example_model._example_code, example_code)
 
-class ModelTest(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def test_init(self):
-
-
-    def tearDown(self):
-        pass
+# class ModelTest(unittest.TestCase):
+#     def setUp(self):
+#         pass
+#
+#     def test_init(self):
+#
+#     def tearDown(self):
+#         pass
