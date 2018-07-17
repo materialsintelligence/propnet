@@ -1,1 +1,10 @@
-[{"inputs": {"Eg": 3.2}, "outputs": {"n_ravindra": 2.9312}}]
+[
+  {
+    "inputs": {
+      "Eg": 3.2
+    },
+    "outputs": {
+      "n_ravindra": 2.9312
+    }
+  }
+]

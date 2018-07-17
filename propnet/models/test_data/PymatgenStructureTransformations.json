@@ -1,1 +1,349 @@
-[{"inputs": {"s": {"@module": "pymatgen.core.structure", "@class": "Structure", "lattice": {"matrix": [[4.11246655, 0.0, 0.0], [0.0, 4.11246655, 0.0], [0.0, 0.0, 5.03561294]], "a": 4.11246655, "b": 4.11246655, "c": 5.03561294, "alpha": 90.0, "beta": 90.0, "gamma": 90.0, "volume": 85.1642052386016}, "sites": [{"species": [{"element": "O", "occu": 1}], "abc": [0.0, 0.5, 0.5], "xyz": [0.0, 2.056233275, 2.51780647], "label": "O", "properties": {"coordination_no": 5, "forces": [0.0, 0.0, 0.0]}}, {"species": [{"element": "O", "occu": 1}], "abc": [0.5, 0.0, 0.5], "xyz": [2.056233275, 0.0, 2.51780647], "label": "O", "properties": {"coordination_no": 5, "forces": [0.0, 0.0, 0.0]}}, {"species": [{"element": "O", "occu": 1}], "abc": [0.0, 0.0, 0.5], "xyz": [0.0, 0.0, 2.51780647], "label": "O", "properties": {"coordination_no": 5, "forces": [0.0, 0.0, 0.0]}}, {"species": [{"element": "Ti", "occu": 1}], "abc": [0.5, 0.5, 0.5], "xyz": [2.056233275, 2.056233275, 2.51780647], "label": "Ti", "properties": {"coordination_no": 5, "forces": [0.0, 0.0, 0.0]}}, {"species": [{"element": "Ba", "occu": 1}], "abc": [0.0, 0.0, 0.0], "xyz": [0.0, 0.0, 0.0], "label": "Ba", "properties": {"coordination_no": 8, "forces": [0.0, 0.0, 0.0]}}]}}, "outputs": {"s_oxi": {"@module": "pymatgen.core.structure", "@class": "Structure", "lattice": {"matrix": [[4.11246655, 0.0, 0.0], [0.0, 4.11246655, 0.0], [0.0, 0.0, 5.03561294]], "a": 4.11246655, "b": 4.11246655, "c": 5.03561294, "alpha": 90.0, "beta": 90.0, "gamma": 90.0, "volume": 85.1642052386016}, "sites": [{"species": [{"element": "O", "oxidation_state": -2, "occu": 1}], "abc": [0.0, 0.5, 0.5], "xyz": [0.0, 2.056233275, 2.51780647], "label": "O2-", "properties": {"coordination_no": 5, "forces": [0.0, 0.0, 0.0]}}, {"species": [{"element": "O", "oxidation_state": -2, "occu": 1}], "abc": [0.5, 0.0, 0.5], "xyz": [2.056233275, 0.0, 2.51780647], "label": "O2-", "properties": {"coordination_no": 5, "forces": [0.0, 0.0, 0.0]}}, {"species": [{"element": "O", "oxidation_state": -2, "occu": 1}], "abc": [0.0, 0.0, 0.5], "xyz": [0.0, 0.0, 2.51780647], "label": "O2-", "properties": {"coordination_no": 5, "forces": [0.0, 0.0, 0.0]}}, {"species": [{"element": "Ti", "oxidation_state": 4, "occu": 1}], "abc": [0.5, 0.5, 0.5], "xyz": [2.056233275, 2.056233275, 2.51780647], "label": "Ti4+", "properties": {"coordination_no": 5, "forces": [0.0, 0.0, 0.0]}}, {"species": [{"element": "Ba", "oxidation_state": 2, "occu": 1}], "abc": [0.0, 0.0, 0.0], "xyz": [0.0, 0.0, 0.0], "label": "Ba2+", "properties": {"coordination_no": 8, "forces": [0.0, 0.0, 0.0]}}]}}}]
+[
+  {
+    "inputs": {
+      "s": {
+        "@class": "Structure",
+        "@module": "pymatgen.core.structure",
+        "charge": null,
+        "lattice": {
+          "a": 4.11246655,
+          "alpha": 90.0,
+          "b": 4.11246655,
+          "beta": 90.0,
+          "c": 5.03561294,
+          "gamma": 90.0,
+          "matrix": [
+            [
+              4.11246655,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              4.11246655,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              5.03561294
+            ]
+          ],
+          "volume": 85.1642052386016
+        },
+        "sites": [
+          {
+            "abc": [
+              0.0,
+              0.5,
+              0.5
+            ],
+            "label": "O",
+            "properties": {
+              "coordination_no": 5,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "O",
+                "occu": 1
+              }
+            ],
+            "xyz": [
+              0.0,
+              2.056233275,
+              2.51780647
+            ]
+          },
+          {
+            "abc": [
+              0.5,
+              0.0,
+              0.5
+            ],
+            "label": "O",
+            "properties": {
+              "coordination_no": 5,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "O",
+                "occu": 1
+              }
+            ],
+            "xyz": [
+              2.056233275,
+              0.0,
+              2.51780647
+            ]
+          },
+          {
+            "abc": [
+              0.0,
+              0.0,
+              0.5
+            ],
+            "label": "O",
+            "properties": {
+              "coordination_no": 5,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "O",
+                "occu": 1
+              }
+            ],
+            "xyz": [
+              0.0,
+              0.0,
+              2.51780647
+            ]
+          },
+          {
+            "abc": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "label": "Ti",
+            "properties": {
+              "coordination_no": 5,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "Ti",
+                "occu": 1
+              }
+            ],
+            "xyz": [
+              2.056233275,
+              2.056233275,
+              2.51780647
+            ]
+          },
+          {
+            "abc": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "label": "Ba",
+            "properties": {
+              "coordination_no": 8,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "Ba",
+                "occu": 1
+              }
+            ],
+            "xyz": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    },
+    "outputs": {
+      "s_oxi": {
+        "@class": "Structure",
+        "@module": "pymatgen.core.structure",
+        "charge": null,
+        "lattice": {
+          "a": 4.11246655,
+          "alpha": 90.0,
+          "b": 4.11246655,
+          "beta": 90.0,
+          "c": 5.03561294,
+          "gamma": 90.0,
+          "matrix": [
+            [
+              4.11246655,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              4.11246655,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              5.03561294
+            ]
+          ],
+          "volume": 85.1642052386016
+        },
+        "sites": [
+          {
+            "abc": [
+              0.0,
+              0.5,
+              0.5
+            ],
+            "label": "O2-",
+            "properties": {
+              "coordination_no": 5,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "O",
+                "occu": 1,
+                "oxidation_state": -2
+              }
+            ],
+            "xyz": [
+              0.0,
+              2.056233275,
+              2.51780647
+            ]
+          },
+          {
+            "abc": [
+              0.5,
+              0.0,
+              0.5
+            ],
+            "label": "O2-",
+            "properties": {
+              "coordination_no": 5,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "O",
+                "occu": 1,
+                "oxidation_state": -2
+              }
+            ],
+            "xyz": [
+              2.056233275,
+              0.0,
+              2.51780647
+            ]
+          },
+          {
+            "abc": [
+              0.0,
+              0.0,
+              0.5
+            ],
+            "label": "O2-",
+            "properties": {
+              "coordination_no": 5,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "O",
+                "occu": 1,
+                "oxidation_state": -2
+              }
+            ],
+            "xyz": [
+              0.0,
+              0.0,
+              2.51780647
+            ]
+          },
+          {
+            "abc": [
+              0.5,
+              0.5,
+              0.5
+            ],
+            "label": "Ti4+",
+            "properties": {
+              "coordination_no": 5,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "Ti",
+                "occu": 1,
+                "oxidation_state": 4
+              }
+            ],
+            "xyz": [
+              2.056233275,
+              2.056233275,
+              2.51780647
+            ]
+          },
+          {
+            "abc": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "label": "Ba2+",
+            "properties": {
+              "coordination_no": 8,
+              "forces": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "species": [
+              {
+                "element": "Ba",
+                "occu": 1,
+                "oxidation_state": 2
+              }
+            ],
+            "xyz": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    }
+  }
+]

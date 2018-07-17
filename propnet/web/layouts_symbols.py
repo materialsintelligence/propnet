@@ -3,17 +3,17 @@ from collections import OrderedDict
 import dash_html_components as html
 import dash_core_components as dcc
 from dash_react_graph_vis import GraphComponent
+from pydash import set_
 
 import networkx as nx
 from propnet.core.graph import Graph
-from propnet.core.node import Node, NodeType
 
 from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.web.utils import graph_conversion, AESTHETICS
 
 # layouts for symbol detail pages
 
-def symbol_layout(symbol_name):
+def symbol_layout(symbol_name, aesthetics=None):
     """Create a Dash layout for a provided symbol.
 
     Args:
@@ -23,6 +23,7 @@ def symbol_layout(symbol_name):
       Dash layout
 
     """
+    aesthetics = aesthetics or AESTHETICS.copy()
 
     # list to hold layouts for each section
     layouts = []
@@ -34,12 +35,11 @@ def symbol_layout(symbol_name):
     layouts.append(html.H6('Graph'))
     # TODO: costly, should just construct subgraph directly?
     g = Graph()
-    n = Node(node_type=NodeType.Symbol, node_value=symbol)
-    subgraph = nx.ego_graph(g.graph, n, undirected=True)
+    subgraph = nx.ego_graph(g.graph, symbol, undirected=True, radius=2)
     options=AESTHETICS['global_options']
     if "arrows" in options["edges"]:
         options["edges"]["arrows"] = "to"
-    AESTHETICS["node_options"]["show_model_labels"] = True
+    set_(aesthetics, "node_options.show_model_labels", True)
     layouts.append(html.Div(
         GraphComponent(
             id="model_graph",

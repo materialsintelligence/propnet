@@ -72,6 +72,48 @@ class Model(ABC):
     def outputs(self):
         return [d['outputs'] for d in self.connections]
 
+    # TODO: rename to test_model
+    def test(self, test_data=None):
+        """
+
+        Args:
+            test_data: list of test data
+
+        Returns: False if tests fail or no test data supplied,
+        True if tests pass.
+
+        """
+
+        if not test_data:
+            test_data = self.test_data
+
+        if test_data:
+
+            for d in test_data:
+                try:
+                    model_outputs = self.evaluate(d['inputs'])
+                    for k, known_output in d['outputs'].items():
+                        model_output = model_outputs[k]
+                        # TODO: remove, here temporarily
+                        if hasattr(model_output, 'magnitude'):
+                            model_output = model_output.magnitude
+                        if (not isinstance(known_output, float)) and \
+                                (not isinstance(known_output, list)):
+                            if model_output != known_output:
+                                raise ModelEvaluationError(
+                                    "Model output does not match known output "
+                                    "for {}".format(self.name))
+                        elif not np.allclose(model_output, known_output):
+                            raise ModelEvaluationError("Model output does not match known output "
+                                                       "for {}".format(self.name))
+                except Exception as e:
+                    raise ModelEvaluationError("Failed testing: " + self.title + ": " + str(e))
+
+            return True
+
+        else:
+            raise ValueError("No {} model found at {}".format(name, loc))
+
 
 class EquationModel(Model, MSONable):
     """
@@ -137,8 +179,8 @@ class EquationModel(Model, MSONable):
         loc = os.path.join("..", "models", "{}.yaml".format(name))
         if os.path.isfile(loc):
             return cls.from_file(loc)
-        else:
-            raise ValueError("No {} model found at {}".format(name, loc))
+
+
 
 
 class PyModel(Model):
