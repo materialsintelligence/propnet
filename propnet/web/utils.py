@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
 
 
+# TODO: use the attributes of the graph class, rather than networkx
 def graph_conversion(graph,
                      nodes_to_highlight_green=(),
                      nodes_to_highlight_yellow=(),

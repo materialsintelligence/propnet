@@ -11,13 +11,12 @@ from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
 import logging
-from itertools import chain
+from itertools import chain, product
 
 logger = logging.getLogger("graph")
 
-
-
-class Graph:
+# TODO: reconsider polymorphism
+class Graph(object):
     """
     Class containing methods for creating and interacting with a Property Network.
 
@@ -294,6 +293,7 @@ class Graph:
         if len(self._symbol_to_quantity[property.symbol]) == 0:
             del self._symbol_to_quantity[property.symbol]
 
+    # TODO: deprecate this and use web app
     @property
     def graph(self):
         """
@@ -328,11 +328,15 @@ class Graph:
 
     def calculable_properties(self, property_type_set):
         """
-        Given a set of Symbol objects, returns all new Symbol objects that may be calculable from the inputs.
-        Resulting set contains only those new Symbol objects derivable.
+        Given a set of Symbol objects, returns all new Symbol objects
+        that may be calculable from the inputs. Resulting set contains
+        only those new Symbol objects derivable.
+
         The result should be used with caution:
-            1) Models may not produce an output if their input conditions are not met.
-            2) Models may require more than one Quantity of a given Symbol type to generate an output.
+            1) Models may not produce an output if their input
+                conditions are not met.
+            2) Models may require more than one Quantity of a
+                given Symbol type to generate an output.
 
         Args:
             property_type_set (set<Symbol>): the set of Symbol objects taken as starting properties.
@@ -494,6 +498,33 @@ class Graph:
         tree = self.required_inputs_for_property(end_property)
         return tree.get_paths_from(start_property)
 
+    @staticmethod
+    def generate_input_sets(symbol_list, req_types, this_quantity_pool):
+            """
+            Generates all combinatorially-unique sets of input dictionaries.
+
+            Args:
+                symb_list ([str]): list of model symbols mapped to Symbol objects.
+                req_types ([str]): list of Symbols that must be retrieved from the quantity_pool.
+                this_quantity_pool ({Symbol: Set(Quantity)}): quantities keyed
+                    by symbols
+
+            Returns:
+                ([{str: Quantity}]): list of symbol strings mapped to Quantity values.
+            """
+            if len(symbol_list) != len(req_types):
+                raise Exception("Symbol and Type sets must be the same length.")
+            aggregated_symbols = [this_quantity_pool[req_type]
+                                  for req_type in req_types]
+            input_set_lists = product(*aggregated_symbols)
+            input_set_dicts = []
+            for input_set_list in input_set_lists:
+                input_set_dicts.append({
+                    symbol: input_quantity for symbol, input_quantity
+                    in zip(symbol_list, input_set_list)
+                })
+            return input_set_dicts
+
     def evaluate(self, material=None, property_type=None):
         """
         Expands the graph, producing the output of models that have the appropriate inputs supplied.
@@ -536,92 +567,10 @@ class Graph:
             for m in self._input_to_model[symbol]:
                 candidate_models.add(m)
 
-        # Define helper closures for later use
-
-        def gen_input_sets(symb_list, req_types, this_quantity_pool):
-            """
-            Generates all combinatorially-unique sets of input dictionaries.
-            Args:
-                symb_list (list<str>): list of model symbols mapped to Symbol objects.
-                req_types (list<str>): list of Symbols that must be retrieved from the quantity_pool.
-            Returns:
-                (list<dict<str, Quantity>>): list of symbol strings mapped to Quantity values.
-            """
-            if len(symb_list) != len(req_types):
-                raise Exception("Symbol and Type sets must be the same length.")
-            type_mapping = DefaultDict(list)
-            for i in range(0, len(symb_list)):
-                # Create mapping Symbol to list<Model.Symbol.name>
-                type_mapping[req_types[i]].append(symb_list[i])
-            return gen_quantity_combos(type_mapping, this_quantity_pool)
-
-        def gen_quantity_combos(type_mapping, this_quantity_pool):
-            """
-            Generates all combinatorially-unique sets of input dictionaries.
-            """
-            if len(type_mapping) == 0:
-                return []
-            key = type_mapping.__iter__().__next__()
-            val = type_mapping[key]
-            opt = list(this_quantity_pool[key])
-            if len(val) > len(opt):
-                return []
-            if len(type_mapping) == 1:
-                return gen_dict_combos(val, opt)
-            elif len(type_mapping) > 1:
-                next = gen_dict_combos(val, opt)
-                del type_mapping[key]
-                remaining = gen_quantity_combos(type_mapping, this_quantity_pool)
-                to_return = [None]*len(next)*len(remaining)
-                for i in range(0, len(next)):
-                    for j in range(0, len(remaining)):
-                        building = dict()
-                        for (k, v) in next[i].items():
-                            building[k] = v
-                        for (k, v) in remaining[j].items():
-                            building[k] = v
-                        to_return[i*len(remaining) + j] = building
-                return to_return
-
-        def gen_dict_combos(val, opt):
-            """
-            Generates all combinatorial sets of mappings from Model symbol to Quantity
-            """
-            if len(val) == 1:
-                to_return = [None]*len(opt)
-                for i in range(0, len(opt)):
-                    to_return[i] = {val[0]: opt[i]}
-                return to_return
-            else:
-                first = gen_dict_combos([val[0]], opt)
-                nexts = [None]*len(first)
-                for i in range(0, len(first)):
-                    next_val = val[1:len(val)]
-                    next_opt = opt[0:i] + opt[(i+1):len(opt)]
-                    p = 0
-                    for j in range(0, len(opt)):
-                        if i == j:
-                            continue
-                        next_opt[p] = opt[j]
-                        p += 1
-                    nexts[i] = gen_dict_combos(next_val, next_opt)
-                to_return = [None]*(len(nexts)*len(nexts[0]))
-                p = 0
-                for i in range(0, len(nexts)):
-                    for j in range(0, len(nexts[i])):
-                        adding = dict()
-                        for (k, v) in first[i].items():
-                            adding[k] = v
-                        for (k, v) in nexts[i][j].items():
-                            adding[k] = v
-                        to_return[p] = adding
-                        p += 1
-                return to_return
-
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
 
-        add_set = set()
+        new_models = set()
 
         continue_loop = True
         logger.debug("Beginning main loop")
@@ -630,9 +579,9 @@ class Graph:
             continue_loop = False
             # Check if model inputs are supplied.
             logger.debug("Checking if model inputs are supplied")
-            for model in add_set:
+            for model in new_models:
                 candidate_models.add(model)
-            add_set = set()
+            new_models = set()
             for model in candidate_models:
                 logger.debug("Evaluating model {}".format(model.title))
                 logger.debug("Quantity pool contains {} quantities:".format(
@@ -640,28 +589,35 @@ class Graph:
                 inputs = model.gen_evaluation_lists()
                 for l in inputs:
                     logger.debug("Generating input sets")
-                    input_sets = gen_input_sets(l[0], l[1], quantity_pool)
+                    input_sets = self.generate_input_sets(l[0], l[1], quantity_pool)
                     for input_set in input_sets:
                         override = False
                         can_evaluate = False
                         for q in input_set.values():
+                            # TODO: refactor
+                            # This block is deciding whether input set should
+                            # be considered for evaluation - i. e. no quantity
+                            # has been produced by this model before and this
+                            # input set hasn't been plugged into the model before
                             if model in output_dict[q]:
                                 override = True
                                 break
                             if model not in plug_in_dict[q] and model not in output_dict[q]:
                                 can_evaluate = True
                                 break
+                        # TODO: maybe revise for readability
                         if override or not can_evaluate:
                             continue
                         if not model.check_constraints(input_set):
                             continue
+                        # TODO: maybe remove with material/supermaterial refactor
                         mats = set()
                         for value in input_set.values():
                             for mat in value._material:
                                 mats.add(mat)
                         evaluate_set = dict()
-                        for (k, v) in input_set.items():
-                            evaluate_set[k] = v.value
+                        for symbol, quantity in input_set.items():
+                            evaluate_set[symbol] = quantity.value
                         output = model.evaluate(evaluate_set)
                         if not output['successful']:
                             continue
@@ -669,28 +625,33 @@ class Graph:
                         #                       -- add output to the graph
                         #                       -- add additional candidate models
                         continue_loop = True
-                        for (k, v) in output.items():
-                            st = self._symbol_types.get(model.symbol_mapping.get(k))
+                        for symbol, quantity in output.items():
+                            st = self._symbol_types.get(
+                                model.symbol_mapping.get(symbol))
                             if not st:
                                 continue
                             for m in self._input_to_model[st]:
-                                add_set.add(m)
-                            q = Quantity(st, v, set())
+                                new_models.add(m)
+                            q = Quantity(st, quantity, set())
+                            # TODO: maybe refactor because of material refactor
                             for mat in mats:
                                 mat.add_quantity(q)
                             quantity_pool[st].add(q)
                             output_dict[q].add(model)
+                            # Derive the chain of all models that were required
+                            # to get to the new quantity
                             for input_quantity in input_set.values():
                                 for link in output_dict[input_quantity]:
                                     output_dict[q].add(link)
                     for input_set in input_sets:
-                        for value in input_set.values():
-                            plug_in_dict[value].add(model)
+                        for quantity in input_set.values():
+                            plug_in_dict[quantity].add(model)
 
 
-class SymbolPath:
+class SymbolPath(object):
     """
-    Utility class to store elements of a Symbol path through various inputs and outputs.
+    Utility class to store elements of a Symbol path through
+    various inputs and outputs.
     """
 
     __slots__ = ['symbol_set', 'model_path']
@@ -714,9 +675,10 @@ class SymbolPath:
         return True
 
 
-class SymbolTree:
+class SymbolTree(object):
     """
-    Wrapper around TreeElement data structure for export from the method, encapsulating functionality.
+    Wrapper around TreeElement data structure for export from
+    the method, encapsulating functionality.
     """
 
     __slots__ = ['head']
@@ -752,9 +714,10 @@ class SymbolTree:
         return to_return
 
 
-class TreeElement:
+class TreeElement(object):
     """
-    Tree-like data structure for representing property relationship paths.
+    Tree-like data structure for representing property
+    relationship paths.
     """
 
     __slots__ = ['m', 'inputs', 'parent', 'children']
