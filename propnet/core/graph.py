@@ -10,6 +10,7 @@ from propnet.models import DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
+from propnet.core.materials import Material
 import logging
 from itertools import chain, product
 
@@ -50,7 +51,7 @@ class Graph(object):
 
     """
 
-    def __init__(self, materials=None, models=None, symbol_types=None):
+    def __init__(self, models=None, symbol_types=None):
         """
         Creates a Graph instance
         """
@@ -66,20 +67,14 @@ class Graph(object):
         # create the graph
         self._symbol_types = dict()
         self._models = dict()
-        self._materials = set()
         self._input_to_model = DefaultDict(set)
         self._output_to_model = DefaultDict(set)
-        self._symbol_to_quantity = DefaultDict(set)
 
         if symbol_types:
             self.update_symbol_types(symbol_types)
 
         if models:
             self.update_models(models)
-
-        if materials:
-            for material in materials:
-                self.add_material(material)
 
     def __str__(self):
         """
@@ -94,13 +89,6 @@ class Graph(object):
         summary += ["Properties"]
         for property in self._symbol_types.keys():
             summary += ["\t" + property]
-            if property not in self._symbol_to_quantity.keys():
-                continue
-            for quantity in self._symbol_to_quantity[self._symbol_types[property]]:
-                qs = str(quantity)
-                if "\n" in qs or len(qs) > QUANTITY_LENGTH_CAP:
-                    qs = "..."
-                summary += ["\t\tValue: " + qs]
         summary += [""]
         summary += ["Models"]
         for model in self._models.keys():
@@ -217,114 +205,6 @@ class Graph(object):
         for model in self._models.values():
             to_return.add(model)
         return to_return
-
-    def add_material(self, material):
-        """
-        Add a material and any of its associated properties to the Graph.
-        Mutates the graph instance variable.
-        Args:
-            material (Material) Material whose information will be added to the graph.
-        Returns:
-            void
-        """
-        if material in self._materials:
-            raise Exception("Material has already been added to the graph.")
-        self._materials.add(material)
-        material.parent = self
-        for qs in material._symbol_to_quantity.values():
-            for q in qs:
-                self._add_quantity(q)
-
-    def remove_material(self, material):
-        """
-        Removes a material and any of its associated properties from the Graph.
-        Mutates the graph instance variable.
-
-        Args:
-            material (Material) Material whose information will be removed from the graph.
-        Returns:
-            void
-        """
-        if material not in self._materials:
-            raise Exception("Trying to remove material that is not part of the graph.")
-        self._materials.remove(material)
-        for qs in list(material._symbol_to_quantity.values()):
-            for q in qs:
-                self._remove_quantity(q)
-        material.parent = None
-
-    def get_materials(self):
-        """
-        Getter method returning all materials on the graph.
-        Returns:
-            (set<Material>)
-        """
-        return {m for m in self._materials}
-
-    def _add_quantity(self, property):
-        """
-        PRIVATE METHOD!
-        Adds a property to this graph. Properties should be added to Material objects ONLY.
-        This method is called ONLY by Material objects to ensure consistency of data structures.
-        Args:
-            property (Quantity):
-        Returns:
-            None
-        """
-        if property.symbol.name not in self._symbol_types:
-            raise KeyError("Attempted to add a Quantity to the graph for which no corresponding Symbol exists.\
-                            Please add the appropriate Symbol to the property network and try again.")
-        self._symbol_to_quantity[property.symbol].add(property)
-
-    def _remove_quantity(self, property):
-        """
-        PRIVATE METHOD!
-        Removes this property from the graph. Properties should be removed from Material objects ONLY.
-        This method is called ONLY by Material objects to ensure consistency of data structures.
-        Args:
-            property (Quantity): the property to be removed
-
-        Returns:
-            None
-        """
-        if property.symbol.name not in self._symbol_types:
-            raise Exception("Attempted to remove a quantity not part of the graph.")
-        self._symbol_to_quantity[property.symbol].remove(property)
-        if len(self._symbol_to_quantity[property.symbol]) == 0:
-            del self._symbol_to_quantity[property.symbol]
-
-    # TODO: deprecate this and use web app
-    @property
-    def graph(self):
-        """
-        Generates a networkX data structure representing the property network and returns
-        this object.
-        Returns:
-            (networkX.multidigraph)
-        """
-        graph = nx.MultiDiGraph()
-
-        # Create the abstract graph.
-        for symbol in self._input_to_model:
-            for model in self._input_to_model[symbol]:
-                graph.add_edge(symbol, model)
-        for symbol in self._output_to_model:
-            for model in self._output_to_model[symbol]:
-                graph.add_edge(model, symbol)
-
-        # Add the concrete graph.
-        for symbol in self._symbol_to_quantity:
-            for quantity in self._symbol_to_quantity[symbol]:
-                for material in quantity._material:
-                    graph.add_edge(material, quantity)
-                graph.add_edge(quantity, symbol)
-
-        # Add orphan nodes
-        for symbol in self._symbol_types:
-            if not symbol in graph.nodes:
-                graph.add_node(symbol)
-
-        return graph
 
     def calculable_properties(self, property_type_set):
         """
@@ -525,127 +405,151 @@ class Graph(object):
                 })
             return input_set_dicts
 
-    def evaluate(self, material=None, property_type=None):
+    def evaluate(self, material, property_type=None):
         """
-        Expands the graph, producing the output of models that have the appropriate inputs supplied.
-        Mutates the graph instance variable.
+        Given a Material object as input, creates a new Material object to include all derivable properties.
+        Returns a reference to the new, augmented Material object.
 
-        Optional arguments limit the scope of which models or properties are tested.
-            material parameter: produces output from models only if the input properties come from the specified material.
-                                mutated graph will modify the Material's graph instance as well as this graph instance.
-                                mutated graph will include edges from Material to Quantity to Symbol.
-            property_type parameter: produces output from models only if the input properties are in the list.
-
-        If no material parameter is specified, the generated SymbolNodes will be added with edges to and from
-        corresponding SymbolTypeNodes specifically. No connections will be made to existing Material nodes because
-        a Quantity might be derived from a combination of materials in this case. Likewise existing Material nodes'
-        graph instances will not be mutated in this case.
+        Optional argument limits the scope of which models or properties are tested.
+            property_type parameter: produces output from models only if all input properties are in the list.
 
         Args:
-            material (Material): optional limit on which material's properties will be expanded (default: all materials)
-            property_type (list<Symbol>): optional limit on which Symbols will be considered as input.
+            material (Material): which material's properties will be expanded.
+            property_type (set<Symbol>): optional limit on which Symbols will be considered as input.
         Returns:
-            void
+            (Material) reference to the newly derived material object.
         """
 
         # Determine which Quantity objects are up for evaluation.
-        # Generate the necessary initial datastructures.
+        # Generate the necessary initial data-structures.
+
         logger.debug("Beginning evaluation")
+
         quantity_pool = DefaultDict(set)   # Dict<Symbol, set<Quantity>>, available Quantity objects.
         plug_in_dict = DefaultDict(set)    # Dict<Quantity, set<Model>>, where the Quantities have been plugged in.
         output_dict = DefaultDict(set)     # Dict<Quantity, set<Model>>, where the Quantities have been generated.
         candidate_models = set()           # set<Model>, which could generate additional outputs.
 
-        logger.debug("Refining input set")
-        for qs in self._symbol_to_quantity.values():
+        logger.debug("Refining input set, setting up candidate_models.")
+
+        for qs in material._symbol_to_quantity.values():
             for quantity in qs:
-                if (material is None or material in quantity._material) and \
-                        (property_type is None or quantity.symbol_type in property_type):
+                if property_type is None or quantity.symbol_type in property_type:
                     quantity_pool[quantity.symbol].add(quantity)
 
         for symbol in quantity_pool.keys():
             for m in self._input_to_model[symbol]:
                 candidate_models.add(m)
 
+        logger.debug("Finished refining input set.")
+        logger.debug("Quantity pool contains {}".format(quantity_pool))
+        logger.debug("Beginning main loop.")
+
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
 
         new_models = set()
-
         continue_loop = True
-        logger.debug("Beginning main loop")
-        logger.debug("Quantity pool contains {}".format(quantity_pool))
+
         while continue_loop:
             continue_loop = False
-            # Check if model inputs are supplied.
-            logger.debug("Checking if model inputs are supplied")
+
+            # Clean up after last loop.
+
             for model in new_models:
                 candidate_models.add(model)
             new_models = set()
+
+            logger.debug("Checking if model inputs are supplied.")
+
             for model in candidate_models:
-                logger.debug("Evaluating model {}".format(model.title))
+
+                logger.debug("Checking model {}".format(model.title))
                 logger.debug("Quantity pool contains {} quantities:".format(
                     len(list(chain.from_iterable(quantity_pool.values())))))
+
                 inputs = model.gen_evaluation_lists()
+
                 for l in inputs:
-                    logger.debug("Generating input sets")
+
+                    logger.debug("\tGenerating input sets for: " + str(l))
+
                     input_sets = self.generate_input_sets(l[0], l[1], quantity_pool)
+
                     for input_set in input_sets:
+
+                        logger.debug("\t\tEvaluating input set: " + str(input_set))
+
                         override = False
                         can_evaluate = False
+
+                        # Check if input_set can be evaluated --
+                        #       input_set has never been seen before by the model
+                        #       input_set contains no values that were previously derived from the model
+                        #       input_set must pass the necessary model constraints
+
                         for q in input_set.values():
-                            # TODO: refactor
-                            # This block is deciding whether input set should
-                            # be considered for evaluation - i. e. no quantity
-                            # has been produced by this model before and this
-                            # input set hasn't been plugged into the model before
                             if model in output_dict[q]:
                                 override = True
                                 break
-                            if model not in plug_in_dict[q] and model not in output_dict[q]:
+                        if override:
+                            logger.debug("\t\t\tInput set failed -- input previously derived from the model.")
+                            continue
+                        for q in input_set.values():
+                            if model not in plug_in_dict[q]:
                                 can_evaluate = True
                                 break
-                        # TODO: maybe revise for readability
-                        if override or not can_evaluate:
+                        if not can_evaluate:
+                            logger.debug("\t\t\tInput set failed -- input set previously plugged in to the model.")
                             continue
                         if not model.check_constraints(input_set):
+                            logger.debug("\t\t\tInput set failed -- did not pass model constraints.")
                             continue
-                        # TODO: maybe remove with material/supermaterial refactor
-                        mats = set()
-                        for value in input_set.values():
-                            for mat in value._material:
-                                mats.add(mat)
+
+                        # Try to evaluate input_set:
+
                         evaluate_set = dict()
                         for symbol, quantity in input_set.items():
                             evaluate_set[symbol] = quantity.value
                         output = model.evaluate(evaluate_set)
                         if not output['successful']:
+                            logger.debug("\t\t\tInput set failed -- did not produce a successful output.")
                             continue
-                        # Model produced output -- gather output
+
+                        # input_set led to output from the Model -- gather output
                         #                       -- add output to the graph
                         #                       -- add additional candidate models
+
+                        logger.debug("\t\t\tInput set produced successful output.")
                         continue_loop = True
                         for symbol, quantity in output.items():
                             st = self._symbol_types.get(
                                 model.symbol_mapping.get(symbol))
                             if not st:
+                                logger.debug("\t\t\tUnrecognized symbol_type in the output: " + str(symbol))
                                 continue
                             for m in self._input_to_model[st]:
                                 new_models.add(m)
-                            q = Quantity(st, quantity, set())
-                            # TODO: maybe refactor because of material refactor
-                            for mat in mats:
-                                mat.add_quantity(q)
+                            q = Quantity(st, quantity)
                             quantity_pool[st].add(q)
                             output_dict[q].add(model)
+                            logger.debug("\t\t\tNew output: " + str(q))
+
                             # Derive the chain of all models that were required
                             # to get to the new quantity
+
                             for input_quantity in input_set.values():
                                 for link in output_dict[input_quantity]:
                                     output_dict[q].add(link)
+
+                    # Store all input sets to avoid duplicate evaluation in the future.
                     for input_set in input_sets:
                         for quantity in input_set.values():
                             plug_in_dict[quantity].add(model)
+
+        toReturn = Material()
+        toReturn._symbol_to_quantity = quantity_pool
+        return toReturn
 
 
 class SymbolPath(object):

@@ -33,5 +33,4 @@ class MPResterTest(unittest.TestCase):
 
     def test_apply_material_to_graph(self):
         g = Graph()
-        g.add_material(self.mat)
-        g.evaluate()
+        g.evaluate(self.mat)

@@ -30,7 +30,6 @@ class Quantity(MSONable):
     def __init__(self,
                  symbol_type: Union[str, Symbol],
                  value: Any,
-                 material=None,
                  tags: Optional[List[str]]=None,
                  sources: List=None,
                  provenance=None):
@@ -60,7 +59,6 @@ class Quantity(MSONable):
         self._symbol_type = symbol_type
         self._value = value
         self._tags = tags
-        self._material = material or set()
         self._provenance = provenance
 
     @property
@@ -100,12 +98,8 @@ class Quantity(MSONable):
 
     def __eq__(self, other):
         if not isinstance(other, Quantity) \
-                or self.symbol != other.symbol \
-                or self.symbol.category != other.symbol.category:
+                or self.symbol != other.symbol:
             return False
-        #for m in self._material:
-        #    if m not in other._material:
-        #        return False
         return self.value == other.value
 
     def __str__(self):
