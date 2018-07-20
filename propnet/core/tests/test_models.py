@@ -82,20 +82,14 @@ class ModelTest(unittest.TestCase):
         """
         L = Symbol('l', ['L'], ['L'], units=[1.0, [['centimeter', 1.0]]], shape=[1])
         A = Symbol('a', ['A'], ['A'], units=[1.0, [['centimeter', 2.0]]], shape=[1])
-
-        class GetArea(AbstractModel):
-            def __init__(self):
-                AbstractModel.__init__(
-                    self,
-                    metadata={
-                        'symbol_mapping': {'l1': 'l', 'l2': 'l', 'a': 'a'},
-                        'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
-                        'equations': ['a - l1 * l2']
-                    },
-                    symbol_types={'l': L, 'a': A}
-                )
-
-        model = GetArea()
+        get_area_config = {
+            'name': 'area',
+            # 'symbol_map': {'l1': 'l', 'l2': 'l', 'a': 'a'},
+            'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
+            'equations': ['a - l1 * l2'],
+            'unit_map': {'l1': "cm", 'a': "cm^2"}
+        }
+        model = EquationModel(**get_area_config)
         out = model.evaluate({'l1': 1 * ureg.Quantity.from_tuple([1.0, [['meter', 1.0]]]),
                               'l2': 2 * L.units})
 
