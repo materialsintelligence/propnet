@@ -5,21 +5,27 @@ Module containing classes and methods for Model functionality in Propnet code.
 import numpy as np
 import os
 from abc import ABC, abstractmethod
+from itertools import chain
 
-from monty.serialization import loadfn, dumpfn
+from monty.serialization import loadfn
 from monty.json import MSONable
 
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 from propnet.symbols import DEFAULT_SYMBOLS
-from propnet import logger, ureg
-from propnet.core.utils import uuid, references_to_bib
-from propnet.core.exceptions import ModelEvaluationError, IncompleteData
+from propnet import ureg
+from propnet.core.exceptions import ModelEvaluationError
 
-
+# General TODOs:
 # TODO: Constraints are really just models that output True/False
 #       can we refactor with this?
+# TODO: I'm not sure that symbol_map needs to be present in all models,
+#       maybe just equation models/relegated to that plug_in method
+# TODO: The evaluate/plug_in dichotomy is a big confusing here
+#       I suspect they can be consolidated
+# TODO: Does the unit_map really need to be specified?  Why can't
+#       pint handle this?
 class Model(ABC):
     """
     Abstract model class for all models appearing in Propnet
@@ -39,15 +45,25 @@ class Model(ABC):
             explaining / supporting the model
 
     """
-    def __init__(self, name, connections, constraints=None, description=None,
-                 categories=None, references=None, symbol_map=None):
+    def __init__(self, name, connections, constraints=None,
+                 description=None, categories=None, references=None,
+                 symbol_map=None, unit_map=None):
         self.name = name
         self.connections = connections
         self.description = description
         self.categories = categories
         self.references = references
         self.constraints = constraints
+        # If no symbol map specified, use inputs/outputs
         self.symbol_map = symbol_map
+        self.unit_map = unit_map or {}
+        # This basically dictates that the unit map should be
+        # consistent with the plug-in or model symbols, hopefully
+        # to be removed when unitization is refactored on the symbol side
+        if self.symbol_map and self.unit_map:
+            self.unit_map = {self.symbol_map.get(symbol) or symbol: value
+                             for symbol, value in self.unit_map.items()}
+
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -65,55 +81,115 @@ class Model(ABC):
         """
         return
 
-    @property
-    def inputs(self):
-        return [d['inputs'] for d in self.connections]
-
-    @property
-    def outputs(self):
-        return [d['outputs'] for d in self.connections]
-
-    # TODO: rename to test_model
-    def test(self, test_data=None):
+    # TODO: I'm really not crazy about the "successful" key implementation
+    #       preventing model failure using try/except is the path to
+    #       the dark side
+    def evaluate(self, symbol_value_dict):
         """
+        Given a set of symbol_values, performs error checking to see if
+        the input symbol_values represents a valid input set based on
+        the self.connections() method. If so, it returns a dictionary
+        representing the value of plug_in applied to the inputs. The
+        dictionary contains a "successful" key representing if plug_in
+        was successful.
 
         Args:
-            test_data: list of test data
+            symbol_value_dict ({symbol: value}): a mapping of symbols
+                to values to be substituted into the model
 
-        Returns: False if tests fail or no test data supplied,
-        True if tests pass.
-
+        Returns:
+            dictionary of output symbols with associated values
+            generated from the input, along "successful" if the
+            substitution succeeds
         """
+        # Remap symbols and units if symbol map isn't none
+        if self.symbol_map:
+            symbol_value_dict = {self.symbol_map[symbol]: value
+                                 for symbol, value in symbol_value_dict.items()}
 
-        if not test_data:
-            test_data = self.test_data
+        # TODO: Is it really necessary to strip these?
+        # TODO: maybe this only applies to pymodels or things with objects?
+        # strip units from input
+        for symbol, value in symbol_value_dict.items():
+            if isinstance(value, ureg.Quantity):
+                if symbol in self.unit_map:
+                    value = value.to(self.unit_map[symbol])
+                symbol_value_dict[symbol] = value.magnitude
 
-        if test_data:
+        available_symbols = set(symbol_value_dict.keys())
 
-            for d in test_data:
-                try:
-                    model_outputs = self.evaluate(d['inputs'])
-                    for k, known_output in d['outputs'].items():
-                        model_output = model_outputs[k]
-                        # TODO: remove, here temporarily
-                        if hasattr(model_output, 'magnitude'):
-                            model_output = model_output.magnitude
-                        if (not isinstance(known_output, float)) and \
-                                (not isinstance(known_output, list)):
-                            if model_output != known_output:
-                                raise ModelEvaluationError(
-                                    "Model output does not match known output "
-                                    "for {}".format(self.name))
-                        elif not np.allclose(model_output, known_output):
-                            raise ModelEvaluationError("Model output does not match known output "
-                                                       "for {}".format(self.name))
-                except Exception as e:
-                    raise ModelEvaluationError("Failed testing: " + self.title + ": " + str(e))
+        # check we support this combination of inputs
+        input_matches = [set(input_set) == available_symbols
+                         for input_set in self.input_sets]
+        if not any(input_matches):
+            return {
+                'successful': False,
+                'message': "The {} model cannot generate any outputs for these inputs: {}".format(
+                    self.name, available_symbols)
+            }
+        try:
+            # evaluate is allowed to fail
+            out = self.plug_in(symbol_value_dict)
+            out['successful'] = True
+        except Exception as e:
+            return {
+                'successful': False,
+                'message': str(e)
+            }
 
-            return True
+        # add units to output
+        for key in out:
+            if key == 'successful':
+                continue
+            out[key] = ureg.Quantity(out[key], self.unit_map[key])
+        return out
 
-        else:
-            raise ValueError("No {} model found at {}".format(name, loc))
+    # TODO: these could be more descriptively named, maybe input_sets
+    #       vs. all_inputs
+    @property
+    def input_sets(self):
+        return [set(d['inputs']) for d in self.connections]
+
+    @property
+    def output_sets(self):
+        return [set(d['outputs']) for d in self.connections]
+
+    @property
+    def all_inputs(self):
+        return list(chain.from_iterable(self.inputs))
+
+    @property
+    def all_outputs(self):
+        return list(chain.from_iterable(self.outputs))
+
+    @property
+    def all_symbols(self):
+        return self.all_inputs + self.all_outputs
+
+    def test(self, inputs, outputs):
+        """
+        Runs a test of the model to determine whether its operation
+        is consistent with the specified inputs and outputs
+
+        Args:
+            inputs (dict): set of input names to values
+            outputs (dict): set of output names to values
+        """
+        model_outputs = self.evaluate(inputs)
+        for k, known_output in outputs.items():
+            if not model_outputs == known_output:
+                raise ModelEvaluationError(
+                    "Model output does not match known output for {}".format(
+                        self.name))
+        return True
+
+    def validate_from_test_data(self):
+        """
+        Validates from test data based on the model name
+
+        Returns:
+            True if validation completes successfully
+        """
 
 
 class EquationModel(Model, MSONable):
@@ -138,12 +214,11 @@ class EquationModel(Model, MSONable):
     """
     def __init__(self, name, equations, connections, symbol_map=None,
                  constraints=None, description=None, categories=None,
-                 references=None):
+                 references=None, unit_map=None):
         self.equations = equations
-        self.symbol_map = symbol_map
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
-            categories, references)
+            categories, references, symbol_map, unit_map)
 
     # TODO: shouldn't this respect/use connections info,
     #       or is that done elsewhere?
@@ -194,7 +269,7 @@ class PyModel(Model):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
-            categories, references)
+            categories, references, symbol_map)
 
     def plug_in(self, symbol_value_dict):
         return self._plug_in(symbol_value_dict)
