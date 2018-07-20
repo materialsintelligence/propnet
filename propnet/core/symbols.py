@@ -1,6 +1,6 @@
 import numpy as np
+import six
 
-from typing import *
 from monty.json import MSONable
 from ruamel.yaml import safe_dump
 
@@ -12,6 +12,9 @@ from propnet import logger, ureg
 #       units vs those without
 # TODO: also symbols with branch points for things like
 #       sets of finite conditions (miller indices)
+# TODO: I think object properties (e. g. structure)
+#       should have a "unitizer" metaclass that unitizes
+#       their attributes
 class Symbol(MSONable):
     """
     Class storing the complete description of a Symbol.
@@ -113,7 +116,7 @@ class Symbol(MSONable):
             return '{} tensor'.format(self.shape)
 
     @property
-    def unit_as_string(self) -> str:
+    def unit_as_string(self):
         """
         Returns: unit of property as human-readable string
         """
@@ -131,7 +134,7 @@ class Symbol(MSONable):
         return unit_str
 
     @property
-    def compatible_units(self) -> List[str]:
+    def compatible_units(self):
         """
         Returns: list of compatible units as strings
         """
@@ -163,7 +166,7 @@ class Symbol(MSONable):
     def __hash__(self):
         return self.name.__hash__()
 
-    def to_yaml(self) -> str:
+    def to_yaml(self):
 
         data = {
             "name": self.name,
