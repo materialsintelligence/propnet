@@ -10,11 +10,12 @@ from propnet.models import DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
-from propnet.core.materials import Material
+from propnet.core.materials import Material, SuperMaterial
 import logging
 from itertools import chain, product
 
 logger = logging.getLogger("graph")
+
 
 # TODO: reconsider polymorphism
 class Graph(object):
@@ -36,22 +37,22 @@ class Graph(object):
     values of connected properties on demand.
 
     Attributes:
+
         _symbol_types ({str: Symbol}): data structure mapping Symbol name to Symbol object.
-        _models ({str: Symbol}): data structure mapping Model name to Model object.
-        _materials ({Material}):    data structure storing the set of all materials present on the graph.
+        _models ({str: Model}): data structure mapping Model name to Model object.
         _input_to_model ({Symbol: {Model}}): data structure mapping Symbol inputs to a set of corresponding Model
                                              objects that input that Symbol.
         _output_to_model ({Symbol: {Model}}): data structure mapping Symbol outputs to a set of corresponding Model
                                               objects that output that Symbol.
-        _symbol_to_quantity ({Symbol: {Quantity}}): data structure mapping Symbols to a list of corresponding Quantity
-                                                    objects of that type.
+
+        _super_models ({str: SuperModel}): data structure mapping SuperModel name to SuperModel object.
 
 
     *** Dictionaries can be searched by supplying Symbol objects or Strings as to their names.
 
     """
 
-    def __init__(self, models=None, symbol_types=None):
+    def __init__(self, models=None, super_models=None, symbol_types=None):
         """
         Creates a Graph instance
         """
@@ -67,6 +68,7 @@ class Graph(object):
         # create the graph
         self._symbol_types = dict()
         self._models = dict()
+        self._super_models = dict()
         self._input_to_model = DefaultDict(set)
         self._output_to_model = DefaultDict(set)
 
@@ -203,6 +205,54 @@ class Graph(object):
         """
         to_return = set()
         for model in self._models.values():
+            to_return.add(model)
+        return to_return
+
+    def update_super_models(self, super_models):
+        """
+        Add / redefine user-defined super_models to the graph.
+        If the input, super_models, includes keys in self._super_models, they are redefined.
+        The addition of a super_model may fail if appropriate Symbol objects are not already on the graph.
+        If any addition operation fails, the entire update is aborted.
+        Args:
+            super_models (dict<str, SuperModel>): Instances of the SuperModel class
+        Returns:
+            None
+        """
+        added = {}
+        for model in super_models.values():
+            self._super_models[model.name] = model
+            added[model.name] = model
+            for d in model.type_connections:
+                try:
+                    symbol_inputs = [self._symbol_types[symb_str] for symb_str in d['inputs']]
+                    symbol_outputs = [self._symbol_types[symb_str] for symb_str in d['outputs']]
+                except KeyError as e:
+                    self.remove_super_models(added)
+                    raise KeyError('Attempted to add a model to the property network with an unrecognized Symbol.\
+                                            Add {} Symbol to the property network before adding this model.'.format(e))
+
+    def remove_super_models(self, super_models):
+        """
+        Remove user-defined models from the Graph.
+        Args:
+            super_models (dict<str, SuperModel>): Instances of the SuperModel class
+        Returns:
+            None
+        """
+        for model in super_models.keys():
+            if model not in self._super_models.keys():
+                raise Exception("Attempted to remove a model not currently present in the graph.")
+            del self._super_models[model]
+
+    def get_super_models(self):
+        """
+        Getter method, returns a set of all model objects present on the graph.
+        Returns:
+            (set<Model>)
+        """
+        to_return = set()
+        for model in self._super_models.values():
             to_return.add(model)
         return to_return
 
@@ -550,6 +600,112 @@ class Graph(object):
         toReturn = Material()
         toReturn._symbol_to_quantity = quantity_pool
         return toReturn
+
+    def super_evaluate(self, material, property_type=None):
+        """
+        Given a SuperMaterial object as input, creates a new SuperMaterial object to include all derivable properties.
+        Returns a reference to the new, augmented SuperMaterial object.
+
+        Optional argument limits the scope of which models or properties are tested.
+            property_type parameter: produces output from models only if all input properties are in the list.
+
+        Args:
+            material (SuperMaterial): which material's properties will be expanded.
+            property_type (set<Symbol>): optional limit on which Symbols will be considered as input.
+        Returns:
+            (Material) reference to the newly derived material object.
+        """
+
+        if not isinstance(material, SuperMaterial):
+            raise Exception("material provided is not a SuperMaterial: " + str(type(material)))
+
+        # Evaluate material's sub-materials
+
+        evaluated_materials = set()
+        for m in material.materials:
+            logger.debug("Evaluating sub-material: " + str(id(m)))
+            if isinstance(m, SuperMaterial):
+                evaluated_materials.add(self.super_evaluate(m, property_type=property_type))
+            else:
+                evaluated_materials.add(self.evaluate(m, property_type=property_type))
+
+        # Run all SuperModels in the graph on this SuperMaterial if a material mapping can be established.
+        # Store any derived quantities.
+
+        all_quantities = DefaultDict(set)
+        for (k,v) in material._symbol_to_quantity:
+            all_quantities[k].add(v)
+
+        logger.debug("Evaluating SuperMaterial")
+
+        for model in self._super_models.values():
+
+            logger.debug("\tEvaluating Model: " + m.name)
+
+            # Check to see if a valid material_mapping can be established.
+
+            mat_mapping = m.material_mapping(material)
+            if not mat_mapping:
+                logger.debug("\t\tEvaluation failed: no valid material mapping.")
+                continue
+
+            # Go through input sets
+
+            inputs = model.gen_evaluation_lists()
+            for l in inputs:
+
+                logger.debug("\t\tGenerating input sets for: " + str(l))
+
+                # Create a quantity pool from the appropriate materials.
+                # Modify inputs for use in generate_input_sets
+
+                temp_pool = DefaultDict(set)
+                new_spec = []
+                for pair in l[1]:
+                    for p_material in pair[1]:
+                        for q in p_material._symbol_to_quantity[pair[0]]:
+                            temp_pool[q._symbol_type].add(q)
+                    new_spec.append(pair[0])
+                input_sets = self.generate_input_sets(l[0], new_spec, temp_pool)
+
+                for input_set in input_sets:
+
+                    logger.debug("\t\t\tEvaluating input set: " + str(input_set))
+
+                    # Check if input_set can be evaluated -- input_set must pass the necessary model constraints
+
+                    if not model.check_constraints(input_set):
+                        logger.debug("\t\t\tInput set failed -- did not pass model constraints.")
+                        continue
+
+                    # Try to evaluate input_set:
+
+                    evaluate_set = dict()
+                    for symbol, quantity in input_set.items():
+                        evaluate_set[symbol] = quantity.value
+                    output = model.evaluate(evaluate_set)
+                    if not output['successful']:
+                        logger.debug("\t\t\tInput set failed -- did not produce a successful output.")
+                        continue
+
+                    # input_set led to output from the Model -- add output to the SuperMaterial
+
+                    logger.debug("\t\t\tInput set produced successful output.")
+
+                    for symbol, quantity in output.items():
+                        st = self._symbol_types.get(
+                            model.symbol_mapping.get(symbol))
+                        if not st:
+                            logger.debug("\t\t\tUnrecognized symbol_type in the output: " + str(symbol))
+                            continue
+                        q = Quantity(st, quantity)
+                        all_quantities[st].add(q)
+                        logger.debug("\t\t\tNew output: " + str(q))
+
+        # Evaluate the SuperMaterial's quantities and return the result.
+        to_return = SuperMaterial(evaluated_materials)
+        to_return._symbol_to_quantity = all_quantities
+        return self.evaluate(to_return)
 
 
 class SymbolPath(object):

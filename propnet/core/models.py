@@ -4,6 +4,7 @@ Module containing classes and methods for Model functionality in Propnet code.
 
 # typing information, for type hinting only
 from typing import *
+from abc import abstractmethod
 
 import numpy as np
 
@@ -232,7 +233,7 @@ class AbstractModel:
     def gen_evaluation_lists(self):
         """
         Convenience method.
-        Returns (list<tuple<list<str>>, list<str>>>))
+        Returns (list<(list<str>, list<str>)>))
                 gives corresponding sets of model input symbols and input Symbol objects.
         """
         to_return = []
@@ -534,3 +535,36 @@ model.evaluate({{
            )
 
         return example_code
+
+class AbstractSuperModel(AbstractModel):
+    """
+    Extension of AbstractModel to handle additional fields in the case of evaluating a model
+    with multiple Materials as an input to that model.
+
+    Contains fields of AbstractModel, plus the following modifications:
+        (str) material_mapping -> (dict<str,Material>) Material objects coupled as input to the SuperModel
+        (str) symbol_mapping -> (dict<str,(str,{str})>) keys are symbols used in equations of the model,
+                                                        values are a tuple with
+                                                          1) Symbol enum values (Symbol.name field)
+                                                          2) set of labels corresponding to a Material object labels,
+                                                             dictating from which materials the symbol's value can be
+                                                             drawn.
+                                                          2* If a symbol is to be drawn from
+    """
+
+    @abstractmethod
+    def material_mapping(self, super_material):
+        """
+        Method given a set of Materials objects, creates the material_mapping dictionary, assigning labels
+        to Materials as appropriate.
+
+        Labels assigned to materials must correspond to materials labels appearing in symbol_mapping.
+        A matching label means that the material holds the target Symbol.
+
+        Args:
+            materials (SuperMaterial): SuperMaterial containing candidate materials that can be plugged in to the model.
+        Returns:
+            (dict<str, Material>) OR None
+                dictionary mapping String labels to Material objects or None if the mapping was unsuccessful.
+        """
+        pass
