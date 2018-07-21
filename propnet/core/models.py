@@ -2,20 +2,24 @@
 Module containing classes and methods for Model functionality in Propnet code.
 """
 
-import numpy as np
 import os
 from abc import ABC, abstractmethod
 from itertools import chain
+from glob import glob
 
 from monty.serialization import loadfn
 from monty.json import MSONable
+import numpy as np
 
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
-from propnet.symbols import DEFAULT_SYMBOLS
 from propnet import ureg
 from propnet.core.exceptions import ModelEvaluationError
+
+# TODO: maybe this should go somewhere else, like a dedicated settings.py
+TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
+                             "models", "test_data")
 
 # General TODOs:
 # TODO: Constraints are really just models that output True/False
@@ -121,10 +125,12 @@ class Model(ABC):
         # check we support this combination of inputs
         input_matches = [set(input_set) == available_symbols
                          for input_set in self.input_sets]
+        # TODO: Remove the try-except functionality, high priority
         if not any(input_matches):
             return {
                 'successful': False,
-                'message': "The {} model cannot generate any outputs for these inputs: {}".format(
+                'message': "The {} model cannot generate any outputs for "
+                           "these inputs: {}".format(
                     self.name, available_symbols)
             }
         try:
@@ -144,8 +150,18 @@ class Model(ABC):
             out[key] = ureg.Quantity(out[key], self.unit_map[key])
         return out
 
-    # TODO: these could be more descriptively named, maybe input_sets
-    #       vs. all_inputs
+    @property
+    def title(self):
+        """
+        Fancy formatted name, removes underscores and capitalizes
+        all words of name
+
+        Returns (str):
+            formatted title, e. g. "band_gap_refractive_index"
+            becomes "Band Gap Refractive Index"
+        """
+        return self.name.replace('_', ' ').title()
+
     @property
     def input_sets(self):
         return [set(d['inputs']) for d in self.connections]
@@ -175,21 +191,97 @@ class Model(ABC):
             inputs (dict): set of input names to values
             outputs (dict): set of output names to values
         """
-        model_outputs = self.evaluate(inputs)
+        model_outputs = self.plug_in(inputs)
         for k, known_output in outputs.items():
-            if not model_outputs == known_output:
+            if not np.allclose(model_outputs[k], known_output):
                 raise ModelEvaluationError(
                     "Model output does not match known output for {}".format(
                         self.name))
         return True
 
-    def validate_from_test_data(self):
+    def validate(self):
         """
         Validates from test data based on the model name
 
         Returns:
             True if validation completes successfully
         """
+        test_datasets = self.load_test_data(self.name)
+        for test_dataset in test_datasets:
+            self.test(**test_dataset)
+        return True
+
+    @staticmethod
+    def load_test_data(name, test_data_loc=TEST_DATA_LOC):
+        """
+        Loads test data from preset or specified directory.
+        Finds a json or yaml file with the prefix "name" and
+        loads it.
+
+        Args:
+            name (str): name for test data to load
+            test_data_loc (str): directory location for test data
+
+        Returns (dict):
+            Dictionary of test data
+        """
+        filelist = glob(os.path.join(test_data_loc, "{}.*".format(name)))
+        # Raise error if 0 files or more than 1 file
+        if len(filelist) != 1:
+            raise ValueError("{} test data files for {}".format(
+                len(filelist), name))
+        return loadfn(filelist[0])
+
+    @property
+    def example_code(self):
+        """
+        Generates example code from test data, useful for
+        documentation.
+
+        Returns: example code for this model
+
+        """
+        test_data = self.load_test_data(self.name)
+
+
+        example_inputs = test_data[0]['inputs']
+        example_outputs = str(test_data[0]['outputs'])
+
+        symbol_definitions = []
+        evaluate_args = []
+        for input_name, input_value in example_inputs.items():
+
+            symbol_str = "{input_name} = {input_value}".format(
+                input_name=input_name,
+                input_value=input_value,
+            )
+            symbol_definitions.append(symbol_str)
+
+            evaluate_str = "\t'{}': {}".format(input_name, input_name)
+            evaluate_args.append(evaluate_str)
+
+        symbol_definitions = '\n'.join(symbol_definitions)
+        evaluate_args = '\n'.join(evaluate_args)
+
+        example_code = CODE_EXAMPLE_TEMPLATE.format(
+            model_name=self.name,
+            symbol_definitions=symbol_definitions,
+            evaluate_args=evaluate_args,
+            example_outputs=example_outputs)
+
+        return example_code
+
+
+CODE_EXAMPLE_TEMPLATE = """
+from propnet.models import load_default_model
+
+{symbol_definitions}
+
+model = load_default_model("{model_name}")
+model.evaluate({{
+{evaluate_args}
+}})  # returns {example_outputs}
+"""
 
 
 class EquationModel(Model, MSONable):
@@ -249,13 +341,6 @@ class EquationModel(Model, MSONable):
         else:
             return cls.from_dict(model)
 
-    @classmethod
-    def from_preset(cls, name):
-        """Loads from preset library of models"""
-        loc = os.path.join("..", "models", "{}.yaml".format(name))
-        if os.path.isfile(loc):
-            return cls.from_file(loc)
-
 
 class PyModel(Model):
     """
@@ -272,7 +357,7 @@ class PyModel(Model):
             categories, references, symbol_map)
 
     def plug_in(self, symbol_value_dict):
-        return self._plug_in(symbol_value_dict)
+        return self._plug_in(**symbol_value_dict)
 
 
 # Note that this class exists purely as a factory method for PyModel

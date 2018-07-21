@@ -27,46 +27,44 @@ class ModelTest(unittest.TestCase):
                 self.fail('Failed to load model {}: {}'.format(model_name, e))
 
     def test_model_formatting(self):
-
         # TODO: clean up tests (self.assertNotNone), test reference format too
-
         for m in DEFAULT_MODELS:
-            m = m()
-            self.assertTrue(m.name is not None and m.name.isidentifier())
-            self.assertTrue(m.title is not None and m.title != 'undefined')
-            self.assertTrue(m.tags is not None)
-            self.assertTrue(m.description is not None)
-            self.assertTrue(m.symbol_mapping is not None and isinstance(m.symbol_mapping, dict) and
-                            len(m.symbol_mapping.keys()) > 0)
-            for key in m.symbol_mapping.keys():
+            self.assertIsNotNone(m.name)
+            self.assertIsNotNone(m.categories)
+            self.assertIsNotNone(m.description)
+            self.assertIsNotNone(m.symbol_map)
+            self.assertTrue(isinstance(m.symbol_map, dict))
+            self.assertTrue(len(m.symbol_map.keys()) > 0)
+            for key in m.symbol_map.keys():
                 self.assertTrue(isinstance(key, str),
-                                'Invalid symbol_mapping key: ' + str(key))
-                self.assertTrue(isinstance(m.symbol_mapping[key], str) and
-                                m.symbol_mapping[key] in DEFAULT_SYMBOL_TYPE_NAMES)
+                                'Invalid symbol_map key: ' + str(key))
+                self.assertTrue(isinstance(m.symbol_map[key], str) and
+                                m.symbol_map[key] in DEFAULT_SYMBOL_TYPE_NAMES)
             self.assertTrue(m.connections is not None and isinstance(m.connections, list)
                             and len(m.connections) > 0)
             for item in m.connections:
-                self.assertTrue(item is not None)
-                self.assertTrue(isinstance(item, dict) and 'inputs' in item.keys() and 'outputs' in item.keys())
-                self.assertTrue(item['inputs'] is not None and item['outputs'] is not None)
-                self.assertTrue(isinstance(item['inputs'], list) and isinstance(item['outputs'], list))
-                self.assertTrue(len(item['inputs']) > 0 and len(item['outputs']) > 0)
+                self.assertIsNotNone(item)
+                self.assertTrue(isinstance(item, dict))
+                self.assertTrue('inputs' in item.keys())
+                self.assertTrue('outputs' in item.keys())
+                self.assertIsNotNone(item['inputs'])
+                self.assertIsNotNone(item['outputs'])
+                self.assertTrue(isinstance(item['inputs'], list))
+                self.assertTrue(isinstance(item['outputs'], list))
+                self.assertTrue(len(item['inputs']) > 0)
+                self.assertTrue(len(item['outputs']) > 0)
                 for in_symb in item['inputs']:
-                    self.assertTrue(in_symb is not None and isinstance(in_symb, str))
-                    self.assertTrue(in_symb in m.symbol_mapping.keys())
+                    self.assertIsNotNone(in_symb)
+                    self.assertTrue(isinstance(in_symb, str))
+                    self.assertTrue(in_symb in m.symbol_map.keys())
                 for out_symb in item['outputs']:
-                    self.assertTrue(out_symb is not None and isinstance(out_symb, str))
-                    self.assertTrue(out_symb in m.symbol_mapping.keys())
+                    self.assertIsNotNone(out_symb)
+                    self.assertIsNotNone(isinstance(out_symb, str))
+                    self.assertTrue(out_symb in m.symbol_map.keys())
 
-    def test_evaluate(self):
-        test_data = glob(os.path.join(os.path.dirname(__file__), '../../models/test_data/*.json'))
-        for f in test_data:
-            model_name = os.path.splitext(os.path.basename(f))[0]
-            if model_name in DEFAULT_MODEL_NAMES:
-                model = getattr(models, model_name)()
-                self.assertTrue(model.test())
-            elif '_' != model_name[0]:
-                raise ValueError("Model matching test data not found: {}".format(model_name))
+    def test_validate_all_models(self):
+        for model in DEFAULT_MODELS:
+            self.assertTrue(model.validate())
 
     def test_unit_handling(self):
         """
@@ -87,7 +85,7 @@ class ModelTest(unittest.TestCase):
             # 'symbol_map': {'l1': 'l', 'l2': 'l', 'a': 'a'},
             'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
             'equations': ['a - l1 * l2'],
-            'unit_map': {'l1': "cm", 'a': "cm^2"}
+            'unit_map': {'l1': "cm", "l2": "cm", 'a': "cm^2"}
         }
         model = EquationModel(**get_area_config)
         out = model.evaluate({'l1': 1 * ureg.Quantity.from_tuple([1.0, [['meter', 1.0]]]),
@@ -98,27 +96,19 @@ class ModelTest(unittest.TestCase):
 
     def test_example_code_helper(self):
 
-        example_model = models.SemiEmpiricalMobility()
+        example_model = DEFAULT_MODEL_DICT['semiempirical_mobility']
 
-        example_code = """from propnet.models import SemiEmpiricalMobility
+        # TODO: this is ugly, any way to fix it?
+        example_code = """
+from propnet.models import load_default_model
 
-K = 64  # bulk_modulus in 1.0 gigapascal
-m_e = 0.009  # electron_effective_mass in 1.0 dimensionless
+K = 64
+m_e = 0.009
 
-model = SemiEmpiricalMobility()
+model = load_default_model("semiempirical_mobility")
 model.evaluate({
 \t'K': K
 \t'm_e': m_e
 })  # returns {'mu_e': 8994.92312225673}
 """
-
-        self.assertEqual(example_model._example_code, example_code)
-
-# class ModelTest(unittest.TestCase):
-#     def setUp(self):
-#         pass
-#
-#     def test_init(self):
-#
-#     def tearDown(self):
-#         pass
+        self.assertEqual(example_model.example_code, example_code)

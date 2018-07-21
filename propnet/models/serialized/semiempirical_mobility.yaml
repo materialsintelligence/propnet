@@ -1,0 +1,23 @@
+name: semiempirical_mobility
+categories:
+  - electronic
+  - empirical
+references:
+  - "doi:10.1039/C4EE03157A"
+symbol_map:
+  m_e: electron_effective_mass
+  K: bulk_modulus
+  mu_e: electron_mobility
+connections:
+- inputs:
+    - m_e
+    - K
+  outputs:
+    - mu_e
+equations:
+  - mu_e - 1E9 * 1E4 * 1.2E-14 * K**1 * m_e**-1.5
+description: |
+  The electron mobility is difficult to model purely from first principles.
+  This is a semi-empirical model to approximate the electron mobility based on the bulk modulus and the electron
+  effective mass - two quantities that are readily accessible from first-principles calculations.
+  The accuracy for band conductors is typically within half an order of magnitude.

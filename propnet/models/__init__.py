@@ -22,3 +22,7 @@ for _, module_name, _ in modules:
 
 DEFAULT_MODEL_DICT = {d.name: d for d in DEFAULT_MODELS}
 DEFAULT_MODEL_NAMES = list(DEFAULT_MODEL_DICT.keys())
+
+# Convenience function for loading a specific model by name
+def load_default_model(name):
+    return DEFAULT_MODEL_DICT[name]
