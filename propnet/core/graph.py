@@ -78,6 +78,9 @@ class Graph(object):
         if models:
             self.update_models(models)
 
+        if super_models:
+            self.update_super_models(super_models)
+
     def __str__(self):
         """
         Returns a full summary of the graph in terms of the SymbolTypes, Symbols, Materials, and Models
@@ -225,8 +228,8 @@ class Graph(object):
             added[model.name] = model
             for d in model.type_connections:
                 try:
-                    symbol_inputs = [self._symbol_types[symb_str] for symb_str in d['inputs']]
-                    symbol_outputs = [self._symbol_types[symb_str] for symb_str in d['outputs']]
+                    symbol_inputs = [self._symbol_types[symb_str[0]] for symb_str in d['inputs']]
+                    symbol_outputs = [self._symbol_types[symb_str[0]] for symb_str in d['outputs']]
                 except KeyError as e:
                     self.remove_super_models(added)
                     raise KeyError('Attempted to add a model to the property network with an unrecognized Symbol.\
@@ -621,13 +624,13 @@ class Graph(object):
 
         # Evaluate material's sub-materials
 
-        evaluated_materials = set()
+        evaluated_materials = list()
         for m in material.materials:
             logger.debug("Evaluating sub-material: " + str(id(m)))
             if isinstance(m, SuperMaterial):
-                evaluated_materials.add(self.super_evaluate(m, property_type=property_type))
+                evaluated_materials.append(self.super_evaluate(m, property_type=property_type))
             else:
-                evaluated_materials.add(self.evaluate(m, property_type=property_type))
+                evaluated_materials.append(self.evaluate(m, property_type=property_type))
 
         # Run all SuperModels in the graph on this SuperMaterial if a material mapping can be established.
         # Store any derived quantities.
@@ -636,15 +639,18 @@ class Graph(object):
         for (k,v) in material._symbol_to_quantity:
             all_quantities[k].add(v)
 
+        to_return = SuperMaterial(evaluated_materials)
+        to_return._symbol_to_quantity = all_quantities
+
         logger.debug("Evaluating SuperMaterial")
 
         for model in self._super_models.values():
 
-            logger.debug("\tEvaluating Model: " + m.name)
+            logger.debug("\tEvaluating Model: " + model.name)
 
             # Check to see if a valid material_mapping can be established.
 
-            mat_mapping = m.material_mapping(material)
+            mat_mapping = model.material_mapping(to_return)
             if not mat_mapping:
                 logger.debug("\t\tEvaluation failed: no valid material mapping.")
                 continue
@@ -663,9 +669,9 @@ class Graph(object):
                 new_spec = []
                 for pair in l[1]:
                     for p_material in pair[1]:
-                        for q in p_material._symbol_to_quantity[pair[0]]:
-                            temp_pool[q._symbol_type].add(q)
-                    new_spec.append(pair[0])
+                        for q in mat_mapping[p_material]._symbol_to_quantity[pair[0]]:
+                            temp_pool[pair].add(q)
+                    new_spec.append(pair)
                 input_sets = self.generate_input_sets(l[0], new_spec, temp_pool)
 
                 for input_set in input_sets:
@@ -693,18 +699,18 @@ class Graph(object):
                     logger.debug("\t\t\tInput set produced successful output.")
 
                     for symbol, quantity in output.items():
-                        st = self._symbol_types.get(
-                            model.symbol_mapping.get(symbol))
+                        st_out = model.symbol_mapping.get(symbol)
+                        if isinstance(st_out, tuple):
+                            st_out = st_out[0]
+                        st = self._symbol_types.get(st_out)
                         if not st:
                             logger.debug("\t\t\tUnrecognized symbol_type in the output: " + str(symbol))
                             continue
                         q = Quantity(st, quantity)
-                        all_quantities[st].add(q)
+                        to_return._symbol_to_quantity[st].add(q)
                         logger.debug("\t\t\tNew output: " + str(q))
 
         # Evaluate the SuperMaterial's quantities and return the result.
-        to_return = SuperMaterial(evaluated_materials)
-        to_return._symbol_to_quantity = all_quantities
         return self.evaluate(to_return)
 
 

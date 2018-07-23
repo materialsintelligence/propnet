@@ -49,8 +49,7 @@ class Symbol(MSONable):
             display_symbols (list<str>): list of strings giving possible human-readable symbols
             for the property.
             shape (id): list giving the order of the tensor as the length, and number of
-            dimensions as individual
-                            integers in the list.
+            dimensions as individual integers in the list.
             comment (str): any useful information on the property including its definitions and
             possible citations.
             category (str): 'property', if a property of a material, or 'condition' for other

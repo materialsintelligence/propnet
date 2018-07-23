@@ -17,6 +17,7 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 from propnet.symbols import DEFAULT_SYMBOLS
+from propnet.core.symbols import Symbol
 from propnet import logger, ureg
 from propnet.core.utils import uuid, references_to_bib
 from propnet.core.exceptions import ModelEvaluationError, IncompleteData
@@ -88,7 +89,7 @@ class AbstractModel:
         unit_mapping (dict<str,Pint.unit>): mapping from symbols used in the model to their corresponding units.
     """
 
-    def __init__(self, metadata=None, symbol_types=None, additional_symbols=None):
+    def __init__(self, metadata=None, symbol_types=None):
         """
         Constructs a Model object with the provided metadata.
 
@@ -99,10 +100,6 @@ class AbstractModel:
         Args:
             metadata (dict<str,id>): metadata defining the model.
         """
-
-        if additional_symbols:
-            symbol_types = {symbol.name: symbol for symbol in symbol_types}
-            DEFAULT_SYMBOLS.update(symbol_types)
 
         if symbol_types is None:
             symbol_types = DEFAULT_SYMBOLS
@@ -121,6 +118,8 @@ class AbstractModel:
         # retrieve units for each symbol
         self.unit_mapping = {}
         for symbol, name in self.symbol_mapping.items():
+            if isinstance(name, tuple):
+                name = name[0]
             self.unit_mapping[symbol] = symbol_types[name].units
 
     # Suite of getter methods returning appropriate model data.
@@ -177,17 +176,6 @@ class AbstractModel:
         refs = self._metadata.get('references', [])
 
         return references_to_bib(refs)
-
-    @property
-    def uuid(self):
-        """
-        A unique model identifier, function of model class name.
-        """
-        return uuid(self.__class__.__name__.encode('utf-8'))
-
-    @property
-    def model_id(self):
-        return self.uuid
 
     @property
     def symbol_mapping(self) -> Dict[str, str]:
@@ -312,8 +300,6 @@ class AbstractModel:
         """
         return True
 
-
-
     @property
     def equations(self):
         """
@@ -403,7 +389,7 @@ class AbstractModel:
 
 
     def __hash__(self):
-        return self.uuid.__hash__()
+        return self.name.__hash__()
 
     def __eq__(self, other):
         return self.model_id == getattr(other, "model_id", None)
