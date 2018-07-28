@@ -212,6 +212,14 @@ class Model(ABC):
     def all_properties(self):
         return self.all_inputs + self.all_outputs
 
+    # TODO: I think this should be merged with input_sets
+    #       maybe called relevant properties or something
+    @property
+    def evaluation_list(self):
+        return [list(input_set) + self.constraint_properties
+                for input_set in self.input_sets]
+
+
     def test(self, inputs, outputs):
         """
         Runs a test of the model to determine whether its operation

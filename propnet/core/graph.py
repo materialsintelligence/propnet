@@ -183,18 +183,17 @@ class Graph:
         for model in models.values():
             self._models[model.name] = model
             added[model.name] = model
-            for d in model.type_connections:
-                try:
-                    symbol_inputs = [self._symbol_types[symb_str] for symb_str in d['inputs']]
-                    symbol_outputs = [self._symbol_types[symb_str] for symb_str in d['outputs']]
-                    for symbol in symbol_inputs:
-                        self._input_to_model[symbol].add(model)
-                    for symbol in symbol_outputs:
-                        self._output_to_model[symbol].add(model)
-                except KeyError as e:
-                    self.remove_models(added)
-                    raise KeyError('Attempted to add a model to the property network with an unrecognized Symbol.\
-                                    Add {} Symbol to the property network before adding this model.'.format(e))
+            try:
+                for input_set in model.input_sets:
+                    for property in input_set:
+                        self._input_to_model[property].add(model)
+                for output_set in model.output_sets:
+                    for property in output_set:
+                        self._output_to_model[property].add(model)
+            except KeyError as e:
+                self.remove_models(added)
+                raise KeyError('Attempted to add a model to the property network with an unrecognized Symbol.\
+                                Add {} Symbol to the property network before adding this model.'.format(e))
 
     def remove_models(self, models):
         """
@@ -369,6 +368,8 @@ class Graph:
         to_remove = set()
 
         has_changed = True
+
+        # TODO: revisit this, looks a bit too complicated
         while has_changed:
             # Add any new models to investigate.
             for m in to_add:
@@ -383,7 +384,7 @@ class Graph:
             for m in c_models:
                 # Check if model can add a new Symbols
                 can_contribute = False
-                for s in m.output_symbol_types:
+                for s in m.all_outputs:
                     if s not in working:
                         can_contribute = True
                         break
@@ -399,9 +400,9 @@ class Graph:
                 if not has_inputs:
                     continue
                 # Check if any model input sets are met.
-                for d in m.type_connections:
+                for input_set in m.input_sets:
                     has_inputs = True
-                    for s in d['inputs']:
+                    for s in input_set:
                         if s not in working:
                             has_inputs = False
                             break
@@ -409,7 +410,8 @@ class Graph:
                         continue
                     # Check passed -- add model outputs to the available properties.
                     #              -- add any new models working with these newly available properties
-                    for s in d['outputs']:
+                for output_set in m.output_sets:
+                    for s in output_set:
                         if s not in working:
                             for new_model in self._input_to_model[s]:
                                 if new_model not in all_models:
@@ -647,7 +649,7 @@ class Graph:
                 logger.debug("Evaluating model {}".format(model.title))
                 logger.debug("Quantity pool contains {} quantities:".format(
                     len(list(chain.from_iterable(quantity_pool.values())))))
-                inputs = model.gen_evaluation_lists()
+                inputs = model.evaluation_list
                 for l in inputs:
                     logger.debug("Generating input sets")
                     input_sets = gen_input_sets(l[0], l[1], quantity_pool)

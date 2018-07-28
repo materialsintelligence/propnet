@@ -91,15 +91,16 @@ class GraphTest(unittest.TestCase):
         self.assertTrue(m_c == m_g,
                         'Canonical constructed graph does not have the right Model objects.')
         for m in models.values():
-            for d in m.type_connections:
-                for s in d['inputs']:
+            for input_set in m.input_sets:
+                for s in input_set:
                     self.assertTrue(symbols[s] in g._input_to_model.keys(),
                                     "Canonical constructed graph does not have an edge from input: " + s +
                                     " to model: " + m.name)
                     self.assertTrue(m in g._input_to_model[s],
                                     "Canonical constructed graph does not have an edge from input: " + s +
                                     " to model: " + m.name)
-                for s in d['outputs']:
+            for output_set in m.output_sets:
+                for s in output_set:
                     self.assertTrue(symbols[s] in g._output_to_model.keys(),
                                     "Canonical constructed graph does not have an edge from input: " + s +
                                     " to model: " + m.name)
