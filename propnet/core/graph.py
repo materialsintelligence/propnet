@@ -92,8 +92,9 @@ class Graph:
 
     def __str__(self):
         """
-        Returns a full summary of the graph in terms of the SymbolTypes, Symbols, Materials, and Models
-        that it contains. Connections are shown as nesting within the printout.
+        Returns a full summary of the graph in terms of the SymbolTypes,
+        Symbols, Materials, and Models that it contains. Connections are
+        shown as nesting within the printout.
 
         Returns:
             (str) representation of this Graph object.

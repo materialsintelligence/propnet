@@ -3,6 +3,7 @@ Module containing classes and methods for Model functionality in Propnet code.
 """
 
 import os
+import re
 from abc import ABC, abstractmethod
 from itertools import chain
 from glob import glob
@@ -47,7 +48,14 @@ class Model(ABC):
             the model
         references ([str]): list of the informational links
             explaining / supporting the model
-
+        symbol_map ({str: str}): mapping of symbols enumerated
+            in the plug-in method to canonical symbols, e. g.
+            {"n": "index_of_refraction"} etc.
+        unit_map ({str: str}): mapping of units to be used
+            in model before evaluation of plug_in
+        constraints ([Constraint or str]): constraints to be attached to
+            the model, can be a list of Constraint objects or strings to
+            be parsed into constraint objects
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None,
@@ -59,7 +67,7 @@ class Model(ABC):
         self.references = references
         self.constraints = constraints
         # If no symbol map specified, use inputs/outputs
-        self.symbol_map = symbol_map
+        self.symbol_map = symbol_map or {}
         self.unit_map = unit_map or {}
         # This basically dictates that the unit map should be
         # consistent with the plug-in or model symbols, hopefully
