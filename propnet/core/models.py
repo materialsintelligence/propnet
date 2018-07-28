@@ -93,6 +93,24 @@ class Model(ABC):
         """
         return
 
+    # TODO: this could be a decorator
+    def remap_symbols(self, symbol_value_dict):
+        """
+        Helper method to remap symbols based on symbol map attribute
+
+        Args:
+            symbol_value_dict ({symbol: value}): a mapping
+                of symbols to values to be remapped
+
+        Returns:
+            remapped symbol_value_dict
+
+        """
+        output_dict = symbol_value_dict.copy()
+        for old_symbol, new_symbol in self.symbol_map.items():
+            output_dict[new_symbol] = output_dict.pop(old_symbol)
+        return output_dict
+
     # TODO: I'm really not crazy about the "successful" key implementation
     #       preventing model failure using try/except is the path to
     #       the dark side
@@ -115,9 +133,7 @@ class Model(ABC):
             substitution succeeds
         """
         # Remap symbols and units if symbol map isn't none
-        if self.symbol_map:
-            symbol_value_dict = {self.symbol_map[symbol]: value
-                                 for symbol, value in symbol_value_dict.items()}
+        symbol_value_dict = self.remap_symbols(symbol_value_dict)
 
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
@@ -180,11 +196,11 @@ class Model(ABC):
 
     @property
     def all_inputs(self):
-        return list(chain.from_iterable(self.inputs))
+        return list(chain.from_iterable(self.input_sets))
 
     @property
     def all_outputs(self):
-        return list(chain.from_iterable(self.outputs))
+        return list(chain.from_iterable(self.output_sets))
 
     @property
     def all_symbols(self):
@@ -207,7 +223,7 @@ class Model(ABC):
                         self.name))
         return True
 
-    def validate(self):
+    def validate_from_preset_test(self):
         """
         Validates from test data based on the model name
 
@@ -299,12 +315,13 @@ class EquationModel(Model, MSONable):
 
     Args:
         name (str): title of the model
-        connections (dict): list of connections dictionaries,
+        equations ([str]): list of string equations to parse
+        connections ([dict]): list of connections dictionaries,
             which take the form {"inputs": [Symbols], "outputs": [Symbols]},
             for example:
             connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
                            {"inputs": ["T", "V"], "outputs": ["p"]}]
-        constraints (str): title
+        constraints (str): constraints on models
         description (str): long form description of the model
         categories (str): list of categories applicable to
             the model
