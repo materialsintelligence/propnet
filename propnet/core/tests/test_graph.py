@@ -2,7 +2,7 @@ import unittest
 from propnet.core.graph import Graph, SymbolPath
 from propnet.core.materials import Material
 from propnet.core.symbols import Symbol
-from propnet.core.models import AbstractModel
+from propnet.core.models import EquationModel, PyModel
 from propnet.core.quantity import Quantity
 
 from propnet.symbols import DEFAULT_SYMBOLS
@@ -37,97 +37,27 @@ class GraphTest(unittest.TestCase):
         Returns: (dict<str, Model>)
         """
 
-        class Model1 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model1', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'A': 'A',
-                                         'B': 'B',
-                                         'C': 'C'
-                                        },
-                      'connections': [{'inputs': ['A'],
-                                       'outputs': ['B', 'C']
-                                      }],
-                      'equations': ['B-2*A', 'C-3*A']
-                    },
-                    symbol_types=symbol_types)
+        model1 = EquationModel(
+            name="model1", equations=['B-2*A', 'C-3*A'],
+            connections=[{'inputs': ['A'], 'outputs': ['B', 'C']}])
+        model2 = EquationModel(
+            name="model2", equations=['G-5*A'],
+            connections=[{'inputs': ['A'], 'outputs': ['G']}])
+        model3 = EquationModel(
+            name="model3", equations=['F-7*B'],
+            connections=[{'inputs': ['B'], 'outputs': ['F']}])
+        model4 = EquationModel(
+            name="model4", equations=['D-B*C*11'],
+            connections=[{'inputs': ['B', 'C'], 'outputs': ['D']}])
+        model5 = EquationModel(
+            name="model5", equations=['D-C*G*13'],
+            connections=[{'inputs': ['C', 'G'], 'outputs': ['D']}])
+        model6 = EquationModel(
+            name="model6", equations=['A-F*D*17'],
+            connections=[{'inputs': ['F', 'D'], 'outputs': ['A']}])
 
-        class Model2 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model2', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'A': 'A',
-                                         'G': 'G'
-                                        },
-                      'connections': [{'inputs': ['A'],
-                                       'outputs': ['G']
-                                      }],
-                      'equations': ['G-5*A']
-                    },
-                    symbol_types=symbol_types)
-
-        class Model3 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model3', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'B': 'B',
-                                         'F': 'F'
-                                        },
-                      'connections': [{'inputs': ['B'],
-                                       'outputs': ['F']
-                                      }],
-                      'equations': ['F-7*B']
-                    },
-                    symbol_types=symbol_types)
-
-        class Model4 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model4', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'D': 'D',
-                                         'B': 'B',
-                                         'C': 'C'
-                                        },
-                      'connections': [{'inputs': ['B', 'C'],
-                                       'outputs': ['D']
-                                      }],
-                      'equations': ['D-B*C*11']
-                    },
-                    symbol_types=symbol_types)
-
-        class Model5 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model5', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'C': 'C',
-                                         'G': 'G',
-                                         'D': 'D'
-                                        },
-                      'connections': [{'inputs': ['C', 'G'],
-                                       'outputs': ['D']
-                                      }],
-                      'equations': ['D-C*G*13']
-                    },
-                    symbol_types=symbol_types)
-
-        class Model6 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model6', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'A': 'A',
-                                         'F': 'F',
-                                         'D': 'D'
-                                        },
-                      'connections': [{'inputs': ['F', 'D'],
-                                       'outputs': ['A']
-                                      }],
-                      'equations': ['A-F*D*17']
-                    },
-                    symbol_types=symbol_types)
-
-        models = [Model1(c_symbols), Model2(c_symbols), Model3(c_symbols),
-                  Model4(c_symbols), Model5(c_symbols), Model6(c_symbols)]
-        return {x.title: x for x in models}
+        models = [model1, model2, model3, model4, model5, model6]
+        return {x.name : x for x in models}
 
     @staticmethod
     def generate_canonical_material(c_symbols):
@@ -404,35 +334,17 @@ class GraphTest(unittest.TestCase):
 
     def test_evaluate_constraints(self):
         """
-        Tests the evaluation algorithm on a non-cyclic graph involving constraints.
-        The canonical graph and the canonical material are used for this test.
+        Tests the evaluation algorithm on a non-cyclic graph involving
+        constraints.  The canonical graph and the canonical material are
+        used for this test.
         """
-        class Model4 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model4', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'D': 'D',
-                                         'B': 'B',
-                                         'C': 'C',
-                                         'G': 'G'
-                                        },
-                      'connections': [{'inputs': ['B', 'C'],
-                                       'outputs': ['D']
-                                      }],
-                      'equations': ['D-B*C*11']
-                    },
-                    symbol_types=symbol_types)
+        model4 = EquationModel(
+            name="model4", connections={"inputs": ["B", "C"], "outputs": ["D"]},
+            equations=["D-B*C*11"], constraints=["G==0"])
 
-            @property
-            def constraint_symbols(self):
-                return ['G']
-
-            def check_constraints(self, constraint_inputs):
-                return constraint_inputs['G'] == 0
-
-        symbols = GraphTest.generate_canonical_symbols()
-        models = GraphTest.generate_canonical_models(symbols)
-        models['model4'] = Model4(symbol_types=symbols)
+        symbols = self.generate_canonical_symbols()
+        models = self.generate_canonical_models(symbols)
+        models['model4'] = model4
         del models['model6']
         material = GraphTest.generate_canonical_material(symbols)
         g = Graph(materials=[material], symbol_types=symbols, models=models)
