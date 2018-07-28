@@ -7,6 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from itertools import chain
 from glob import glob
+from copy import deepcopy
 
 from monty.serialization import loadfn
 from monty.json import MSONable
@@ -37,18 +38,20 @@ class Model(ABC):
 
     Args:
         name (str): title of the model
-        connections (dict): list of connections dictionaries,
-            which take the form {"inputs": [Symbols], "outputs": [Symbols]},
-            for example:
+        connections (dict): list of connections dictionaries, which take
+            the form {"inputs": [Symbols], "outputs": [Symbols]}, e. g.:
             connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
                            {"inputs": ["T", "V"], "outputs": ["p"]}]
-        constraints (str): title
+        constraints ([str or Constraint]): string expressions or
+            Constraint objects of some condition on which the model is
+            valid, e. g. "n > 0", note that this must include symbols if
+            there is a symbol_property_map
         description (str): long form description of the model
         categories (str): list of categories applicable to
             the model
         references ([str]): list of the informational links
             explaining / supporting the model
-        symbol_map ({str: str}): mapping of symbols enumerated
+        symbol_property_map ({str: str}): mapping of symbols enumerated
             in the plug-in method to canonical symbols, e. g.
             {"n": "index_of_refraction"} etc.
         unit_map ({str: str}): mapping of units to be used
@@ -59,7 +62,7 @@ class Model(ABC):
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_map=None, unit_map=None):
+                 symbol_property_map=None, unit_map=None):
         self.name = name
         self.connections = connections
         self.description = description
@@ -67,14 +70,15 @@ class Model(ABC):
         self.references = references
         self.constraints = constraints
         # If no symbol map specified, use inputs/outputs
-        self.symbol_map = symbol_map or {}
+        self.symbol_property_map = symbol_property_map or {}
         self.unit_map = unit_map or {}
         # This basically dictates that the unit map should be
         # consistent with the plug-in or model symbols, hopefully
         # to be removed when unitization is refactored on the symbol side
-        if self.symbol_map and self.unit_map:
-            self.unit_map = {self.symbol_map.get(symbol) or symbol: value
-                             for symbol, value in self.unit_map.items()}
+        if self.symbol_property_map and self.unit_map:
+            self.unit_map = {
+                self.symbol_property_map.get(symbol) or symbol: value
+                for symbol, value in self.unit_map.items()}
         constraints = constraints or []
         self.constraints = []
         for c in constraints:
@@ -99,47 +103,41 @@ class Model(ABC):
         """
         return
 
-    # TODO: this could be a decorator
-    def remap_symbols(self, symbol_value_dict):
-        """
-        Helper method to remap symbols based on symbol map attribute
+    def map_properties_to_symbols(self, properties):
+        rev_map = {v: k for k, v in self.symbol_property_map.items()}
+        return remap(properties, rev_map)
 
-        Args:
-            symbol_value_dict ({symbol: value}): a mapping
-                of symbols to values to be remapped
-
-        Returns:
-            remapped symbol_value_dict
-
-        """
-        output_dict = symbol_value_dict.copy()
-        for old_symbol, new_symbol in self.symbol_map.items():
-            output_dict[new_symbol] = output_dict.pop(old_symbol)
-        return output_dict
+    def map_symbols_to_properties(self, symbols):
+        return remap(symbols, self.symbol_property_map)
 
     # TODO: I'm really not crazy about the "successful" key implementation
     #       preventing model failure using try/except is the path to
     #       the dark side
-    def evaluate(self, symbol_value_dict):
+    def evaluate(self, property_value_dict):
         """
-        Given a set of symbol_values, performs error checking to see if
-        the input symbol_values represents a valid input set based on
-        the self.connections() method. If so, it returns a dictionary
-        representing the value of plug_in applied to the inputs. The
-        dictionary contains a "successful" key representing if plug_in
-        was successful.
+        Given a set of property_values, performs error checking to see
+        if the corresponding input symbol_values represents a valid
+        input set based on the self.connections() method. If so, returns
+        a dictionary representing the value of plug_in applied to the
+        input_symbols. The dictionary contains a "successful" key
+        representing if plug_in was successful.
+
+        The key distinction between evaluate and plug_in is properties
+        in properties out vs. symbols in symbols out.  In addition,
+        plug_in also handles any requisite unit_mapping
 
         Args:
-            symbol_value_dict ({symbol: value}): a mapping of symbols
-                to values to be substituted into the model
+            property_value_dict ({property_name: value}): a mapping of
+                property names to values to be substituted
 
         Returns:
-            dictionary of output symbols with associated values
+            dictionary of output properties with associated values
             generated from the input, along "successful" if the
             substitution succeeds
         """
         # Remap symbols and units if symbol map isn't none
-        symbol_value_dict = self.remap_symbols(symbol_value_dict)
+        symbol_value_dict = self.map_properties_to_symbols(
+            property_value_dict)
 
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
@@ -150,10 +148,10 @@ class Model(ABC):
                     value = value.to(self.unit_map[symbol])
                 symbol_value_dict[symbol] = value.magnitude
 
-        available_symbols = set(symbol_value_dict.keys())
+        available_properties = set(property_value_dict.keys())
 
         # check we support this combination of inputs
-        input_matches = [set(input_set) == available_symbols
+        input_matches = [set(input_set) == available_properties
                          for input_set in self.input_sets]
         # TODO: Remove the try-except functionality, high priority
         if not any(input_matches):
@@ -161,7 +159,7 @@ class Model(ABC):
                 'successful': False,
                 'message': "The {} model cannot generate any outputs for "
                            "these inputs: {}".format(
-                    self.name, available_symbols)
+                    self.name, available_properties)
             }
         try:
             # evaluate is allowed to fail
@@ -178,7 +176,7 @@ class Model(ABC):
             if key == 'successful':
                 continue
             out[key] = ureg.Quantity(out[key], self.unit_map[key])
-        return out
+        return self.map_symbols_to_properties(out)
 
     @property
     def title(self):
@@ -192,13 +190,17 @@ class Model(ABC):
         """
         return self.name.replace('_', ' ').title()
 
+    # Note that these are formulated in terms of properties
+    # rather than symbols
     @property
     def input_sets(self):
-        return [set(d['inputs']) for d in self.connections]
+        return [set(self.map_symbols_to_properties(d['inputs']))
+                for d in self.connections]
 
     @property
     def output_sets(self):
-        return [set(d['outputs']) for d in self.connections]
+        return [set(self.map_symbols_to_properties(d['outputs']))
+                for d in self.connections]
 
     @property
     def all_inputs(self):
@@ -209,7 +211,7 @@ class Model(ABC):
         return list(chain.from_iterable(self.output_sets))
 
     @property
-    def all_symbols(self):
+    def all_properties(self):
         return self.all_inputs + self.all_outputs
 
     def test(self, inputs, outputs):
@@ -242,14 +244,15 @@ class Model(ABC):
         return True
 
     @property
-    def constraint_symbols(self):
-        all_syms = [c.all_inputs for c in self.constraints]
+    def constraint_properties(self):
+        # Constraints are defined only in terms of symbols
+        all_syms = [self.symbol_property_map(c.all_inputs)
+                    for c in self.constraints]
         return list(set(chain.from_iterable(all_syms)))
 
-    def check_constraints(self, constraint_inputs):
-        constraint_inputs = self.remap_symbols(constraint_inputs)
-        return all([c.plug_in(constraint_inputs)
-                    for c in self.constraints])
+    def check_constraints(self, input_properties):
+        input_symbols = self.map_properties_to_symbols(input_properties)
+        return all([c.plug_in(input_symbols) for c in self.constraints])
 
     @staticmethod
     def load_test_data(name, test_data_loc=TEST_DATA_LOC):
@@ -418,7 +421,7 @@ class PyModuleModel(PyModel):
 
 # Right now I don't see much of a use case for pythonic functionality
 # here but maybe there should be
-# TODO: this is lazily implemented, could use a bit more finesse
+# TODO: this could use a bit more finesse
 class Constraint(Model):
     """
     Constraint class, resembles a model, but should output true or false
@@ -453,3 +456,27 @@ def will_it_float(input):
         return True
     except ValueError:
         return False
+
+def remap(dict_or_list, map):
+    """
+    Helper method to remap entries in a list or keys in a dictionary
+    based on an input map, used to translate symbols to properties
+    and vice-versa
+
+    Args:
+        dict_or_list ([] or {}) a list of properties or property-keyed
+        dictionary to be remapped using symbols.
+
+    Returns:
+        remapped list of items or item-keyed dictionary
+    """
+    output = deepcopy(dict_or_list)
+    if isinstance(output, dict):
+        for in_key, out_key in map.items():
+            output[out_key] = output.pop(in_key)
+    else:
+        for n, in_item in enumerate(output):
+            out_item = map.get(in_item)
+            if out_item:
+                output[n] = out_item
+    return output
