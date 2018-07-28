@@ -64,7 +64,7 @@ class ModelTest(unittest.TestCase):
 
     def test_validate_all_models(self):
         for model in DEFAULT_MODELS:
-            self.assertTrue(model.validate())
+            self.assertTrue(model.validate_from_preset_test())
 
     def test_unit_handling(self):
         """

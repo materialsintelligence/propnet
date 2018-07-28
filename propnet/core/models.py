@@ -75,7 +75,13 @@ class Model(ABC):
         if self.symbol_map and self.unit_map:
             self.unit_map = {self.symbol_map.get(symbol) or symbol: value
                              for symbol, value in self.unit_map.items()}
-
+        constraints = constraints or []
+        self.constraints = []
+        for c in constraints:
+            if isinstance(c, Constraint):
+                self.constraints.append(c)
+            else:
+                self.constraints.append(Constraint(c))
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -234,6 +240,16 @@ class Model(ABC):
         for test_dataset in test_datasets:
             self.test(**test_dataset)
         return True
+
+    @property
+    def constraint_symbols(self):
+        all_syms = [c.all_inputs for c in self.constraints]
+        return list(set(chain.from_iterable(all_syms)))
+
+    def check_constraints(self, constraint_inputs):
+        constraint_inputs = self.remap_symbols(constraint_inputs)
+        return all([c.plug_in(constraint_inputs)
+                    for c in self.constraints])
 
     @staticmethod
     def load_test_data(name, test_data_loc=TEST_DATA_LOC):
@@ -398,3 +414,42 @@ class PyModuleModel(PyModel):
         return {"module_path": self._module_path,
                 "@module": "propnet.core.model",
                 "@class": "PyModuleModel"}
+
+
+# Right now I don't see much of a use case for pythonic functionality
+# here but maybe there should be
+# TODO: this is lazily implemented, could use a bit more finesse
+class Constraint(Model):
+    """
+    Constraint class, resembles a model, but should output true or false
+    """
+    def __init__(self, expression, name=None, **kwargs):
+        """
+        Args:
+            expression (str): str to be parsed to evaluate constraint
+            name (str): optional name for constraint, default None
+            **kwargs:
+        """
+        self.expression = expression.replace(' ', '')
+        split = re.split("[+-/*<>=()]", self.expression)
+        inputs = [s for s in split if not will_it_float(s)]
+        connections = {"inputs": inputs, "outputs": "is_valid"}
+        super(Constraint, self).__init__(
+            name=name, connections=connections, **kwargs)
+
+    def plug_in(self, symbol_value_dict):
+        return parse_expr(self.expression, symbol_value_dict)
+
+
+def will_it_float(input):
+    """
+    Helper function to determine if input string can be cast to float
+
+    Args:
+        input (str): input string to be tested
+    """
+    try:
+        float(input)
+        return True
+    except ValueError:
+        return False
