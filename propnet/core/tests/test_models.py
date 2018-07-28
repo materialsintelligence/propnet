@@ -32,14 +32,14 @@ class ModelTest(unittest.TestCase):
             self.assertIsNotNone(m.name)
             self.assertIsNotNone(m.categories)
             self.assertIsNotNone(m.description)
-            self.assertIsNotNone(m.symbol_map)
-            self.assertTrue(isinstance(m.symbol_map, dict))
-            self.assertTrue(len(m.symbol_map.keys()) > 0)
-            for key in m.symbol_map.keys():
+            self.assertIsNotNone(m.symbol_property_map)
+            self.assertTrue(isinstance(m.symbol_property_map, dict))
+            self.assertTrue(len(m.symbol_property_map.keys()) > 0)
+            for key in m.symbol_property_map.keys():
                 self.assertTrue(isinstance(key, str),
-                                'Invalid symbol_map key: ' + str(key))
-                self.assertTrue(isinstance(m.symbol_map[key], str) and
-                                m.symbol_map[key] in DEFAULT_SYMBOL_TYPE_NAMES)
+                                'Invalid symbol_property_map key: ' + str(key))
+                self.assertTrue(isinstance(m.symbol_property_map[key], str) and
+                                m.symbol_property_map[key] in DEFAULT_SYMBOL_TYPE_NAMES)
             self.assertTrue(m.connections is not None and isinstance(m.connections, list)
                             and len(m.connections) > 0)
             for item in m.connections:
@@ -56,11 +56,11 @@ class ModelTest(unittest.TestCase):
                 for in_symb in item['inputs']:
                     self.assertIsNotNone(in_symb)
                     self.assertTrue(isinstance(in_symb, str))
-                    self.assertTrue(in_symb in m.symbol_map.keys())
+                    self.assertTrue(in_symb in m.symbol_property_map.keys())
                 for out_symb in item['outputs']:
                     self.assertIsNotNone(out_symb)
                     self.assertIsNotNone(isinstance(out_symb, str))
-                    self.assertTrue(out_symb in m.symbol_map.keys())
+                    self.assertTrue(out_symb in m.symbol_property_map.keys())
 
     def test_validate_all_models(self):
         for model in DEFAULT_MODELS:
@@ -82,7 +82,6 @@ class ModelTest(unittest.TestCase):
         A = Symbol('a', ['A'], ['A'], units=[1.0, [['centimeter', 2.0]]], shape=[1])
         get_area_config = {
             'name': 'area',
-            # 'symbol_map': {'l1': 'l', 'l2': 'l', 'a': 'a'},
             'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
             'equations': ['a - l1 * l2'],
             'unit_map': {'l1': "cm", "l2": "cm", 'a': "cm^2"}
