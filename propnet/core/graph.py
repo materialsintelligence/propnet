@@ -6,7 +6,7 @@ from typing import *
 
 import networkx as nx
 
-from propnet.models import DEFAULT_MODELS
+from propnet.models import DEFAULT_MODEL_DICT
 from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
@@ -19,35 +19,47 @@ logger = logging.getLogger("graph")
 
 class Graph:
     """
-    Class containing methods for creating and interacting with a Property Network.
+    Class containing methods for creating and interacting with a
+    Property Network.
 
-    The Property Network contains a set of Node namedtuples with connections stored as directed edges between
-    the nodes.
+    The Property Network contains a set of Node namedtuples with
+    connections stored as directed edges between the nodes.
 
-    Upon initialization a base graph is constructed consisting of all valid SymbolTypes and Models found in surrounding
-    folders. These are Symbol and Model node_types respectively. Connections are formed between the nodes based on
-    given inputs and outputs of the models. At this stage the graph represents a symbolic web of properties without
-    any actual input values.
+    Upon initialization a base graph is constructed consisting of all
+    valid SymbolTypes and Models found in surrounding folders. These are
+    Symbol and Model node_types respectively. Connections are formed
+    between the nodes based on given inputs and outputs of the models.
+    At this stage the graph represents a symbolic web of properties
+    without any actual input values.
 
-    Materials and Properties / Conditions can be added at runtime using appropriate support methods. These methods
-    dynamically create additional PropnetNodes and edges on the graph of Material and Quantity node_types respectively.
+    Materials and Properties / Conditions can be added at runtime using
+    appropriate support methods. These methods dynamically create
+    additional PropnetNodes and edges on the graph of Material and
+    Quantity node_types respectively.
 
-    Given a set of Materials and Properties / Conditions, the symbolic web of properties can be utilized to predict
-    values of connected properties on demand.
+    Given a set of Materials and Properties / Conditions, the symbolic
+    web of properties can be utilized to predict values of connected
+    properties on demand.
 
     Attributes:
-        _symbol_types ({str: Symbol}): data structure mapping Symbol name to Symbol object.
-        _models ({str: Symbol}): data structure mapping Model name to Model object.
-        _materials ({Material}):    data structure storing the set of all materials present on the graph.
-        _input_to_model ({Symbol: {Model}}): data structure mapping Symbol inputs to a set of corresponding Model
-                                             objects that input that Symbol.
-        _output_to_model ({Symbol: {Model}}): data structure mapping Symbol outputs to a set of corresponding Model
-                                              objects that output that Symbol.
-        _symbol_to_quantity ({Symbol: {Quantity}}): data structure mapping Symbols to a list of corresponding Quantity
-                                                    objects of that type.
+        _symbol_types ({str: Symbol}): data structure mapping Symbol
+            name to Symbol object.
+        _models ({str: Symbol}): data structure mapping Model name to
+            Model object.
+        _materials ({Material}): data structure storing the set of all
+            materials present on the graph.
+        _input_to_model ({Symbol: {Model}}): data structure mapping
+            Symbol inputs to a set of corresponding Model objects that
+            input that Symbol.
+        _output_to_model ({Symbol: {Model}}): data structure mapping
+            Symbol outputs to a set of corresponding Model objects that
+            output that Symbol.
+        _symbol_to_quantity ({Symbol: {Quantity}}): data structure
+            mapping Symbols to a list of corresponding Quantity objects
+            of that type.
 
-
-    *** Dictionaries can be searched by supplying Symbol objects or Strings as to their names.
+    *** Dictionaries can be searched by supplying Symbol objects or
+        Strings as to their names.
 
     """
 
@@ -57,11 +69,7 @@ class Graph:
         """
 
         # set our defaults if no models/symbol types supplied
-        if models is None:
-            defaults = dict()
-            for (k, v) in DEFAULT_MODELS.items():
-                defaults[k] = v()
-            models = defaults
+        defaults = models or DEFAULT_MODEL_DICT
         symbol_types = symbol_types or DEFAULT_SYMBOLS
 
         # create the graph
