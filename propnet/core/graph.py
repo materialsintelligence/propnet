@@ -511,30 +511,30 @@ class Graph(object):
 
     @staticmethod
     def generate_input_sets(symbol_list, req_types, this_quantity_pool):
-            """
-            Generates all combinatorially-unique sets of input dictionaries.
+        """
+        Generates all combinatorially-unique sets of input dictionaries.
 
-            Args:
-                symb_list ([str]): list of model symbols mapped to Symbol objects.
-                req_types ([str]): list of Symbols that must be retrieved from the quantity_pool.
-                this_quantity_pool ({Symbol: Set(Quantity)}): quantities keyed
-                    by symbols
+        Args:
+            symb_list ([str]): list of model symbols mapped to Symbol objects.
+            req_types ([str]): list of Symbols that must be retrieved from the quantity_pool.
+            this_quantity_pool ({Symbol: Set(Quantity)}): quantities keyed
+                by symbols
 
-            Returns:
-                ([{str: Quantity}]): list of symbol strings mapped to Quantity values.
-            """
-            if len(symbol_list) != len(req_types):
-                raise Exception("Symbol and Type sets must be the same length.")
-            aggregated_symbols = [this_quantity_pool[req_type]
-                                  for req_type in req_types]
-            input_set_lists = product(*aggregated_symbols)
-            input_set_dicts = []
-            for input_set_list in input_set_lists:
-                input_set_dicts.append({
-                    symbol: input_quantity for symbol, input_quantity
-                    in zip(symbol_list, input_set_list)
-                })
-            return input_set_dicts
+        Returns:
+            ([{str: Quantity}]): list of symbol strings mapped to Quantity values.
+        """
+        if len(symbol_list) != len(req_types):
+            raise Exception("Symbol and Type sets must be the same length.")
+        aggregated_symbols = [this_quantity_pool[req_type]
+                              for req_type in req_types]
+        input_set_lists = product(*aggregated_symbols)
+        input_set_dicts = []
+        for input_set_list in input_set_lists:
+            input_set_dicts.append({
+                symbol: input_quantity for symbol, input_quantity
+                in zip(symbol_list, input_set_list)
+            })
+        return input_set_dicts
 
     def evaluate(self, material=None, property_type=None):
         """
@@ -639,7 +639,7 @@ class Graph(object):
                         continue_loop = True
                         for symbol, quantity in output.items():
                             st = self._symbol_types.get(
-                                model.symbol_mapping.get(symbol))
+                                model.symbol_property_map.get(symbol))
                             if not st:
                                 continue
                             for m in self._input_to_model[st]:

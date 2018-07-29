@@ -273,10 +273,10 @@ class GraphTest(unittest.TestCase):
             Quantity(symbols['D'], 103155, {material}),
         ]
 
-        for q in expected_quantities:
-            self.assertTrue(q in g._symbol_to_quantity[q.symbol],
+        for quantity in expected_quantities:
+            self.assertTrue(quantity in g._symbol_to_quantity[quantity.symbol],
                             "Evaluate failed to derive all outputs.")
-            self.assertTrue(material in q._material,
+            self.assertTrue(material in quantity._material,
                             "Evaluate failed to assign material.")
 
     def test_evaluate_cyclic(self):
@@ -340,7 +340,7 @@ class GraphTest(unittest.TestCase):
         used for this test.
         """
         model4 = EquationModel(
-            name="model4", connections={"inputs": ["B", "C"], "outputs": ["D"]},
+            name="model4", connections=[{"inputs": ["B", "C"], "outputs": ["D"]}],
             equations=["D-B*C*11"], constraints=["G==0"])
 
         symbols = self.generate_canonical_symbols()
@@ -379,32 +379,13 @@ class GraphTest(unittest.TestCase):
         Tests the evaluation algorithm on a cyclic graph involving constraints.
         The canonical graph and the canonical material are used for this test.
         """
-        class Model4 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model4', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'D': 'D',
-                                         'B': 'B',
-                                         'C': 'C',
-                                         'G': 'G'
-                                        },
-                      'connections': [{'inputs': ['B', 'C'],
-                                       'outputs': ['D']
-                                      }],
-                      'equations': ['D-B*C*11']
-                    },
-                    symbol_types=symbol_types)
-
-            @property
-            def constraint_symbols(self):
-                return ['G']
-
-            def check_constraints(self, constraint_inputs):
-                return constraint_inputs['G'] == 0
+        model4 = EquationModel(
+            name="model4", connections=[{"inputs": ["B", "C"], "outputs": ["D"]}],
+            equations=["D-B*C*11"], constraints=["G==0"])
 
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
-        models['model4'] = Model4(symbol_types=symbols)
+        models['model4'] = model4
         material = GraphTest.generate_canonical_material(symbols)
         g = Graph(materials=[material], symbol_types=symbols, models=models)
         g.evaluate()

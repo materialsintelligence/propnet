@@ -7,7 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from itertools import chain
 from glob import glob
-from copy import deepcopy
+from copy import deepcopy, copy
 
 from monty.serialization import loadfn
 from monty.json import MSONable
@@ -67,8 +67,12 @@ class Model(ABC):
         self.categories = categories
         self.references = references
         self.constraints = constraints
-        # If no symbol map specified, use inputs/outputs
-        self.symbol_property_map = symbol_property_map or {}
+        # symbol property map initialized as symbol->symbol, then updated
+        # with any customization of symbol to properties mapping
+        self.symbol_property_map = {}
+        self.symbol_property_map = {k: k for k in self.all_properties}
+        self.symbol_property_map.update(symbol_property_map or {})
+
         self.unit_map = unit_map or {}
         # This basically dictates that the unit map should be
         # consistent with the plug-in or model symbols, hopefully
@@ -168,12 +172,13 @@ class Model(ABC):
                 'successful': False,
                 'message': str(e)
             }
+            logger.debug("Model evaluation unsuccessful {}".format(e))
 
         # add units to output
         for key in out:
             if key == 'successful':
                 continue
-            out[key] = ureg.Quantity(out[key], self.unit_map[key])
+            out[key] = ureg.Quantity(out[key], self.unit_map.get(key))
         return self.map_symbols_to_properties(out)
 
     @property
@@ -255,7 +260,7 @@ class Model(ABC):
     @property
     def constraint_properties(self):
         # Constraints are defined only in terms of symbols
-        all_syms = [self.symbol_property_map(c.all_inputs)
+        all_syms = [self.map_symbols_to_properties(c.all_inputs)
                     for c in self.constraints]
         return list(set(chain.from_iterable(all_syms)))
 
@@ -445,7 +450,7 @@ class Constraint(Model):
         self.expression = expression.replace(' ', '')
         split = re.split("[+-/*<>=()]", self.expression)
         inputs = [s for s in split if not will_it_float(s)]
-        connections = {"inputs": inputs, "outputs": "is_valid"}
+        connections = [{"inputs": inputs, "outputs": "is_valid"}]
         super(Constraint, self).__init__(
             name=name, connections=connections, **kwargs)
 
@@ -466,7 +471,7 @@ def will_it_float(input):
     except ValueError:
         return False
 
-def remap(dict_or_list, map):
+def remap(dict_or_list, mapping):
     """
     Helper method to remap entries in a list or keys in a dictionary
     based on an input map, used to translate symbols to properties
@@ -474,18 +479,20 @@ def remap(dict_or_list, map):
 
     Args:
         dict_or_list ([] or {}) a list of properties or property-keyed
-        dictionary to be remapped using symbols.
+            dictionary to be remapped using symbols.
+        mapping ({}): dictionary of values to remap
 
     Returns:
         remapped list of items or item-keyed dictionary
     """
-    output = deepcopy(dict_or_list)
+    output = copy(dict_or_list)
     if isinstance(output, dict):
-        for in_key, out_key in map.items():
-            output[out_key] = output.pop(in_key)
+        for in_key, out_key in mapping.items():
+            if in_key in output:
+                output[out_key] = output.pop(in_key)
     else:
         for n, in_item in enumerate(output):
-            out_item = map.get(in_item)
+            out_item = mapping.get(in_item)
             if out_item:
                 output[n] = out_item
     return output
