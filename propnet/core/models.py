@@ -212,12 +212,15 @@ class Model(ABC):
     def all_properties(self):
         return self.all_inputs + self.all_outputs
 
-    # TODO: I think this should be merged with input_sets
-    #       maybe called relevant properties or something
+    # TODO: I think this should be merged with input_sets maybe called
+    # relevant properties or something, also shouldn't need both syms
+    # and props
     @property
     def evaluation_list(self):
-        return [list(input_set) + self.constraint_properties
-                for input_set in self.input_sets]
+        props = [list(input_set) + self.constraint_properties
+                      for input_set in self.input_sets]
+        syms = [self.map_properties_to_symbols(p) for p in props]
+        return zip(syms, props)
 
 
     def test(self, inputs, outputs):
