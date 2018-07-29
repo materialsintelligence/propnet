@@ -10,9 +10,10 @@ config = {
     "plug_in": evaluate_atomic_density,
     "categories": ["mechanical"],
     "references": [],
-    "symbol_map": {"s": "structure",
-                   "p": "atomic_density",
-                   "rho": "density"},
+    "symbol_property_map": {
+        "s": "structure",
+        "p": "atomic_density",
+        "rho": "density"},
     "connections": [{"inputs": ["s"],
                      "outputs": ["p", "rho"]}],
     "description": "Model calculating the atomic density from "

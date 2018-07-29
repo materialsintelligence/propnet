@@ -1,10 +1,10 @@
 name: refractive_index_and_extinction_coefficient_from_complex_permittivity
-tags:
+categories:
   - optical
 references:
   - url:https://en.wikipedia.org/wiki/Refractive_index#Complex_refractive_index
   - url:https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability
-symbol_mapping:
+symbol_property_map:
   e1: relative_permittivity
   e2: relative_permittivity_im
   n: refractive_index

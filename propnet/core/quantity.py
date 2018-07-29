@@ -1,5 +1,8 @@
 import numpy as np
 
+# TODO: remove typing
+from typing import *
+
 from uuid import UUID
 from monty.json import MSONable
 from uncertainties import unumpy

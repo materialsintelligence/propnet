@@ -4,7 +4,7 @@ categories:
   - empirical
 references:
   - "doi:10.1039/C4EE03157A"
-symbol_map:
+symbol_property_map:
   m_e: electron_effective_mass
   K: bulk_modulus
   mu_e: electron_mobility

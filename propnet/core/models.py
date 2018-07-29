@@ -362,13 +362,13 @@ class EquationModel(Model, MSONable):
             explaining / supporting the model
 
     """
-    def __init__(self, name, equations, connections, symbol_map=None,
-                 constraints=None, description=None, categories=None,
-                 references=None, unit_map=None):
+    def __init__(self, name, equations, connections, constraints=None,
+                 symbol_property_map=None, description=None,
+                 categories=None, references=None, unit_map=None):
         self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_map, unit_map)
+            categories, references, symbol_property_map, unit_map)
 
     # TODO: shouldn't this respect/use connections info,
     #       or is that done elsewhere?
@@ -408,11 +408,11 @@ class PyModel(Model):
     """
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_map=None):
+                 symbol_property_map=None):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_map)
+            categories, references, symbol_property_map)
 
     def plug_in(self, symbol_value_dict):
         return self._plug_in(**symbol_value_dict)
