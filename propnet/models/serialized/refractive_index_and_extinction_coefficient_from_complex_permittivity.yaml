@@ -17,7 +17,7 @@ connections:
     - n
     - k
 equations:
-  - n - sqrt((sqrt(e1**2+e2**2)+e1)/2),
+  - n - sqrt((sqrt(e1**2+e2**2)+e1)/2)
   - k - sqrt((sqrt(e1**2+e2**2)-e1)/2)
 description: |
   When light passes through a medium, some part of it will always be attenuated.
