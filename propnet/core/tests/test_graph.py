@@ -693,33 +693,9 @@ class GraphTest(unittest.TestCase):
         const1 = Quantity(constraint, True, [])
         const2 = Quantity(constraint, False, [])
 
-        class Model1 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata={
-                        'title': 'model1',
-                        'tags': [],
-                        'references': [],
-                        'symbol_mapping': {'a': 'a',
-                                           'b': 'b',
-                                           'c': 'c',
-                                           'const': 'constraint'
-                                           },
-                        'connections': [{
-                                         'inputs': ['a', 'b'],
-                                         'outputs': ['c']
-                                         }],
-                        'equations': ['c-a*b'],
-                        'description': ''
-                    },
-                                       symbol_types=symbol_types)
-
-            @property
-            def constraint_symbols(self):
-                return ['const']
-
-            def check_constraints(self, ins):
-                return ins['const']
-
+        model1 = EquationModel("model1", ['c-a*b'],
+                               [{'inputs': ['a', 'b'], 'outputs': ['c']}],
+                               constraints=["constraint_value"])
         mat1 = Material()
         mat1.add_quantity(a_example)
         mat1.add_quantity(b_example)
@@ -731,7 +707,7 @@ class GraphTest(unittest.TestCase):
         mat2.add_quantity(const2)
 
         p = Graph(materials=[mat1, mat2],
-                  models={'model1': Model1(symbol_type_dict)},
+                  models={'model1': model1},
                   symbol_types=symbol_type_dict)
 
         # Evaluate

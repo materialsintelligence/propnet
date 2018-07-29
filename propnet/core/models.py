@@ -361,7 +361,7 @@ class EquationModel(Model, MSONable):
             for example:
             connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
                            {"inputs": ["T", "V"], "outputs": ["p"]}]
-        constraints (str): constraints on models
+        constraints ([str]): constraints on models
         description (str): long form description of the model
         categories (str): list of categories applicable to
             the model
