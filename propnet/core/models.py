@@ -4,6 +4,7 @@ Module containing classes and methods for Model functionality in Propnet code.
 
 import os
 import re
+import logging
 from abc import ABC, abstractmethod
 from itertools import chain
 from glob import glob
@@ -12,12 +13,13 @@ from copy import deepcopy, copy
 from monty.serialization import loadfn
 from monty.json import MSONable
 import numpy as np
-
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 from propnet import ureg
 from propnet.core.exceptions import ModelEvaluationError
+
+logger = logging.getLogger("models")
 
 # TODO: maybe this should go somewhere else, like a dedicated settings.py
 TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
@@ -168,11 +170,11 @@ class Model(ABC):
             out = self.plug_in(symbol_value_dict)
             out['successful'] = True
         except Exception as e:
+            logger.debug("Model evaluation unsuccessful {}".format(e))
             return {
                 'successful': False,
                 'message': str(e)
             }
-            logger.debug("Model evaluation unsuccessful {}".format(e))
 
         # add units to output
         for key in out:
@@ -226,7 +228,6 @@ class Model(ABC):
                  for input_set in self.input_sets]
         syms = [self.map_properties_to_symbols(p) for p in props]
         return zip(syms, props)
-
 
     def test(self, inputs, outputs):
         """
