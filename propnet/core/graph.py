@@ -2,7 +2,7 @@
 Module containing classes and methods for graph functionality in Propnet code.
 """
 
-from typing import *
+from collections import defaultdict
 
 import networkx as nx
 
@@ -75,9 +75,9 @@ class Graph(object):
         self._symbol_types = dict()
         self._models = dict()
         self._materials = set()
-        self._input_to_model = DefaultDict(set)
-        self._output_to_model = DefaultDict(set)
-        self._symbol_to_quantity = DefaultDict(set)
+        self._input_to_model = defaultdict(set)
+        self._output_to_model = defaultdict(set)
+        self._symbol_to_quantity = defaultdict(set)
 
         if symbol_types:
             self.update_symbol_types(symbol_types)
@@ -470,7 +470,7 @@ class Graph(object):
         # Replace them with inputs to models that output the candidate_symbols.
         # Store replacements.
         outputs = []
-        prev = DefaultDict(list)
+        prev = defaultdict(list)
         for symbol in candidate_symbols:
             c_models = self._output_to_model[symbol]
             for model in c_models:
@@ -562,9 +562,9 @@ class Graph(object):
         # Determine which Quantity objects are up for evaluation.
         # Generate the necessary initial datastructures.
         logger.debug("Beginning evaluation")
-        quantity_pool = DefaultDict(set)   # Dict<Symbol, set<Quantity>>, available Quantity objects.
-        plug_in_dict = DefaultDict(set)    # Dict<Quantity, set<Model>>, where the Quantities have been plugged in.
-        output_dict = DefaultDict(set)     # Dict<Quantity, set<Model>>, where the Quantities have been generated.
+        quantity_pool = defaultdict(set)   # Dict<Symbol, set<Quantity>>, available Quantity objects.
+        plug_in_dict = defaultdict(set)    # Dict<Quantity, set<Model>>, where the Quantities have been plugged in.
+        output_dict = defaultdict(set)     # Dict<Quantity, set<Model>>, where the Quantities have been generated.
         candidate_models = set()           # set<Model>, which could generate additional outputs.
 
         logger.debug("Refining input set")

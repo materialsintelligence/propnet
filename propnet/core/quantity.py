@@ -1,6 +1,5 @@
 import numpy as np
 
-from typing import *
 from uuid import UUID
 from monty.json import MSONable
 from uncertainties import unumpy

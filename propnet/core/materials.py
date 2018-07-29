@@ -5,7 +5,7 @@ Module containing classes and methods for Material functionality in propnet code
 import networkx as nx
 from itertools import chain
 
-from typing import *
+from collections import defaultdict
 
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import Quantity, weighted_mean
@@ -39,7 +39,7 @@ class Material(object):
         """
         self.uuid = uuid()
         self.parent = None
-        self._symbol_to_quantity = DefaultDict(set)
+        self._symbol_to_quantity = defaultdict(set)
 
     def __repr__(self):
         return str(self.uuid)
