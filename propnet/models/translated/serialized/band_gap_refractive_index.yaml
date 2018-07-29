@@ -1,0 +1,36 @@
+categories: [optical, empirical]
+connections:
+- inputs: [Eg]
+  outputs: [n_ravindra]
+- inputs: [Eg]
+  outputs: [n_moss]
+description: '
+
+
+  Proposed as an empirical model relating a material''s band gap to its refractive
+  index,
+
+  the Ravindra relation has been shown to be an approximation of the Penn model, with
+
+  co-efficients found by Gupta and Ravindra. See references for more information.
+  This
+
+  replaces the older Moss relation, which is also defined.'
+equations: [4.16 - 1.12*Eg + 0.31*Eg**2 - 0.08*Eg**2 - n_ravindra, n_moss - (95/Eg)**(1/4)]
+name: band_gap_refractive_index
+references: ["@article{Ravindra_2007,\n\tdoi = {10.1016/j.infrared.2006.04.001},\n\turl
+    = {https://doi.org/10.1016%2Fj.infrared.2006.04.001},\n\tyear = 2007,\n\tmonth
+    = {mar},\n\tpublisher = {Elsevier {BV}},\n\tvolume = {50},\n\tnumber = {1},\n\tpages
+    = {21--29},\n\tauthor = {N.M. Ravindra and Preethi Ganapathy and Jinsoo Choi},\n\ttitle
+    = {Energy gap{\\textendash}refractive index relations in semiconductors {\\textendash}
+    An overview},\n\tjournal = {Infrared Physics {\\&} Technology}\n}", "@article{Moss_1985,\n\tdoi
+    = {10.1002/pssb.2221310202},\n\turl = {https://doi.org/10.1002%2Fpssb.2221310202},\n\tyear
+    = 1985,\n\tmonth = {oct},\n\tpublisher = {Wiley},\n\tvolume = {131},\n\tnumber
+    = {2},\n\tpages = {415--427},\n\tauthor = {T. S. Moss},\n\ttitle = {Relations
+    between the Refractive Index and Energy Gap of Semiconductors},\n\tjournal = {physica
+    status solidi (b)}\n}", "@article{Gupta_1980,\n\tdoi = {10.1002/pssb.2221000240},\n\turl
+    = {https://doi.org/10.1002%2Fpssb.2221000240},\n\tyear = 1980,\n\tmonth = {aug},\n\tpublisher
+    = {Wiley},\n\tvolume = {100},\n\tnumber = {2},\n\tpages = {715--719},\n\tauthor
+    = {V. P. Gupta and N. M. Ravindra},\n\ttitle = {Comments on the Moss Formula},\n\tjournal
+    = {physica status solidi (b)}\n}"]
+symbol_property_map: {Eg: band_gap, n_moss: refractive_index, n_ravindra: refractive_index}

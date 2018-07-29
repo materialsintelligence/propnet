@@ -1,0 +1,14 @@
+categories: [electrical]
+connections:
+- inputs: [epsilon, E_g]
+  outputs: [c]
+description: "\nRelation from Yim, K. et al. Novel high-\u03BA dielectrics for next-generation
+  electronic devices\nscreened by automated ab initio calculations. NPG Asia Mater.
+  7, e190 (2015).\n\nGives an indication as to the fitness of the dielectric for use
+  in a capacitor.\n\nBalances the resistance of the dielectric to leakage current
+  as well as the increase in\nenergy density afforded by the linear response."
+equations: [c - epsilon*E_g]
+name: dielectric_figure_of_merit_current_leakage
+references: []
+symbol_property_map: {E_g: band_gap, c: dielectric_figure_of_merit_current_leakage,
+  epsilon: relative_permittivity}

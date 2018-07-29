@@ -1,0 +1,16 @@
+categories: [optical]
+connections:
+- inputs: [n, k]
+  outputs: [R]
+description: '
+
+  Reflectance R at the vacuum/material interface using real and imaginary parts of
+
+  the complex refractive index.
+
+'
+equations: [R - ((1-n)**2+k**2)/((1+n)**2+k**2)]
+name: optical_reflectance
+references: ["@misc{url:784844,\n            url = {https://unlcms.unl.edu/cas/physics/tsymbal/teaching/SSP-927/Section%2013_Optical_Properties_of_Solids.pdf}\n
+    \           }"]
+symbol_property_map: {R: reflectance, k: extinction_coefficient, n: refractive_index}

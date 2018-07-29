@@ -1,0 +1,21 @@
+categories: [electronic]
+connections:
+- inputs: [E_g_expt, E_g_PBE]
+  outputs: [E_g_GW]
+- inputs: [E_g_GW, E_g_expt]
+  outputs: [E_g_PBE]
+description: '
+
+  Band gaps estimated using Density Functional Theory (and the PBE exchange-correlation
+
+  functional) typically underestimate the true band gap.'
+equations: [E_g_expt - 0.998*E_g_GW + 0.014, E_g_expt - 1.358*E_g_PBE + 0.904]
+name: empirical_band_gaps_garcia
+references: ["@article{Morales_Garc_a_2017,\n\tdoi = {10.1021/acs.jpcc.7b07421},\n\turl
+    = {https://doi.org/10.1021%2Facs.jpcc.7b07421},\n\tyear = 2017,\n\tmonth = {aug},\n\tpublisher
+    = {American Chemical Society ({ACS})},\n\tvolume = {121},\n\tnumber = {34},\n\tpages
+    = {18862--18866},\n\tauthor = {{\\'{A}}ngel Morales-Garc{\\'{\\i}}a and Rosendo
+    Valero and Francesc Illas},\n\ttitle = {An Empirical, yet Practical Way To Predict
+    the Band Gap in Solids by Using Density Functional Band Structure Calculations},\n\tjournal
+    = {The Journal of Physical Chemistry C}\n}"]
+symbol_property_map: {E_g_GW: band_gap_gw, E_g_PBE: band_gap_pbe, E_g_expt: band_gap}

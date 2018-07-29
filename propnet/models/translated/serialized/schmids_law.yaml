@@ -1,0 +1,16 @@
+categories: [mechanical]
+connections:
+- inputs: [m, sigma]
+  outputs: [tau]
+description: '
+
+  Schmid''s Law states that the critically resolved shear stress is equal
+
+  to the stress applied to the material multipled by a geometric factor combining
+
+  angles of the glide plane and glide direction.'
+equations: [tau - m * sigma]
+name: schmids_law
+references: ["@misc{url:475884,\n            url = {https://en.wikipedia.org/wiki/Schmid%27s_law}\n
+    \           }"]
+symbol_property_map: {m: schmid_factor, sigma: applied_stress, tau: resolved_shear_stress}

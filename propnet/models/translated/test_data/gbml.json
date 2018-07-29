@@ -1,0 +1,43 @@
+[
+  {
+    "inputs": {
+      "computed_entry": {
+        "@class": "ComputedEntry",
+        "@module": "pymatgen.entries.computed_entries",
+        "attribute": null,
+        "composition": {
+          "Fe": 1.0
+        },
+        "correction": 0,
+        "data": {
+          "oxide_type": "None"
+        },
+        "energy": -8.46102915,
+        "entry_id": "mp-13",
+        "parameters": {
+          "hubbards": {},
+          "is_hubbard": false,
+          "oxide_type": "None",
+          "potcar_symbols": [
+            "pbe Fe_pv"
+          ],
+          "pseudo_potential": {
+            "functional": "pbe",
+            "labels": [
+              "Fe_pv"
+            ],
+            "pot_type": "paw"
+          },
+          "run_type": "GGA"
+        }
+      },
+      "formula": "Fe",
+      "nsites": 1,
+      "volume": 11.55162296798055
+    },
+    "outputs": {
+      "G": 86.83854074462047,
+      "K": 212.26131768732088
+    }
+  }
+]

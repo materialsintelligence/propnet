@@ -1,0 +1,18 @@
+[
+  {
+    "inputs": {
+      "E_g": 0
+    },
+    "outputs": {
+      "is_metallic": 1
+    }
+  },
+  {
+    "inputs": {
+      "E_g": 1
+    },
+    "outputs": {
+      "is_metallic": 0
+    }
+  }
+]

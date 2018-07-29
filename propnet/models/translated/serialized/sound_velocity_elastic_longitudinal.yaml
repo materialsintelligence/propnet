@@ -1,0 +1,11 @@
+categories: [elastic]
+connections:
+- inputs: [G, B, p]
+  outputs: [v_l]
+description: '
+
+'
+equations: [v_l - ((B+4/3*G)/p * 1E9 * 1000 / 100**3)**(1/2)]
+name: sound_velocity_elastic_longitudinal
+references: []
+symbol_property_map: {B: bulk_modulus, G: shear_modulus, p: density, v_l: sound_velocity_longitudinal}
