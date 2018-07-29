@@ -1,12 +1,10 @@
 
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
     structure = symbol_values['structure']
-    output = {}
-    for attr in self.symbol_mapping.keys():
-        if hasattr(structure, attr):
-            output[attr] = getattr(structure, attr, None)
-    return output
+    return {"num_sites": structure.num_sites,
+            "volume": structure.volume,
+            "composition": structure.composition}
 
 config = {
     "name": "pymatgen_structure_properties",

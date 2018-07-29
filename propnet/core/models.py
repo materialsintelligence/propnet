@@ -238,11 +238,18 @@ class Model(ABC):
             outputs (dict): set of output names to values
         """
         model_outputs = self.plug_in(inputs)
+        errmsg = "Model does not match known output for {}".format(
+            self.name)
         for k, known_output in outputs.items():
-            if not np.allclose(model_outputs[k], known_output):
-                raise ModelEvaluationError(
-                    "Model output does not match known output for {}".format(
-                        self.name))
+            model_output = model_outputs[k]
+            # TODO: address as part of unit refactor
+            if hasattr(model_output, 'magnitude'):
+                model_output = model_output.magnitude
+            if isinstance(known_output, (float, list)):
+                if not np.allclose(model_output, known_output):
+                    raise ModelEvaluationError(errmsg)
+            elif model_output != known_output:
+                raise ModelEvaluationError(errmsg)
         return True
 
     def validate_from_preset_test(self):
@@ -415,7 +422,7 @@ class PyModel(Model):
             categories, references, symbol_property_map)
 
     def plug_in(self, symbol_value_dict):
-        return self._plug_in(**symbol_value_dict)
+        return self._plug_in(symbol_value_dict)
 
 
 # Note that this class exists purely as a factory method for PyModel

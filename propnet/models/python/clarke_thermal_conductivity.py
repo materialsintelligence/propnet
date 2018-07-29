@@ -1,7 +1,7 @@
 from pymatgen.analysis.elasticity.elastic import ElasticTensor
 
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
      tensor = ElasticTensor.from_voigt(symbol_values["C_ij"])
      structure = symbol_values["structure"]
      to_return = tensor.clarke_thermalcond(structure)

@@ -1,7 +1,7 @@
 from pymatgen.transformations.standard_transformations import AutoOxiStateDecorationTransformation
 
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
     s = symbol_values['s']
     trans = AutoOxiStateDecorationTransformation()
     s_oxi = trans.apply_transformation(s)

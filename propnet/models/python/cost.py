@@ -1,11 +1,12 @@
 from pymatgen.analysis.cost.cost import CostDBElements, CostAnalyzer
 
+cost_analyzer = CostAnalyzer(CostDBElements())
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
     formula = symbol_values['formula']
     return {
-        'cost_per_kg': self.cost_analyzer.get_cost_per_kg(formula),
-        'cost_per_mol': self.cost_analyzer.get_cost_per_mol(formula)
+        'cost_per_kg': cost_analyzer.get_cost_per_kg(formula),
+        'cost_per_mol': cost_analyzer.get_cost_per_mol(formula)
     }
 
 config = {

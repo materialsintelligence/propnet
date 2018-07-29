@@ -1,6 +1,6 @@
 
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
     s = symbol_values['S']
     return {'B': 1/(s[0][0] + s[1][1] + s[2][2] + 2*(s[0][1] + s[1][2] + s[0][2]))}
 

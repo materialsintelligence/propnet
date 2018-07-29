@@ -2,7 +2,7 @@ from pymatgen.analysis.find_dimension import find_dimension
 from pymatgen.analysis.structure_analyzer import get_dimensionality
 
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
     structure = symbol_values['structure']
     return {
         'dimensionality_cheon': find_dimension(structure),

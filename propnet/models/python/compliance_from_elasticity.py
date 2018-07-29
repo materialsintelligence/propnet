@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
     if 'C' in symbol_values.keys():
         c = symbol_values['C']
         return {'S': np.linalg.inv(c)}

@@ -1,7 +1,7 @@
 from propnet import ureg
 
 
-def evaluate(self, symbol_values):
+def plug_in(symbol_values):
     s = symbol_values['s']
     # TODO: please check this @dmrdjenovic
     return {'p': ureg.Quantity.from_tuple(

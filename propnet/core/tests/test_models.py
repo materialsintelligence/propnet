@@ -95,7 +95,7 @@ class ModelTest(unittest.TestCase):
 
     def test_example_code_helper(self):
 
-        example_model = DEFAULT_MODEL_DICT['semiempirical_mobility']
+        example_model = DEFAULT_MODEL_DICT['semi_empirical_mobility']
 
         # TODO: this is ugly, any way to fix it?
         example_code = """
@@ -104,7 +104,7 @@ from propnet.models import load_default_model
 K = 64
 m_e = 0.009
 
-model = load_default_model("semiempirical_mobility")
+model = load_default_model("semi_empirical_mobility")
 model.evaluate({
 \t'K': K
 \t'm_e': m_e

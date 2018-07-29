@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
     s = symbol_values['S']
     c = symbol_values['C']
     g1 = 15. / (8. * s[:3, :3].trace() -

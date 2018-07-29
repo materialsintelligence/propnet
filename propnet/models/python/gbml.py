@@ -1,7 +1,7 @@
 from gbml.elasticity import predict_k_g_from_entry
 
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
     computed_entry = symbol_values['computed_entry']
     entry = {
         'material_id': '',

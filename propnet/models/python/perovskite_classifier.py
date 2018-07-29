@@ -1,6 +1,6 @@
 
 
-def plug_in(self, symbol_values):
+def plug_in(symbol_values):
     # placeholder, a little dumb
     # will be partly replaced with CrystalPrototypeClassifier
     structure = symbol_values['s']
