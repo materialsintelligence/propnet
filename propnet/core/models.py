@@ -222,8 +222,8 @@ class Model(ABC):
     # and props
     @property
     def evaluation_list(self):
-        props = [list(input_set) + self.constraint_properties
-                      for input_set in self.input_sets]
+        props = [list(input_set | self.constraint_properties)
+                 for input_set in self.input_sets]
         syms = [self.map_properties_to_symbols(p) for p in props]
         return zip(syms, props)
 
@@ -269,7 +269,7 @@ class Model(ABC):
         # Constraints are defined only in terms of symbols
         all_syms = [self.map_symbols_to_properties(c.all_inputs)
                     for c in self.constraints]
-        return list(set(chain.from_iterable(all_syms)))
+        return set(chain.from_iterable(all_syms))
 
     def check_constraints(self, input_properties):
         input_symbols = self.map_properties_to_symbols(input_properties)
@@ -456,7 +456,7 @@ class Constraint(Model):
         """
         self.expression = expression.replace(' ', '')
         split = re.split("[+-/*<>=()]", self.expression)
-        inputs = [s for s in split if not will_it_float(s)]
+        inputs = [s for s in split if not will_it_float(s) and s]
         connections = [{"inputs": inputs, "outputs": "is_valid"}]
         super(Constraint, self).__init__(
             name=name, connections=connections, **kwargs)

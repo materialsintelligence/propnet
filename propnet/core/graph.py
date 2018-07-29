@@ -373,7 +373,7 @@ class Graph(object):
 
         has_changed = True
 
-        # TODO: revisit this, looks a bit too complicated
+        # TODO: revisit this and cleanup, looks too complicated
         while has_changed:
             # Add any new models to investigate.
             for m in to_add:
@@ -397,14 +397,14 @@ class Graph(object):
                     continue
                 # Check if model has all constraint Symbols provided.
                 has_inputs = True
-                for s in m.type_constraint_symbols():
+                for s in m.constraint_properties:
                     if s not in working:
                         has_inputs = False
                         break
                 if not has_inputs:
                     continue
                 # Check if any model input sets are met.
-                for input_set in m.input_sets:
+                for input_set, output_set in zip(m.input_sets, m.output_sets):
                     has_inputs = True
                     for s in input_set:
                         if s not in working:
@@ -414,7 +414,6 @@ class Graph(object):
                         continue
                     # Check passed -- add model outputs to the available properties.
                     #              -- add any new models working with these newly available properties
-                for output_set in m.output_sets:
                     for s in output_set:
                         if s not in working:
                             for new_model in self._input_to_model[s]:
@@ -471,21 +470,21 @@ class Graph(object):
         # Store replacements.
         outputs = []
         prev = defaultdict(list)
+        # TODO: this also might be too complicated, marking for refactor
         for symbol in candidate_symbols:
             c_models = self._output_to_model[symbol]
             for model in c_models:
-                for d in model.type_connections:
+                for input_set, output_set in zip(model.input_sets, model.output_sets):
                     can_continue = True
-                    for input_symbol in d['inputs']:
+                    for input_symbol in input_set:
                         if input_symbol in replaced_symbols:
                             can_continue = False
                             break
                     if not can_continue:
                         continue
-                    s_inputs = set(d['inputs'] + model.type_constraint_symbols())
-                    s_outputs = set(d['outputs'])
-                    new_types = (to_expand.inputs - s_outputs)
-                    new_types.update(s_inputs)
+                    input_set = input_set | model.constraint_properties
+                    new_types = (to_expand.inputs - output_set)
+                    new_types.update(input_set)
                     new_types = {self._symbol_types[x] for x in new_types}
                     if new_types in prev[model]:
                         continue

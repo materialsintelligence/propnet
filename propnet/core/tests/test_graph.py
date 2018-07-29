@@ -7,6 +7,8 @@ from propnet.core.quantity import Quantity
 
 from propnet.symbols import DEFAULT_SYMBOLS
 
+# TODO: There's a lot of code duplication here that could be added to setUp
+
 class GraphTest(unittest.TestCase):
 
     @staticmethod
@@ -574,45 +576,13 @@ class GraphTest(unittest.TestCase):
         mat2.add_quantity(Quantity(b, 5, []))
         mat2.add_quantity(Quantity(c, 7, []))
 
-        class Model1 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata={
-                        'title': 'model1',
-                        'tags': [],
-                        'references': [],
-                        'symbol_mapping': {'a': 'a',
-                                           'b': 'b',
-                                           'c': 'c'
-                                           },
-                        'connections': [{
-                                         'inputs': ['a', 'b'],
-                                         'outputs': ['c']
-                                         }],
-                        'equations': ['c-a*b'],
-                        'description': ''
-                    },
-                                       symbol_types=symbol_types)
-
-        class Model2 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata={
-                        'title': 'model2',
-                        'tags': [],
-                        'references': [],
-                        'symbol_mapping': {'d': 'd',
-                                           'c': 'c',
-                                           'b': 'b'},
-                        'connections': [{'inputs': ['c', 'b'],
-                                         'outputs': ['d']
-                                         }],
-                        'equations': ['d-c*b'],
-                        'description': ''
-                    },
-                                       symbol_types=symbol_types)
+        model1 = EquationModel("model1", ["c-a*b"],
+                               [{"inputs": ["a", "b"], "outputs": ["c"]}])
+        model2 = EquationModel("model2", ["d-c*b"],
+                               [{"inputs": ["c", "b"], "outputs": ["d"]}])
 
         p = Graph(materials=[mat1, mat2],
-                  models={'model1': Model1(symbol_types=symbol_type_dict),
-                          'model2': Model2(symbol_types=symbol_type_dict)},
+                  models={'model1': model1, 'model2': model2},
                   symbol_types=symbol_type_dict)
 
         # Evaluate
@@ -681,7 +651,6 @@ class GraphTest(unittest.TestCase):
         """
 
         # Setup
-
         a = Symbol('a', ['A'], ['A'], units=[1.0, []], shape=[1])
         b = Symbol('b', ['A'], ['A'], units=[1.0, []], shape=[1])
         c = Symbol('c', ['A'], ['A'], units=[1.0, []], shape=[1])
@@ -812,32 +781,13 @@ class GraphTest(unittest.TestCase):
         Tests the Symbol Expansion algorithm on a non-cyclic graph with constraints.
         The canonical graph and the canonical material are used for this test.
         """
-        class Model4 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model4', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'D': 'D',
-                                         'B': 'B',
-                                         'C': 'C',
-                                         'G': 'G'
-                                        },
-                      'connections': [{'inputs': ['B', 'C'],
-                                       'outputs': ['D']
-                                      }],
-                      'equations': ['D-B*C*11']
-                    },
-                    symbol_types=symbol_types)
-
-            @property
-            def constraint_symbols(self):
-                return ['G']
-
-            def check_constraints(self, constraint_inputs):
-                return constraint_inputs['G'] == 0
+        model4 = EquationModel("model4", ['D-B*C*11'],
+                               [{'inputs': ['B', 'C'], 'outputs': ['D']}],
+                               constraints=["G==0"])
 
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
-        models['model4'] = Model4(symbol_types=symbols)
+        models['model4'] = model4
         del models['model6']
         material = GraphTest.generate_canonical_material(symbols)
         g = Graph(materials=[material], symbol_types=symbols, models=models)
@@ -869,32 +819,12 @@ class GraphTest(unittest.TestCase):
         Tests the Symbol Expansion algorithm on a cyclic graph with constraints.
         The canonical graph and the canonical material are used for this test.
         """
-        class Model4 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model4', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'D': 'D',
-                                         'B': 'B',
-                                         'C': 'C',
-                                         'G': 'G'
-                                        },
-                      'connections': [{'inputs': ['B', 'C'],
-                                       'outputs': ['D']
-                                      }],
-                      'equations': ['D-B*C*11']
-                    },
-                    symbol_types=symbol_types)
-
-            @property
-            def constraint_symbols(self):
-                return ['G']
-
-            def check_constraints(self, constraint_inputs):
-                return constraint_inputs['G'] == 0
-
+        model4 = EquationModel("model4", ['D-B*C*11'],
+                               [{'inputs': ['B', 'C'], 'outputs': ['D']}],
+                               constraints=["G==0"])
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
-        models['model4'] = Model4(symbol_types=symbols)
+        models['model4'] = model4
         material = GraphTest.generate_canonical_material(symbols)
         g = Graph(materials=[material], symbol_types=symbols, models=models)
 
@@ -1046,32 +976,13 @@ class GraphTest(unittest.TestCase):
         Tests the Symbol Ancestry algorithm on a non-cyclic graph with constraints.
         The canonical graph and the canonical material are used for this test.
         """
-        class Model4 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model4', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'D': 'D',
-                                         'B': 'B',
-                                         'C': 'C',
-                                         'G': 'G'
-                                        },
-                      'connections': [{'inputs': ['B', 'C'],
-                                       'outputs': ['D']
-                                      }],
-                      'equations': ['D-B*C*11']
-                    },
-                    symbol_types=symbol_types)
-
-            @property
-            def constraint_symbols(self):
-                return ['G']
-
-            def check_constraints(self, constraint_inputs):
-                return constraint_inputs['G'] == 0
+        model4 = EquationModel("model4", ['D-B*C*11'],
+                               [{'inputs': ['B', 'C'], 'outputs': ['D']}],
+                               constraints=["G==0"])
 
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
-        models['model4'] = Model4(symbol_types=symbols)
+        models['model4'] = model4
         del models['model6']
         g = Graph(symbol_types=symbols, models=models)
 
@@ -1141,32 +1052,13 @@ class GraphTest(unittest.TestCase):
         Tests the Symbol Ancestry algorithm on a cyclic graph with constraints.
         The canonical graph and the canonical material are used for this test.
         """
-        class Model4 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model4', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'D': 'D',
-                                         'B': 'B',
-                                         'C': 'C',
-                                         'G': 'G'
-                                        },
-                      'connections': [{'inputs': ['B', 'C'],
-                                       'outputs': ['D']
-                                      }],
-                      'equations': ['D-B*C*11']
-                    },
-                    symbol_types=symbol_types)
-
-            @property
-            def constraint_symbols(self):
-                return ['G']
-
-            def check_constraints(self, constraint_inputs):
-                return constraint_inputs['G'] == 0
+        model4 = EquationModel("model4", ['D-B*C*11'],
+                               [{'inputs': ['B', 'C'], 'outputs': ['D']}],
+                               constraints=["G==0"])
 
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
-        models['model4'] = Model4(symbol_types=symbols)
+        models['model4'] = model4
         g = Graph(symbol_types=symbols, models=models)
 
         out1 = g.required_inputs_for_property(symbols['F'])
@@ -1266,32 +1158,13 @@ class GraphTest(unittest.TestCase):
         """
         Tests the ability to generate all paths from one symbol to another with constraints.
         """
-        class Model4 (AbstractModel):
-            def __init__(self, symbol_types=None):
-                AbstractModel.__init__(self, metadata=
-                    { 'title': 'model4', 'tags': [], 'references': [], 'description': '',
-                      'symbol_mapping': {'D': 'D',
-                                         'B': 'B',
-                                         'C': 'C',
-                                         'G': 'G'
-                                        },
-                      'connections': [{'inputs': ['B', 'C'],
-                                       'outputs': ['D']
-                                      }],
-                      'equations': ['D-B*C*11']
-                    },
-                    symbol_types=symbol_types)
-
-            @property
-            def constraint_symbols(self):
-                return ['G']
-
-            def check_constraints(self, constraint_inputs):
-                return constraint_inputs['G'] == 0
+        model4 = EquationModel("model4", ['D-B*C*11'],
+                               [{'inputs': ['B', 'C'], 'outputs': ['D']}],
+                               constraints=["G==0"])
 
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
-        models['model4'] = Model4(symbol_types=symbols)
+        models['model4'] = model4
         del models['model6']
         g = Graph(symbol_types=symbols, models=models)
 
