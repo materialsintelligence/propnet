@@ -117,7 +117,16 @@ class Quantity(MSONable):
         return bool(self.value)
 
 
-def weighted_mean(quantities: List[Quantity]) -> List[Quantity]:
+def weighted_mean(quantities):
+    """
+    Function to retrieve weighted mean
+
+    Args:
+        quantities ([Quantity]): list of quantities
+
+    Returns:
+        weighted mean
+    """
     # can't run this twice yet ...
     # TODO: remove
     if hasattr(quantities[0].value, "std_dev"):
@@ -142,8 +151,13 @@ def weighted_mean(quantities: List[Quantity]) -> List[Quantity]:
         vals = [q.value for q in quantities]
     else:
         vals = [q.value.magnitude for q in quantities]
-    new_magnitude = np.mean(vals, axis=0)
-    std_dev = np.std(vals, axis=0)
+    # Weird bug where mean/stdev won't take a single quantity
+    if np.shape(vals) == (1,):
+        new_magnitude = vals[0]
+        std_dev = 0 * vals[0]
+    else:
+        new_magnitude = np.mean(vals, axis=0)
+        std_dev = np.std(vals, axis=0)
     new_value = unumpy.uarray(new_magnitude, std_dev)
 
     new_tags = set()
