@@ -588,6 +588,7 @@ class Graph(object):
         logger.debug("Beginning main loop")
         logger.debug("Quantity pool contains {}".format(quantity_pool))
         while continue_loop:
+            import nose; nose.tools.set_trace()
             continue_loop = False
             # Check if model inputs are supplied.
             logger.debug("Checking if model inputs are supplied")
