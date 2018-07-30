@@ -471,10 +471,7 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(mat1 in q._material,
                             "Incorrect material assignment.")
 
-
-    # Leave this one as failing for now, may want to keep some code
-    # for future multi-material tests
-    @unittest.expectedFailure
+    # TODO: this might not be supported in future, leave for now
     def test_evaluate_double_material_non_degenerate_property_1(self):
         """
         Graph has two materials on it: mat1 & mat2

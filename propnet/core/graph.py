@@ -588,7 +588,6 @@ class Graph(object):
         logger.debug("Beginning main loop")
         logger.debug("Quantity pool contains {}".format(quantity_pool))
         while continue_loop:
-            import nose; nose.tools.set_trace()
             continue_loop = False
             # Check if model inputs are supplied.
             logger.debug("Checking if model inputs are supplied")
@@ -632,7 +631,8 @@ class Graph(object):
                         evaluate_set = {symbol: quantity.value
                                         for symbol, quantity in input_set.items()}
                         output = model.evaluate(evaluate_set)
-                        if not output['successful']:
+                        success = output.pop('successful')
+                        if not success:
                             logger.debug("Model {} unsuccessful: {}".format(
                                 model.name, output['message']))
                             continue
@@ -641,10 +641,10 @@ class Graph(object):
                         #                       -- add additional candidate models
                         continue_loop = True
                         for symbol, quantity in output.items():
-                            st = self._symbol_types.get(
-                                model.symbol_property_map.get(symbol))
+                            st = self._symbol_types.get(symbol)
                             if not st:
-                                continue
+                                raise ValueError(
+                                    "Symbol type {} not found".format(symbol))
                             for m in self._input_to_model[st]:
                                 new_models.add(m)
                             q = Quantity(st, quantity, set())
