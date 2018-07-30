@@ -108,7 +108,8 @@ class Material(object):
             None
         """
         if symbol not in self._symbol_to_quantity:
-            raise Exception("Attempting to remove Symbol not present in the material.")
+            raise Exception(
+                "Attempting to remove Symbol not present in the material.")
         to_remove = []
         for q in self._symbol_to_quantity[symbol]:
             to_remove.append(q)
