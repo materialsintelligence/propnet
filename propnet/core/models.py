@@ -8,7 +8,7 @@ import logging
 from abc import ABC, abstractmethod
 from itertools import chain
 from glob import glob
-from copy import deepcopy, copy
+from copy import copy
 
 from monty.serialization import loadfn
 from monty.json import MSONable
@@ -84,11 +84,11 @@ class Model(ABC):
         # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
         self.constraints = []
-        for c in constraints:
-            if isinstance(c, Constraint):
-                self.constraints.append(c)
+        for constraint in constraints:
+            if isinstance(constraint, Constraint):
+                self.constraints.append(constraint)
             else:
-                self.constraints.append(Constraint(c))
+                self.constraints.append(Constraint(constraint))
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -107,10 +107,32 @@ class Model(ABC):
         return
 
     def map_properties_to_symbols(self, properties):
+        """
+        Helper method to convert property-keyed dictionary or list to
+        symbol-keyed dictionary or list
+
+        Args:
+            properties (list or dict): list of properties or property-
+                keyed dictionary
+
+        Returns (list or dict):
+            list of symbols or symbol-keyed dict
+        """
         rev_map = {v: k for k, v in self.symbol_property_map.items()}
         return remap(properties, rev_map)
 
     def map_symbols_to_properties(self, symbols):
+        """
+        Helper method to convert symbol-keyed dictionary or list to
+        property-keyed dictionary or list
+
+        Args:
+            symbols (list or dict): list of symbols or symbol-keyed
+                dictionary
+
+        Returns (list or dict):
+            list of properties or property-keyed dict
+        """
         return remap(symbols, self.symbol_property_map)
 
     # TODO: I'm really not crazy about the "successful" key implementation
@@ -162,8 +184,7 @@ class Model(ABC):
                 'successful': False,
                 'message': "The {} model cannot generate any outputs for "
                            "these inputs: {}".format(
-                    self.name, property_value_dict.keys())
-            }
+                    self.name, property_value_dict.keys())}
         # TODO: Remove the try-except functionality, high priority
         try:
             # evaluate is allowed to fail
@@ -200,20 +221,32 @@ class Model(ABC):
     # rather than symbols
     @property
     def input_sets(self):
+        """
+        Returns (set): set of input property sets
+        """
         return [set(self.map_symbols_to_properties(d['inputs']))
                 for d in self.connections]
 
     @property
     def output_sets(self):
+        """
+        Returns (set): set of output property sets
+        """
         return [set(self.map_symbols_to_properties(d['outputs']))
                 for d in self.connections]
 
     @property
     def all_inputs(self):
+        """
+        Returns (set): set of all input properties
+        """
         return list(chain.from_iterable(self.input_sets))
 
     @property
     def all_outputs(self):
+        """
+        Returns (set): set of all output properties
+        """
         return list(chain.from_iterable(self.output_sets))
 
     @property
@@ -243,6 +276,8 @@ class Model(ABC):
         Args:
             inputs (dict): set of input names to values
             outputs (dict): set of output names to values
+
+        Returns (bool): True if test succeeds
         """
         model_outputs = self.plug_in(inputs)
         errmsg = "Model does not match known output for {}".format(
@@ -273,6 +308,9 @@ class Model(ABC):
 
     @property
     def constraint_properties(self):
+        """
+        Returns (set): set of constraint input properties
+        """
         # Constraints are defined only in terms of symbols
         all_syms = [self.map_symbols_to_properties(c.all_inputs)
                     for c in self.constraints]
@@ -449,7 +487,15 @@ class PyModel(Model):
 # which could be implemented as a class method of PyModel
 # but wouldn't serialize as cleanly
 class PyModuleModel(PyModel):
+    """
+    PyModuleModel is a class instantiated by a model path only,
+    which exists primarily for the purpose of serializing python models
+    """
     def __init__(self, module_path):
+        """
+        Args:
+            module_path (str): path to module to instantiate model
+        """
         self._module_path = module_path
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
         super(PyModuleModel, self).__init__(**mod.config)
@@ -489,15 +535,15 @@ class Constraint(Model):
         return "Constraint: {}".format(self.expression)
 
 
-def will_it_float(input):
+def will_it_float(input_to_test):
     """
     Helper function to determine if input string can be cast to float
 
     Args:
-        input (str): input string to be tested
+        input_to_test (str): input string to be tested
     """
     try:
-        float(input)
+        float(input_to_test)
         return True
     except ValueError:
         return False

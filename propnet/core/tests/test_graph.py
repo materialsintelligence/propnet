@@ -2,7 +2,7 @@ import unittest
 from propnet.core.graph import Graph, SymbolPath
 from propnet.core.materials import Material
 from propnet.core.symbols import Symbol
-from propnet.core.models import EquationModel, PyModel
+from propnet.core.models import EquationModel
 from propnet.core.quantity import Quantity
 
 from propnet.symbols import DEFAULT_SYMBOLS

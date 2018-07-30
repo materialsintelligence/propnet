@@ -182,11 +182,11 @@ class Graph(object):
             added[model.name] = model
             try:
                 for input_set in model.input_sets:
-                    for property in input_set:
-                        self._input_to_model[property].add(model)
+                    for property_name in input_set:
+                        self._input_to_model[property_name].add(model)
                 for output_set in model.output_sets:
-                    for property in output_set:
-                        self._output_to_model[property].add(model)
+                    for property_name in output_set:
+                        self._output_to_model[property_name].add(model)
             except KeyError as e:
                 self.remove_models(added)
                 raise KeyError('Attempted to add a model to the property network with an unrecognized Symbol.\

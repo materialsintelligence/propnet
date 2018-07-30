@@ -1,5 +1,5 @@
-import numpy as np
 import six
+import numpy as np
 
 from monty.json import MSONable
 from ruamel.yaml import safe_dump
@@ -142,7 +142,7 @@ class Symbol(MSONable):
             compatible_units = [str(u) for u in self.units.compatible_units()]
             return compatible_units
         except KeyError:
-            logger.warn("Cannot find compatible units for {}".format(self.name))
+            logger.warning("Cannot find compatible units for {}".format(self.name))
             return []
 
     def __hash__(self):

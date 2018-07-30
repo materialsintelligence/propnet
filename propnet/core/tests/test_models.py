@@ -1,11 +1,6 @@
 import unittest
-import os
 
 import math
-
-from glob import glob
-
-import propnet.models as models
 
 from propnet.models import DEFAULT_MODEL_NAMES, DEFAULT_MODEL_DICT, DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
@@ -22,6 +17,7 @@ class ModelTest(unittest.TestCase):
         for model_name in DEFAULT_MODEL_NAMES:
             try:
                 model = DEFAULT_MODEL_DICT.get(model_name)
+                self.assertIsNotNone(model)
                 models_to_test.append(model_name)
             except Exception as e:
                 self.fail('Failed to load model {}: {}'.format(model_name, e))
