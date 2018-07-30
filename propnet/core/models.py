@@ -273,8 +273,21 @@ class Model(ABC):
         return set(chain.from_iterable(all_syms))
 
     def check_constraints(self, input_properties):
+        """
+        Checks the constraints based on input property set
+
+        Args:
+            input_properties ({property: value}): property value
+                dictionary for input to constraints
+
+        Returns (bool):
+            True if constraints are satisfied, false if not
+        """
         input_symbols = self.map_properties_to_symbols(input_properties)
-        return all([c.plug_in(input_symbols) for c in self.constraints])
+        for constraint in self.constraints:
+            if not constraint.plug_in(input_symbols):
+                return False
+        return True
 
     @staticmethod
     def load_test_data(name, test_data_loc=TEST_DATA_LOC):
@@ -464,6 +477,9 @@ class Constraint(Model):
 
     def plug_in(self, symbol_value_dict):
         return parse_expr(self.expression, symbol_value_dict)
+
+    def __repr__(self):
+        return "Constraint: {}".format(self.expression)
 
 
 def will_it_float(input):

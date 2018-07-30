@@ -113,6 +113,9 @@ class Quantity(MSONable):
     def __str__(self):
         return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)
 
+    def __bool__(self):
+        return bool(self.value)
+
 
 def weighted_mean(quantities: List[Quantity]) -> List[Quantity]:
     # can't run this twice yet ...

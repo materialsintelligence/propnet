@@ -664,7 +664,7 @@ class GraphTest(unittest.TestCase):
 
         model1 = EquationModel("model1", ['c-a*b'],
                                [{'inputs': ['a', 'b'], 'outputs': ['c']}],
-                               constraints=["constraint_value"])
+                               constraints=["constraint"])
         mat1 = Material()
         mat1.add_quantity(a_example)
         mat1.add_quantity(b_example)
