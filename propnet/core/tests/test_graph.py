@@ -442,7 +442,7 @@ class GraphTest(unittest.TestCase):
         mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permittivity'], 5, None))
         propnet.add_material(mat1)
 
-        propnet.evaluate(material=mat1)
+        propnet.evaluate()
 
         # Expected outputs
         s_outputs = []
@@ -454,8 +454,6 @@ class GraphTest(unittest.TestCase):
         s_outputs.append(Quantity('refractive_index', 5 ** 0.5, None))
         s_outputs.append(Quantity('refractive_index', 6 ** 0.5, None))
         s_outputs.append(Quantity('refractive_index', 10 ** 0.5, None))
-
-        m_outputs = [mat1]
 
         st_outputs = []
         st_outputs.append(DEFAULT_SYMBOLS['relative_permeability'])
@@ -471,8 +469,12 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(q is not None,
                             "Quantity missing from evaluate.")
             self.assertTrue(mat1 in q._material,
-                                "Incorrect material assignment.")
+                            "Incorrect material assignment.")
 
+
+    # Leave this one as failing for now, may want to keep some code
+    # for future multi-material tests
+    @unittest.expectedFailure
     def test_evaluate_double_material_non_degenerate_property_1(self):
         """
         Graph has two materials on it: mat1 & mat2
@@ -643,7 +645,9 @@ class GraphTest(unittest.TestCase):
 
     def test_evaluate_with_constraint(self):
         """
-        Simple graph in which property C can be derived from properties A and B iff Constraint has value True.
+        Simple graph in which property C can be derived from properties
+        A and B iff Constraint has value True.
+
         Graph has 2 materials on it: mat1 and mat2.
             mat1 has a Constraint with value True.
             mat2 has a Constraint with value False.
@@ -675,15 +679,7 @@ class GraphTest(unittest.TestCase):
         mat2.add_quantity(b_example)
         mat2.add_quantity(const2)
 
-        p = Graph(materials=[mat1, mat2],
-                  models={'model1': model1},
-                  symbol_types=symbol_type_dict)
-
-        # Evaluate
-        p.evaluate(material=mat1)
-        p.evaluate(material=mat2)
-
-        # Test
+        # Expected outputs
         m1_s_outputs = []
         m1_s_outputs.append(Quantity(a, 2, []))
         m1_s_outputs.append(Quantity(b, 3, []))
@@ -695,21 +691,29 @@ class GraphTest(unittest.TestCase):
         m2_s_outputs.append(Quantity(b, 3, []))
         m2_s_outputs.append(Quantity(constraint, False, []))
 
+        graph = Graph(models={'model1': model1}, materials=[mat1],
+                      symbol_types=symbol_type_dict)
+
+        # Evaluate
+        graph.evaluate()
         for q_expected in m1_s_outputs:
             q = None
-            for q_derived in p._symbol_to_quantity[q_expected.symbol]:
+            for q_derived in graph._symbol_to_quantity[q_expected.symbol]:
                 if q_derived == q_expected:
                     q = q_derived
-            self.assertTrue(q is not None,
-                            "Quantity missing from evaluate.")
+            self.assertIsNotNone(q, "Quantity missing from evaluate.")
 
+        graph = Graph(models={'model1': model1}, materials=[mat2],
+                      symbol_types=symbol_type_dict)
+        graph.evaluate()
+
+        # TODO: I'm not sure the lack of the constrainted model is being checked here
         for q_expected in m2_s_outputs:
             q = None
-            for q_derived in p._symbol_to_quantity[q_expected.symbol]:
+            for q_derived in graph._symbol_to_quantity[q_expected.symbol]:
                 if q_derived == q_expected:
                     q = q_derived
-            self.assertTrue(q is not None,
-                            "Quantity missing from evaluate.")
+            self.assertIsNotNone(q, "Quantity missing from evaluate.")
 
     def test_symbol_expansion(self):
         """

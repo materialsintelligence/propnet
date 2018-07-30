@@ -68,7 +68,6 @@ class Graph(object):
         """
 
         # set our defaults if no models/symbol types supplied
-        defaults = models or DEFAULT_MODEL_DICT
         symbol_types = symbol_types or DEFAULT_SYMBOLS
 
         # create the graph
@@ -82,8 +81,7 @@ class Graph(object):
         if symbol_types:
             self.update_symbol_types(symbol_types)
 
-        if models:
-            self.update_models(models)
+        self.update_models(models or DEFAULT_MODEL_DICT)
 
         if materials:
             for material in materials:
@@ -509,53 +507,56 @@ class Graph(object):
         return tree.get_paths_from(start_property)
 
     @staticmethod
-    def generate_input_sets(symbol_list, req_types, this_quantity_pool):
+    def generate_input_sets(props, this_quantity_pool):
         """
         Generates all combinatorially-unique sets of input dictionaries.
 
         Args:
-            symb_list ([str]): list of model symbols mapped to Symbol objects.
-            req_types ([str]): list of Symbols that must be retrieved from the quantity_pool.
+            properties ([str]): property names
             this_quantity_pool ({Symbol: Set(Quantity)}): quantities keyed
                 by symbols
 
         Returns:
             ([{str: Quantity}]): list of symbol strings mapped to Quantity values.
         """
-        if len(symbol_list) != len(req_types):
-            raise Exception("Symbol and Type sets must be the same length.")
-        aggregated_symbols = [this_quantity_pool[req_type]
-                              for req_type in req_types]
+        aggregated_symbols = [this_quantity_pool[prop]
+                              for prop in props]
         input_set_lists = product(*aggregated_symbols)
         input_set_dicts = []
         for input_set_list in input_set_lists:
             input_set_dicts.append({
                 symbol: input_quantity for symbol, input_quantity
-                in zip(symbol_list, input_set_list)
+                in zip(props, input_set_list)
             })
         return input_set_dicts
 
+    # TODO: refactor so graph is not mutated
     def evaluate(self, material=None, property_type=None):
         """
-        Expands the graph, producing the output of models that have the appropriate inputs supplied.
-        Mutates the graph instance variable.
+        Expands the graph, producing the output of models that have the
+        appropriate inputs supplied.  Mutates the graph instance.
 
-        Optional arguments limit the scope of which models or properties are tested.
-            material parameter: produces output from models only if the input properties come from the specified material.
-                                mutated graph will modify the Material's graph instance as well as this graph instance.
-                                mutated graph will include edges from Material to Quantity to Symbol.
-            property_type parameter: produces output from models only if the input properties are in the list.
+        Optional arguments limit the scope of which models or properties
+        are tested.
 
-        If no material parameter is specified, the generated SymbolNodes will be added with edges to and from
-        corresponding SymbolTypeNodes specifically. No connections will be made to existing Material nodes because
-        a Quantity might be derived from a combination of materials in this case. Likewise existing Material nodes'
-        graph instances will not be mutated in this case.
+        If no material parameter is specified, the generated Quantities
+        will be added with edges to and from corresponding Symbols
+        specifically. No connections will be made to existing Material
+        nodes because a Quantity might be derived from a combination of
+        materials in this case. Likewise existing Material nodes' graph
+        instances will not be mutated in this case.
 
         Args:
-            material (Material): optional limit on which material's properties will be expanded (default: all materials)
-            property_type (list<Symbol>): optional limit on which Symbols will be considered as input.
+            material (Material): produces output from models only if the
+                input properties come from the specified material.
+                mutated graph will modify the Material's graph instance
+                as well as this graph instance. mutated graph will
+                include edges from Material to Quantity to Symbol.
+            property_type ([str]): produces output from models only if
+                the input properties are in the list.
+
         Returns:
-            void
+             None
         """
 
         # Determine which Quantity objects are up for evaluation.
@@ -597,10 +598,10 @@ class Graph(object):
                 logger.debug("Evaluating model {}".format(model.title))
                 logger.debug("Quantity pool contains {} quantities:".format(
                     len(list(chain.from_iterable(quantity_pool.values())))))
-                inputs = model.evaluation_list
-                for l in inputs:
+                for property_input_sets in model.evaluation_list:
                     logger.debug("Generating input sets")
-                    input_sets = self.generate_input_sets(l[0], l[1], quantity_pool)
+                    input_sets = self.generate_input_sets(
+                        property_input_sets, quantity_pool)
                     for input_set in input_sets:
                         override = False
                         can_evaluate = False
@@ -626,11 +627,13 @@ class Graph(object):
                         for value in input_set.values():
                             for mat in value._material:
                                 mats.add(mat)
-                        evaluate_set = dict()
-                        for symbol, quantity in input_set.items():
-                            evaluate_set[symbol] = quantity.value
+                        # TODO: quantities should fit cleanly into methods
+                        evaluate_set = {symbol: quantity.value
+                                        for symbol, quantity in input_set.items()}
                         output = model.evaluate(evaluate_set)
                         if not output['successful']:
+                            logger.debug("Model {} unsuccessful: {}".format(
+                                model.name, output['message']))
                             continue
                         # Model produced output -- gather output
                         #                       -- add output to the graph

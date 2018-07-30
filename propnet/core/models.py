@@ -152,12 +152,10 @@ class Model(ABC):
                     value = value.to(self.unit_map[symbol])
                 symbol_value_dict[symbol] = value.magnitude
 
-        available_properties = set(property_value_dict.keys())
-
         # check we support this combination of inputs
-        input_matches = [set(input_set) == available_properties
-                         for input_set in self.input_sets]
-        # TODO: Remove the try-except functionality, high priority
+        # TODO: this shouldn't be necessary
+        input_matches = [set(input_set) == set(property_value_dict)
+                         for input_set in self.evaluation_list]
         if not any(input_matches):
             return {
                 'successful': False,
@@ -165,6 +163,7 @@ class Model(ABC):
                            "these inputs: {}".format(
                     self.name, available_properties)
             }
+        # TODO: Remove the try-except functionality, high priority
         try:
             # evaluate is allowed to fail
             out = self.plug_in(symbol_value_dict)
@@ -224,10 +223,15 @@ class Model(ABC):
     # and props
     @property
     def evaluation_list(self):
-        props = [list(input_set | self.constraint_properties)
-                 for input_set in self.input_sets]
-        syms = [self.map_properties_to_symbols(p) for p in props]
-        return zip(syms, props)
+        """
+        Gets everything one needs to call the evaluate method, which
+        is all of the input properties and constraints
+
+        Returns:
+            list of sets of inputs with constraint properties included
+        """
+        return [list(input_set | self.constraint_properties)
+                for input_set in self.input_sets]
 
     def test(self, inputs, outputs):
         """
