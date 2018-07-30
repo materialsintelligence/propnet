@@ -151,6 +151,7 @@ def weighted_mean(quantities):
         vals = [q.value for q in quantities]
     else:
         vals = [q.value.magnitude for q in quantities]
+
     new_magnitude = np.mean(vals, axis=0)
     std_dev = np.std(vals, axis=0)
     new_value = unumpy.uarray(new_magnitude, std_dev)

@@ -3,10 +3,8 @@ from propnet import ureg
 
 def plug_in(symbol_values):
     s = symbol_values['s']
-    # TODO: please check this @dmrdjenovic
-    return {'p': ureg.Quantity.from_tuple(
-                [len(s.sites)/s.volume, [['angstrom', -3]]]),
-            'rho': float(s.density) * ureg.gram * ureg.centimeter ** -3,
+    return {'p': len(s.sites) / s.volume,
+            'rho': float(s.density),
             'successful': True}
 
 config = {
