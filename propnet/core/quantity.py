@@ -151,13 +151,8 @@ def weighted_mean(quantities):
         vals = [q.value for q in quantities]
     else:
         vals = [q.value.magnitude for q in quantities]
-    # Weird bug where mean/stdev won't take a single quantity
-    if np.shape(vals) == (1,):
-        new_magnitude = vals[0]
-        std_dev = 0 * vals[0]
-    else:
-        new_magnitude = np.mean(vals, axis=0)
-        std_dev = np.std(vals, axis=0)
+    new_magnitude = np.mean(vals, axis=0)
+    std_dev = np.std(vals, axis=0)
     new_value = unumpy.uarray(new_magnitude, std_dev)
 
     new_tags = set()
