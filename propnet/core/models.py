@@ -475,6 +475,7 @@ class Constraint(Model):
             **kwargs:
         """
         self.expression = expression.replace(' ', '')
+        # Parse all the non-math symbols and assign to inputs
         split = re.split("[+-/*<>=()]", self.expression)
         inputs = [s for s in split if not will_it_float(s) and s]
         connections = [{"inputs": inputs, "outputs": ["is_valid"]}]

@@ -56,7 +56,7 @@ class WebTest(unittest.TestCase):
         self.assertTrue(layout.children[0], "Average grain diameter")
 
     def test_model_layout(self):
-        layout = model_layout("Density")
+        layout = model_layout("density")
         self.assertTrue(layout.children[0], "Atomic Density")
 
     def tearDown(self):

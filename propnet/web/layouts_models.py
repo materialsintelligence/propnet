@@ -6,7 +6,7 @@ from dash_react_graph_vis import GraphComponent
 
 import networkx as nx
 from propnet.core.graph import Graph
-from propnet.core.node import Node, NodeType
+from propnet.models import DEFAULT_MODEL_DICT
 
 import propnet.models as models
 from propnet.symbols import DEFAULT_SYMBOLS
@@ -29,7 +29,7 @@ def model_layout(model_name):
     layouts = OrderedDict()
 
     # instantiate model from name
-    model = getattr(models, model_name)()
+    model = DEFAULT_MODEL_DICT[model_name]
 
     model_title = html.Div(
         className='row',
@@ -144,19 +144,14 @@ def model_layout(model_name):
 
 
 model_links = {}
-for model_name in models.DEFAULT_MODEL_NAMES:
-    # instantiate model from name
-    model = getattr(models, model_name)()
-
+for model_name, model in DEFAULT_MODEL_DICT.items():
     # group by tag
-    tags = model.tags
-
-    for tag in tags:
+    for tag in model.categories:
         if tag not in model_links:
             model_links[tag] = []
 
-    for tag in tags:
-        passes = model.test()
+    for tag in model.categories:
+        passes = model.validate_from_preset_test()
         passes = "✅" if passes else "❌"
 
         link_text = "{}".format(model.title)
