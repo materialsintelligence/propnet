@@ -15,7 +15,9 @@ from itertools import chain, product
 
 logger = logging.getLogger("graph")
 
-# TODO: reconsider polymorphism
+# TODO: consider refactoring with non-mutable quantity attachments, e. g.
+#       graph functionality is purely for path/relationship determination
+#       not for attaching quantities
 class Graph(object):
     """
     Class containing methods for creating and interacting with a
@@ -117,10 +119,13 @@ class Graph(object):
 
     def update_symbol_types(self, symbol_types):
         """
-        Add / redefine user-defined symbol types to the graph.
-        If the input, symbol_types, includes keys in self._symbol_types, they are redefined.
+        Add / redefine user-defined symbol types to the graph. If the
+        input, symbol_types, includes keys in self._symbol_types,
+        they are redefined.
+
         Args:
-            symbol_types (dict<str, Symbol>): {name:Symbol}
+            symbol_types ({name: Symbol}): symbol types to add
+
         Returns:
             None
         """
@@ -129,20 +134,24 @@ class Graph(object):
 
     def remove_symbol_types(self, symbol_types):
         """
-        Removes user-defined Symbol objects to the Graph.
-        Removes any models that input or output this Symbol because they are no longer defined
-        without the given symbol_types.
+        Removes user-defined Symbol objects to the Graph. Removes
+        any models that input or output this Symbol because they
+        are no longer defined without the given symbol_types.
+
         Args:
-            symbol_types (dict<str, Symbol>): {name:Symbol}
+            symbol_types ({name:Symbol}): symbol types to remove
+
         Returns:
             None
         """
         models_to_remove = {}
         for symbol in symbol_types.keys():
             if symbol not in self._symbol_types.keys():
-                raise Exception("Trying to remove a symbol that is not currently defined.")
+                raise Exception("Trying to remove a symbol that is not "
+                                "currently defined.")
             if symbol_types[symbol] != self._symbol_types[symbol]:
-                raise Exception("Trying to remove a symbol that is not currently defined.")
+                raise Exception("Trying to remove a symbol that is not "
+                                "currently defined.")
             s1 = self._input_to_model[symbol]
             s2 = self._output_to_model[symbol]
             for m in s1:
@@ -156,9 +165,11 @@ class Graph(object):
 
     def get_symbol_types(self):
         """
-        Getter method, returns a set of all Symbol objects present on the graph.
-        Returns:
-            (set<Symbol>)
+        Getter method, returns a set of all Symbol objects
+        present on the graph.
+
+        Returns ({Symbol}):
+            set of symbols present on the graph
         """
         to_return = set()
         for s in self._symbol_types.values():
@@ -167,12 +178,15 @@ class Graph(object):
 
     def update_models(self, models):
         """
-        Add / redefine user-defined models to the graph.
-        If the input, models, includes keys in self._models, they are redefined.
-        The addition of a model may fail if appropriate Symbol objects are not already on the graph.
-        If any addition operation fails, the entire update is aborted.
+        Add / redefine user-defined models to the graph. If the input,
+        models, includes keys in self._models, they are redefined.
+        The addition of a model may fail if appropriate Symbol objects
+        are not already on the graph.  If any addition operation fails,
+        the entire update is aborted.
+
         Args:
-            models (dict<str, Model>): Instances of the model class (subclasses AbstractModel)
+            models ({name: Model}): Instances of the model class
+
         Returns:
             None
         """
@@ -189,20 +203,25 @@ class Graph(object):
                         self._output_to_model[property_name].add(model)
             except KeyError as e:
                 self.remove_models(added)
-                raise KeyError('Attempted to add a model to the property network with an unrecognized Symbol.\
-                                Add {} Symbol to the property network before adding this model.'.format(e))
+                raise KeyError("Attempted to add a model to the property "
+                               "network with an unrecognized Symbol. "
+                               "Add {} Symbol to the property network before "
+                               "adding this model.".format(e))
 
     def remove_models(self, models):
         """
         Remove user-defined models from the Graph.
+
         Args:
-            models (dict<str, Model>): Instances of the model class
+            models ({name: Model}): Instances of the model class
+
         Returns:
             None
         """
         for model in models.keys():
             if model not in self._models.keys():
-                raise Exception("Attempted to remove a model not currently present in the graph.")
+                raise Exception("Attempted to remove a model not currently "
+                                "present in the graph.")
             del self._models[model]
         for s in self._input_to_model.values():
             for model in models.values():
@@ -215,9 +234,11 @@ class Graph(object):
 
     def get_models(self):
         """
-        Getter method, returns a set of all model objects present on the graph.
-        Returns:
-            (set<Model>)
+        Getter method, returns a set of all model objects present
+        on the graph.
+
+        Returns ({Model}):
+            set of models in the graph
         """
         to_return = set()
         for model in self._models.values():
@@ -226,10 +247,12 @@ class Graph(object):
 
     def add_material(self, material):
         """
-        Add a material and any of its associated properties to the Graph.
-        Mutates the graph instance variable.
+        Add a material and any of its associated properties to the
+        Graph.  Mutates the graph instance variable.
+
         Args:
-            material (Material) Material whose information will be added to the graph.
+            material (Material) Material whose information will be
+                added to the graph.
         Returns:
             void
         """
@@ -243,16 +266,18 @@ class Graph(object):
 
     def remove_material(self, material):
         """
-        Removes a material and any of its associated properties from the Graph.
-        Mutates the graph instance variable.
+        Removes a material and any of its associated properties from the
+        Graph.  Mutates the graph instance variable.
 
         Args:
-            material (Material) Material whose information will be removed from the graph.
+            material (Material) Material whose information will be
+                removed from the graph.
         Returns:
-            void
+            None
         """
         if material not in self._materials:
-            raise Exception("Trying to remove material that is not part of the graph.")
+            raise Exception("Trying to remove material that is not part of "
+                            "the graph.")
         self._materials.remove(material)
         for qs in list(material._symbol_to_quantity.values()):
             for q in qs:
@@ -262,31 +287,40 @@ class Graph(object):
     def get_materials(self):
         """
         Getter method returning all materials on the graph.
-        Returns:
-            (set<Material>)
+
+        Returns ({Material}):
+            set of materials on the graph
         """
         return {m for m in self._materials}
 
     def _add_quantity(self, property):
         """
         PRIVATE METHOD!
-        Adds a property to this graph. Properties should be added to Material objects ONLY.
-        This method is called ONLY by Material objects to ensure consistency of data structures.
+        Adds a property to this graph. Properties should be added to
+        Material objects ONLY.  This method is called ONLY by Material
+        objects to ensure consistency of data structures.
+
         Args:
-            property (Quantity):
+            property (Quantity): property to be added
+
         Returns:
             None
         """
         if property.symbol.name not in self._symbol_types:
-            raise KeyError("Attempted to add a Quantity to the graph for which no corresponding Symbol exists.\
-                            Please add the appropriate Symbol to the property network and try again.")
+            raise KeyError(
+                "Attempted to add a Quantity to the graph for which no "
+                "corresponding Symbol exists.  Please add the appropriate "
+                "Symbol to the property network and try again.")
         self._symbol_to_quantity[property.symbol].add(property)
 
     def _remove_quantity(self, property):
         """
         PRIVATE METHOD!
-        Removes this property from the graph. Properties should be removed from Material objects ONLY.
-        This method is called ONLY by Material objects to ensure consistency of data structures.
+        Removes this property from the graph. Properties should be
+        removed from Material objects ONLY.  This method is called
+        ONLY by Material objects to ensure consistency of data
+        structures.
+
         Args:
             property (Quantity): the property to be removed
 
@@ -294,7 +328,8 @@ class Graph(object):
             None
         """
         if property.symbol.name not in self._symbol_types:
-            raise Exception("Attempted to remove a quantity not part of the graph.")
+            raise Exception(
+                "Attempted to remove a quantity not part of the graph.")
         self._symbol_to_quantity[property.symbol].remove(property)
         if len(self._symbol_to_quantity[property.symbol]) == 0:
             del self._symbol_to_quantity[property.symbol]
@@ -303,8 +338,9 @@ class Graph(object):
     @property
     def graph(self):
         """
-        Generates a networkX data structure representing the property network and returns
-        this object.
+        Generates a networkX data structure representing the property
+        network and returns this object.
+
         Returns:
             (networkX.multidigraph)
         """
@@ -328,7 +364,7 @@ class Graph(object):
 
         # Add orphan nodes
         for symbol in self._symbol_types:
-            if not symbol in graph.nodes:
+            if symbol not in graph.nodes:
                 graph.add_node(symbol)
 
         return graph
@@ -346,10 +382,13 @@ class Graph(object):
                 given Symbol type to generate an output.
 
         Args:
-            property_type_set (set<Symbol>): the set of Symbol objects taken as starting properties.
+            property_type_set ({Symbol}): the set of Symbol objects
+                taken as starting properties.
         Returns:
-            ((set<Symbol>, set<Model>)) the set of all Symbol objects that can be derived from the property_type_set,
-                                        the set of all Model objects that are used in deriving the new Symbol objects.
+            (({Symbol}, {Model})) the set of all Symbol objects that
+                can be derived from the property_type_set, the set of
+                all Model objects that are used in deriving the new
+                Symbol objects.
         """
         # Set of theoretically derivable properties.
         derivable = set()
@@ -427,15 +466,20 @@ class Graph(object):
 
     def required_inputs_for_property(self, property):
         """
-        Determines all potential paths leading to a given symbol object. Answers the question:
-            What sets of properties are required to calculate this given property?
-        Paths are represented as a series of models and required input Symbol objects.
-        Paths can be searched to determine specifically how to get from one property to another.
+        Determines all potential paths leading to a given symbol
+        object. Answers the question: What sets of properties are
+        required to calculate this given property?
 
-        Warning: Method indicates sets of Symbol objects required to calculate the property.
-                 It does not indicate how many of each Symbol is required.
-                 It does not guarantee that supplying Quantities of these types will result in a
-                 new Symbol output as conditions / assumptions may not be met.
+        Paths are represented as a series of models and required
+        input Symbol objects. Paths can be searched to determine
+        specifically how to get from one property to another.
+
+        Warning: Method indicates sets of Symbol objects required
+            to calculate the property.  It does not indicate how
+            many of each Symbol is required. It does not guarantee
+            that supplying Quantities of these types will result
+            in a new Symbol output as conditions / assumptions may
+            not be met.
 
         Returns:
             SymbolTree
@@ -446,17 +490,21 @@ class Graph(object):
 
     def _tree_builder(self, to_expand):
         """
-        Recursive helper method to build a SymbolTree.
-        Fills in the children of to_expand by all possible model substitutions.
+        Recursive helper method to build a SymbolTree.  Fills in
+        the children of to_expand by all possible model
+        substitutions.
+
         Args:
             to_expand: (TreeElement) element that will be expanded
+
         Returns:
             None
         """
 
-        # Get set of symbols that no longer need to be replaced and symbls that are candidates for replacement.
-        replaced_symbols = set()    # set of all symbols that have already been replaced.
-                                    # equal to all parents' symbols minus to_expand's symbols.
+        # Get set of symbols that no longer need to be replaced and
+        # symbols that are candidates for replacement.
+        replaced_symbols = set()    # set of all symbols already replaced.
+                                    # equal to all parents' minus expand's symbols.
         parent = to_expand.parent
         while parent is not None:
             replaced_symbols.update(parent.inputs)
@@ -510,15 +558,15 @@ class Graph(object):
     @staticmethod
     def generate_input_sets(props, this_quantity_pool):
         """
-        Generates all combinatorially-unique sets of input dictionaries.
+        Generates all combinatorially-unique sets of input dicts.
 
         Args:
             properties ([str]): property names
-            this_quantity_pool ({Symbol: Set(Quantity)}): quantities keyed
-                by symbols
+            this_quantity_pool ({Symbol: Set(Quantity)}): quantities
+                keyed by symbols
 
-        Returns:
-            ([{str: Quantity}]): list of symbol strings mapped to Quantity values.
+        Returns ([{str: Quantity}]):
+            list of symbol strings mapped to Quantity values.
         """
         aggregated_symbols = [this_quantity_pool[prop]
                               for prop in props]
