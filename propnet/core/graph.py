@@ -318,12 +318,13 @@ class Graph(object):
             for model in self._output_to_model[symbol]:
                 graph.add_edge(model, symbol)
 
-        # Add the concrete graph.
-        for symbol in self._symbol_to_quantity:
-            for quantity in self._symbol_to_quantity[symbol]:
-                for material in quantity._material:
-                    graph.add_edge(material, quantity)
-                graph.add_edge(quantity, symbol)
+        # TODO: revisit necessity of this
+        # # Add the concrete graph.
+        # for symbol in self._symbol_to_quantity:
+        #     for quantity in self._symbol_to_quantity[symbol]:
+        #         for material in quantity._material:
+        #             graph.add_edge(material, quantity)
+        #         graph.add_edge(quantity, symbol)
 
         # Add orphan nodes
         for symbol in self._symbol_types:

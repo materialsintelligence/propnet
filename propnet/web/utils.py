@@ -9,6 +9,7 @@ from pybtex.plugin import find_plugin
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, Symbol
 from propnet.models import DEFAULT_MODEL_NAMES
 from propnet.core.models import Model
+from propnet.core.quantity import Quantity
 
 from monty.serialization import loadfn
 
@@ -51,7 +52,7 @@ def graph_conversion(graph,
             node_type = 'Symbol'
         elif isinstance(n, Model):
             # model
-            id = n.__class__.__name__
+            id = n.name
             label = n.title
             node_type = 'Model'
         if id:
@@ -93,9 +94,8 @@ def graph_conversion(graph,
     connected_nodes = set()
     # TODO: need to clean up after model refactor
     for n1, n2 in graph.edges():
-
-        id_n1 = n1
-        id_n2 = n2
+        id_n1 = getattr(n1, "name", n1)
+        id_n2 = getattr(n2, "name", n2)
 
         if id_n1 and id_n2:
             connected_nodes.add(id_n1)
