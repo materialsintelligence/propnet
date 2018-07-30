@@ -47,8 +47,8 @@ class WebTest(unittest.TestCase):
         # Test retrieve material method
         material_no_derive = retrieve_material(1, "Ag", [])
         self.assertEqual(material_no_derive.status_code, 200)
-        # material_derive = retrieve_material(1, "Ag", ['derive'])
-        # self.assertEqual(material_derive.status_code, 200)
+        material_derive = retrieve_material(1, "Ag", ['derive'])
+        self.assertEqual(material_derive.status_code, 200)
         material_aggregate = retrieve_material(1, "Ag", ['derive', 'aggregate'])
         self.assertEqual(material_aggregate.status_code, 200)
 
