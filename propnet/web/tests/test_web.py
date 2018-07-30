@@ -68,12 +68,20 @@ class WebTest(unittest.TestCase):
         converted = graph_conversion(graph.graph)
         serialized = json.dumps(converted)
         self.assertIsNotNone(serialized)
+        # Ensure that there are both nodes and proper edges
+        self.assertIn('Band gap', [n['label'] for n in converted['nodes']])
+        self.assertIn({'from': 'band_gap', "to": "Is Metallic"},
+                      converted['edges'])
         mpr = MPRester()
         mat = mpr.get_material_for_mpid("mp-23")
         graph.add_material(mat)
         converted = graph_conversion(graph.graph)
         serialized = json.dumps(converted)
         self.assertIsNotNone(serialized)
+        self.assertEqual(len([n for n in converted['nodes']
+                              if n['id'] == 'pugh_ratio']), 1,
+                         msg="Multiple pugh ratio nodes, ensure that ids of "
+                             "nodes are distinct")
 
     def tearDown(self):
         pass

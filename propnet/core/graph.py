@@ -349,10 +349,12 @@ class Graph(object):
         # Create the abstract graph.
         for symbol in self._input_to_model:
             for model in self._input_to_model[symbol]:
-                graph.add_edge(symbol, model)
+                sym_type = self._symbol_types[symbol]
+                graph.add_edge(sym_type, model)
         for symbol in self._output_to_model:
             for model in self._output_to_model[symbol]:
-                graph.add_edge(model, symbol)
+                sym_type = self._symbol_types[symbol]
+                graph.add_edge(model, sym_type)
 
         # TODO: revisit necessity of this
         # # Add the concrete graph.
@@ -363,7 +365,7 @@ class Graph(object):
         #         graph.add_edge(quantity, symbol)
 
         # Add orphan nodes
-        for symbol in self._symbol_types:
+        for symbol in self._symbol_types.values():
             if symbol not in graph.nodes:
                 graph.add_node(symbol)
 
