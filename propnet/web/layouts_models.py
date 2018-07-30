@@ -53,7 +53,7 @@ def model_layout(model_name):
         style={'width': '100%', 'height': '300px'}
     )
 
-    if model.tags:
+    if model.categories:
         tags = html.Ul(
             className="tags",
             children=[
