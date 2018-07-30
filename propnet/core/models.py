@@ -145,12 +145,14 @@ class Model(ABC):
 
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
-        # strip units from input
+        # strip units from input and keep for reassignment
+        old_units = {}
         for symbol, value in symbol_value_dict.items():
             if isinstance(value, ureg.Quantity):
                 if symbol in self.unit_map:
                     value = value.to(self.unit_map[symbol])
                 symbol_value_dict[symbol] = value.magnitude
+                old_units[symbol] = value.units
 
         # check we support this combination of inputs
         # TODO: this shouldn't be necessary
@@ -161,7 +163,7 @@ class Model(ABC):
                 'successful': False,
                 'message': "The {} model cannot generate any outputs for "
                            "these inputs: {}".format(
-                    self.name, available_properties)
+                    self.name, property_value_dict.keys())
             }
         # TODO: Remove the try-except functionality, high priority
         try:
