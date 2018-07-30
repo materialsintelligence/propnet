@@ -18,6 +18,7 @@ from sympy.parsing.sympy_parser import parse_expr
 
 from propnet import ureg
 from propnet.core.exceptions import ModelEvaluationError
+from propnet.symbols import DEFAULT_UNITS
 
 logger = logging.getLogger("models")
 
@@ -54,11 +55,9 @@ class Model(ABC):
         symbol_property_map ({str: str}): mapping of symbols enumerated
             in the plug-in method to canonical symbols, e. g.
             {"n": "index_of_refraction"} etc.
-        unit_map ({str: str}): mapping of units to be used
-            in model before evaluation of plug_in
-        constraints ([Constraint or str]): constraints to be attached to
-            the model, can be a list of Constraint objects or strings to
-            be parsed into constraint objects
+        unit_map ({str: str}): mapping of units to be used in model
+            before evaluation of plug_in in evaluate, defaults to
+            symbol defaults
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None,
@@ -75,14 +74,14 @@ class Model(ABC):
         self.symbol_property_map = {k: k for k in self.all_properties}
         self.symbol_property_map.update(symbol_property_map or {})
 
-        self.unit_map = unit_map or {}
-        # This basically dictates that the unit map should be
-        # consistent with the plug-in or model symbols, hopefully
-        # to be removed when unitization is refactored on the symbol side
-        if self.symbol_property_map and self.unit_map:
-            self.unit_map = {
-                self.symbol_property_map.get(symbol) or symbol: value
-                for symbol, value in self.unit_map.items()}
+        # Use hard-coded units for properties unless otherwise specified
+        if unit_map:
+            self.unit_map = unit_map
+        else:
+            self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
+                             for prop_name in self.all_properties}
+
+        # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
         self.constraints = []
         for c in constraints:
@@ -128,7 +127,7 @@ class Model(ABC):
 
         The key distinction between evaluate and plug_in is properties
         in properties out vs. symbols in symbols out.  In addition,
-        plug_in also handles any requisite unit_mapping
+        evaluate also handles any requisite unit_mapping
 
         Args:
             property_value_dict ({property_name: value}): a mapping of
@@ -149,7 +148,7 @@ class Model(ABC):
         old_units = {}
         for symbol, value in symbol_value_dict.items():
             if isinstance(value, ureg.Quantity):
-                if symbol in self.unit_map:
+                if self.unit_map.get(symbol):
                     value = value.to(self.unit_map[symbol])
                 symbol_value_dict[symbol] = value.magnitude
                 old_units[symbol] = value.units
@@ -178,11 +177,12 @@ class Model(ABC):
             }
 
         # add units to output
+        out = self.map_symbols_to_properties(out)
         for key in out:
             if key == 'successful':
                 continue
             out[key] = ureg.Quantity(out[key], self.unit_map.get(key))
-        return self.map_symbols_to_properties(out)
+        return out
 
     @property
     def title(self):
@@ -435,11 +435,11 @@ class PyModel(Model):
     """
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_property_map=None):
+                 symbol_property_map=None, unit_map=None):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map)
+            categories, references, symbol_property_map, unit_map)
 
     def plug_in(self, symbol_value_dict):
         return self._plug_in(symbol_value_dict)
@@ -477,7 +477,7 @@ class Constraint(Model):
         self.expression = expression.replace(' ', '')
         split = re.split("[+-/*<>=()]", self.expression)
         inputs = [s for s in split if not will_it_float(s) and s]
-        connections = [{"inputs": inputs, "outputs": "is_valid"}]
+        connections = [{"inputs": inputs, "outputs": ["is_valid"]}]
         super(Constraint, self).__init__(
             name=name, connections=connections, **kwargs)
 
