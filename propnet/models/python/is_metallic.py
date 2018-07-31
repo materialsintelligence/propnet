@@ -1,7 +1,10 @@
-
-
 def plug_in(symbol_values):
     return {'is_metallic': 1 if symbol_values['E_g'] <= 0 else 0}
+
+
+DESCRIPTION = """
+This model returns true if band gap is zero.
+"""
 
 config = {
     "name": "is_metallic",
@@ -22,7 +25,7 @@ config = {
         "E_g": "band_gap",
         "is_metallic": "is_metallic"
     },
-    "description": "\nThis model returns true if band gap is zero.\n",
+    "description": DESCRIPTION,
     "references": [],
     "plug_in": plug_in
 }

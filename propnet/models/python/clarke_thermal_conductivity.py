@@ -10,7 +10,7 @@ def plug_in(symbol_values):
     return {'t': to_return}
 
 
-description = """
+DESCRIPTION = """
 Based on the model posited in https://doi.org/10.1016/S0257-8972(02)00593-5,
 predicts the thermal conductivity of materials in the high temperature limit.
 Materials have smaller values of Clarke thermal conductivity should be expected
@@ -48,7 +48,7 @@ config = {
         "structure": "structure",
         "t": "thermal_conductivity"
     },
-    "description": description,
+    "description": DESCRIPTION,
     "references": ["doi:10.1016/S0257-8972(02)00593-5"],
     "plug_in": plug_in
 }

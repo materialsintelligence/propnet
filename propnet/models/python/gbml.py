@@ -17,6 +17,13 @@ def plug_in(symbol_values):
         'G': G
     }
 
+
+DESCRIPTION = """
+This model uses Gradient Boosting Machine-Locfit (GBML) to give
+predictions for bulk and shear moduli given material descriptors 
+and training data.
+"""
+
 config = {
     "name": "gbml",
     "connections": [
@@ -34,7 +41,8 @@ config = {
         }
     ],
     "categories": [
-        "mechanical"
+        "mechanical",
+        "machine learning"
     ],
     "symbol_property_map": {
         "K": "bulk_modulus",
@@ -44,7 +52,7 @@ config = {
         "nsites": "nsites",
         "formula": "formula"
     },
-    "description": "\nThis model uses Gradient Boosting Machine-Locfit (GBML) to give\npredictions for bulk and shear moduli given material descriptors and training data.\n",
+    "description": DESCRIPTION,
     "references": [],
     "plug_in": plug_in
 }

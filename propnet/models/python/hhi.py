@@ -10,7 +10,8 @@ def plug_in(symbol_values):
         'hhi_production': hhi_production
     }
 
-description = """
+
+DESCRIPTION = """
 The Herfindahl-Hirschman Index is a metric of how geographically 
 dispersed elements in a chemical compound are.
 """
@@ -36,7 +37,7 @@ config = {
         "hhi_reserve": "hhi_reserve",
         "formula": "formula"
     },
-    "description": description,
+    "description": DESCRIPTION,
     "references": ["doi:10.1021/cm400893e"],
     "plug_in": plug_in
 }

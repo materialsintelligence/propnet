@@ -4,7 +4,8 @@ def plug_in(symbol_values):
             "volume": structure.volume,
             "composition": structure.composition}
 
-description = """
+
+DESCRIPTION = """
 Properties of a crystal structure, such as the number of sites in its 
 unit cell and its space group, as calculated by pymatgen.
 """
@@ -31,7 +32,7 @@ config = {
         "volume": "volume_unit_cell",
         "composition": "composition"
     },
-    "description": description,
+    "description": DESCRIPTION,
     "references": ["doi:10.1016/j.commatsci.2012.10.028"],
     "plug_in": plug_in
 }

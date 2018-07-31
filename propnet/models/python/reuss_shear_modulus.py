@@ -7,6 +7,12 @@ def plug_in(symbol_values):
                  4. * np.triu(s[:3, :3]).sum() +
                  3. * s[3:, 3:].trace())}
 
+
+DESCRIPTION = """
+Model calculating a lower bound for Shear Modulus based on the Reuss 
+calculation, derived from the full elastic tensor
+"""
+
 config = {
     "name": "reuss_shear_modulus",
     "connections": [
@@ -26,7 +32,7 @@ config = {
         "S": "compliance_tensor_voigt",
         "G": "shear_modulus"
     },
-    "description": "\nModel calculating a lower bound for Shear Modulus based on the Reuss calculation, derived from the full elastic\ntensor.",
+    "description": DESCRIPTION,
     "references": [],
     "plug_in": plug_in
 }

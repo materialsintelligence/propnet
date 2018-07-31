@@ -9,6 +9,11 @@ def plug_in(symbol_values):
         'cost_per_mol': cost_analyzer.get_cost_per_mol(formula)
     }
 
+
+DESCRIPTION = """
+A rough estimate of cost of a given material based on elemental prices,
+based on pymatgen's CostAnalyzer."
+"""
 config = {
     "name": "cost",
     "connections": [
@@ -30,7 +35,7 @@ config = {
         "cost_per_kg": "cost_per_kg",
         "formula": "formula"
     },
-    "description": "\nA rough estimate of cost of a given material based on elemental prices, based on pymatgen's CostAnalyzer.",
+    "description": DESCRIPTION,
     "references": [],
     "plug_in": plug_in
 }

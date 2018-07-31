@@ -9,7 +9,8 @@ def plug_in(symbol_values):
         's_oxi': s_oxi
     }
 
-description= """
+
+DESCRIPTION = """
 This model attempts to work out what oxidation state is on each 
 crystallographic site using the materials analysis code pymatgen.
 """
@@ -34,7 +35,7 @@ config = {
         "s": "structure",
         "s_oxi": "structure_oxi"
     },
-    "description": description,
+    "description": DESCRIPTION,
     "references": ["doi:10.1016/j.commatsci.2012.10.028"],
     "plug_in": plug_in
 }

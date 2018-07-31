@@ -11,6 +11,12 @@ def plug_in(symbol_values):
                  1 / 5 * (c[3][3] + c[4][4] + c[5][5])
     return {'G': 1/2*(g1+g2)}
 
+
+DESCRIPTION = """
+Model calculating an average value for Shear Modulus based on the
+Reuss and Voigt calculation, derived from the full elastic tensor.
+"""
+
 config = {
     "name": "hill_shear_modulus",
     "connections": [
@@ -32,7 +38,7 @@ config = {
         "S": "compliance_tensor_voigt",
         "G": "shear_modulus"
     },
-    "description": "\nModel calculating an average value for Shear Modulus based on the\nReuss and Voigt calculation, derived from the full elastic tensor.",
+    "description": DESCRIPTION,
     "references": [],
     "plug_in": plug_in
 }

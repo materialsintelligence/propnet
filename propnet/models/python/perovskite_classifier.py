@@ -1,5 +1,3 @@
-
-
 def plug_in(symbol_values):
     # placeholder, a little dumb
     # will be partly replaced with CrystalPrototypeClassifier
@@ -17,6 +15,12 @@ def plug_in(symbol_values):
         'r_A': max(radii),
         'r_B': min(radii)
     }
+
+
+DESCRIPTION = """
+This model classifies whether a crystal is a perovskite, and returns information
+on the A-site ionic radius and B-site ionic radius.",
+"""
 
 config = {
     "name": "perovskite_classifier",
@@ -39,7 +43,7 @@ config = {
         "r_B": "ionic_radius_b",
         "s": "structure_oxi"
     },
-    "description": "\nThis model classifies whether a crystal is a perovskite, and returns information\non the A-site ionic radius and B-site ionic radius.",
+    "description": DESCRIPTION,
     "references": [],
     "plug_in": plug_in
 }

@@ -7,6 +7,12 @@ def plug_in(symbol_values):
             'rho': float(s.density),
             'successful': True}
 
+
+DESCRIPTION = """
+Model calculating the atomic density from the corresponding 
+structure object of the material
+"""
+
 config = {
     "name": "density",
     "connections": [
@@ -35,7 +41,7 @@ config = {
         "p": "atomic_density",
         "rho": "density"
     },
-    "description": "\nModel calculating the atomic density from the corresponding structure object of the material.",
+    "description": DESCRIPTION,
     "references": [],
     "plug_in": plug_in
 }

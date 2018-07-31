@@ -9,7 +9,7 @@ def plug_in(symbol_values):
         'dimensionality_gorai': get_dimensionality(structure)
     }
 
-description = """
+DESCRIPTION = """
 Calculates the dimensionality of a structure using one of two methods 
 implemented in pymatgen.
 """
@@ -35,7 +35,7 @@ config = {
         "dimensionality_gorai": "dimensionality",
         "structure": "structure"
     },
-    "description": description,
+    "description": DESCRIPTION,
     "references": ["doi:10.1039/C6TA04121C", "doi:10.1021/acs.nanolett.6b05229"],
     "plug_in": plug_in
 }
