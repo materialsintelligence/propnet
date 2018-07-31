@@ -8,7 +8,7 @@ from pybtex.plugin import find_plugin
 
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, Symbol
 from propnet.models import DEFAULT_MODEL_NAMES
-from propnet.core.models import AbstractModel
+from propnet.core.models import Model
 
 from monty.serialization import loadfn
 
@@ -44,14 +44,15 @@ def graph_conversion(graph,
 
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
+        # TODO: more dumb crap related to graph
         if isinstance(n, Symbol):
             # property
             id = n.name
             label = n.display_names[0]
             node_type = 'Symbol'
-        elif isinstance(n, AbstractModel):
+        elif isinstance(n, Model):
             # model
-            id = n.__class__.__name__
+            id = n.title
             label = n.title
             node_type = 'Model'
         if id:
@@ -77,7 +78,9 @@ def graph_conversion(graph,
 
     log.info("Nodes to highlight green: {}".format(
             nodes_to_highlight_green))
-    if nodes_to_highlight_green or nodes_to_highlight_yellow or nodes_to_highlight_red:
+    highlight_nodes = any([nodes_to_highlight_green, nodes_to_highlight_yellow,
+                           nodes_to_highlight_red])
+    if highlight_nodes:
         log.debug("Nodes to highlight green: {}".format(
             nodes_to_highlight_green))
         for node in nodes:
@@ -91,19 +94,13 @@ def graph_conversion(graph,
                 node['color'] = '#BDBDBD'
 
     connected_nodes = set()
+    # TODO: need to clean up after model refactor
+    def get_node_id(node):
+        return node.title if isinstance(node, Model) else node.name
+
     for n1, n2 in graph.edges():
-
-        id_n1 = None
-        if isinstance(n1, Symbol):
-            id_n1 = n1.name
-        elif isinstance(n1, AbstractModel):
-            id_n1 = n1.__class__.__name__
-
-        id_n2 = None
-        if isinstance(n2, Symbol):
-            id_n2 = n2.name
-        elif isinstance(n2, AbstractModel):
-            id_n2 = n2.__class__.__name__
+        id_n1 = get_node_id(n1)
+        id_n2 = get_node_id(n2)
 
         if id_n1 and id_n2:
             connected_nodes.add(id_n1)

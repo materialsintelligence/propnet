@@ -5,7 +5,7 @@ Module containing classes and methods for Material functionality in propnet code
 import networkx as nx
 from itertools import chain
 
-from typing import *
+from collections import defaultdict
 
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import Quantity, weighted_mean
@@ -39,7 +39,7 @@ class Material(object):
         """
         self.uuid = uuid()
         self.parent = None
-        self._symbol_to_quantity = DefaultDict(set)
+        self._symbol_to_quantity = defaultdict(set)
 
     def __repr__(self):
         return str(self.uuid)
@@ -60,13 +60,17 @@ class Material(object):
 
     def add_quantity(self, quantity):
         """
-        Adds a property to this material's property graph.
-        If the material has been bound to a Graph instance, correctly adds the property to that instance.
+        Adds a property to this material's property graph.  If the
+        material has been bound to a Graph instance, correctly adds
+        the property to that instance.
+
         Mutates this graph instance variable and its parent.
+
         Args:
             quantity (Quantity): property to be bound to the material.
+
         Returns:
-            void
+            None
         """
         self._symbol_to_quantity[quantity.symbol].add(quantity)
         if self.parent:
@@ -78,14 +82,15 @@ class Material(object):
         Removes the Quantity object attached to this Material.
 
         Args:
-            quantity (Quantity): Quantity object reference indicating with property is to be
-            removed from this Material.
+            quantity (Quantity): Quantity object reference indicating
+            which property is to be removed from this Material.
 
         Returns:
             None
         """
         if quantity.symbol not in self._symbol_to_quantity:
-            raise Exception("Attempting to remove quantity not present in the material.")
+            raise Exception(
+                "Attempting to remove quantity not present in the material.")
         if self.parent:
             self.parent._remove_quantity(quantity)
         self._symbol_to_quantity[quantity.symbol].remove(quantity)
@@ -103,7 +108,8 @@ class Material(object):
             None
         """
         if symbol not in self._symbol_to_quantity:
-            raise Exception("Attempting to remove Symbol not present in the material.")
+            raise Exception(
+                "Attempting to remove Symbol not present in the material.")
         to_remove = []
         for q in self._symbol_to_quantity[symbol]:
             to_remove.append(q)

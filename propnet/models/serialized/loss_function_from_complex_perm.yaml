@@ -1,0 +1,16 @@
+categories: [optical]
+connections:
+- inputs: [e1, e2]
+  outputs: [l]
+description: |
+  The optical loss function derived from real and imaginary parts of
+  complex permittivity, which is -[Im(1/\epsilon)].
+equations: [l - e2**2/(e1**2+e2**2)]
+name: loss_function_from_complex_perm
+references:
+    - "url:https://onlinelibrary.wiley.com/doi/abs/10.1002/pssb.2221630145"
+    - "url:https://onlinelibrary.wiley.com/doi/abs/10.1002/pssb.2221630145"
+symbol_property_map:
+  e1: relative_permittivity
+  e2: relative_permittivity_im
+  l: loss_function

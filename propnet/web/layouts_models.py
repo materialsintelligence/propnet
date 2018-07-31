@@ -6,9 +6,9 @@ from dash_react_graph_vis import GraphComponent
 
 import networkx as nx
 from propnet.core.graph import Graph
-from propnet.core.node import Node, NodeType
+from propnet.models import DEFAULT_MODEL_DICT
 
-import propnet.models as models
+# import propnet.models as models
 from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.web.utils import references_to_markdown, graph_conversion, AESTHETICS
 
@@ -29,7 +29,7 @@ def model_layout(model_name):
     layouts = OrderedDict()
 
     # instantiate model from name
-    model = getattr(models, model_name)()
+    model = DEFAULT_MODEL_DICT[model_name]
 
     model_title = html.Div(
         className='row',
@@ -41,7 +41,7 @@ def model_layout(model_name):
     # TODO: costly, should just construct subgraph directly?
     g = Graph()
     subgraph = nx.ego_graph(g.graph, model, undirected=True)
-    options=AESTHETICS['global_options']
+    options = AESTHETICS['global_options']
     if "arrows" in options["edges"]:
         options["edges"]["arrows"] = "to"
     layouts['Graph'] = html.Div(
@@ -53,14 +53,11 @@ def model_layout(model_name):
         style={'width': '100%', 'height': '300px'}
     )
 
-    if model.tags:
+    if model.categories:
         tags = html.Ul(
             className="tags",
-            children=[
-                html.Li(tag, className="tag") for tag in model.tags
-            ]
+            children=[html.Li(tag, className="tag") for tag in model.categories]
         )
-
         layouts['Tags'] = tags
 
     if model.references:
@@ -83,13 +80,13 @@ def model_layout(model_name):
                     html.Div(
                         className='ten columns',
                         children=[
-                            dcc.Link(DEFAULT_SYMBOLS[symbol_name].display_names[0],
-                                     href='/property/{}'.format(symbol_name))
+                            dcc.Link(DEFAULT_SYMBOLS[prop_name].display_names[0],
+                                     href='/property/{}'.format(prop_name))
                         ]
                     )
                 ]
             )
-            for symbol, symbol_name in model.symbol_mapping.items()
+            for symbol, prop_name in model.symbol_property_map.items()
         ]
     )
 
@@ -97,7 +94,7 @@ def model_layout(model_name):
 
     layouts['Description'] = dcc.Markdown(model.description)
 
-    if model.test_data:
+    if model.validate_from_preset_test():
         sample_data_header = html.Div(
             className='row',
             children=[
@@ -125,7 +122,7 @@ def model_layout(model_name):
             ]
         )
 
-        layouts['Sample Code'] = dcc.Markdown('```\n{}```'.format(model._example_code))
+        layouts['Sample Code'] = dcc.Markdown('```\n{}```'.format(model.example_code))
 
     sublayouts = []
     for title, layout in layouts.items():
@@ -144,19 +141,14 @@ def model_layout(model_name):
 
 
 model_links = {}
-for model_name in models.DEFAULT_MODEL_NAMES:
-    # instantiate model from name
-    model = getattr(models, model_name)()
-
+for model_name, model in DEFAULT_MODEL_DICT.items():
     # group by tag
-    tags = model.tags
-
-    for tag in tags:
+    for tag in model.categories:
         if tag not in model_links:
             model_links[tag] = []
 
-    for tag in tags:
-        passes = model.test()
+    for tag in model.categories:
+        passes = model.validate_from_preset_test()
         passes = "✅" if passes else "❌"
 
         link_text = "{}".format(model.title)

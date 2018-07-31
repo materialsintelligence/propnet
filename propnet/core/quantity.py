@@ -1,6 +1,8 @@
 import numpy as np
 
+# TODO: remove typing
 from typing import *
+
 from uuid import UUID
 from monty.json import MSONable
 from uncertainties import unumpy
@@ -111,8 +113,20 @@ class Quantity(MSONable):
     def __str__(self):
         return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)
 
+    def __bool__(self):
+        return bool(self.value)
 
-def weighted_mean(quantities: List[Quantity]) -> List[Quantity]:
+
+def weighted_mean(quantities):
+    """
+    Function to retrieve weighted mean
+
+    Args:
+        quantities ([Quantity]): list of quantities
+
+    Returns:
+        weighted mean
+    """
     # can't run this twice yet ...
     # TODO: remove
     if hasattr(quantities[0].value, "std_dev"):
@@ -137,6 +151,7 @@ def weighted_mean(quantities: List[Quantity]) -> List[Quantity]:
         vals = [q.value for q in quantities]
     else:
         vals = [q.value.magnitude for q in quantities]
+
     new_magnitude = np.mean(vals, axis=0)
     std_dev = np.std(vals, axis=0)
     new_value = unumpy.uarray(new_magnitude, std_dev)

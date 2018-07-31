@@ -1,5 +1,10 @@
 import unittest
-from propnet.web.app import app, retrieve_material, symbol_layout, model_layout
+import json
+
+from propnet.web.app import app, retrieve_material, symbol_layout,\
+    model_layout, graph_conversion
+from propnet.core.graph import Graph
+from propnet.ext.matproj import MPRester
 
 routes = [
     '/',
@@ -13,9 +18,8 @@ routes = [
 # auto add final /
 class WebTest(unittest.TestCase):
     """
-    Base class for Selenium-based unit tests.
+    Base class for dash unittests
     """
-
     def setUp(self):
         self.app = app
         self.client = self.app.server.test_client()
@@ -57,8 +61,28 @@ class WebTest(unittest.TestCase):
         self.assertTrue(layout.children[0], "Average grain diameter")
 
     def test_model_layout(self):
-        layout = model_layout("Density")
+        layout = model_layout("density")
         self.assertTrue(layout.children[0], "Atomic Density")
+
+    def test_graph_conversion(self):
+        graph = Graph()
+        converted = graph_conversion(graph.graph)
+        serialized = json.dumps(converted)
+        self.assertIsNotNone(serialized)
+        # Ensure that there are both nodes and proper edges
+        self.assertIn('Band gap', [n['label'] for n in converted['nodes']])
+        self.assertIn({'from': 'band_gap', "to": "Is Metallic"},
+                      converted['edges'])
+        mpr = MPRester()
+        mat = mpr.get_material_for_mpid("mp-23")
+        graph.add_material(mat)
+        converted = graph_conversion(graph.graph)
+        serialized = json.dumps(converted)
+        self.assertIsNotNone(serialized)
+        self.assertEqual(len([n for n in converted['nodes']
+                              if n['id'] == 'pugh_ratio']), 1,
+                         msg="Multiple pugh ratio nodes, ensure that ids of "
+                             "nodes are distinct")
 
     def tearDown(self):
         pass

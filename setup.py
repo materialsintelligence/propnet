@@ -2,6 +2,7 @@
 
 from setuptools import setup
 
+# TODO: fix setup
 setup(
     name='propnet',
     packages=['propnet'],

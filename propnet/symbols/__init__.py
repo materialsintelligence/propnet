@@ -26,4 +26,6 @@ for f in _DEFAULT_SYMBOL_TYPE_FILES:
         logger.error('Failed to parse {}, {}.'.format(os.path.basename(f), e))
 
 # Stores all loaded properties' names in a tuple in the global scope.
+DEFAULT_UNITS = {name: symbol.units
+                 for name, symbol in DEFAULT_SYMBOLS.items()}
 DEFAULT_SYMBOL_TYPE_NAMES = tuple(DEFAULT_SYMBOLS.keys())
