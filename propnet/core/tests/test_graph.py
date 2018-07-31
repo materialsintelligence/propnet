@@ -96,19 +96,19 @@ class GraphTest(unittest.TestCase):
             for input_set in m.input_sets:
                 for symbol in input_set:
                     self.assertTrue(symbols[symbol] in g._input_to_model.keys(),
-                                    "Canonical constructed graph does not have an edge from input: " + s +
-                                    " to model: " + m.name)
+                                    "Canonical constructed graph does not have an edge from input: "
+                                    + symbol + " to model: " + m.name)
                     self.assertTrue(m in g._input_to_model[symbol],
-                                    "Canonical constructed graph does not have an edge from input: " + s +
-                                    " to model: " + m.name)
+                                    "Canonical constructed graph does not have an edge from input: "
+                                    + symbol + " to model: " + m.name)
             for output_set in m.output_sets:
                 for symbol in output_set:
                     self.assertTrue(symbols[symbol] in g._output_to_model.keys(),
-                                    "Canonical constructed graph does not have an edge from input: " + s +
-                                    " to model: " + m.name)
+                                    "Canonical constructed graph does not have an edge from input: "
+                                    + symbol + " to model: " + m.name)
                     self.assertTrue(m in g._output_to_model[symbol],
-                                    "Canonical constructed graph does not have an edge from input: " + s +
-                                    " to model: " + m.name)
+                                    "Canonical constructed graph does not have an edge from input: "
+                                    + symbol + " to model: " + m.name)
 
     def test_model_add_remove(self):
         """

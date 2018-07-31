@@ -437,7 +437,7 @@ class Graph(object):
                     continue
                 # Check if model has all constraint Symbols provided.
                 has_inputs = True
-                for s in m.constraint_properties:
+                for s in model.constraint_properties:
                     if s not in working:
                         has_inputs = False
                         break

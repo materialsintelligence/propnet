@@ -16,7 +16,7 @@ for filename in EQUATION_MODULE_FILES:
 
 # Load python models
 MODULE_LIST = iter_modules(python.__path__)
-for _, module_name, _ in module_list:
+for _, module_name, _ in MODULE_LIST:
     module_path = "propnet.models.python.{}".format(module_name)
     DEFAULT_MODELS.append(PyModuleModel(module_path))
 
