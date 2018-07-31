@@ -2,12 +2,20 @@ categories: [electrical]
 connections:
 - inputs: [epsilon, E_g]
   outputs: [c]
-description: "\nRelation from Yim, K. et al. Novel high-\u03BA dielectrics for next-generation
-  electronic devices\nscreened by automated ab initio calculations. NPG Asia Mater.
-  7, e190 (2015).\n\nGives an indication as to the fitness of the dielectric for use
-  in a capacitor.\n\nBalances the resistance of the dielectric to leakage current
-  as well as the increase in\nenergy density afforded by the linear response."
+description: |
+  Relation from Yim, K. et al. Novel high-\u03BA dielectrics for next-generation
+  electronic devices screened by automated ab initio calculations. NPG Asia Mater.
+  7, e190 (2015).
+
+  Gives an indication as to the fitness of the dielectric for use
+  in a capacitor.
+
+  Balances the resistance of the dielectric to leakage current
+  as well as the increase in energy density afforded by the linear response.
 equations: [c - epsilon**(1/2)*E_g]
 name: dielectric_figure_of_merit_energy
 references: []
-symbol_property_map: {E_g: band_gap, c: dielectric_figure_of_merit_energy, epsilon: relative_permittivity}
+symbol_property_map:
+  E_g: band_gap
+  c: dielectric_figure_of_merit_energy
+  epsilon: relative_permittivity

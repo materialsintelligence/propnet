@@ -2,16 +2,16 @@ categories: [stability]
 connections:
 - inputs: [r_cation_B, r_cation_A, r_anion]
   outputs: [t]
-description: '
-
+description: |
   The Goldchmidt Tolerance Factor is a dimensionless number used to indicate
-
   the stability and distorition of crystal structures.
 
-
-  It can be reliably used as a metric in perovskites and ilmenites.'
+  It can be reliably used as a metric in perovskites and ilmenites.
 equations: [t - (r_cation_A + r_anion)/(2**.5 * (r_cation_B + r_anion))]
 name: goldschmidt_tolerance
 references: []
-symbol_property_map: {r_anion: ionic_radius, r_cation_A: ionic_radius, r_cation_B: ionic_radius,
-  t: goldschmidt_tolerance_factor}
+symbol_property_map:
+  r_anion: ionic_radius
+  r_cation_A: ionic_radius
+  r_cation_B: ionic_radius
+  t: goldschmidt_tolerance_factor
