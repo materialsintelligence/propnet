@@ -116,6 +116,17 @@ class Quantity(MSONable):
     def __bool__(self):
         return bool(self.value)
 
+    # TODO: lazily implemented, fix to be a bit more robust
+    def as_dict(self):
+        if isinstance(self.value, (float, list, dict)):
+            value = self.value
+        else:
+            value = self.value.magnitude
+        return {"symbol_type": self._symbol_type.name,
+                "value": value,
+                "@module": "propnet.core.quantity",
+                "@class": "Quantity"}
+
 
 def weighted_mean(quantities):
     """
