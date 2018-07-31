@@ -100,14 +100,18 @@ def get_constants_from_Y_G(y, g):
 
 def plug_in(symbol_values):
     """
-    Performs the evaluation and computational logic to accommodate the homogeneous elasticity relations.
+    Performs the evaluation and computational logic to accommodate the 
+    homogeneous elasticity relations.
+
     1) Calculates the Elastic modulus and the Shear modulus if either is un-available.
     2) Calculates the remaining unknown properties based on the Elastic and Shear moduli.
+
     Args:
         symbol_values (dict): dictionary containing symbols mapped to floats.
+
     Returns:
-        (dict): mapping from string symbol to float value giving result of applying the model to the
-                given inputs.
+        (dict): mapping from string symbol to float value giving result of 
+            applying the model to the given inputs.
     """
     outputs = dict()
     y = symbol_values.get("Y")
@@ -124,6 +128,11 @@ def plug_in(symbol_values):
             outputs[k] = remainder[k]
     return outputs
 
+description = """
+Model inter-relating the various elastic quantities assuming a homogeneous medium.
+
+From any two elastic quantities the remainder can be derived.
+"""
 config = {
     "name": "homogeneous_elasticity_relations",
     "connections": [
@@ -319,9 +328,7 @@ config = {
         "l": "lame_first_parameter",
         "M": "p_wave_modulus"
     },
-    "description": "\nModel inter-relating the various elastic quantities assuming a homogeneous medium.\nFrom any two elastic quantities the remainder can be derived.\n",
-    "references": [
-        "@misc{url:580346,\n            url = {https://en.wikipedia.org/wiki/Elastic_modulus}\n            }"
-    ],
+    "description": description,
+    "references": ["url:https://en.wikipedia.org/wiki/Elastic_modulus"],
     "plug_in": plug_in
 }

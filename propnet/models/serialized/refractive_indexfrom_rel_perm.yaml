@@ -6,28 +6,19 @@ connections:
   outputs: [Ur]
 - inputs: [Ur, n]
   outputs: [Er]
-description: '
-
+description: |
   The refractive index gives the factor by which the speed of light is reduced in
-  a medium.
+  a medium.  Likewise, modeling the induced magnetic and electric dipoles as linear 
+  within a material, a relative spatial electrical permittivity and relative spatial 
+  magnetic permeability arise from consideration of the total electrical and magnetic 
+  fields.
 
-
-  Likewise, modeling the induced magnetic and electric dipoles as linear within a
-  material,
-
-  a relative spatial electrical permittivity and relative spatial magnetic permeability
-
-  arise from consideration of the total electrical and magnetic fields.
-
-
-  From the Maxwell Relations, the index of refraction is equal to the geometric mean  of
-  the
-
-  relative permittivity and the relative permeability.
-
-'
+  From the Maxwell Relations, the index of refraction is equal to the geometric mean 
+  of the relative permittivity and the relative permeability.
 equations: [n - sqrt(Ur*Er)]
 name: refractive_indexfrom_rel_perm
-references: ["@misc{url:368625,\n            url = {https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability}}\n
-    \           }"]
-symbol_property_map: {Er: relative_permeability, Ur: relative_permittivity, n: refractive_index}
+references: ["url:https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability}"]
+symbol_property_map: 
+    Er: relative_permeability
+    Ur: relative_permittivity
+    n: refractive_index

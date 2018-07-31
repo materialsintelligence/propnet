@@ -11,7 +11,6 @@ from propnet.core.symbols import *
 # TODO: separate these into specific tests of model functionality
 #       and validation of default models
 class ModelTest(unittest.TestCase):
-
     def test_instantiate_all_models(self):
         models_to_test = []
         for model_name in DEFAULT_MODEL_NAMES:

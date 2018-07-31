@@ -1,6 +1,5 @@
 from pymatgen.analysis.elasticity.elastic import ElasticTensor
 
-
 def plug_in(symbol_values):
      tensor = ElasticTensor.from_voigt(symbol_values["C_ij"])
      structure = symbol_values["structure"]
@@ -11,6 +10,22 @@ def plug_in(symbol_values):
        't': to_return
    }
 
+description = """
+Based on the model posited in https://doi.org/10.1016/S0257-8972(02)00593-5,
+predicts the thermal conductivity of materials in the high temperature limit.
+Materials have smaller values of Clarke thermal conductivity should be expected
+to have smaller thermal conductivity at high temperatures.
+
+In particular, this model predicts that a material will have low thermal conductivity
+at high temperatures if it has the following broad characteristics
+
+1) A large molecular weight
+2) A complex crystal structure
+3) Non-directional bonding
+4) A large number of different atoms per molecule
+
+This model currently uses the implementation in pymatgen.
+"""
 config = {
     "name": "clarke_thermal_conductivity",
     "connections": [
@@ -32,9 +47,7 @@ config = {
         "structure": "structure",
         "t": "thermal_conductivity"
     },
-    "description": "\nBased on the model posited in https://doi.org/10.1016/S0257-8972(02)00593-5,\npredicts the thermal conductivity of materials in the high temperature limit.\nMaterials have smaller values of Clarke thermal conductivity should be expected\nto have smaller thermal conductivity at high temperatures.\n\nIn particular, this model predicts that a material will have low thermal conductivity\nat high temperatures if it has the following broad characteristics\n\n1) A large molecular weight\n2) A complex crystal structure\n3) Non-directional bonding\n4) A large number of different atoms per molecule\n\nThis model currently uses the implementation in pymatgen.",
-    "references": [
-        "@article{Clarke_2003,\n\tdoi = {10.1016/s0257-8972(02)00593-5},\n\turl = {https://doi.org/10.1016%2Fs0257-8972%2802%2900593-5},\n\tyear = 2003,\n\tmonth = {jan},\n\tpublisher = {Elsevier {BV}},\n\tvolume = {163-164},\n\tpages = {67--74},\n\tauthor = {David R. Clarke},\n\ttitle = {Materials selection guidelines for low thermal conductivity thermal barrier coatings},\n\tjournal = {Surface and Coatings Technology}\n}"
-    ],
+    "description": description,
+    "references": ["doi:10.1016/S0257-8972(02)00593-5"],
     "plug_in": plug_in
 }

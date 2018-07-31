@@ -4,11 +4,13 @@ connections:
   outputs: [rho]
 - inputs: [rho]
   outputs: [sigma]
-description: '
-
-  The electrical resistivity and conductivity are related by a simple inverse relationship.'
+description: |
+  The electrical resistivity and conductivity are related by a simple 
+  inverse relationship.
 equations: [sigma - 1/rho]
 name: el_resistivityfrom_el_conductivity
-references: ["@misc{url:190144,\n            url = {https://en.wikipedia.org/wiki/Electrical_resistivity_and_conductivity}\n
-    \           }"]
-symbol_property_map: {is_metallic: is_metallic, rho: electrical_resistivity, sigma: electrical_conductivity}
+references: ["url:https://en.wikipedia.org/wiki/Electrical_resistivity_and_conductivity"]
+symbol_property_map: 
+    is_metallic: is_metallic
+    rho: electrical_resistivity
+    sigma: electrical_conductivity

@@ -2,23 +2,18 @@ categories: [electronic, empirical]
 connections:
 - inputs: [m_e, K]
   outputs: [mu_e]
-description: '
-
+description: |
   The electron mobility is difficult to model purely from first principles.
 
-  This is a semi-empirical model to approximate the electron mobility based on the
-  bulk modulus and the electron
+  This is a semi-empirical model to approximate the electron mobility based
+  on the bulk modulus and the electron effective mass - two quantities that
+  are readily accessible from first-principles calculations.
 
-  effective mass - two quantities that are readily accessible from first-principles
-  calculations.
-
-  The accuracy for band conductors is typically within half an order of magnitude.'
+  The accuracy for band conductors is typically within half an order of magnitude.
 equations: [mu_e - 1E9 * 1E4 * 1.2E-14 * K**1 * m_e**-1.5]
 name: semi_empirical_mobility
-references: ["@article{Yan_2015,\n\tdoi = {10.1039/c4ee03157a},\n\turl = {https://doi.org/10.1039%2Fc4ee03157a},\n\tyear
-    = 2015,\n\tpublisher = {Royal Society of Chemistry ({RSC})},\n\tvolume = {8},\n\tnumber
-    = {3},\n\tpages = {983--994},\n\tauthor = {Jun Yan and Prashun Gorai and Brenden
-    Ortiz and Sam Miller and Scott A. Barnett and Thomas Mason and Vladan Stevanovi{\\'{c}}
-    and Eric S. Toberer},\n\ttitle = {Material descriptors for predicting thermoelectric
-    performance},\n\tjournal = {Energy {\\&} Environmental Science}\n}"]
-symbol_property_map: {K: bulk_modulus, m_e: electron_effective_mass, mu_e: electron_mobility}
+references: ["doi:10.1039/C4EE03157A"]
+symbol_property_map: 
+    K: bulk_modulus
+    m_e: electron_effective_mass
+    mu_e: electron_mobility

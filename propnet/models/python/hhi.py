@@ -10,6 +10,11 @@ def plug_in(symbol_values):
         'hhi_production': hhi_production
     }
 
+description = """
+The Herfindahl-Hirschman Index is a metric of how geographically 
+dispersed elements in a chemical compound are.
+"""
+
 config = {
     "name": "hhi",
     "connections": [
@@ -31,9 +36,7 @@ config = {
         "hhi_reserve": "hhi_reserve",
         "formula": "formula"
     },
-    "description": "\nThe Herfindahl-Hirschman Index is a metric of how geographically dispersed elements in a chemical compound are.",
-    "references": [
-        "@article{Gaultois_2013,\n\tdoi = {10.1021/cm400893e},\n\turl = {https://doi.org/10.1021%2Fcm400893e},\n\tyear = 2013,\n\tmonth = {may},\n\tpublisher = {American Chemical Society ({ACS})},\n\tvolume = {25},\n\tnumber = {15},\n\tpages = {2911--2920},\n\tauthor = {Michael W. Gaultois and Taylor D. Sparks and Christopher K. H. Borg and Ram Seshadri and William D. Bonificio and David R. Clarke},\n\ttitle = {Data-Driven Review of Thermoelectric Materials: Performance and Resource Considerations},\n\tjournal = {Chemistry of Materials}\n}"
-    ],
+    "description": description,
+    "references": ["doi:10.1021/cm400893e"],
     "plug_in": plug_in
 }

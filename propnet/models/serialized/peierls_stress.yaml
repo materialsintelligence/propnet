@@ -2,13 +2,15 @@ categories: [dislocations]
 connections:
 - inputs: [nu, a, G, b]
   outputs: [T_pn]
-description: '
-
-  Peierls stress is the force required to move a dislocation within a plane of atoms
-  in a unit cell.'
+description: |
+  Peierls stress is the force required to move a dislocation within 
+  a plane of atoms in a unit cell.
 equations: [T_pn - G*2.7182818285**(-2*3.14159*a/(1-nu)/b)]
 name: peierls_stress
-references: ["@misc{url:886830,\n            url = {https://en.wikipedia.org/wiki/Peierls_stress}}\n
-    \           }"]
-symbol_property_map: {G: shear_modulus, T_pn: peierls_stress, a: interplanar_spacing,
-  b: interatomic_spacing, nu: poisson_ratio}
+references: ["url:https://en.wikipedia.org/wiki/Peierls_stress}"] 
+symbol_property_map: 
+    G: shear_modulus
+    T_pn: peierls_stress
+    a: interplanar_spacing
+    b: interatomic_spacing
+    nu: poisson_ratio

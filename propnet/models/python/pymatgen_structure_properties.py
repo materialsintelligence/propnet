@@ -1,10 +1,13 @@
-
-
 def plug_in(symbol_values):
     structure = symbol_values['structure']
     return {"num_sites": structure.num_sites,
             "volume": structure.volume,
             "composition": structure.composition}
+
+description = """
+Properties of a crystal structure, such as the number of sites in its 
+unit cell and its space group, as calculated by pymatgen.
+"""
 
 config = {
     "name": "pymatgen_structure_properties",
@@ -28,9 +31,7 @@ config = {
         "volume": "volume_unit_cell",
         "composition": "composition"
     },
-    "description": "\nProperties of a crystal structure, such as the number of sites in its unit cell and its space group,\nas calculated by pymatgen.",
-    "references": [
-        "@article{Ong_2013,\n\tdoi = {10.1016/j.commatsci.2012.10.028},\n\turl = {https://doi.org/10.1016%2Fj.commatsci.2012.10.028},\n\tyear = 2013,\n\tmonth = {feb},\n\tpublisher = {Elsevier {BV}},\n\tvolume = {68},\n\tpages = {314--319},\n\tauthor = {Shyue Ping Ong and William Davidson Richards and Anubhav Jain and Geoffroy Hautier and Michael Kocher and Shreyas Cholia and Dan Gunter and Vincent L. Chevrier and Kristin A. Persson and Gerbrand Ceder},\n\ttitle = {Python Materials Genomics (pymatgen): A robust, open-source python library for materials analysis},\n\tjournal = {Computational Materials Science}\n}"
-    ],
+    "description": description,
+    "references": ["doi:10.1016/j.commatsci.2012.10.028"],
     "plug_in": plug_in
 }
