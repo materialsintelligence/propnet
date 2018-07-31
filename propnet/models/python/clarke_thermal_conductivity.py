@@ -1,14 +1,14 @@
 from pymatgen.analysis.elasticity.elastic import ElasticTensor
 
+
 def plug_in(symbol_values):
-     tensor = ElasticTensor.from_voigt(symbol_values["C_ij"])
-     structure = symbol_values["structure"]
-     to_return = tensor.clarke_thermalcond(structure)
-     if not isinstance(to_return, float):
-         to_return = float(to_return)
-     return {
-       't': to_return
-   }
+    tensor = ElasticTensor.from_voigt(symbol_values["C_ij"])
+    structure = symbol_values["structure"]
+    to_return = tensor.clarke_thermalcond(structure)
+    if not isinstance(to_return, float):
+        to_return = float(to_return)
+    return {'t': to_return}
+
 
 description = """
 Based on the model posited in https://doi.org/10.1016/S0257-8972(02)00593-5,
@@ -26,6 +26,7 @@ at high temperatures if it has the following broad characteristics
 
 This model currently uses the implementation in pymatgen.
 """
+
 config = {
     "name": "clarke_thermal_conductivity",
     "connections": [
