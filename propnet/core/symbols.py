@@ -1,3 +1,5 @@
+"""This module defines classes related to Symbol descriptions"""
+
 import six
 import numpy as np
 
@@ -79,7 +81,7 @@ class Symbol(MSONable):
                     "Shape provided for ({}) is invalid.".format(id))
 
             logger.info("Units parsed from a string format automatically, "
-                        "do these look correct? {}".format(units))
+                        "do these look correct? %s", units)
             if isinstance(units, six.string_types):
                 units = 1 * ureg.parse_expression(units)
             else:
@@ -142,7 +144,7 @@ class Symbol(MSONable):
             compatible_units = [str(u) for u in self.units.compatible_units()]
             return compatible_units
         except KeyError:
-            logger.warning("Cannot find compatible units for {}".format(self.name))
+            logger.warning("Cannot find compatible units for %s", self.name)
             return []
 
     def __hash__(self):
@@ -166,8 +168,11 @@ class Symbol(MSONable):
     def __hash__(self):
         return self.name.__hash__()
 
+    # TODO: I don't think this is necessary, double check
     def to_yaml(self):
-
+        """
+        Method to serialize the symbol in a yaml format
+        """
         data = {
             "name": self.name,
             "category": self.category,

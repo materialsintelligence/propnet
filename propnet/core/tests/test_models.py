@@ -24,21 +24,21 @@ class ModelTest(unittest.TestCase):
 
     def test_model_formatting(self):
         # TODO: clean up tests (self.assertNotNone), test reference format too
-        for m in DEFAULT_MODELS:
-            self.assertIsNotNone(m.name)
-            self.assertIsNotNone(m.categories)
-            self.assertIsNotNone(m.description)
-            self.assertIsNotNone(m.symbol_property_map)
-            self.assertTrue(isinstance(m.symbol_property_map, dict))
-            self.assertTrue(len(m.symbol_property_map.keys()) > 0)
-            for key in m.symbol_property_map.keys():
+        for model in DEFAULT_MODELS:
+            self.assertIsNotNone(model.name)
+            self.assertIsNotNone(model.categories)
+            self.assertIsNotNone(model.description)
+            self.assertIsNotNone(model.symbol_property_map)
+            self.assertTrue(isinstance(model.symbol_property_map, dict))
+            self.assertTrue(len(model.symbol_property_map.keys()) > 0)
+            for key in model.symbol_property_map.keys():
                 self.assertTrue(isinstance(key, str),
                                 'Invalid symbol_property_map key: ' + str(key))
-                self.assertTrue(isinstance(m.symbol_property_map[key], str) and
-                                m.symbol_property_map[key] in DEFAULT_SYMBOL_TYPE_NAMES)
-            self.assertTrue(m.connections is not None and isinstance(m.connections, list)
-                            and len(m.connections) > 0)
-            for item in m.connections:
+                self.assertTrue(isinstance(model.symbol_property_map[key], str) and
+                                model.symbol_property_map[key] in DEFAULT_SYMBOL_TYPE_NAMES)
+            self.assertTrue(model.connections is not None and isinstance(model.connections, list)
+                            and len(model.connections) > 0)
+            for item in model.connections:
                 self.assertIsNotNone(item)
                 self.assertTrue(isinstance(item, dict))
                 self.assertTrue('inputs' in item.keys())
@@ -52,11 +52,11 @@ class ModelTest(unittest.TestCase):
                 for in_symb in item['inputs']:
                     self.assertIsNotNone(in_symb)
                     self.assertTrue(isinstance(in_symb, str))
-                    self.assertTrue(in_symb in m.symbol_property_map.keys())
+                    self.assertTrue(in_symb in model.symbol_property_map.keys())
                 for out_symb in item['outputs']:
                     self.assertIsNotNone(out_symb)
                     self.assertIsNotNone(isinstance(out_symb, str))
-                    self.assertTrue(out_symb in m.symbol_property_map.keys())
+                    self.assertTrue(out_symb in model.symbol_property_map.keys())
 
     def test_validate_all_models(self):
         for model in DEFAULT_MODELS:

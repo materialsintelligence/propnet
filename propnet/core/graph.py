@@ -13,7 +13,7 @@ from propnet.core.quantity import Quantity
 import logging
 from itertools import chain, product
 
-logger = logging.getLogger("graph")
+logger = logging.getLogger(__name__)
 
 # TODO: consider refactoring with non-mutable quantity attachments, e. g.
 #       graph functionality is purely for path/relationship determination
@@ -397,16 +397,16 @@ class Graph(object):
 
         # Set of theoretically available properties.
         working = set()
-        for p in property_type_set:
-            working.add(p)
+        for property_type in property_type_set:
+            working.add(property_type)
 
         # Set of all models that could produce output.
         all_models = set()
         c_models = set()
-        for p in property_type_set:
-            for m in self._input_to_model[p]:
-                all_models.add(m)
-                c_models.add(m)
+        for property_type in property_type_set:
+            for model in self._input_to_model[property_type]:
+                all_models.add(model)
+                c_models.add(model)
 
         to_add = set()
         to_remove = set()
@@ -425,15 +425,15 @@ class Graph(object):
             to_remove = set()
             # Check if any models generate new Symbol objects as outputs.
             has_changed = False
-            for m in c_models:
+            for model in c_models:
                 # Check if model can add a new Symbols
                 can_contribute = False
-                for s in m.all_outputs:
-                    if s not in working:
+                for output in model.all_outputs:
+                    if output not in working:
                         can_contribute = True
                         break
                 if not can_contribute:
-                    to_remove.add(m)
+                    to_remove.add(model)
                     continue
                 # Check if model has all constraint Symbols provided.
                 has_inputs = True
@@ -444,7 +444,8 @@ class Graph(object):
                 if not has_inputs:
                     continue
                 # Check if any model input sets are met.
-                for input_set, output_set in zip(m.input_sets, m.output_sets):
+                paired_sets = zip(model.input_sets, model.output_sets)
+                for input_set, output_set in paired_sets:
                     has_inputs = True
                     for s in input_set:
                         if s not in working:
@@ -634,10 +635,10 @@ class Graph(object):
 
         new_models = set()
 
-        # TODO: this is still a bit too crazy
+        # TODO: this is still too crazy
         continue_loop = True
         logger.debug("Beginning main loop")
-        logger.debug("Quantity pool contains {}".format(quantity_pool))
+        logger.debug("Quantity pool contains %s", quantity_pool)
         while continue_loop:
             continue_loop = False
             # Check if model inputs are supplied.
@@ -646,9 +647,10 @@ class Graph(object):
                 candidate_models.add(model)
             new_models = set()
             for model in candidate_models:
-                logger.debug("Evaluating model {}".format(model.title))
-                logger.debug("Quantity pool contains {} quantities:".format(
-                    len(list(chain.from_iterable(quantity_pool.values())))))
+                logger.debug("Evaluating model %s", model.title)
+                logger.debug(
+                    "Quantity pool contains %s quantities:",
+                    len(list(chain.from_iterable(quantity_pool.values()))))
                 for property_input_sets in model.evaluation_list:
                     logger.debug("Generating input sets")
                     input_sets = self.generate_input_sets(
@@ -684,8 +686,8 @@ class Graph(object):
                         output = model.evaluate(evaluate_set)
                         success = output.pop('successful')
                         if not success:
-                            logger.debug("Model {} unsuccessful: {}".format(
-                                model.name, output['message']))
+                            logger.debug("Model %s unsuccessful: %s",
+                                model.name, output['message'])
                             continue
                         # Model produced output -- gather output
                         #                       -- add output to the graph

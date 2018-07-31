@@ -20,7 +20,7 @@ from propnet import ureg
 from propnet.core.exceptions import ModelEvaluationError
 from propnet.symbols import DEFAULT_UNITS
 
-logger = logging.getLogger("models")
+logger = logging.getLogger(__name__)
 
 # TODO: maybe this should go somewhere else, like a dedicated settings.py
 TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
@@ -191,7 +191,7 @@ class Model(ABC):
             out = self.plug_in(symbol_value_dict)
             out['successful'] = True
         except Exception as e:
-            logger.debug("Model evaluation unsuccessful {}".format(e))
+            logger.debug("Model evaluation unsuccessful %s", e)
             return {
                 'successful': False,
                 'message': str(e)
@@ -251,6 +251,9 @@ class Model(ABC):
 
     @property
     def all_properties(self):
+        """
+        Returns (set): set of all output properties
+        """
         return self.all_inputs + self.all_outputs
 
     # TODO: I think this should be merged with input_sets maybe called
@@ -438,6 +441,18 @@ class EquationModel(Model, MSONable):
     # TODO: shouldn't this respect/use connections info,
     #       or is that done elsewhere?
     def plug_in(self, symbol_value_dict):
+        """
+        Equation plug-in solves the equation for all input
+        and output combinations, returning the corresponding
+        output values
+
+        Args:
+            symbol_value_dict ({symbol: value}): symbol-keyed
+                dict of values to be substituted
+
+        Returns (dict):
+            symbol-keyed output dictionary
+        """
         # Parse equations and substitute
         eqns = [parse_expr(eq) for eq in self.equations]
         eqns = [eqn.subs(symbol_value_dict) for eqn in eqns]
@@ -457,12 +472,19 @@ class EquationModel(Model, MSONable):
 
     @classmethod
     def from_file(cls, filename):
-        """Load model from file"""
+        """
+        Invokes EquationModel from filename
+
+        Args:
+            filename (str): filename containing model
+
+        Returns:
+            Model corresponding to contents of file
+        """
         model = loadfn(filename)
-        if isinstance(model, Model):
-            return model
-        else:
+        if isinstance(model, dict):
             return cls.from_dict(model)
+        return model
 
 
 class PyModel(Model):
@@ -480,6 +502,17 @@ class PyModel(Model):
             categories, references, symbol_property_map, unit_map)
 
     def plug_in(self, symbol_value_dict):
+        """
+        plug_in for PyModel uses the attached _plug_in attribute
+        as a method with the input symbol_value_dict
+
+        Args:
+            symbol_value_dict ({symbol: value}): dict containing
+                symbol-keyed values to substitute
+
+        Returns:
+            value of substituted expression
+        """
         return self._plug_in(symbol_value_dict)
 
 
@@ -511,14 +544,16 @@ class PyModuleModel(PyModel):
 # TODO: this could use a bit more finesse
 class Constraint(Model):
     """
-    Constraint class, resembles a model, but should output true or false
+    Constraint class, resembles a model, but should outputs
+    true or false based on a string expression containing
+    input symbols
     """
     def __init__(self, expression, name=None, **kwargs):
         """
         Args:
             expression (str): str to be parsed to evaluate constraint
             name (str): optional name for constraint, default None
-            **kwargs:
+            **kwargs: kwargs for model
         """
         self.expression = expression.replace(' ', '')
         # Parse all the non-math symbols and assign to inputs
@@ -529,6 +564,17 @@ class Constraint(Model):
             name=name, connections=connections, **kwargs)
 
     def plug_in(self, symbol_value_dict):
+        """
+        Evaluates the expression with sympy and provided values
+        and returns the boolean of that expression
+
+        Args:
+            symbol_value_dict ({symbol: value}): dict containing
+                symbol-keyed values to substitute
+
+        Returns:
+            value of substituted expression
+        """
         return parse_expr(self.expression, symbol_value_dict)
 
     def __repr__(self):
@@ -547,6 +593,7 @@ def will_it_float(input_to_test):
         return True
     except ValueError:
         return False
+
 
 def remap(dict_or_list, mapping):
     """
@@ -568,8 +615,8 @@ def remap(dict_or_list, mapping):
             if in_key in output:
                 output[out_key] = output.pop(in_key)
     else:
-        for n, in_item in enumerate(output):
+        for idx, in_item in enumerate(output):
             out_item = mapping.get(in_item)
             if out_item:
-                output[n] = out_item
+                output[idx] = out_item
     return output

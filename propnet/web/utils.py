@@ -9,7 +9,6 @@ from pybtex.plugin import find_plugin
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, Symbol
 from propnet.models import DEFAULT_MODEL_NAMES
 from propnet.core.models import Model
-from propnet.core.quantity import Quantity
 
 from monty.serialization import loadfn
 
