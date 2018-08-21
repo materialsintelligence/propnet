@@ -43,6 +43,7 @@ class PropnetBuilder(Builder):
         props = list(self.materials_symbol_map.keys())
         props += ["task_id", "pretty_formula"]
         docs = self.materials.query(criteria=self.criteria, properties=props)
+        self.total = docs.count()
         for doc in docs:
             logger.info("Processing %s", doc['task_id'])
             yield doc
