@@ -1,18 +1,19 @@
 
 def CompositeModel(Model):
-    def __init__(self, **kwargs):
+    def __init__(self, connections, **kwargs):
+        mat_inputs = connections['inputs']
+        self.n_materials
+
         super(Model, self).__init__(**kwargs)
 
-    def
+    def evaluate_constraints():
+        pass
 
 def plug_in(symbol_values):
-    oxide = symbol_values['oxide']
-    metal = symbol_values['metal']
-    structure = symbol_values["structure"]
-    to_return = tensor.clarke_thermalcond(structure)
-    if not isinstance(to_return, float):
-        to_return = float(to_return)
-    return {'t': to_return}
+    oxide_struct = symbol_values['oxide.structure']
+    metal_struct = symbol_values['metal.structure']
+    # Do something with these
+    return {'pilling_bedworth_ratio': pbr}
 
 
 DESCRIPTION = """
@@ -48,11 +49,6 @@ config = {
     "categories": [
         "corrosion"
     ],
-    "symbol_property_map": {
-        "C_ij": "elastic_tensor_voigt",
-        "structure": "structure",
-        "t": "thermal_conductivity"
-    },
     "description": DESCRIPTION,
     "references": ["doi:10.1016/S0257-8972(02)00593-5"],
     "plug_in": plug_in

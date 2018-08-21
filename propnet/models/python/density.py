@@ -21,14 +21,7 @@ config = {
                 "s"
             ],
             "outputs": [
-                "p"
-            ]
-        },
-        {
-            "inputs": [
-                "s"
-            ],
-            "outputs": [
+                "p",
                 "rho"
             ]
         }
