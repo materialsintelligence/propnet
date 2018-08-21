@@ -70,7 +70,7 @@ class PropnetBuilder(Builder):
         doc = {symbol.name: list(q_list) for symbol, q_list in doc.items()}
         doc.update({"task_id": item["task_id"],
                     "pretty_formula": item["pretty_formula"]})
-        return doc
+        return jsanitize(doc, strict=True)
 
     def update_targets(self, items):
         items = [jsanitize(item, strict=True) for item in items]
