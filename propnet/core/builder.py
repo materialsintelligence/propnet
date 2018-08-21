@@ -1,15 +1,11 @@
 from monty.json import jsanitize
 
-from maggma.stores import MongoStore
 from maggma.builder import Builder
-from maggma.runner import Runner
 from propnet import logger
 from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 from pydash import get
-
-from monty.serialization import dumpfn
 
 
 class PropnetBuilder(Builder):
@@ -26,10 +22,10 @@ class PropnetBuilder(Builder):
                  criteria=None, **kwargs):
         """
         Args:
-            materials (MongoStore): store of materials properties
+            materials (Store): store of materials properties
             materials_symbol_map (dict): mapping of keys in materials
                 store docs to symbols
-            propstore (MongoStore): store of propnet properties
+            propstore (Store): store of propnet properties
             **kwargs: kwargs for builder
         """
         self.materials = materials
@@ -38,7 +34,8 @@ class PropnetBuilder(Builder):
         self.materials_symbol_map = materials_symbol_map \
                                     or self.DEFAULT_MATERIAL_SYMBOL_MAP
         super(PropnetBuilder, self).__init__(sources=[materials],
-                                             targets=[propstore])
+                                             targets=[propstore],
+                                             **kwargs)
 
     def get_items(self):
         props = list(self.materials_symbol_map.keys())
