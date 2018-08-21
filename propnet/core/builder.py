@@ -11,9 +11,11 @@ from pydash import get
 class PropnetBuilder(Builder):
 
     DEFAULT_MATERIAL_SYMBOL_MAP = {
-    "structure": "structure",
-    "elasticity.elastic_tensor": "elastic_tensor_voigt",
-    "band_gap.search_gap.band_gap": "band_gap_pbe",
+        "structure": "structure",
+        "elasticity.elastic_tensor": "elastic_tensor_voigt",
+        "band_gap.search_gap.band_gap": "band_gap_pbe",
+        "diel.n": "refractive_index",
+        "diel.poly_total": "relative_permittivity",
     }
     """
     Basic builder for running propnet derivations on various properties
