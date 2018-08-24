@@ -539,6 +539,63 @@ class PyModuleModel(PyModel):
                 "@class": "PyModuleModel"}
 
 
+# TODO: filter might be unified with constraint
+# TODO: the implementation here is inherently difficult because
+#       it relies on iterative pairing.  A lookup-oriented strategy
+#       might be implemented in the future.
+class CompositeModel(Model):
+    def __init__(self, name, connections, pre_filter=None,
+                 filter=None, **kwargs):
+        """
+        Args:
+            name: title of the model
+            connections (dict): list of connections dictionaries,
+                which take the form {"inputs": [Symbols],
+                                     "outputs": [Symbols]}, e. g.:
+                connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
+                               {"inputs": ["T", "V"], "outputs": ["p"]}]
+            pre_filter (callable): callable for filtering the input materials
+                into independent sets which are supplied as candidates
+                for inputs into the model, Defaults to None.  Signature
+                should be pre_filter(materials) where materials is a list
+                of materials, and returns a dictionary with the materials
+                keyed by the associated arguments to plug_in e. g.
+                {'metal': [Materials], 'oxide': [Materials]}
+            filter (callable): callable for filtering pairs of materials
+                to ensure that valid pairings are supplied.  Takes
+                an input dictionary of key-value pairs corresponding to
+                input material candidates keyed by input kwarg to plug_in,
+                e. g. filter({'metal': Material, 'oxide': Material})
+            **kwargs: model params, e. g. description, references, etc.
+        """
+        mat_inputs = {arg.split('.')[0] for arg in connections['inputs']
+                      if '.' in arg}
+        self.n_materials = len(mat_inputs)
+        self.pre_filter = pre_filter
+        self.filter = filter
+        super(CompositeModel, self).__init__(name=name, connections=connections, **kwargs)
+
+
+class PyModuleCompositeModel(CompositeModel):
+    """
+    PyModuleModel is a class instantiated by a model path only,
+    which exists primarily for the purpose of serializing python models
+    """
+    def __init__(self, module_path):
+        """
+        Args:
+            module_path (str): path to module to instantiate model
+        """
+        self._module_path = module_path
+        mod = __import__(module_path, globals(), locals(), ['config'], 0)
+        super(PyModuleCompositeModel, self).__init__(**mod.config)
+
+    def as_dict(self):
+        return {"module_path": self._module_path,
+                "@module": "propnet.core.model",
+                "@class": "PyModuleCompositeModel"}
+
+
 # Right now I don't see much of a use case for pythonic functionality
 # here but maybe there should be
 # TODO: this could use a bit more finesse
