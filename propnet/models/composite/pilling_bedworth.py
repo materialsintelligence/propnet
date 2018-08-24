@@ -1,14 +1,13 @@
 
-def CompositeModel(Model):
-    def __init__(self, connections, **kwargs):
-        mat_inputs = connections['inputs']
-        self.n_materials
+# TODO: filter and pre_filter, @dmrdjenovic
+def filter(materials):
+    pass
 
-        super(Model, self).__init__(**kwargs)
+def pre_filter(materials_list):
+    pass
+    # return {'oxide': material_1, "metal": material_2}
 
-    def evaluate_constraints():
-        pass
-
+# TODO: Fill in how plug_in works, @dmrdjenovic
 def plug_in(symbol_values):
     oxide_struct = symbol_values['oxide.structure']
     metal_struct = symbol_values['metal.structure']
@@ -17,24 +16,11 @@ def plug_in(symbol_values):
 
 
 DESCRIPTION = """
-Based on the model posited in https://doi.org/10.1016/S0257-8972(02)00593-5,
-predicts the thermal conductivity of materials in the high temperature limit.
-Materials have smaller values of Clarke thermal conductivity should be expected
-to have smaller thermal conductivity at high temperatures.
-
-In particular, this model predicts that a material will have low thermal conductivity
-at high temperatures if it has the following broad characteristics
-
-1) A large molecular weight
-2) A complex crystal structure
-3) Non-directional bonding
-4) A large number of different atoms per molecule
-
-This model currently uses the implementation in pymatgen.
+THIS IS THE DESCRIPTION OF THE PB RATIO
 """
 
 config = {
-    "name": "clarke_thermal_conductivity",
+    "name": "pilling_bedworth_ratio",
     "connections": [
         {
             "inputs": [
@@ -51,5 +37,8 @@ config = {
     ],
     "description": DESCRIPTION,
     "references": ["doi:10.1016/S0257-8972(02)00593-5"],
-    "plug_in": plug_in
+    "plug_in": plug_in,
+    "filter": filter,
+    "pre_filter": pre_filter
+
 }
