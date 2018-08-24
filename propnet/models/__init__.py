@@ -1,7 +1,8 @@
 from pkgutil import iter_modules
 import os
-from propnet.core.models import EquationModel, PyModuleModel
-from propnet.models import python
+from propnet.core.models import EquationModel, PyModuleModel,\
+    PyModuleCompositeModel
+from propnet.models import python, composite
 
 
 DEFAULT_MODELS = []
@@ -22,6 +23,15 @@ for _, module_name, _ in MODULE_LIST:
 
 DEFAULT_MODEL_DICT = {d.name: d for d in DEFAULT_MODELS}
 DEFAULT_MODEL_NAMES = list(DEFAULT_MODEL_DICT.keys())
+
+# Load composite models
+COMPOSITE_MODEL_LIST = iter_modules(composite.__path__)
+for _, module_name, _ in MODULE_LIST:
+    module_path = "propnet.models.composite.{}".format(module_name)
+    COMPOSITE_MODEL_LIST.append(PyModuleCompositeModel(module_path))
+
+COMPOSITE_MODEL_DICT = {c.name: c for c in COMPOSITE_MODEL_LIST}
+COMPOSITE_MODEL_NAMES = list(COMPOSITE_MODEL_DICT.keys())
 
 # Convenience function for loading a specific model by name
 def load_default_model(name):
