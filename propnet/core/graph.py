@@ -45,7 +45,7 @@ class Graph(object):
     Attributes:
         _symbol_types ({str: Symbol}): data structure mapping Symbol
             name to Symbol object.
-        _models ({str: Symbol}): data structure mapping Model name to
+        _models ({str: Model}): data structure mapping Model name to
             Model object.
         _materials ({Material}): data structure storing the set of all
             materials present on the graph.

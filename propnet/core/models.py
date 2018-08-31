@@ -48,7 +48,7 @@ class Model(ABC):
             valid, e. g. "n > 0", note that this must include symbols if
             there is a symbol_property_map
         description (str): long form description of the model
-        categories (str): list of categories applicable to
+        categories ([str]): list of categories applicable to
             the model
         references ([str]): list of the informational links
             explaining / supporting the model
@@ -67,7 +67,6 @@ class Model(ABC):
         self.description = description
         self.categories = categories
         self.references = references
-        self.constraints = constraints
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
         self.symbol_property_map = {}
@@ -157,7 +156,7 @@ class Model(ABC):
 
         Returns:
             dictionary of output properties with associated values
-            generated from the input, along "successful" if the
+            generated from the input, along with "successful" if the
             substitution succeeds
         """
         # Remap symbols and units if symbol map isn't none
@@ -240,21 +239,21 @@ class Model(ABC):
         """
         Returns (set): set of all input properties
         """
-        return list(chain.from_iterable(self.input_sets))
+        return set(chain.from_iterable(self.input_sets))
 
     @property
     def all_outputs(self):
         """
         Returns (set): set of all output properties
         """
-        return list(chain.from_iterable(self.output_sets))
+        return set(chain.from_iterable(self.output_sets))
 
     @property
     def all_properties(self):
         """
         Returns (set): set of all output properties
         """
-        return self.all_inputs + self.all_outputs
+        return self.all_inputs.union(self.all_outputs)
 
     # TODO: I think this should be merged with input_sets maybe called
     # relevant properties or something, also shouldn't need both syms
@@ -268,7 +267,7 @@ class Model(ABC):
         Returns:
             list of sets of inputs with constraint properties included
         """
-        return [list(input_set | self.constraint_properties)
+        return [set(input_set | self.constraint_properties)
                 for input_set in self.input_sets]
 
     def test(self, inputs, outputs):
@@ -599,7 +598,24 @@ class PyModuleCompositeModel(CompositeModel):
 # Right now I don't see much of a use case for pythonic functionality
 # here but maybe there should be
 # TODO: this could use a bit more finesse
-class Constraint(Model):
+class ConstraintInterface:
+    def plug_in(self, symbol_value_dict):
+        """
+        ABSTRACT
+        Method analogous to that of the Model class.
+        In this case the method contract demands a boolean
+        be returned representing whether the constraint was
+        met.
+        Args:
+            symbol_value_dict ({symbol: value}): dict containing
+                symbol-keyed values to substitute
+        Returns:
+            (bool) true/false representing whether the constraint
+                   was met.
+        """
+        pass
+
+class Constraint(Model, ConstraintInterface):
     """
     Constraint class, resembles a model, but should outputs
     true or false based on a string expression containing
@@ -617,7 +633,7 @@ class Constraint(Model):
         split = re.split("[+-/*<>=()]", self.expression)
         inputs = [s for s in split if not will_it_float(s) and s]
         connections = [{"inputs": inputs, "outputs": ["is_valid"]}]
-        super(Constraint, self).__init__(
+        Model.__init__(
             name=name, connections=connections, **kwargs)
 
     def plug_in(self, symbol_value_dict):
