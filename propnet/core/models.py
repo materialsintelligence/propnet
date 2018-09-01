@@ -543,6 +543,14 @@ class PyModuleModel(PyModel):
 #       it relies on iterative pairing.  A lookup-oriented strategy
 #       might be implemented in the future.
 class CompositeModel(Model):
+    """
+    Model based on deriving emerging properties from collections of
+    materials of known properties.
+
+    Model requires the unambiguous assignment of materials to labels.
+    These labeled materials' properties are then referenced.
+    """
+
     def __init__(self, name, connections, pre_filter=None,
                  filter=None, **kwargs):
         """
@@ -567,12 +575,144 @@ class CompositeModel(Model):
                 e. g. filter({'metal': Material, 'oxide': Material})
             **kwargs: model params, e. g. description, references, etc.
         """
-        mat_inputs = {arg.split('.')[0] for arg in connections['inputs']
-                      if '.' in arg}
-        self.n_materials = len(mat_inputs)
+        super(CompositeModel, self).__init__(name=name, connections=connections, **kwargs)
         self.pre_filter = pre_filter
         self.filter = filter
-        super(CompositeModel, self).__init__(name=name, connections=connections, **kwargs)
+        self.mat_inputs = []
+        for connection in connections:
+            for input in connection['inputs']:
+                mat = CompositeModel.get_material(input)
+                if mat is not None:
+                    self.mat_inputs.append(mat)
+
+    @staticmethod
+    def get_material(input):
+        """
+        Args:
+            input (String): inputs entry from the connections instance variable.
+        Returns:
+            String or None only material identifiers from the input argument.
+        """
+        separation = input.split('.')
+        components = len(separation)
+        if components == 2:
+            return separation[0]
+        elif components > 2:
+            raise Exception('Connections can only contain 1 period separator.')
+        return None
+
+    @staticmethod
+    def get_symbol(input):
+        """
+        Args:
+            input (String): inputs entry from the connections instance variable.
+        Returns:
+            String only symbol identifiers from the input argument.
+        """
+        separation = input.split('.')
+        components = len(separation)
+        if components == 1:
+            return input
+        elif components == 2:
+            return separation[1]
+        elif components > 2:
+            raise Exception('Connections can only contain 1 period separator.')
+        return None
+
+    def gen_material_mappings(self, materials):
+        """
+        Given a set of materials, returns a mapping from each material label
+        found in self.connections to a Material object.
+        Args:
+            materials (list<Material>): list of candidate Material objects.
+        Returns:
+            (list<dict<String, Material>>) mapping from material label to Material object.
+        """
+
+        # Group by label all possible candidate materials in a dict<String, list<Material>>
+        pre_process = dict()
+        for material in self.mat_inputs:
+            pre_process[material] = None
+        if self.pre_filter:
+            cache = self.pre_filter(materials)
+            for key in cache.keys():
+                if key not in pre_process.keys():
+                    raise Exception("pre_filter method returned unrecognized material name.")
+                val = cache[key]
+                if not isinstance(val, list):
+                    raise Exception("pre_filter method did not return a list of candidate materials.")
+                pre_process[key] = val
+        for key in pre_process.keys():
+            if pre_process[key] is None:
+                pre_process[key] = materials
+
+        # Check if any combinations are possible - return if not.
+        for material in pre_process.keys():
+            if len(pre_process[material]) == 0:
+                return []
+
+        # Create all combinatorial pairs.
+        ## Setup helper variables.
+        to_return = []
+        tracking = [0]*len(pre_process.keys())
+        materials = []
+        for material in pre_process.keys():
+            materials.append(material)
+        overflow = len(tracking)
+
+        ## Setup helper functions.
+        def gen_mat_mapping():
+            """Generates a material mapping given current state"""
+            to_return = dict()
+            for i in range(0, len(materials)):
+                to_return[materials[i]] = pre_process.get(materials[i])[tracking[i]]
+            return to_return
+
+        def step():
+            """Advances the state, returns a boolean as to whether the loop should continue"""
+            i = 0
+            while inc(i) and i < len(tracking):
+                i += 1
+            return i == len(tracking)
+
+        def inc(index):
+            """Increments an index in tracking. Returns if index had to wrap back to zero."""
+            tracking[index] += 1
+            tracking[index] %= len(pre_process[materials[index]])
+            return tracking[index] == 0
+
+        continue_loop = True
+        while continue_loop:
+            # Generate the material mapping.
+            cache = gen_mat_mapping()
+            # Queue up next iteration.
+            continue_loop = step()
+            # Check for duplicate materials in the set - don't include these
+            duplicates = False
+            vals = [v for v in cache.values()]
+            for i in range(0, len(vals)):
+                if not duplicates:
+                    for j in range(i+1, len(vals)):
+                        if vals[i] is vals[j]:
+                            duplicates = True
+                            break
+            if duplicates:
+                continue
+            # Check if materials set is valid
+            if not self.filter(cache):
+                continue
+            # Accept the input set.
+            to_return.append(cache)
+
+        return to_return
+
+
+
+
+
+
+
+
 
 
 class PyModuleCompositeModel(CompositeModel):

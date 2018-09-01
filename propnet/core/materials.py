@@ -140,3 +140,24 @@ class Material(object):
                 if quantity not in other._symbol_to_quantity[symbol]:
                     return False
         return True
+
+class CompositeMaterial(Material):
+    """
+    Class representing a material composed of one or more sub-materials.
+
+    Useful for representing materials properties that arise from multiple materials
+    (ie. contact voltage in metals)
+
+    Attributes:
+        _symbol_to_quantity (dict<Symbol, set<Quantity>>): data-structure storing all properties / descriptors
+                                                           that arise from the joining of multiple materials
+        materials (list<Material>): set of materials contained in the Composite
+    """
+    def __init__(self, materials_list):
+        """
+        Creates a Composite Material instance.
+        Args:
+            materials_list (list<Material>): list of materials contained in the Composite
+        """
+        Material.__init__(self)
+        self.materials = materials_list

@@ -5,7 +5,7 @@ def filter(materials):
 
 def pre_filter(materials_list):
     pass
-    # return {'oxide': material_1, "metal": material_2}
+    # return {'oxide': [material_1], "metal": [material_2]}
 
 # TODO: Fill in how plug_in works, @dmrdjenovic
 def plug_in(symbol_values):
