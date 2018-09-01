@@ -163,87 +163,6 @@ class GraphTest(unittest.TestCase):
         self.assertTrue(symbols['F'] in g.get_symbol_types(),
                        "Symbol was not properly added.")
 
-    def test_add_remove_material(self):
-        """
-        Tests the outcome of adding and removing a Material from the canonical graph.
-        """
-        symbols = GraphTest.generate_canonical_symbols()
-        models = GraphTest.generate_canonical_models(symbols)
-        g = Graph(models=models, symbol_types=symbols)
-        m = GraphTest.generate_canonical_material(symbols)
-        g.add_material(m)
-        qs = m.get_quantities()
-        self.assertTrue(m in g.get_materials(),
-                        "Material improperly added to the graph.")
-        self.assertTrue(symbols['A'] in g._symbol_to_quantity,
-                        "Material improperly added to the graph.")
-        for q in qs:
-            self.assertTrue(q in g._symbol_to_quantity[q.symbol],
-                            "Material quantities improperly added to the graph.")
-        g.remove_material(m)
-        self.assertTrue(len(g.get_materials()) == 0,
-                        "Material improperly removed from the graph.")
-        self.assertTrue(len(g._symbol_to_quantity) == 0,
-                        "Material improperly removed from the graph.")
-
-    # This is marked for deprecation
-    def test_network_X(self):
-        """
-        Tests the outcome of calculating the networkx graph datastructure.
-        """
-        symbols = GraphTest.generate_canonical_symbols()
-        models = GraphTest.generate_canonical_models(symbols)
-        g = Graph(models=models, symbol_types=symbols)
-        m = GraphTest.generate_canonical_material(symbols)
-        g.add_material(m)
-        qs = m.get_quantities()
-        nx = g.graph
-        # TODO: quantity tests are removed for now, needs to be resolved
-        t1 = [x for x in nx.predecessors(symbols['A'])]
-        self.assertTrue(models['model6'] in t1,
-                        "Graph improperly constructed.")
-        # for q in qs:
-        #     self.assertTrue(q in t1,
-        #                     "Graph improperly constructed.")
-        t2 = [x for x in nx.successors(symbols['A'])]
-        self.assertTrue(models['model1'] in t2,
-                        "Graph improperly constructed.")
-        self.assertTrue(models['model2'] in t2,
-                        "Graph improperly constructed.")
-        # t3 = [x for x in nx.predecessors(qs[0])]
-        # self.assertTrue(m in t3,
-        #                 "Graph improperly constructed.")
-        t4 = [x for x in nx.successors(models['model1'])]
-        self.assertTrue(symbols['B'] in t4,
-                        "Graph improperly constructed.")
-        self.assertTrue(symbols['C'] in t4,
-                        "Graph improperly constructed.")
-        t5 = [x for x in nx.predecessors(models['model1'])]
-        self.assertTrue(symbols['A'] in t5,
-                        "Graph improperly constructed.")
-
-
-    def test_add_remove_material_quantity(self):
-        """
-        Tests adding or removing a quantity from a material attached to a graph.
-        """
-        symbols = GraphTest.generate_canonical_symbols()
-        models = GraphTest.generate_canonical_models(symbols)
-        g = Graph(models=models, symbol_types=symbols)
-        m = GraphTest.generate_canonical_material(symbols)
-        g.add_material(m)
-        qs = m.get_quantities()
-        q1 = qs[0]
-        q2 = qs[1]
-        m.remove_quantity(q1)
-        self.assertTrue(q1 not in g._symbol_to_quantity[symbols['A']],
-                        "Quantity was unsuccessfully removed.")
-        self.assertTrue(q2 in g._symbol_to_quantity[symbols['A']],
-                        "Extra Quantity was removed.")
-        m.add_quantity(q1)
-        self.assertTrue(q1 in g._symbol_to_quantity[symbols['A']],
-                        "Quantity was unsuccessfully added.")
-
     def test_evaluate(self):
         """
         Tests the evaluation algorithm on a non-cyclic graph.
@@ -253,35 +172,38 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
-        g.evaluate()
+        g = Graph(symbol_types=symbols, models=models)
+        material_derived = g.evaluate(material)
 
         expected_quantities = [
-            Quantity(symbols['A'], 19, {material}),
-            Quantity(symbols['A'], 23, {material}),
-            Quantity(symbols['B'], 38, {material}),
-            Quantity(symbols['B'], 46, {material}),
-            Quantity(symbols['C'], 57, {material}),
-            Quantity(symbols['C'], 69, {material}),
-            Quantity(symbols['G'], 95, {material}),
-            Quantity(symbols['G'], 115, {material}),
-            Quantity(symbols['F'], 266, {material}),
-            Quantity(symbols['F'], 322, {material}),
-            Quantity(symbols['D'], 23826, {material}),
-            Quantity(symbols['D'], 28842, {material}),
-            Quantity(symbols['D'], 28842, {material}),
-            Quantity(symbols['D'], 34914, {material}),
-            Quantity(symbols['D'], 70395, {material}),
-            Quantity(symbols['D'], 85215, {material}),
-            Quantity(symbols['D'], 85215, {material}),
-            Quantity(symbols['D'], 103155, {material}),
+            Quantity(symbols['A'], 19),
+            Quantity(symbols['A'], 23),
+            Quantity(symbols['B'], 38),
+            Quantity(symbols['B'], 46),
+            Quantity(symbols['C'], 57),
+            Quantity(symbols['C'], 69),
+            Quantity(symbols['G'], 95),
+            Quantity(symbols['G'], 115),
+            Quantity(symbols['F'], 266),
+            Quantity(symbols['F'], 322),
+            Quantity(symbols['D'], 23826),
+            Quantity(symbols['D'], 28842),
+            Quantity(symbols['D'], 34914),
+            Quantity(symbols['D'], 70395),
+            Quantity(symbols['D'], 85215),
+            Quantity(symbols['D'], 103155),
         ]
 
-        for quantity in expected_quantities:
-            self.assertTrue(quantity in g._symbol_to_quantity[quantity.symbol],
+        self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
+                        "evaluate() mutated the original material argument.")
+
+        derived_quantities = material_derived.get_quantities()
+        self.assertTrue(len(expected_quantities) == len(derived_quantities),
+                        "Evaluate did not correctly derive outputs.")
+        for q in expected_quantities:
+            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
                             "Evaluate failed to derive all outputs.")
-            self.assertTrue(material in quantity._material,
-                            "Evaluate failed to assign material.")
+            self.assertTrue(q in derived_quantities)
 
     def test_evaluate_cyclic(self):
         """
@@ -291,51 +213,71 @@ class GraphTest(unittest.TestCase):
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
-        g.evaluate()
+        g = Graph(symbol_types=symbols, models=models)
+        material_derived = g.evaluate(material)
 
         expected_quantities = [
-            Quantity(symbols['A'], 19, {material}),
-            Quantity(symbols['A'], 23, {material}),
-            Quantity(symbols['B'], 38, {material}),
-            Quantity(symbols['B'], 46, {material}),
-            Quantity(symbols['C'], 57, {material}),
-            Quantity(symbols['C'], 69, {material}),
-            Quantity(symbols['G'], 95, {material}),
-            Quantity(symbols['G'], 115, {material}),
-            Quantity(symbols['F'], 266, {material}),
-            Quantity(symbols['F'], 322, {material}),
-            Quantity(symbols['D'], 23826, {material}),
-            Quantity(symbols['D'], 28842, {material}),
-            Quantity(symbols['D'], 28842, {material}),
-            Quantity(symbols['D'], 34914, {material}),
-            Quantity(symbols['D'], 70395, {material}),
-            Quantity(symbols['D'], 85215, {material}),
-            Quantity(symbols['D'], 85215, {material}),
-            Quantity(symbols['D'], 103155, {material}),
-            Quantity(symbols['A'], 107741172, {material}),
-            Quantity(symbols['A'], 130423524, {material}),
-            Quantity(symbols['A'], 130423524, {material}),
-            Quantity(symbols['A'], 157881108, {material}),
-            Quantity(symbols['A'], 130423524, {material}),
-            Quantity(symbols['A'], 157881108, {material}),
-            Quantity(symbols['A'], 157881108, {material}),
-            Quantity(symbols['A'], 191119236, {material}),
-            Quantity(symbols['A'], 318326190, {material}),
-            Quantity(symbols['A'], 385342230, {material}),
-            Quantity(symbols['A'], 385342230, {material}),
-            Quantity(symbols['A'], 466466910, {material}),
-            Quantity(symbols['A'], 385342230, {material}),
-            Quantity(symbols['A'], 466466910, {material}),
-            Quantity(symbols['A'], 466466910, {material}),
-            Quantity(symbols['A'], 564670470, {material})
+            # Starting
+            Quantity(symbols['A'], 19),
+            Quantity(symbols['A'], 23),
+
+            # Derives -1 (M1)
+            Quantity(symbols['B'], 38),
+            Quantity(symbols['B'], 46),
+            Quantity(symbols['C'], 57),
+            Quantity(symbols['C'], 69),
+            # Derives -2 (M3, M1)
+            Quantity(symbols['F'], 266),
+            Quantity(symbols['F'], 322),
+            # Derives -2 (M4, M1)
+            Quantity(symbols['D'], 23826),
+            Quantity(symbols['D'], 28842),
+            Quantity(symbols['D'], 34914),
+            # Derives -3 (M6, M3, M4, M1)
+            Quantity(symbols['A'], 107741172),
+            Quantity(symbols['A'], 130423524),
+            Quantity(symbols['A'], 157881108),
+            Quantity(symbols['A'], 191119236),
+            # Derivable outputs include Derives -4 and Derives -5
+
+            # Derives -1 (M2)
+            Quantity(symbols['G'], 95),
+            Quantity(symbols['G'], 115),
+            # Derives -2 (M5, M1, M2)
+            Quantity(symbols['D'], 70395),
+            Quantity(symbols['D'], 85215),
+            Quantity(symbols['D'], 103155),
+            # Derives -3 (M6, M5, M1, M2)
+            Quantity(symbols['A'], 318326190),
+            Quantity(symbols['A'], 385342230),
+            Quantity(symbols['A'], 466466910),
+            Quantity(symbols['A'], 564670470),
+            # Any derivable outputs are then snubbed.
+
+            # Derives -4 (M2, M6, M3, M4, M1)
+            Quantity(symbols['G'], 538705860),
+            Quantity(symbols['G'], 652117620),
+            Quantity(symbols['G'], 789405540),
+            Quantity(symbols['G'], 955596180),
+            # Derives -5 (M5, M2, M6, M3, M4, M1)
+            # (57 & 69)
+            Quantity(symbols['D'], 399181042260),
+            Quantity(symbols['D'], 483219156420),
+            Quantity(symbols['D'], 584949505140),
+            Quantity(symbols['D'], 708096769380),
+            Quantity(symbols['D'], 857169773460)
         ]
 
+        self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
+                        "evaluate() mutated the original material argument.")
+
+        derived_quantities = material_derived.get_quantities()
+        self.assertTrue(len(expected_quantities) == len(derived_quantities),
+                        "Evaluate did not correctly derive outputs.")
         for q in expected_quantities:
-            self.assertTrue(q in g._symbol_to_quantity[q.symbol],
+            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
                             "Evaluate failed to derive all outputs.")
-            self.assertTrue(material in q._material,
-                            "Evaluate failed to assign material.")
+            self.assertTrue(q in derived_quantities)
 
     def test_evaluate_constraints(self):
         """
@@ -347,36 +289,40 @@ class GraphTest(unittest.TestCase):
             name="model4", connections=[{"inputs": ["B", "C"], "outputs": ["D"]}],
             equations=["D-B*C*11"], constraints=["G==0"])
 
-        symbols = self.generate_canonical_symbols()
-        models = self.generate_canonical_models(symbols)
+        symbols = GraphTest.generate_canonical_symbols()
+        models = GraphTest.generate_canonical_models(symbols)
         models['model4'] = model4
         del models['model6']
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
-        g.evaluate()
+        g = Graph(symbol_types=symbols, models=models)
+        material_derived = g.evaluate(material)
 
         expected_quantities = [
-            Quantity(symbols['A'], 19, {material}),
-            Quantity(symbols['A'], 23, {material}),
-            Quantity(symbols['B'], 38, {material}),
-            Quantity(symbols['B'], 46, {material}),
-            Quantity(symbols['C'], 57, {material}),
-            Quantity(symbols['C'], 69, {material}),
-            Quantity(symbols['G'], 95, {material}),
-            Quantity(symbols['G'], 115, {material}),
-            Quantity(symbols['F'], 266, {material}),
-            Quantity(symbols['F'], 322, {material}),
-            Quantity(symbols['D'], 70395, {material}),
-            Quantity(symbols['D'], 85215, {material}),
-            Quantity(symbols['D'], 85215, {material}),
-            Quantity(symbols['D'], 103155, {material}),
+            Quantity(symbols['A'], 19),
+            Quantity(symbols['A'], 23),
+            Quantity(symbols['B'], 38),
+            Quantity(symbols['B'], 46),
+            Quantity(symbols['C'], 57),
+            Quantity(symbols['C'], 69),
+            Quantity(symbols['G'], 95),
+            Quantity(symbols['G'], 115),
+            Quantity(symbols['F'], 266),
+            Quantity(symbols['F'], 322),
+            Quantity(symbols['D'], 70395),
+            Quantity(symbols['D'], 85215),
+            Quantity(symbols['D'], 103155)
         ]
 
+        self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
+                        "evaluate() mutated the original material argument.")
+
+        derived_quantities = material_derived.get_quantities()
+        self.assertTrue(len(expected_quantities) == len(derived_quantities),
+                        "Evaluate did not correctly derive outputs.")
         for q in expected_quantities:
-            self.assertTrue(q in g._symbol_to_quantity[q.symbol],
+            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
                             "Evaluate failed to derive all outputs.")
-            self.assertTrue(material in q._material,
-                            "Evaluate failed to assign material.")
+            self.assertTrue(q in derived_quantities)
 
     def test_evaluate_constraints_cyclic(self):
         """
@@ -391,39 +337,39 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         models['model4'] = model4
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
-        g.evaluate()
+        g = Graph(symbol_types=symbols, models=models)
+        material_derived = g.evaluate(material)
 
         expected_quantities = [
-            Quantity(symbols['A'], 19, {material}),
-            Quantity(symbols['A'], 23, {material}),
-            Quantity(symbols['B'], 38, {material}),
-            Quantity(symbols['B'], 46, {material}),
-            Quantity(symbols['C'], 57, {material}),
-            Quantity(symbols['C'], 69, {material}),
-            Quantity(symbols['G'], 95, {material}),
-            Quantity(symbols['G'], 115, {material}),
-            Quantity(symbols['F'], 266, {material}),
-            Quantity(symbols['F'], 322, {material}),
-            Quantity(symbols['D'], 70395, {material}),
-            Quantity(symbols['D'], 85215, {material}),
-            Quantity(symbols['D'], 85215, {material}),
-            Quantity(symbols['D'], 103155, {material}),
-            Quantity(symbols['A'], 318326190, {material}),
-            Quantity(symbols['A'], 385342230, {material}),
-            Quantity(symbols['A'], 385342230, {material}),
-            Quantity(symbols['A'], 466466910, {material}),
-            Quantity(symbols['A'], 385342230, {material}),
-            Quantity(symbols['A'], 466466910, {material}),
-            Quantity(symbols['A'], 466466910, {material}),
-            Quantity(symbols['A'], 564670470, {material})
+            Quantity(symbols['A'], 19),
+            Quantity(symbols['A'], 23),
+            Quantity(symbols['B'], 38),
+            Quantity(symbols['B'], 46),
+            Quantity(symbols['C'], 57),
+            Quantity(symbols['C'], 69),
+            Quantity(symbols['G'], 95),
+            Quantity(symbols['G'], 115),
+            Quantity(symbols['F'], 266),
+            Quantity(symbols['F'], 322),
+            Quantity(symbols['D'], 70395),
+            Quantity(symbols['D'], 85215),
+            Quantity(symbols['D'], 103155),
+            Quantity(symbols['A'], 318326190),
+            Quantity(symbols['A'], 385342230),
+            Quantity(symbols['A'], 466466910),
+            Quantity(symbols['A'], 564670470)
         ]
 
+        self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
+                        "evaluate() mutated the original material argument.")
+
+        derived_quantities = material_derived.get_quantities()
+        self.assertTrue(len(expected_quantities) == len(derived_quantities),
+                        "Evaluate did not correctly derive outputs.")
         for q in expected_quantities:
-            self.assertTrue(q in g._symbol_to_quantity[q.symbol],
+            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
                             "Evaluate failed to derive all outputs.")
-            self.assertTrue(material in q._material,
-                            "Evaluate failed to assign material.")
+            self.assertTrue(q in derived_quantities)
 
     def test_evaluate_single_material_degenerate_property(self):
         """
@@ -438,24 +384,23 @@ class GraphTest(unittest.TestCase):
         # Setup
         propnet = Graph()
         mat1 = Material()
-        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permeability'], 1, None))
-        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permeability'], 2, None))
-        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permittivity'], 3, None))
-        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permittivity'], 5, None))
-        propnet.add_material(mat1)
+        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permeability'], 1))
+        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permeability'], 2))
+        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permittivity'], 3))
+        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permittivity'], 5))
 
-        propnet.evaluate()
+        mat1_derived = propnet.evaluate(mat1)
 
         # Expected outputs
         s_outputs = []
-        s_outputs.append(Quantity('relative_permeability', 1, None))
-        s_outputs.append(Quantity('relative_permeability', 2, None))
-        s_outputs.append(Quantity('relative_permittivity', 3, None))
-        s_outputs.append(Quantity('relative_permittivity', 5, None))
-        s_outputs.append(Quantity('refractive_index', 3 ** 0.5, None))
-        s_outputs.append(Quantity('refractive_index', 5 ** 0.5, None))
-        s_outputs.append(Quantity('refractive_index', 6 ** 0.5, None))
-        s_outputs.append(Quantity('refractive_index', 10 ** 0.5, None))
+        s_outputs.append(Quantity('relative_permeability', 1))
+        s_outputs.append(Quantity('relative_permeability', 2))
+        s_outputs.append(Quantity('relative_permittivity', 3))
+        s_outputs.append(Quantity('relative_permittivity', 5))
+        s_outputs.append(Quantity('refractive_index', 3 ** 0.5))
+        s_outputs.append(Quantity('refractive_index', 5 ** 0.5))
+        s_outputs.append(Quantity('refractive_index', 6 ** 0.5))
+        s_outputs.append(Quantity('refractive_index', 10 ** 0.5))
 
         st_outputs = []
         st_outputs.append(DEFAULT_SYMBOLS['relative_permeability'])
@@ -465,254 +410,11 @@ class GraphTest(unittest.TestCase):
         # Test
         for q_expected in s_outputs:
             q = None
-            for q_derived in propnet._symbol_to_quantity[q_expected.symbol]:
+            for q_derived in mat1_derived._symbol_to_quantity[q_expected.symbol]:
                 if q_derived == q_expected:
                     q = q_derived
             self.assertTrue(q is not None,
                             "Quantity missing from evaluate.")
-            self.assertTrue(mat1 in q._material,
-                            "Incorrect material assignment.")
-
-    # TODO: this might not be supported in future, leave for now
-    def test_evaluate_double_material_non_degenerate_property_1(self):
-        """
-        Graph has two materials on it: mat1 & mat2
-            mat1 has nondegenerate properties relative permittivity and relative permeability
-            mat2 has nondegenerate properties relative permittivity and relative permeability
-        Determines if TestGraph1 is correctly evaluated using the evaluate method.
-        We expect 4 refractive_index properties to be calculated as the following:
-            sqrt(3), sqrt(5), sqrt(6), sqrt(10)
-        We expect each material graph to have 2 include refractive_index nodes.
-        We expect each property jointly calculated to have a joint_material tag element.
-        """
-        # Setup
-        propnet = Graph()
-        mat1 = Material()
-        mat2 = Material()
-        mat1.add_quantity(Quantity('relative_permeability', 1, None))
-        mat2.add_quantity(Quantity('relative_permeability', 2, None))
-        mat1.add_quantity(Quantity('relative_permittivity', 3, None))
-        mat2.add_quantity(Quantity('relative_permittivity', 5, None))
-        propnet.add_material(mat1)
-        propnet.add_material(mat2)
-
-        propnet.evaluate()
-
-        # Expected propnet outputs
-        s_outputs = []
-        s_outputs.append(Quantity('relative_permeability', 1, None))
-        s_outputs.append(Quantity('relative_permeability', 2, None))
-        s_outputs.append(Quantity('relative_permittivity', 3, None))
-        s_outputs.append(Quantity('relative_permittivity', 5, None))
-        s_outputs.append(Quantity('refractive_index', 3 ** 0.5, None))
-        s_outputs.append(Quantity('refractive_index', 5 ** 0.5, None))
-        s_outputs.append(Quantity('refractive_index', 6 ** 0.5, None))
-        s_outputs.append(Quantity('refractive_index', 10 ** 0.5, None))
-
-        m_outputs = [mat1, mat2]
-
-        # Expected mat_1 outputs
-        m1_s_outputs = []
-        m1_s_outputs.append(Quantity('relative_permeability', 1, None))
-        m1_s_outputs.append(Quantity('relative_permittivity', 3, None))
-        m1_s_outputs.append(Quantity('refractive_index', 3 ** 0.5, None))
-
-        #Expected mat_2 outputs
-        m2_s_outputs = []
-        m2_s_outputs.append(Quantity('relative_permeability', 2, None))
-        m2_s_outputs.append(Quantity('relative_permittivity', 5, None))
-        m2_s_outputs.append(Quantity('refractive_index', 10 ** 0.5, None))
-
-        st_outputs = []
-        st_outputs.append(DEFAULT_SYMBOLS['relative_permeability'])
-        st_outputs.append(DEFAULT_SYMBOLS['relative_permittivity'])
-        st_outputs.append(DEFAULT_SYMBOLS['refractive_index'])
-
-        # Test
-        for q_expected in s_outputs:
-            q = None
-            for q_derived in propnet._symbol_to_quantity[q_expected.symbol]:
-                if q_derived == q_expected:
-                    q = q_derived
-            self.assertTrue(q is not None,
-                            "Quantity missing from evaluate.")
-            if q in m1_s_outputs:
-                self.assertTrue(mat1 in q._material and mat2 not in q._material,
-                                "Incorrect material assignment.")
-            elif q in m2_s_outputs:
-                self.assertTrue(mat2 in q._material and mat1 not in q._material,
-                                "Incorrect material assignment.")
-            else:
-                self.assertTrue(mat1 in q._material and mat2 in q._material,
-                                "Incorrect material assignment.")
-
-    def test_evaluate_double_material_non_degenerate_property_2(self):
-        """
-        Graph has two materials on it mat1 and mat2.
-            mat1 has nondegenerate properties A=2 & B=3
-            mat2 has nondegenerate properties B=5 & C=7
-
-        Graph has two models on it:
-            model1 takes in properties A & B to produce property C=A*B
-            model2 takes in properties C & B to produce property G=C/B
-
-        We expect propagate to create a graph structure as follows:
-            mat1 has properties: C=6, G=2
-            mat2 has properties: G=7/5
-            Joint properties: G=6/5, G=7/3
-        """
-
-        # Setup
-
-        a = Symbol('a', ['A'], ['A'], units=[1.0, []], shape=[1])
-        b = Symbol('b', ['A'], ['A'], units=[1.0, []], shape=[1])
-        c = Symbol('c', ['A'], ['A'], units=[1.0, []], shape=[1])
-        d = Symbol('d', ['A'], ['A'], units=[1.0, []], shape=[1])
-        symbol_type_dict = {'a': a, 'b': b, 'c': c, 'd': d}
-
-        mat1 = Material()
-        mat2 = Material()
-        mat1.add_quantity(Quantity(a, 2, []))
-        mat1.add_quantity(Quantity(b, 3, []))
-        mat2.add_quantity(Quantity(b, 5, []))
-        mat2.add_quantity(Quantity(c, 7, []))
-
-        model1 = EquationModel("model1", ["c-a*b"],
-                               [{"inputs": ["a", "b"], "outputs": ["c"]}])
-        model2 = EquationModel("model2", ["d-c*b"],
-                               [{"inputs": ["c", "b"], "outputs": ["d"]}])
-
-        p = Graph(materials=[mat1, mat2],
-                  models={'model1': model1, 'model2': model2},
-                  symbol_types=symbol_type_dict)
-
-        # Evaluate
-        p.evaluate()
-
-        # Test
-        m1_s_outputs = []
-        m1_s_outputs.append(Quantity(a, 2, []))
-        m1_s_outputs.append(Quantity(b, 3, []))
-        m1_s_outputs.append(Quantity(c, 6, []))
-        m1_s_outputs.append(Quantity(d, 18, []))
-
-        m2_s_outputs = []
-        m2_s_outputs.append(Quantity(b, 5, []))
-        m2_s_outputs.append(Quantity(c, 7, []))
-        m2_s_outputs.append(Quantity(d, 35, []))
-
-        joint_outputs = []
-        joint_outputs.append(Quantity(d, 30, []))
-        joint_outputs.append(Quantity(d, 21, []))
-        joint_outputs.append(Quantity(d, 50, []))
-
-        for q_expected in m1_s_outputs:
-            q = None
-            for q_derived in p._symbol_to_quantity[q_expected.symbol]:
-                if q_derived == q_expected:
-                    q = q_derived
-            self.assertTrue(q is not None,
-                            "Quantity missing from evaluate.")
-            self.assertTrue(mat1 in q._material,
-                            "Evaluate incorrectly assigned material.")
-            self.assertTrue(mat2 not in q._material,
-                            "Evaluate incorrectly assigned material.")
-
-        for q_expected in m2_s_outputs:
-            q = None
-            for q_derived in p._symbol_to_quantity[q_expected.symbol]:
-                if q_derived == q_expected:
-                    q = q_derived
-            self.assertTrue(q is not None,
-                            "Quantity missing from evaluate.")
-            self.assertTrue(mat2 in q._material,
-                            "Evaluate incorrectly assigned material.")
-            self.assertTrue(mat1 not in q._material,
-                            "Evaluate incorrectly assigned material.")
-
-        for q_expected in joint_outputs:
-            q = None
-            for q_derived in p._symbol_to_quantity[q_expected.symbol]:
-                if q_derived == q_expected:
-                    q = q_derived
-            self.assertTrue(q is not None,
-                            "Quantity missing from evaluate.")
-            self.assertTrue(mat1 in q._material,
-                            "Evaluate incorrectly assigned material.")
-            self.assertTrue(mat2 in q._material,
-                            "Evaluate incorrectly assigned material.")
-
-    def test_evaluate_with_constraint(self):
-        """
-        Simple graph in which property C can be derived from properties
-        A and B iff Constraint has value True.
-
-        Graph has 2 materials on it: mat1 and mat2.
-            mat1 has a Constraint with value True.
-            mat2 has a Constraint with value False.
-        Upon evaluation of the graph, we expect c to be derived ONLY for mat1.
-        """
-
-        # Setup
-        a = Symbol('a', ['A'], ['A'], units=[1.0, []], shape=[1])
-        b = Symbol('b', ['A'], ['A'], units=[1.0, []], shape=[1])
-        c = Symbol('c', ['A'], ['A'], units=[1.0, []], shape=[1])
-        constraint = Symbol('constraint', ['C'], ['C'], category='object')
-        symbol_type_dict = {'a': a, 'b': b, 'c': c, 'constraint': constraint}
-
-        a_example = Quantity(a, 2, [])
-        b_example = Quantity(b, 3, [])
-        const1 = Quantity(constraint, True, [])
-        const2 = Quantity(constraint, False, [])
-
-        model1 = EquationModel("model1", ['c-a*b'],
-                               [{'inputs': ['a', 'b'], 'outputs': ['c']}],
-                               constraints=["constraint"])
-        mat1 = Material()
-        mat1.add_quantity(a_example)
-        mat1.add_quantity(b_example)
-        mat1.add_quantity(const1)
-
-        mat2 = Material()
-        mat2.add_quantity(a_example)
-        mat2.add_quantity(b_example)
-        mat2.add_quantity(const2)
-
-        # Expected outputs
-        m1_s_outputs = []
-        m1_s_outputs.append(Quantity(a, 2, []))
-        m1_s_outputs.append(Quantity(b, 3, []))
-        m1_s_outputs.append(Quantity(c, 6, []))
-        m1_s_outputs.append(Quantity(constraint, True, []))
-
-        m2_s_outputs = []
-        m2_s_outputs.append(Quantity(a, 2, []))
-        m2_s_outputs.append(Quantity(b, 3, []))
-        m2_s_outputs.append(Quantity(constraint, False, []))
-
-        graph = Graph(models={'model1': model1}, materials=[mat1],
-                      symbol_types=symbol_type_dict)
-
-        # Evaluate
-        graph.evaluate()
-        for q_expected in m1_s_outputs:
-            q = None
-            for q_derived in graph._symbol_to_quantity[q_expected.symbol]:
-                if q_derived == q_expected:
-                    q = q_derived
-            self.assertIsNotNone(q, "Quantity missing from evaluate.")
-
-        graph = Graph(models={'model1': model1}, materials=[mat2],
-                      symbol_types=symbol_type_dict)
-        graph.evaluate()
-
-        # TODO: I'm not sure the lack of the constrainted model is being checked here
-        for q_expected in m2_s_outputs:
-            q = None
-            for q_derived in graph._symbol_to_quantity[q_expected.symbol]:
-                if q_derived == q_expected:
-                    q = q_derived
-            self.assertIsNotNone(q, "Quantity missing from evaluate.")
 
     def test_symbol_expansion(self):
         """
@@ -723,7 +425,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models)
 
         ts = []
         ans = []
@@ -755,7 +457,7 @@ class GraphTest(unittest.TestCase):
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models)
 
         ts = []
         ans = []
@@ -793,7 +495,7 @@ class GraphTest(unittest.TestCase):
         models['model4'] = model4
         del models['model6']
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models)
 
         ts = []
         ans = []
@@ -829,7 +531,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         models['model4'] = model4
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models)
 
         ts = []
         ans = []
@@ -862,7 +564,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models)
 
         out1 = g.required_inputs_for_property(symbols['F'])
 
@@ -922,7 +624,7 @@ class GraphTest(unittest.TestCase):
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models)
 
         out1 = g.required_inputs_for_property(symbols['F'])
 
@@ -1133,19 +835,19 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
-        g = Graph(materials=[material], symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models)
 
         paths_1 = g.get_paths(symbols['A'], symbols['F'])
         paths_2 = g.get_paths(symbols['A'], symbols['D'])
 
         ans_1 = [SymbolPath({symbols['A']}, [models['model1'], models['model3']])]
         ans_2 = [
-                    SymbolPath({symbols['A'], symbols['C']}, [models['model2'], models['model5']]),
-                    SymbolPath({symbols['A'], symbols['G']}, [models['model1'], models['model5']]),
-                    SymbolPath({symbols['A']}, [models['model1'], models['model4']]),
-                    SymbolPath({symbols['A']}, [models['model1'], models['model2'], models['model5']]),
-                    SymbolPath({symbols['A']}, [models['model2'], models['model1'], models['model5']])
-                ]
+            SymbolPath({symbols['A'], symbols['C']}, [models['model2'], models['model5']]),
+            SymbolPath({symbols['A'], symbols['G']}, [models['model1'], models['model5']]),
+            SymbolPath({symbols['A']}, [models['model1'], models['model4']]),
+            SymbolPath({symbols['A']}, [models['model1'], models['model2'], models['model5']]),
+            SymbolPath({symbols['A']}, [models['model2'], models['model1'], models['model5']])
+        ]
         self.assertTrue(len(paths_1) == len(ans_1),
                         "Incorrect paths generated.")
         self.assertTrue(len(paths_2) == len(ans_2),

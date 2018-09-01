@@ -634,7 +634,7 @@ class Constraint(Model, ConstraintInterface):
         inputs = [s for s in split if not will_it_float(s) and s]
         connections = [{"inputs": inputs, "outputs": ["is_valid"]}]
         Model.__init__(
-            name=name, connections=connections, **kwargs)
+            self, name=name, connections=connections, **kwargs)
 
     def plug_in(self, symbol_value_dict):
         """

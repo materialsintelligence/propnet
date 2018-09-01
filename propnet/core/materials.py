@@ -9,8 +9,6 @@ from collections import defaultdict
 
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import Quantity, weighted_mean
-from propnet.core.utils import uuid
-from propnet.core.graph import Graph
 
 
 class Material(object):
