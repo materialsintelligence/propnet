@@ -539,13 +539,11 @@ class Graph(object):
                 logger.debug("Quantity pool contains {} quantities:".format(
                     len(list(chain.from_iterable(quantity_pool.values())))))
 
-                inputs = model.evaluation_list
+                for property_input_sets in model.evaluation_list:
 
-                for l in inputs:
+                    logger.debug("\tGenerating input sets for: " + str(property_input_sets))
 
-                    logger.debug("\tGenerating input sets for: " + str(l))
-
-                    input_sets = self.generate_input_sets(l, quantity_pool)
+                    input_sets = self.generate_input_sets(property_input_sets, quantity_pool)
 
                     for input_set in input_sets:
 
@@ -579,12 +577,13 @@ class Graph(object):
 
                         # Try to evaluate input_set:
 
-                        evaluate_set = dict()
-                        for symbol, quantity in input_set.items():
-                            evaluate_set[symbol] = quantity.value
+                        evaluate_set = {symbol: quantity.value
+                                        for symbol, quantity in input_set.items()}
                         output = model.evaluate(evaluate_set)
-                        if not output['successful']:
-                            logger.debug("\t\t\tInput set failed -- did not produce a successful output.")
+                        success = output.pop('successful')
+                        if not success:
+                            logger.debug("Model %s unsuccessful: %s",
+                                         model.name, output['message'])
                             continue
 
                         # input_set led to output from the Model -- gather output
@@ -596,8 +595,8 @@ class Graph(object):
                         for symbol, quantity in output.items():
                             st = self._symbol_types.get(symbol)
                             if not st:
-                                logger.debug("\t\t\tUnrecognized symbol_type in the output: " + str(symbol))
-                                continue
+                                raise ValueError(
+                                    "Symbol type {} not found".format(symbol))
                             for m in self._input_to_model[st]:
                                 new_models.add(m)
                             q = Quantity(st, quantity)
