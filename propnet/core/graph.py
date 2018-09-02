@@ -529,8 +529,11 @@ class Graph(object):
         Returns ([{str: Quantity}]):
             list of symbol strings mapped to Quantity values.
         """
-        aggregated_symbols = [this_quantity_pool[prop]
-                              for prop in props]
+        aggregated_symbols = []
+        for prop in props:
+            if prop not in this_quantity_pool.keys():
+                return []
+            aggregated_symbols.append(this_quantity_pool[prop])
         input_set_lists = product(*aggregated_symbols)
         input_set_dicts = []
         for input_set_list in input_set_lists:

@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from propnet.core.materials import Material
 from propnet.core.quantity import Quantity
 
@@ -81,10 +79,9 @@ class MPRester(_MPRester):
             ([Dict]) a list of property dictionaries
 
         """
-
         all_properties = list(self.mapping.keys())
         property_query = self.query(criteria={'material_id': {'$in': mpids}},
-                                  properties=all_properties)
+                                    properties=all_properties)
 
         q = {doc['material_id']: doc for doc in property_query}
 
