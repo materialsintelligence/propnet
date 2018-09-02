@@ -7,6 +7,7 @@ from collections import defaultdict
 import networkx as nx
 
 from propnet.models import DEFAULT_MODEL_DICT
+from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet.core.quantity import Quantity
@@ -80,9 +81,14 @@ class Graph(object):
         if symbol_types:
             self.update_symbol_types(symbol_types)
 
-        self.update_models(models or DEFAULT_MODEL_DICT)
+        if models is None:
+            self.update_models(DEFAULT_MODEL_DICT)
+        else:
+            self.update_models(models)
 
-        if composite_models:
+        if composite_models is None:
+            self.update_composite_models(COMPOSITE_MODEL_DICT)
+        else:
             self.update_composite_models(composite_models)
 
     def __str__(self):
@@ -186,9 +192,13 @@ class Graph(object):
             try:
                 for input_set in model.input_sets:
                     for property_name in input_set:
+                        if property_name not in self._symbol_types.keys():
+                            raise KeyError(property_name)
                         self._input_to_model[property_name].add(model)
                 for output_set in model.output_sets:
                     for property_name in output_set:
+                        if property_name not in self._symbol_types.keys():
+                            raise KeyError(property_name)
                         self._output_to_model[property_name].add(model)
             except KeyError as e:
                 self.remove_models(added)
@@ -249,14 +259,14 @@ class Graph(object):
         for model in super_models.values():
             self._composite_models[model.name] = model
             added[model.name] = model
-            for d in model.type_connections:
-                try:
-                    symbol_inputs = [self._symbol_types[symb_str[0]] for symb_str in d['inputs']]
-                    symbol_outputs = [self._symbol_types[symb_str[0]] for symb_str in d['outputs']]
-                except KeyError as e:
-                    self.remove_composite_models(added)
-                    raise KeyError('Attempted to add a model to the property network with an unrecognized Symbol.\
-                                            Add {} Symbol to the property network before adding this model.'.format(e))
+            for input_set in model.input_sets:
+                for input in input_set:
+                    input = CompositeModel.get_symbol(input)
+                    if input not in self._symbol_types.keys():
+                        raise KeyError("Attempted to add a model to the property "
+                               "network with an unrecognized Symbol. "
+                               "Add {} Symbol to the property network before "
+                               "adding this model.".format(input))
 
     def remove_composite_models(self, super_models):
         """
@@ -737,19 +747,21 @@ class Graph(object):
                 # Modify inputs for use in generate_input_sets
 
                 temp_pool = defaultdict(set)
+                combined_list = []
                 mat_list = []
                 symbol_list = []
                 for item in property_input_sets:
+                    combined_list.append(item)
                     mat_list.append(CompositeModel.get_material(item))
                     symbol_list.append(CompositeModel.get_symbol(item))
                 for i in range(0,len(mat_list)):
                     if mat_list[i] == None:     # Draw symbol from the CompositeMaterial
                         mat = to_return
-                        temp_pool[symbol_list[i]] += mat._symbol_to_quantity[symbol_list[i]]
                     else:
                         mat = mat_mapping[mat_list[i]]
-                        temp_pool[symbol_list[i]] += mat._symbol_to_quantity[symbol_list[i]]
-                input_sets = self.generate_input_sets(symbol_list, temp_pool)
+                    for q in mat._symbol_to_quantity[symbol_list[i]]:
+                        temp_pool[combined_list[i]].add(q)
+                input_sets = self.generate_input_sets(combined_list, temp_pool)
 
                 for input_set in input_sets:
 
@@ -763,32 +775,30 @@ class Graph(object):
 
                     # Try to evaluate input_set:
 
-                    evaluate_set = dict()
-                    for symbol, quantity in input_set.items():
-                        evaluate_set[symbol] = quantity.value
+                    evaluate_set = {symbol: quantity.value
+                                    for symbol, quantity in input_set.items()}
                     output = model.evaluate(evaluate_set)
-                    if not output['successful']:
+                    success = output.pop('successful')
+                    if not success:
                         logger.debug("\t\t\tInput set failed -- did not produce a successful output.")
                         continue
 
                     # input_set led to output from the Model -- add output to the SuperMaterial
 
                     logger.debug("\t\t\tInput set produced successful output.")
-
                     for symbol, quantity in output.items():
-                        st_out = model.symbol_mapping.get(symbol)
-                        if isinstance(st_out, tuple):
-                            st_out = st_out[0]
-                        st = self._symbol_types.get(st_out)
+                        st = self._symbol_types.get(symbol)
                         if not st:
-                            logger.debug("\t\t\tUnrecognized symbol_type in the output: " + str(symbol))
-                            continue
+                            raise ValueError(
+                                "Symbol type {} not found".format(symbol))
                         q = Quantity(st, quantity)
                         to_return._symbol_to_quantity[st].add(q)
                         logger.debug("\t\t\tNew output: " + str(q))
 
         # Evaluate the SuperMaterial's quantities and return the result.
-        return self.evaluate(to_return)
+        mappings = self.evaluate(to_return)._symbol_to_quantity
+        to_return._symbol_to_quantity = mappings
+        return to_return
 
 
 class SymbolPath(object):

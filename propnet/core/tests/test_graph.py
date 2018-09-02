@@ -1,9 +1,11 @@
 import unittest
 from propnet.core.graph import Graph, SymbolPath
 from propnet.core.materials import Material
+from propnet.core.materials import CompositeMaterial
 from propnet.core.symbols import Symbol
 from propnet.core.models import EquationModel
 from propnet.core.quantity import Quantity
+from propnet.ext.matproj import MPRester
 
 from propnet.symbols import DEFAULT_SYMBOLS
 
@@ -83,7 +85,7 @@ class GraphTest(unittest.TestCase):
         """
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
-        g = Graph(models=models, symbol_types=symbols)
+        g = Graph(models=models, symbol_types=symbols, composite_models=dict())
         st_c = {x for x in symbols.values()}
         st_g = g.get_symbol_types()
         m_c = {x for x in models.values()}
@@ -116,7 +118,7 @@ class GraphTest(unittest.TestCase):
         """
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
-        g = Graph(models=models, symbol_types=symbols)
+        g = Graph(models=models, symbol_types=symbols, composite_models=dict())
         g.remove_models({models['model6'].name: models['model6']})
         self.assertTrue(models['model6'] not in g.get_models(),
                         "Model was unsuccessfully removed from the graph.")
@@ -147,7 +149,7 @@ class GraphTest(unittest.TestCase):
         """
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
-        g = Graph(models=models, symbol_types=symbols)
+        g = Graph(models=models, symbol_types=symbols, composite_models=dict())
         g.remove_symbol_types({'F': symbols['F']})
         self.assertTrue(symbols['F'] not in g.get_symbol_types(),
                         "Symbol was not properly removed.")
@@ -172,7 +174,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
         expected_quantities = [
@@ -213,7 +215,7 @@ class GraphTest(unittest.TestCase):
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
         expected_quantities = [
@@ -294,7 +296,7 @@ class GraphTest(unittest.TestCase):
         models['model4'] = model4
         del models['model6']
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
         expected_quantities = [
@@ -337,7 +339,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         models['model4'] = model4
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
         expected_quantities = [
@@ -425,7 +427,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         ts = []
         ans = []
@@ -457,7 +459,7 @@ class GraphTest(unittest.TestCase):
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         ts = []
         ans = []
@@ -495,7 +497,7 @@ class GraphTest(unittest.TestCase):
         models['model4'] = model4
         del models['model6']
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         ts = []
         ans = []
@@ -531,7 +533,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         models['model4'] = model4
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         ts = []
         ans = []
@@ -564,7 +566,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         out1 = g.required_inputs_for_property(symbols['F'])
 
@@ -624,7 +626,7 @@ class GraphTest(unittest.TestCase):
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         out1 = g.required_inputs_for_property(symbols['F'])
 
@@ -689,7 +691,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         models['model4'] = model4
         del models['model6']
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         out1 = g.required_inputs_for_property(symbols['F'])
 
@@ -764,7 +766,7 @@ class GraphTest(unittest.TestCase):
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(symbols)
         models['model4'] = model4
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         out1 = g.required_inputs_for_property(symbols['F'])
 
@@ -835,7 +837,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         paths_1 = g.get_paths(symbols['A'], symbols['F'])
         paths_2 = g.get_paths(symbols['A'], symbols['D'])
@@ -871,7 +873,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models(symbols)
         models['model4'] = model4
         del models['model6']
-        g = Graph(symbol_types=symbols, models=models)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
 
         paths_1 = g.get_paths(symbols['A'], symbols['F'])
         paths_2 = g.get_paths(symbols['A'], symbols['D'])
@@ -899,3 +901,21 @@ class GraphTest(unittest.TestCase):
         for i in paths_2:
             self.assertTrue(i in ans_2,
                             "Incorrect paths generated.")
+
+    def test_super_evaluate(self):
+        """
+        Tests the graph's composite material evaluation.
+        """
+        mpr = MPRester()
+        m1 = mpr.get_material_for_mpid("mp-13")
+        m2 = mpr.get_material_for_mpid("mp-24972")
+        sm = CompositeMaterial([m1, m2])
+
+        g = Graph()
+
+        sm = g.super_evaluate(sm)
+
+        self.assertTrue('pilling_bedworth_ratio' in sm._symbol_to_quantity.keys(),
+                        "Super Evaluate failed to derive expected outputs.")
+        self.assertTrue(len(sm._symbol_to_quantity['pilling_bedworth_ratio']) > 0,
+                        "Super Evaluate failed to derive expected outputs.")

@@ -1,18 +1,33 @@
-
-# TODO: filter and pre_filter, @dmrdjenovic
 def filter(materials):
-    pass
+    return True
 
 def pre_filter(materials_list):
-    pass
-    # return {'oxide': [material_1], "metal": [material_2]}
+    if len(materials_list) != 2:
+        return {'oxide': [], 'metal': []}
+    metallic1 = {True: 0, False: 0}
+    metallic2 = {True: 0, False: 0}
+    for val in materials_list[0]._symbol_to_quantity['is_metallic']:
+        metallic1[val._value._magnitude == 1] += 1
+    for val in materials_list[1]._symbol_to_quantity['is_metallic']:
+        metallic2[val._value._magnitude == 1] += 1
+    metallic1 = metallic1[True] > metallic1[False]
+    metallic2 = metallic2[True] > metallic2[False]
+    if metallic1 and not metallic2:
+        return {'metal': [materials_list[0]], 'oxide': [materials_list[1]]}
+    if metallic2 and not metallic1:
+        return {'metal': [materials_list[1]], 'oxide': [materials_list[0]]}
+    return {'oxide': [], 'metal': []}
 
-# TODO: Fill in how plug_in works, @dmrdjenovic
 def plug_in(symbol_values):
-    oxide_struct = symbol_values['oxide.structure']
-    metal_struct = symbol_values['metal.structure']
-    # Do something with these
-    return {'pilling_bedworth_ratio': pbr}
+    so = symbol_values['oxide.structure']
+    sm = symbol_values['metal.structure']
+    n = so.composition.reduced_composition.get(sm.composition.elements[0])
+
+    m_oxide = float(so.composition.reduced_composition.weight)
+    m_metal = float(sm.composition.reduced_composition.weight)
+
+    result = m_oxide * so.density / (n * m_metal * sm.density)
+    return {'pilling_bedworth_ratio': result, 'successful': True}
 
 
 DESCRIPTION = """

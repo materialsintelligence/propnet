@@ -542,7 +542,7 @@ class PyModuleModel(PyModel):
 # TODO: the implementation here is inherently difficult because
 #       it relies on iterative pairing.  A lookup-oriented strategy
 #       might be implemented in the future.
-class CompositeModel(Model):
+class CompositeModel(PyModel):
     """
     Model based on deriving emerging properties from collections of
     materials of known properties.
@@ -551,7 +551,7 @@ class CompositeModel(Model):
     These labeled materials' properties are then referenced.
     """
 
-    def __init__(self, name, connections, pre_filter=None,
+    def __init__(self, name, connections, plug_in, pre_filter=None,
                  filter=None, **kwargs):
         """
         Args:
@@ -575,7 +575,7 @@ class CompositeModel(Model):
                 e. g. filter({'metal': Material, 'oxide': Material})
             **kwargs: model params, e. g. description, references, etc.
         """
-        super(CompositeModel, self).__init__(name=name, connections=connections, **kwargs)
+        PyModel.__init__(self, name=name, connections=connections, plug_in=plug_in, **kwargs)
         self.pre_filter = pre_filter
         self.filter = filter
         self.mat_inputs = []
@@ -671,9 +671,9 @@ class CompositeModel(Model):
         def step():
             """Advances the state, returns a boolean as to whether the loop should continue"""
             i = 0
-            while inc(i) and i < len(tracking):
+            while i < len(tracking) and inc(i):
                 i += 1
-            return i == len(tracking)
+            return i != len(tracking)
 
         def inc(index):
             """Increments an index in tracking. Returns if index had to wrap back to zero."""
@@ -705,14 +705,6 @@ class CompositeModel(Model):
             to_return.append(cache)
 
         return to_return
-
-
-
-
-
-
-
-
 
 
 class PyModuleCompositeModel(CompositeModel):
