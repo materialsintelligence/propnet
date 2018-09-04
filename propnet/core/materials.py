@@ -9,8 +9,6 @@ from collections import defaultdict
 
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import Quantity, weighted_mean
-from propnet.core.utils import uuid
-from propnet.core.graph import Graph
 
 
 class Material(object):
@@ -27,8 +25,6 @@ class Material(object):
     differentiate between different materials at runtime.
 
     Attributes:
-        uuid (int): unique hash number used as an identifier for this object.
-        parent (Graph): Stores a pointer to the Graph instance this Material has been bound to.
         _symbol_to_quantity (dict<Symbol, set<Quantity>>): data structure mapping Symbols to a list of corresponding
                                                            Quantity objects of that type.
 
@@ -37,34 +33,11 @@ class Material(object):
         """
         Creates a Material instance, instantiating a trivial graph of one node.
         """
-        self.uuid = uuid()
-        self.parent = None
         self._symbol_to_quantity = defaultdict(set)
-
-    def __repr__(self):
-        return str(self.uuid)
-
-    def __str__(self):
-        QUANTITY_LENGTH_CAP = 35
-        building = []
-        building += ["Material: " + str(self.uuid), ""]
-        for symbol in self._symbol_to_quantity.keys():
-            building += ["\t" + symbol.name]
-            for quantity in self._symbol_to_quantity[symbol]:
-                qs = str(quantity)
-                if "\n" in qs or len(qs) > QUANTITY_LENGTH_CAP:
-                    qs = "..."
-                building += ["\t\t" + qs]
-            building += [""]
-        return "\n".join(building)
 
     def add_quantity(self, quantity):
         """
-        Adds a property to this material's property graph.  If the
-        material has been bound to a Graph instance, correctly adds
-        the property to that instance.
-
-        Mutates this graph instance variable and its parent.
+        Adds a property to this property collection.
 
         Args:
             quantity (Quantity): property to be bound to the material.
@@ -73,9 +46,6 @@ class Material(object):
             None
         """
         self._symbol_to_quantity[quantity.symbol].add(quantity)
-        if self.parent:
-            self.parent._add_quantity(quantity)
-        quantity._material.add(self)
 
     def remove_quantity(self, quantity):
         """
@@ -89,12 +59,8 @@ class Material(object):
             None
         """
         if quantity.symbol not in self._symbol_to_quantity:
-            raise Exception(
-                "Attempting to remove quantity not present in the material.")
-        if self.parent:
-            self.parent._remove_quantity(quantity)
+            raise Exception("Attempting to remove quantity not present in the material.")
         self._symbol_to_quantity[quantity.symbol].remove(quantity)
-        quantity._material.remove(self)
 
     def remove_symbol(self, symbol):
         """
@@ -108,13 +74,7 @@ class Material(object):
             None
         """
         if symbol not in self._symbol_to_quantity:
-            raise Exception(
-                "Attempting to remove Symbol not present in the material.")
-        to_remove = []
-        for q in self._symbol_to_quantity[symbol]:
-            to_remove.append(q)
-        for q in to_remove:
-            self.remove_quantity(q)
+            raise Exception("Attempting to remove Symbol not present in the material.")
         del self._symbol_to_quantity[symbol]
 
     def get_symbols(self):
@@ -134,19 +94,6 @@ class Material(object):
         """
         return list(chain.from_iterable(self._symbol_to_quantity.values()))
 
-    def get_unique_quantities(self):
-        """
-        Returns a set of Quantities that belong ONLY to this material.
-        Returns:
-            (set<Quantity>)
-        """
-        to_return = []
-        for q_list in self._symbol_to_quantity.values():
-            for q in q_list:
-                if len(q._material) == 1 and self in q._material:
-                    to_return.append(q)
-        return to_return
-
     def get_aggregated_quantities(self):
         """
         Return mean values for all quantities for each symbol.
@@ -165,29 +112,52 @@ class Material(object):
                 aggregated[symbol] = weighted_mean(list(quantities))
         return aggregated
 
-    @property
-    def graph(self):
-        """
-        Generates a networkX data structure representing the property network and returns
-        this object.
-        Returns:
-            (networkX.multidigraph)
-        """
-        graph = nx.MultiDiGraph()
-        for symbol in self._symbol_to_quantity:
-            quantity = self._symbol_to_quantity[symbol]
-            graph.add_edge(quantity, symbol)
-            graph.add_edge(self, quantity)
-        return graph
+    def __str__(self):
+        QUANTITY_LENGTH_CAP = 35
+        building = []
+        building += ["Material: " + str(hex(id(self))), ""]
+        for symbol in self._symbol_to_quantity.keys():
+            building += ["\t" + symbol.name]
+            for quantity in self._symbol_to_quantity[symbol]:
+                qs = str(quantity)
+                if "\n" in qs or len(qs) > QUANTITY_LENGTH_CAP:
+                    qs = "..."
+                building += ["\t\t" + qs]
+            building += [""]
+        return "\n".join(building)
 
-    def evaluate(self):
+    def __eq__(self, other):
+        if not isinstance(other, Material):
+            return False
+        if len(self._symbol_to_quantity) != len(other._symbol_to_quantity):
+            return False
+        for symbol in self._symbol_to_quantity.keys():
+            if symbol not in other._symbol_to_quantity.keys():
+                return False
+            if len(self._symbol_to_quantity[symbol]) != len(other._symbol_to_quantity[symbol]):
+                return False
+            for quantity in self._symbol_to_quantity[symbol]:
+                if quantity not in other._symbol_to_quantity[symbol]:
+                    return False
+        return True
+
+class CompositeMaterial(Material):
+    """
+    Class representing a material composed of one or more sub-materials.
+
+    Useful for representing materials properties that arise from multiple materials
+    (ie. contact voltage in metals)
+
+    Attributes:
+        _symbol_to_quantity (dict<Symbol, set<Quantity>>): data-structure storing all properties / descriptors
+                                                           that arise from the joining of multiple materials
+        materials (list<Material>): set of materials contained in the Composite
+    """
+    def __init__(self, materials_list):
         """
-        Convenience method to expand this material's properties.
-        Creates a Graph instance behind the scenes.
-        Mutates this material.
-        Returns:
-            (None)
+        Creates a Composite Material instance.
+        Args:
+            materials_list (list<Material>): list of materials contained in the Composite
         """
-        g = Graph()
-        g.add_material(self)
-        g.evaluate()
+        Material.__init__(self)
+        self.materials = materials_list

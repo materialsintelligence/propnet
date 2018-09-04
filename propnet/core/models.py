@@ -48,7 +48,7 @@ class Model(ABC):
             valid, e. g. "n > 0", note that this must include symbols if
             there is a symbol_property_map
         description (str): long form description of the model
-        categories (str): list of categories applicable to
+        categories ([str]): list of categories applicable to
             the model
         references ([str]): list of the informational links
             explaining / supporting the model
@@ -67,7 +67,6 @@ class Model(ABC):
         self.description = description
         self.categories = categories
         self.references = references
-        self.constraints = constraints
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
         self.symbol_property_map = {}
@@ -157,7 +156,7 @@ class Model(ABC):
 
         Returns:
             dictionary of output properties with associated values
-            generated from the input, along "successful" if the
+            generated from the input, along with "successful" if the
             substitution succeeds
         """
         # Remap symbols and units if symbol map isn't none
@@ -240,21 +239,21 @@ class Model(ABC):
         """
         Returns (set): set of all input properties
         """
-        return list(chain.from_iterable(self.input_sets))
+        return set(chain.from_iterable(self.input_sets))
 
     @property
     def all_outputs(self):
         """
         Returns (set): set of all output properties
         """
-        return list(chain.from_iterable(self.output_sets))
+        return set(chain.from_iterable(self.output_sets))
 
     @property
     def all_properties(self):
         """
         Returns (set): set of all output properties
         """
-        return self.all_inputs + self.all_outputs
+        return self.all_inputs.union(self.all_outputs)
 
     # TODO: I think this should be merged with input_sets maybe called
     # relevant properties or something, also shouldn't need both syms
@@ -268,7 +267,7 @@ class Model(ABC):
         Returns:
             list of sets of inputs with constraint properties included
         """
-        return [list(input_set | self.constraint_properties)
+        return [set(input_set | self.constraint_properties)
                 for input_set in self.input_sets]
 
     def test(self, inputs, outputs):
@@ -539,10 +538,216 @@ class PyModuleModel(PyModel):
                 "@class": "PyModuleModel"}
 
 
+# TODO: filter might be unified with constraint
+# TODO: the implementation here is inherently difficult because
+#       it relies on iterative pairing.  A lookup-oriented strategy
+#       might be implemented in the future.
+class CompositeModel(PyModel):
+    """
+    Model based on deriving emerging properties from collections of
+    materials of known properties.
+
+    Model requires the unambiguous assignment of materials to labels.
+    These labeled materials' properties are then referenced.
+    """
+
+    def __init__(self, name, connections, plug_in, pre_filter=None,
+                 filter=None, **kwargs):
+        """
+        Args:
+            name: title of the model
+            connections (dict): list of connections dictionaries,
+                which take the form {"inputs": [Symbols],
+                                     "outputs": [Symbols]}, e. g.:
+                connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
+                               {"inputs": ["T", "V"], "outputs": ["p"]}]
+            pre_filter (callable): callable for filtering the input materials
+                into independent sets which are supplied as candidates
+                for inputs into the model, Defaults to None.  Signature
+                should be pre_filter(materials) where materials is a list
+                of materials, and returns a dictionary with the materials
+                keyed by the associated arguments to plug_in e. g.
+                {'metal': [Materials], 'oxide': [Materials]}
+            filter (callable): callable for filtering pairs of materials
+                to ensure that valid pairings are supplied.  Takes
+                an input dictionary of key-value pairs corresponding to
+                input material candidates keyed by input kwarg to plug_in,
+                e. g. filter({'metal': Material, 'oxide': Material})
+            **kwargs: model params, e. g. description, references, etc.
+        """
+        PyModel.__init__(self, name=name, connections=connections, plug_in=plug_in, **kwargs)
+        self.pre_filter = pre_filter
+        self.filter = filter
+        self.mat_inputs = []
+        for connection in connections:
+            for input in connection['inputs']:
+                mat = CompositeModel.get_material(input)
+                if mat is not None:
+                    self.mat_inputs.append(mat)
+
+    @staticmethod
+    def get_material(input):
+        """
+        Args:
+            input (String): inputs entry from the connections instance variable.
+        Returns:
+            String or None only material identifiers from the input argument.
+        """
+        separation = input.split('.')
+        components = len(separation)
+        if components == 2:
+            return separation[0]
+        elif components > 2:
+            raise Exception('Connections can only contain 1 period separator.')
+        return None
+
+    @staticmethod
+    def get_symbol(input):
+        """
+        Args:
+            input (String): inputs entry from the connections instance variable.
+        Returns:
+            String only symbol identifiers from the input argument.
+        """
+        separation = input.split('.')
+        components = len(separation)
+        if components == 1:
+            return input
+        elif components == 2:
+            return separation[1]
+        elif components > 2:
+            raise Exception('Connections can only contain 1 period separator.')
+        return None
+
+    def gen_material_mappings(self, materials):
+        """
+        Given a set of materials, returns a mapping from each material label
+        found in self.connections to a Material object.
+        Args:
+            materials (list<Material>): list of candidate Material objects.
+        Returns:
+            (list<dict<String, Material>>) mapping from material label to Material object.
+        """
+
+        # Group by label all possible candidate materials in a dict<String, list<Material>>
+        pre_process = dict()
+        for material in self.mat_inputs:
+            pre_process[material] = None
+        if self.pre_filter:
+            cache = self.pre_filter(materials)
+            for key in cache.keys():
+                if key not in pre_process.keys():
+                    raise Exception("pre_filter method returned unrecognized material name.")
+                val = cache[key]
+                if not isinstance(val, list):
+                    raise Exception("pre_filter method did not return a list of candidate materials.")
+                pre_process[key] = val
+        for key in pre_process.keys():
+            if pre_process[key] is None:
+                pre_process[key] = materials
+
+        # Check if any combinations are possible - return if not.
+        for material in pre_process.keys():
+            if len(pre_process[material]) == 0:
+                return []
+
+        # Create all combinatorial pairs.
+        ## Setup helper variables.
+        to_return = []
+        tracking = [0]*len(pre_process.keys())
+        materials = []
+        for material in pre_process.keys():
+            materials.append(material)
+        overflow = len(tracking)
+
+        ## Setup helper functions.
+        def gen_mat_mapping():
+            """Generates a material mapping given current state"""
+            to_return = dict()
+            for i in range(0, len(materials)):
+                to_return[materials[i]] = pre_process.get(materials[i])[tracking[i]]
+            return to_return
+
+        def step():
+            """Advances the state, returns a boolean as to whether the loop should continue"""
+            i = 0
+            while i < len(tracking) and inc(i):
+                i += 1
+            return i != len(tracking)
+
+        def inc(index):
+            """Increments an index in tracking. Returns if index had to wrap back to zero."""
+            tracking[index] += 1
+            tracking[index] %= len(pre_process[materials[index]])
+            return tracking[index] == 0
+
+        continue_loop = True
+        while continue_loop:
+            # Generate the material mapping.
+            cache = gen_mat_mapping()
+            # Queue up next iteration.
+            continue_loop = step()
+            # Check for duplicate materials in the set - don't include these
+            duplicates = False
+            vals = [v for v in cache.values()]
+            for i in range(0, len(vals)):
+                if not duplicates:
+                    for j in range(i+1, len(vals)):
+                        if vals[i] is vals[j]:
+                            duplicates = True
+                            break
+            if duplicates:
+                continue
+            # Check if materials set is valid
+            if not self.filter(cache):
+                continue
+            # Accept the input set.
+            to_return.append(cache)
+
+        return to_return
+
+
+class PyModuleCompositeModel(CompositeModel):
+    """
+    PyModuleModel is a class instantiated by a model path only,
+    which exists primarily for the purpose of serializing python models
+    """
+    def __init__(self, module_path):
+        """
+        Args:
+            module_path (str): path to module to instantiate model
+        """
+        self._module_path = module_path
+        mod = __import__(module_path, globals(), locals(), ['config'], 0)
+        super(PyModuleCompositeModel, self).__init__(**mod.config)
+
+    def as_dict(self):
+        return {"module_path": self._module_path,
+                "@module": "propnet.core.model",
+                "@class": "PyModuleCompositeModel"}
+
+
 # Right now I don't see much of a use case for pythonic functionality
 # here but maybe there should be
 # TODO: this could use a bit more finesse
-class Constraint(Model):
+class ConstraintInterface:
+    def plug_in(self, symbol_value_dict):
+        """
+        ABSTRACT
+        Method analogous to that of the Model class.
+        In this case the method contract demands a boolean
+        be returned representing whether the constraint was
+        met.
+        Args:
+            symbol_value_dict ({symbol: value}): dict containing
+                symbol-keyed values to substitute
+        Returns:
+            (bool) true/false representing whether the constraint
+                   was met.
+        """
+        pass
+
+class Constraint(Model, ConstraintInterface):
     """
     Constraint class, resembles a model, but should outputs
     true or false based on a string expression containing
@@ -560,8 +765,8 @@ class Constraint(Model):
         split = re.split("[+-/*<>=()]", self.expression)
         inputs = [s for s in split if not will_it_float(s) and s]
         connections = [{"inputs": inputs, "outputs": ["is_valid"]}]
-        super(Constraint, self).__init__(
-            name=name, connections=connections, **kwargs)
+        Model.__init__(
+            self, name=name, connections=connections, **kwargs)
 
     def plug_in(self, symbol_value_dict):
         """

@@ -12,4 +12,6 @@ description: |
 equations: [E_g_expt - 1.348*E_g_pbe + 0.913]
 name: empirical_band_gap_setyawan
 references: ["doi:10.1021/co200012w"]
-symbol_property_map: {E_g_expt: band_gap, E_g_pbe: band_gap_pbe}
+symbol_property_map:
+  E_g_expt: band_gap
+  E_g_pbe: band_gap_pbe

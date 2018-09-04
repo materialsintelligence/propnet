@@ -178,13 +178,12 @@ def retrieve_material(n_clicks, formula, derive_properties):
 
     log.debug("Adding material to graph.")
     p = Graph()
-    p.add_material(material)
     material_quantity_names = [q.symbol.name for q in material.get_quantities()]
     g = p.graph
 
     if 'derive' in derive_properties:
         log.info("Deriving quantities for {}".format(mpid))
-        p.evaluate()
+        material = p.evaluate(material)
 
     new_qs = {}
     if 'aggregate' in derive_properties:

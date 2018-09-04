@@ -51,8 +51,10 @@ class Symbol(MSONable):
                 and number of dimensions as individual integers in the list.
             comment (str): any useful information on the property including
                 its definitions and possible citations.
-            category (str): 'property', if a property of a material, or
-                'condition' for other variables (e.g. temperature)
+            category (str): 'property', for property of a material,
+                            'condition', for other variables,
+                            'object', for a value that is a python object.
+            object_type (class): class representing the object stored in these symbols.
         """
 
         # TODO: not sure object should be distinguished
@@ -164,9 +166,6 @@ class Symbol(MSONable):
 
     def __repr__(self):
         return "{}<{}>".format(self.category, self.name)
-
-    def __hash__(self):
-        return self.name.__hash__()
 
     # TODO: I don't think this is necessary, double check
     def to_yaml(self):

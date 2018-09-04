@@ -1,10 +1,12 @@
 from pkgutil import iter_modules
 import os
-from propnet.core.models import EquationModel, PyModuleModel
-from propnet.models import python
+from propnet.core.models import EquationModel, PyModuleModel,\
+    PyModuleCompositeModel
+from propnet.models import python, composite
 
 
 DEFAULT_MODELS = []
+DEFAULT_COMPOSITE_MODELS = []
 
 # Load equation models
 EQUATION_MODEL_DIR = os.path.join(os.path.dirname(__file__), "serialized")
@@ -22,6 +24,15 @@ for _, module_name, _ in MODULE_LIST:
 
 DEFAULT_MODEL_DICT = {d.name: d for d in DEFAULT_MODELS}
 DEFAULT_MODEL_NAMES = list(DEFAULT_MODEL_DICT.keys())
+
+# Load composite models
+COMPOSITE_MODULE_LIST = iter_modules(composite.__path__)
+for _, module_name, _ in COMPOSITE_MODULE_LIST:
+    module_path = "propnet.models.composite.{}".format(module_name)
+    DEFAULT_COMPOSITE_MODELS.append(PyModuleCompositeModel(module_path))
+
+COMPOSITE_MODEL_DICT = {c.name: c for c in DEFAULT_COMPOSITE_MODELS}
+COMPOSITE_MODEL_NAMES = list(COMPOSITE_MODEL_DICT.keys())
 
 # Convenience function for loading a specific model by name
 def load_default_model(name):

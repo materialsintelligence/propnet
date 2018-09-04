@@ -32,20 +32,18 @@ class Quantity(MSONable):
     def __init__(self,
                  symbol_type: Union[str, Symbol],
                  value: Any,
-                 material=None,
                  tags: Optional[List[str]]=None,
-                 sources: List=None,
                  provenance=None):
         """
         Parses inputs for constructing a Property object.
 
         Args:
-            symbol_type (Symbol): pointer to an existing PropertyMetadata object or String
-            giving
-                    the name of a SymbolType object, identifies the type of data stored
-                    in the property.
+            symbol_type (Symbol): pointer to an existing PropertyMetadata
+                object or String giving the name of a SymbolType object,
+                identifies the type of data stored in the property.
             value (id): value of the property.
-            tags (list<str>): list of strings storing metadata from Quantity evaluation.
+            tags (list<str>): list of strings storing metadata from
+                Quantity evaluation.
             provenance (id): time of creation of the object.
         """
 
@@ -62,7 +60,6 @@ class Quantity(MSONable):
         self._symbol_type = symbol_type
         self._value = value
         self._tags = tags
-        self._material = material or set()
         self._provenance = provenance
 
     @property
@@ -105,9 +102,6 @@ class Quantity(MSONable):
                 or self.symbol != other.symbol \
                 or self.symbol.category != other.symbol.category:
             return False
-        #for m in self._material:
-        #    if m not in other._material:
-        #        return False
         return self.value == other.value
 
     def __str__(self):
@@ -115,6 +109,17 @@ class Quantity(MSONable):
 
     def __bool__(self):
         return bool(self.value)
+
+    # TODO: lazily implemented, fix to be a bit more robust
+    def as_dict(self):
+        if isinstance(self.value, (float, list, dict)):
+            value = self.value
+        else:
+            value = self.value.magnitude
+        return {"symbol_type": self._symbol_type.name,
+                "value": value,
+                "@module": "propnet.core.quantity",
+                "@class": "Quantity"}
 
 
 def weighted_mean(quantities):
