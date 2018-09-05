@@ -6,17 +6,18 @@ from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 from pydash import get
+from propnet.ext.matproj import MPRester
 
 
 class PropnetBuilder(Builder):
 
-    DEFAULT_MATERIAL_SYMBOL_MAP = {
-        "structure": "structure",
-        "elasticity.elastic_tensor": "elastic_tensor_voigt",
-        "band_gap.search_gap.band_gap": "band_gap_pbe",
-        "diel.n": "refractive_index",
-        "diel.poly_total": "relative_permittivity",
-    }
+    # DEFAULT_MATERIAL_SYMBOL_MAP = {
+    #     "structure": "structure",
+    #     "elasticity.elastic_tensor": "elastic_tensor_voigt",
+    #     "band_gap.search_gap.band_gap": "band_gap_pbe",
+    #     "diel.n": "refractive_index",
+    #     "diel.poly_total": "relative_permittivity",
+    # }
     """
     Basic builder for running propnet derivations on various properties
     """
@@ -34,7 +35,7 @@ class PropnetBuilder(Builder):
         self.propstore = propstore
         self.criteria = criteria
         self.materials_symbol_map = materials_symbol_map \
-                                    or self.DEFAULT_MATERIAL_SYMBOL_MAP
+                                    or MPRester.mapping
         super(PropnetBuilder, self).__init__(sources=[materials],
                                              targets=[propstore],
                                              **kwargs)
