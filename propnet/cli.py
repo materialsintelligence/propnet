@@ -1,15 +1,26 @@
 import argparse
+import logging
+from uuid import uuid4
 from propnet.core.models import EquationModel, PyModel
 from propnet.models import DEFAULT_MODEL_DICT
 from monty.serialization import loadfn
+from propnet.web.app import app
+from os import environ
 
 __author__ = "Joseph Montoya <montoyjh@lbl.gov>"
 __version__ = 0.1
 __date__ = "Sep 4 2018"
 
 
-def run_web_app(debug=False):
-    pass
+log = logging.getLogger(__name__)
+app.server.secret_key = environ.get('FLASK_SECRET_KEY', str(uuid4()))
+server = app.server
+
+def run_web_app(args):
+    if args.debug:
+        log.setLevel('DEBUG')
+    app.run_server(debug=args.debug)
+
 
 def validate(args):
     if args.name is not None:
