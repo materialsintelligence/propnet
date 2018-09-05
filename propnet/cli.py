@@ -1,30 +1,35 @@
+"""
+A simple command-line interface to propnet
+"""
+
 import argparse
 import logging
 from uuid import uuid4
+from os import environ
 from propnet.core.models import EquationModel, PyModel
 from propnet.models import DEFAULT_MODEL_DICT
-from monty.serialization import loadfn
 from propnet.web.app import app
-from os import environ
+from monty.serialization import loadfn
 
 __author__ = "Joseph Montoya <montoyjh@lbl.gov>"
 __version__ = 0.1
 __date__ = "Sep 4 2018"
 
 
-log = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 app.server.secret_key = environ.get('FLASK_SECRET_KEY', str(uuid4()))
-server = app.server
+SERVER = app.server
 
 def run_web_app(args):
+    """Runs web app"""
     if args.debug:
         log.setLevel('DEBUG')
     app.run_server(debug=args.debug)
 
 
 def validate(args):
+    """Validates test data"""
     if args.name is not None:
-        import nose; nose.tools.set_trace()
         model = DEFAULT_MODEL_DICT[args.name]
         if not args.test_data:
             model.validate_from_preset_test()
@@ -35,9 +40,8 @@ def validate(args):
             EquationModel.from_file(args.file)
         elif args.file.endswith(".py"):
             # This should define config
-            l, g = locals().copy(), globals().copy()
-            with open(args.file) as f:
-                code = compile(f.read(), args.file, 'exec')
+            with open(args.file) as this_file:
+                code = compile(this_file.read(), args.file, 'exec')
                 exec(code, globals())
             config = globals().get('config')
             model = PyModel(**config)
@@ -51,6 +55,7 @@ def validate(args):
 
 
 def main():
+    """Main body for CLI"""
     parser = argparse.ArgumentParser(description="""
     propnet is a command-line interface to the propnet python package""",
                                      epilog="""
