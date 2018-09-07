@@ -1,5 +1,6 @@
 import unittest
-from propnet.core.graph import Graph, SymbolPath
+from propnet.core.graph import Graph
+from propnet.core.utils import SymbolPath
 from propnet.core.materials import Material
 from propnet.core.materials import CompositeMaterial
 from propnet.core.symbols import Symbol
@@ -341,10 +342,6 @@ class GraphTest(unittest.TestCase):
         material = GraphTest.generate_canonical_material(symbols)
         g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
-
-        for symbol, quantities in material_derived._symbol_to_quantity.items():
-            for quantity in quantities:
-                print(quantity._provenance)
 
         expected_quantities = [
             Quantity(symbols['A'], 19),
