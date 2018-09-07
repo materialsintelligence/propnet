@@ -11,5 +11,6 @@ setup(
     author_email='matt@mkhorton.net',
     description='Materials Science models, pre-alpha.',
     url='https://github.com/materialsintelligence/propnet',
-    download_url='https://github.com/materialsintelligence/propnet/archive/0.0.tar.gz'
+    download_url='https://github.com/materialsintelligence/propnet/archive/0.0.tar.gz',
+    entry_points={"console_scripts": ["propnet = propnet.cli:main"]}
 )

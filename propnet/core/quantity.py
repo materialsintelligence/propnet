@@ -3,11 +3,10 @@ import numpy as np
 # TODO: remove typing
 from typing import *
 
-from uuid import UUID
 from monty.json import MSONable
 from uncertainties import unumpy
 
-from propnet import logger, ureg
+from propnet import ureg
 from propnet.core.symbols import Symbol
 from propnet.symbols import DEFAULT_SYMBOLS
 
@@ -112,13 +111,16 @@ class Quantity(MSONable):
 
     # TODO: lazily implemented, fix to be a bit more robust
     def as_dict(self):
-        if isinstance(self.value, (float, list, dict)):
-            value = self.value
-        else:
+        if isinstance(self.value, ureg.Quantity):
             value = self.value.magnitude
+            units = self.value.units
+        else:
+            value = self.value
+            units = None
         return {"symbol_type": self._symbol_type.name,
                 "value": value,
                 "provenance": self._provenance.as_dict() if self._provenance is not None else None,
+                "units": units.format_babel() if units else None,
                 "@module": "propnet.core.quantity",
                 "@class": "Quantity"}
 

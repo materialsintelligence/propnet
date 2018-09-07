@@ -2,7 +2,6 @@
 Module containing classes and methods for Material functionality in propnet code.
 """
 
-import networkx as nx
 from itertools import chain
 
 from collections import defaultdict
@@ -140,6 +139,7 @@ class Material(object):
                 if quantity not in other._symbol_to_quantity[symbol]:
                     return False
         return True
+
 
 class CompositeMaterial(Material):
     """

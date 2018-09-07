@@ -11,7 +11,7 @@ class MPRester(_MPRester):
 
     mapping = {
     "material_id": "external_identifier_mp",
-    "band_gap": "band_gap_pbe",
+    "band_gap.search_gap.band_gap": "band_gap_pbe",
     #"band_structure": "null_symbol",
     #"band_structure_uniform": "null_symbol",
     "computed_entry": "computed_entry",

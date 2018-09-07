@@ -5,6 +5,8 @@ hhi_model = HHIModel()
 def plug_in(symbol_values):
     formula = symbol_values['formula']
     hhi_reserve, hhi_production = hhi_model.get_hhi(formula)
+    if hhi_reserve is None:
+        raise ValueError("No hhi_reserve")
     return {
         'hhi_reserve': hhi_reserve,
         'hhi_production': hhi_production
