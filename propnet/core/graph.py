@@ -17,6 +17,8 @@ from propnet.core.models import CompositeModel
 import logging
 from itertools import chain, product
 
+from monty.json import MSONable
+
 logger = logging.getLogger(__name__)
 
 # TODO: consider refactoring with non-mutable quantity attachments, e. g.
@@ -900,7 +902,7 @@ class TreeElement(object):
         self.parent = parent
         self.children = children
 
-class ProvenanceElement(object):
+class ProvenanceElement(object, MSONable):
     """
     Tree-like data strucutre for representing provenance.
     """
@@ -919,5 +921,8 @@ class ProvenanceElement(object):
         self.m = m
         self.inputs = inputs
 
-    def as_dict(self):
-        pass
+    def __str__(self):
+        x = ""
+        for q in self.inputs:
+            x += "<" + q._symbol_type.name + ", " + str(q.value) + ", " + str(q._provenance) + ">,"
+        return "{" + self.m.name + ": [" + x + "]}"

@@ -342,6 +342,10 @@ class GraphTest(unittest.TestCase):
         g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
+        for symbol, quantities in material_derived._symbol_to_quantity.items():
+            for quantity in quantities:
+                print(quantity._provenance)
+
         expected_quantities = [
             Quantity(symbols['A'], 19),
             Quantity(symbols['A'], 23),
