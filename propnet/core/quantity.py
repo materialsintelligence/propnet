@@ -114,10 +114,13 @@ class Quantity(MSONable):
     def as_dict(self):
         if isinstance(self.value, (float, list, dict)):
             value = self.value
+            units = None
         else:
             value = self.value.magnitude
+            units = self.value.units
         return {"symbol_type": self._symbol_type.name,
                 "value": value,
+                "units": units.format_babel() if units else None,
                 "@module": "propnet.core.quantity",
                 "@class": "Quantity"}
 
