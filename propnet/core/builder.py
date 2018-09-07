@@ -68,7 +68,7 @@ class PropnetBuilder(Builder):
             # Only add new quantities
             if len(all_qs) == 1 and list(all_qs)[0] in input_quantities:
                 continue
-            qs = [q.as_dict() for q in all_qs]
+            qs = [quantity.as_dict() for quantity in all_qs]
             sub_doc = {"quantities": qs,
                        "mean": unumpy.nominal_values(quantity.value).tolist(),
                        "std_dev": unumpy.std_devs(quantity.value).tolist(),
