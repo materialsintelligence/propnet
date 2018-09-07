@@ -62,7 +62,7 @@ class PropnetBuilder(Builder):
 
         # Format document and return
         logger.info("Creating doc for %s", item['task_id'])
-        doc["inputs"] = [quantity.as_dict() for quantity in input_quantities]
+        doc = {"inputs": [quantity.as_dict() for quantity in input_quantities]}
         for symbol, quantity in new_material.get_aggregated_quantities().items():
             all_qs = new_material._symbol_to_quantity[symbol]
             # Only add new quantities
