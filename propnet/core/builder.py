@@ -7,8 +7,8 @@ from propnet import logger
 from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
-from pydash import get
 from propnet.ext.matproj import MPRester
+from pydash import get
 
 
 class PropnetBuilder(Builder):
@@ -48,7 +48,6 @@ class PropnetBuilder(Builder):
         # Attach quantities to materials
         logger.info("Populating material for %s", item['task_id'])
         material = Material()
-        decoded = MontyDecoder().process_decoded(item)
         for mkey, property_name in self.materials_symbol_map.items():
             value = get(item, mkey)
             if value:
@@ -63,7 +62,7 @@ class PropnetBuilder(Builder):
 
         # Format document and return
         logger.info("Creating doc for %s", item['task_id'])
-        doc = {"input_quantities": [q.as_dict() for q in input_quantities]}
+        doc["inputs"] = [quantity.as_dict() for quantity in input_quantities]
         for symbol, quantity in new_material.get_aggregated_quantities().items():
             all_qs = new_material._symbol_to_quantity[symbol]
             # Only add new quantities

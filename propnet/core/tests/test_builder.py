@@ -1,7 +1,6 @@
 import unittest
 
 from pymatgen.util.testing import PymatgenTest
-from monty.serialization import loadfn
 from maggma.stores import MemoryStore
 from maggma.runner import Runner
 

@@ -3,12 +3,10 @@ import numpy as np
 # TODO: remove typing
 from typing import *
 
-from uuid import UUID
-import six
 from monty.json import MSONable
 from uncertainties import unumpy
 
-from propnet import logger, ureg
+from propnet import ureg
 from propnet.core.symbols import Symbol
 from propnet.symbols import DEFAULT_SYMBOLS
 
