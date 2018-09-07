@@ -1,10 +1,12 @@
 import unittest
 
 from pymatgen.util.testing import PymatgenTest
+from monty.serialization import loadfn
 from maggma.stores import MemoryStore
 from maggma.runner import Runner
 
 from propnet.core.builder import PropnetBuilder
+from propnet.ext.matproj import MPRester
 
 
 class BuilderTest(unittest.TestCase):
@@ -29,5 +31,17 @@ class BuilderTest(unittest.TestCase):
 
     def test_multiproc_runner(self):
         builder = PropnetBuilder(self.materials, self.propstore)
-        runner = Runner([builder], num_workers=2)
+        runner = Runner([builder])
         runner.run()
+
+    def test_process_item(self):
+        mpr = MPRester()
+        properties = list(mpr.mapping.keys()) + ['task_id', "pretty_formula"]
+        item = mpr.query({"task_id": "mp-81"}, properties=properties)[0]
+        builder = PropnetBuilder(self.materials, self.propstore)
+        processed = builder.process_item(item)
+        self.assertIsNotNone(processed)
+
+    # def test_runner_pipeline(self):
+    #     runner = loadfn("../../../runner.json")
+    #     runner.run()
