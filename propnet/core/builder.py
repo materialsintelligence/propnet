@@ -1,4 +1,6 @@
 from monty.json import jsanitize
+from monty.json import MontyDecoder
+from uncertainties import unumpy
 
 from maggma.builder import Builder
 from propnet import logger
@@ -54,6 +56,7 @@ class PropnetBuilder(Builder):
         # Attach quantities to materials
         logger.info("Populating material for %s", item['task_id'])
         material = Material()
+        decoded = MontyDecoder().process_decoded(item)
         for mkey, property_name in self.materials_symbol_map.items():
             value = get(item, mkey)
             if value:
@@ -62,13 +65,17 @@ class PropnetBuilder(Builder):
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
         graph = Graph()
-        graph.add_material(material)
-        graph.evaluate()
+        new_material = graph.evaluate(material)
 
         # Format document and return
         logger.info("Creating doc for %s", item['task_id'])
-        doc = graph._symbol_to_quantity
-        doc = {symbol.name: list(q_list) for symbol, q_list in doc.items()}
+        doc = {}
+        for symbol, quantity in new_material.get_aggregated_quantities().items():
+            all_qs = new_material._symbol_to_quantity[symbol]
+            sub_doc = {"quantities": [q.as_dict() for q in all_qs],
+                       "mean": unumpy.nominal_values(quantity.value).tolist(),
+                       "std_dev": unumpy.std_devs(quantity.value).tolist()}
+            doc[symbol.name] = sub_doc
         doc.update({"task_id": item["task_id"],
                     "pretty_formula": item["pretty_formula"]})
         return jsanitize(doc, strict=True)
