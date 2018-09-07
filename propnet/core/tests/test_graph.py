@@ -923,3 +923,76 @@ class GraphTest(unittest.TestCase):
                         "Super Evaluate failed to derive expected outputs.")
         self.assertTrue(len(sm._symbol_to_quantity['pilling_bedworth_ratio']) > 0,
                         "Super Evaluate failed to derive expected outputs.")
+
+    def test_provenance(self):
+        model4 = EquationModel(
+            name="model4", connections=[{"inputs": ["B", "C"], "outputs": ["D"]}],
+            equations=["D-B*C*11"], constraints=["G==0"])
+
+        symbols = GraphTest.generate_canonical_symbols()
+        models = GraphTest.generate_canonical_models(symbols)
+        models['model4'] = model4
+        del models['model6']
+        material = GraphTest.generate_canonical_material(symbols)
+        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
+        material_derived = g.evaluate(material)
+
+        expected_quantities = [
+            Quantity(symbols['A'], 19),
+            Quantity(symbols['A'], 23),
+            Quantity(symbols['B'], 38),
+            Quantity(symbols['B'], 46),
+            Quantity(symbols['C'], 57),
+            Quantity(symbols['C'], 69),
+            Quantity(symbols['G'], 95),
+            Quantity(symbols['G'], 115),
+            Quantity(symbols['F'], 266),
+            Quantity(symbols['F'], 322),
+            Quantity(symbols['D'], 70395),
+            Quantity(symbols['D'], 85215),
+            Quantity(symbols['D'], 103155)
+        ]
+
+        for q in material_derived._symbol_to_quantity[symbols['A']]:
+            self.assertTrue(q._provenance is None)
+        for q in material_derived._symbol_to_quantity[symbols['B']]:
+            if q.value == 38:
+                self.assertTrue(q._provenance.m is models['model1'],
+                                "provenance improperly calculated")
+                self.assertTrue(expected_quantities[0] in q._provenance.inputs,
+                                "provenance improperly calculated")
+            else:
+                self.assertTrue(q._provenance.m is models['model1'],
+                                "provenance improperly calculated")
+                self.assertTrue(expected_quantities[1] in q._provenance.inputs,
+                                "provenance improperly calculated")
+        for q in material_derived._symbol_to_quantity[symbols['C']]:
+            if q.value == 57:
+                self.assertTrue(q._provenance.m is models['model1'],
+                                "provenance improperly calculated")
+                self.assertTrue(expected_quantities[0] in q._provenance.inputs,
+                                "provenance improperly calculated")
+            else:
+                self.assertTrue(q._provenance.m is models['model1'],
+                                "provenance improperly calculated")
+                self.assertTrue(expected_quantities[1] in q._provenance.inputs,
+                                "provenance improperly calculated")
+        for q in material_derived._symbol_to_quantity[symbols['G']]:
+            if q.value == 95:
+                self.assertTrue(q._provenance.m is models['model2'],
+                                "provenance improperly calculated")
+                self.assertTrue(expected_quantities[0] in q._provenance.inputs,
+                                "provenance improperly calculated")
+            else:
+                self.assertTrue(q._provenance.m is models['model2'],
+                                "provenance improperly calculated")
+                self.assertTrue(expected_quantities[1] in q._provenance.inputs,
+                                "provenance improperly calculated")
+        for q in material_derived._symbol_to_quantity[symbols['D']]:
+            if q.value == 70395:
+                self.assertTrue(q._provenance.m is models['model5'],
+                                "provenance improperly calculated")
+                self.assertTrue(expected_quantities[4] in q._provenance.inputs,
+                                "provenance improperly calculated")
+                self.assertTrue(expected_quantities[6] in q._provenance.inputs,
+                                "provenance improperly calculated")

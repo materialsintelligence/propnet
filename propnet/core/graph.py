@@ -902,7 +902,7 @@ class TreeElement(object):
         self.parent = parent
         self.children = children
 
-class ProvenanceElement(object, MSONable):
+class ProvenanceElement(MSONable):
     """
     Tree-like data strucutre for representing provenance.
     """
