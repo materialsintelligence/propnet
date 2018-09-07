@@ -1,22 +1,17 @@
 from monty.json import jsanitize
+from monty.json import MontyDecoder
+from uncertainties import unumpy
 
 from maggma.builder import Builder
 from propnet import logger
 from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
+from propnet.ext.matproj import MPRester
 from pydash import get
 
 
 class PropnetBuilder(Builder):
-
-    DEFAULT_MATERIAL_SYMBOL_MAP = {
-        "structure": "structure",
-        "elasticity.elastic_tensor": "elastic_tensor_voigt",
-        "band_gap.search_gap.band_gap": "band_gap_pbe",
-        "diel.n": "refractive_index",
-        "diel.poly_total": "relative_permittivity",
-    }
     """
     Basic builder for running propnet derivations on various properties
     """
@@ -34,7 +29,7 @@ class PropnetBuilder(Builder):
         self.propstore = propstore
         self.criteria = criteria
         self.materials_symbol_map = materials_symbol_map \
-                                    or self.DEFAULT_MATERIAL_SYMBOL_MAP
+                                    or MPRester.mapping
         super(PropnetBuilder, self).__init__(sources=[materials],
                                              targets=[propstore],
                                              **kwargs)
@@ -58,16 +53,28 @@ class PropnetBuilder(Builder):
             if value:
                 material.add_quantity(Quantity(property_name, value))
 
+        input_quantities = material.get_quantities()
+
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
         graph = Graph()
-        graph.add_material(material)
-        graph.evaluate()
+        new_material = graph.evaluate(material)
 
         # Format document and return
         logger.info("Creating doc for %s", item['task_id'])
-        doc = graph._symbol_to_quantity
-        doc = {symbol.name: list(q_list) for symbol, q_list in doc.items()}
+        doc = {"inputs": [quantity.as_dict() for quantity in input_quantities]}
+        for symbol, quantity in new_material.get_aggregated_quantities().items():
+            all_qs = new_material._symbol_to_quantity[symbol]
+            # Only add new quantities
+            if len(all_qs) == 1 and list(all_qs)[0] in input_quantities:
+                continue
+            qs = [quantity.as_dict() for quantity in all_qs]
+            sub_doc = {"quantities": qs,
+                       "mean": unumpy.nominal_values(quantity.value).tolist(),
+                       "std_dev": unumpy.std_devs(quantity.value).tolist(),
+                       "units": qs[0]['units'],
+                       "title": quantity._symbol_type.display_names[0]}
+            doc[symbol.name] = sub_doc
         doc.update({"task_id": item["task_id"],
                     "pretty_formula": item["pretty_formula"]})
         return jsanitize(doc, strict=True)
