@@ -62,6 +62,8 @@ class PropnetBuilder(Builder):
             if value:
                 material.add_quantity(Quantity(property_name, value))
 
+        input_quantities = material.get_quantities()
+
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
         graph = Graph()
@@ -69,12 +71,18 @@ class PropnetBuilder(Builder):
 
         # Format document and return
         logger.info("Creating doc for %s", item['task_id'])
-        doc = {}
+        doc = {"input_quantities": [q.as_dict() for q in input_quantities]}
         for symbol, quantity in new_material.get_aggregated_quantities().items():
             all_qs = new_material._symbol_to_quantity[symbol]
-            sub_doc = {"quantities": [q.as_dict() for q in all_qs],
+            # Only add new quantities
+            if len(all_qs) == 1 and list(all_qs)[0] in input_quantities:
+                continue
+            qs = [q.as_dict() for q in all_qs]
+            sub_doc = {"quantities": qs,
                        "mean": unumpy.nominal_values(quantity.value).tolist(),
-                       "std_dev": unumpy.std_devs(quantity.value).tolist()}
+                       "std_dev": unumpy.std_devs(quantity.value).tolist(),
+                       "units": qs[0]['units'],
+                       "title": quantity._symbol_type.display_names[0]}
             doc[symbol.name] = sub_doc
         doc.update({"task_id": item["task_id"],
                     "pretty_formula": item["pretty_formula"]})

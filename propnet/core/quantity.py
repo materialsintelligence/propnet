@@ -4,6 +4,7 @@ import numpy as np
 from typing import *
 
 from uuid import UUID
+import six
 from monty.json import MSONable
 from uncertainties import unumpy
 
@@ -112,12 +113,12 @@ class Quantity(MSONable):
 
     # TODO: lazily implemented, fix to be a bit more robust
     def as_dict(self):
-        if isinstance(self.value, (float, list, dict)):
-            value = self.value
-            units = None
-        else:
+        if isinstance(self.value, ureg.Quantity):
             value = self.value.magnitude
             units = self.value.units
+        else:
+            value = self.value
+            units = None
         return {"symbol_type": self._symbol_type.name,
                 "value": value,
                 "units": units.format_babel() if units else None,
