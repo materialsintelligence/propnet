@@ -918,3 +918,6 @@ class ProvenanceElement(object):
         """
         self.m = m
         self.inputs = inputs
+
+    def as_dict(self):
+        pass

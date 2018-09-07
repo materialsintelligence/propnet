@@ -118,6 +118,7 @@ class Quantity(MSONable):
             value = self.value.magnitude
         return {"symbol_type": self._symbol_type.name,
                 "value": value,
+                "provenance": self._provenance.as_dict() if self._provenance is not None else None,
                 "@module": "propnet.core.quantity",
                 "@class": "Quantity"}
 
