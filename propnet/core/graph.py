@@ -667,6 +667,15 @@ class Graph(object):
                             for m in self._input_to_model[st]:
                                 new_models.add(m)
                             q = Quantity(st, quantity)
+
+                            # Set the provenance of the derived quantity
+                            q_prov = ProvenanceElement(m=model)
+                            q_child = list()
+                            for item in input_set.items():
+                                q_child.append(item[1])
+                            q_prov.inputs = q_child
+                            q._provenance = q_prov
+
                             quantity_pool[st].add(q)
                             output_dict[q].add(model)
                             logger.debug("\t\t\tNew output: " + str(q))
@@ -890,3 +899,22 @@ class TreeElement(object):
         self.inputs = inputs
         self.parent = parent
         self.children = children
+
+class ProvenanceElement(object):
+    """
+    Tree-like data strucutre for representing provenance.
+    """
+
+    __slots__ = ['m', 'inputs']
+
+    def __init__(self, m=None, inputs=None):
+        """
+        Args:
+            m: (Model) model that outputs the quantity object this
+                       ProvenanceElement is attached to.
+            inputs: (list<Quantity>) quantities fed in to the model
+                                     to generate the quantity object
+                                     this ProvenanceElement is attached to.
+        """
+        self.m = m
+        self.inputs = inputs
