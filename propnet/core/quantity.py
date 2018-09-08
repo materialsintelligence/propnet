@@ -117,7 +117,7 @@ class Quantity(MSONable):
             units = None
         return {"symbol_type": self._symbol_type.name,
                 "value": value,
-                "provenance": self._provenance.as_dict() if self._provenance is not None else None,
+                "provenance": self._provenance,
                 "units": units.format_babel() if units else None,
                 "@module": "propnet.core.quantity",
                 "@class": "Quantity"}

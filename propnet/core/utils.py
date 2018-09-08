@@ -3,6 +3,7 @@ from monty.json import MSONable
 from uncertainties import unumpy
 
 from propnet.core.quantity import Quantity
+from propnet.core.models import Model
 
 
 def weighted_mean(quantities):
@@ -45,7 +46,7 @@ def weighted_mean(quantities):
     new_value = unumpy.uarray(new_magnitude, std_dev)
 
     new_tags = set()
-    new_provenance = ProvenanceElement(m='aggregation', inputs=[])
+    new_provenance = ProvenanceElement(model='aggregation', inputs=[])
     for q in quantities:
         if q.tags:
             for t in q.tags:
@@ -67,16 +68,16 @@ class ProvenanceElement(MSONable):
 
     __slots__ = ['m', 'inputs']
 
-    def __init__(self, m=None, inputs=None):
+    def __init__(self, model=None, inputs=None):
         """
         Args:
-            m: (Model) model that outputs the quantity object this
+            model: (Model) model that outputs the quantity object this
                        ProvenanceElement is attached to.
             inputs: (list<Quantity>) quantities fed in to the model
                                      to generate the quantity object
                                      this ProvenanceElement is attached to.
         """
-        self.m = m
+        self.model = model.name if isinstance(model, Model) else model
         self.inputs = inputs
 
     def __str__(self):

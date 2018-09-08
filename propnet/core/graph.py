@@ -669,7 +669,7 @@ class Graph(object):
                             q = Quantity(st, quantity)
 
                             # Set the provenance of the derived quantity
-                            q_prov = ProvenanceElement(m=model)
+                            q_prov = ProvenanceElement(model=model)
                             q_child = list()
                             for item in input_set.items():
                                 q_child.append(item[1])
