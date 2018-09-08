@@ -2,12 +2,12 @@
 Module containing classes and methods for Material functionality in propnet code.
 """
 
+from collections import defaultdict
 from itertools import chain
 
-from collections import defaultdict
-
+from propnet.core.quantity import Quantity
 from propnet.core.symbols import Symbol
-from propnet.core.quantity import Quantity, weighted_mean
+from propnet.core.utils import weighted_mean
 
 
 class Material(object):

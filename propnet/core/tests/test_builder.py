@@ -18,7 +18,8 @@ class BuilderTest(unittest.TestCase):
             structure = PymatgenTest.get_structure(formula)
             docs.append({"structure": structure.as_dict(),
                          "task_id": "mp-{}".format(n),
-                         "pretty_formula": formula})
+                         "pretty_formula": formula,
+                         "band_gap": {"search_gap": {"band_gap": 2.0}}})
         self.materials.update(docs)
         self.propstore = MemoryStore()
         self.propstore.connect()
@@ -42,5 +43,6 @@ class BuilderTest(unittest.TestCase):
         self.assertIsNotNone(processed)
 
     # def test_runner_pipeline(self):
+    #     from monty.serialization import loadfn
     #     runner = loadfn("../../../runner.json")
     #     runner.run()
