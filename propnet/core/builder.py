@@ -1,4 +1,4 @@
-from monty.json import jsanitize
+from monty.json import jsanitize, MontyDecoder
 from uncertainties import unumpy
 
 from maggma.builder import Builder
@@ -45,6 +45,7 @@ class PropnetBuilder(Builder):
     def process_item(self, item):
         # Define quantities corresponding to materials doc fields
         # Attach quantities to materials
+        item = MontyDecoder().process_decoded(item)
         logger.info("Populating material for %s", item['task_id'])
         material = Material()
         for mkey, property_name in self.materials_symbol_map.items():
