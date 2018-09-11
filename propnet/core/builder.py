@@ -1,5 +1,4 @@
 from monty.json import jsanitize
-from monty.json import MontyDecoder
 from uncertainties import unumpy
 
 from maggma.builder import Builder
