@@ -248,8 +248,8 @@ class Model(ABC):
         Returns:
             list of sets of inputs with constraint properties included
         """
-        return [set(input_set | self.constraint_properties)
-                for input_set in self.input_sets]
+        return [inputs | self.constraint_properties - outputs
+                for inputs, outputs in zip(self.input_sets, self.output_sets)]
 
     def test(self, inputs, outputs):
         """
