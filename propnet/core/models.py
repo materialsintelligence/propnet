@@ -198,8 +198,7 @@ class Model(ABC):
         """
         return self.name.replace('_', ' ').title()
 
-    # Note that these are formulated in terms of properties
-    # rather than symbols
+    # Note: these are formulated in terms of properties rather than symbols
     @property
     def input_sets(self):
         """
@@ -557,7 +556,8 @@ class CompositeModel(PyModel):
                 e. g. filter({'metal': Material, 'oxide': Material})
             **kwargs: model params, e. g. description, references, etc.
         """
-        PyModel.__init__(self, name=name, connections=connections, plug_in=plug_in, **kwargs)
+        PyModel.__init__(self, name=name, connections=connections,
+                         plug_in=plug_in, **kwargs)
         self.pre_filter = pre_filter
         self.filter = filter
         self.mat_inputs = []
@@ -611,7 +611,8 @@ class CompositeModel(PyModel):
             (list<dict<String, Material>>) mapping from material label to Material object.
         """
 
-        # Group by label all possible candidate materials in a dict<String, list<Material>>
+        # Group by label all possible candidate materials in a
+        # dict<String, list<Material>>
         pre_process = dict()
         for material in self.mat_inputs:
             pre_process[material] = None
@@ -712,24 +713,7 @@ class PyModuleCompositeModel(CompositeModel):
 # Right now I don't see much of a use case for pythonic functionality
 # here but maybe there should be
 # TODO: this could use a bit more finesse
-class ConstraintInterface:
-    def plug_in(self, symbol_value_dict):
-        """
-        ABSTRACT
-        Method analogous to that of the Model class.
-        In this case the method contract demands a boolean
-        be returned representing whether the constraint was
-        met.
-        Args:
-            symbol_value_dict ({symbol: value}): dict containing
-                symbol-keyed values to substitute
-        Returns:
-            (bool) true/false representing whether the constraint
-                   was met.
-        """
-        pass
-
-class Constraint(Model, ConstraintInterface):
+class Constraint(Model):
     """
     Constraint class, resembles a model, but should outputs
     true or false based on a string expression containing
