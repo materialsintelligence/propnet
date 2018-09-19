@@ -541,15 +541,15 @@ class Graph(object):
 
     def evaluate(self, material, property_type=None):
         """
-        Given a Material object as input, creates a new Material object to include all derivable properties.
-        Returns a reference to the new, augmented Material object.
-
-        Optional argument limits the scope of which models or properties are tested.
-            property_type parameter: produces output from models only if all input properties are in the list.
+        Given a Material object as input, creates a new Material object
+        to include all derivable properties.  Optional argument limits the
+        scope of which models or properties are tested. Returns a
+        reference to the new, augmented Material object.
 
         Args:
             material (Material): which material's properties will be expanded.
-            property_type (set<Symbol>): optional limit on which Symbols will be considered as input.
+            property_type ({Symbol}): optional limit on which Symbols
+                will be considered as input.
         Returns:
             (Material) reference to the newly derived material object.
         """
@@ -598,19 +598,21 @@ class Graph(object):
 
             for model in candidate_models:
 
-                logger.debug("Checking model {}".format(model.title))
-                logger.debug("Quantity pool contains {} quantities:".format(
-                    len(list(chain.from_iterable(quantity_pool.values())))))
+                logger.debug("Checking model %s", model.title)
+                # logger.debug("Quantity pool contains %s quantities:",
+                #     len(list(chain.from_iterable(quantity_pool.values()))))
 
                 for property_input_sets in model.evaluation_list:
 
-                    logger.debug("\tGenerating input sets for: " + str(property_input_sets))
+                    logger.debug("\tGenerating input sets for: %s",
+                                 property_input_sets)
 
-                    input_sets = self.generate_input_sets(property_input_sets, quantity_pool)
+                    input_sets = self.generate_input_sets(
+                        property_input_sets, quantity_pool)
 
                     for input_set in input_sets:
 
-                        logger.debug("\t\tEvaluating input set: " + str(input_set))
+                        logger.debug("\t\tEvaluating input set: %s", input_set)
 
                         override = False
                         can_evaluate = False
