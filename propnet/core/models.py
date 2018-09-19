@@ -134,9 +134,6 @@ class Model(ABC):
         """
         return remap(symbols, self.symbol_property_map)
 
-    # TODO: I'm really not crazy about the "successful" key implementation
-    #       preventing model failure using try/except is the path to
-    #       the dark side
     def evaluate(self, property_value_dict):
         """
         Given a set of property_values, performs error checking to see
@@ -174,34 +171,19 @@ class Model(ABC):
                 symbol_value_dict[symbol] = value.magnitude
                 old_units[symbol] = value.units
 
-        # check we support this combination of inputs
-        # TODO: this shouldn't be necessary
-        input_matches = [set(input_set) == set(property_value_dict)
-                         for input_set in self.evaluation_list]
-        if not any(input_matches):
-            return {
-                'successful': False,
-                'message': "The {} model cannot generate any outputs for "
-                           "these inputs: {}".format(
-                    self.name, property_value_dict.keys())}
-        # TODO: Remove the try-except functionality, high priority
-        try:
-            # evaluate is allowed to fail
-            out = self.plug_in(symbol_value_dict)
-            out['successful'] = True
-        except Exception as e:
-            logger.debug("Model evaluation unsuccessful %s", e)
-            return {
-                'successful': False,
-                'message': str(e)
-            }
+        # Check input constraints, plug in, and check output constraints
+        if not self.check_constraints(symbol_value_dict):
+            return {"successful": False,
+                    "message": "Input constraints not satisfied"}
+        out = self.plug_in(symbol_value_dict)
+        if not self.check_constraints(out):
+            return {"successful": False,
+                    "message": "Output constraints not satisfied"}
 
-        # add units to output
         out = self.map_symbols_to_properties(out)
         for key in out:
-            if key == 'successful':
-                continue
             out[key] = ureg.Quantity(out[key], self.unit_map.get(key))
+        out['successful'] = True
         return out
 
     @property
