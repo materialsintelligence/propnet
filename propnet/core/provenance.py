@@ -17,19 +17,19 @@ class ProvenanceElement(MSONable):
         """
         Args:
             model: (Model) model that outputs the quantity object this
-                       ProvenanceElement is attached to.
+                ProvenanceElement is attached to.
             inputs: (list<Quantity>) quantities fed in to the model
-                                     to generate the quantity object
-                                     this ProvenanceElement is attached to.
+                to generate the quantity object this ProvenanceElement
+                is attached to.
         """
         self.model = model.name if isinstance(model, Model) else model
         self.inputs = inputs
 
     def __str__(self):
-        x = ""
-        for q in self.inputs:
-            x += "<" + q._symbol_type.name + ", " + str(q.value) + ", " + str(q._provenance) + ">,"
-        return "{" + self.m.name + ": [" + x + "]}"
+        x = ",".join([
+            "<{}, {}, {}>".format(g._symbol_type.name, q.value, q._provenance)
+            for q in self.inputs])
+        return "{{}: [{}]}".format(self.model, x)
 
 
 class SymbolTree(object):
@@ -51,7 +51,8 @@ class SymbolTree(object):
         """
         Gets all paths from input to symbol
         Args:
-            symbol: (Symbol) we are searching for paths from this symbol to head.
+            symbol: (Symbol) we are searching for paths from
+                this symbol to head.
         Returns:
             (list<SymbolPath>)
         """
