@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
                              "models", "test_data")
 
+
 # General TODOs:
 # TODO: Does the unit_map really need to be specified?  Why can't
 #       pint handle this?
@@ -63,7 +64,7 @@ class Model(ABC):
         self.connections = connections
         self.description = description
         self.categories = categories
-        self.references = references_to_bib(references)
+        self.references = references_to_bib(references or [])
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
         self.symbol_property_map = {}
