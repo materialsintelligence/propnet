@@ -9,14 +9,18 @@ from propnet.core.quantity import Quantity
 _REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__), '../data/reference_cache.json')
 _REFERENCE_CACHE = loadfn(_REFERENCE_CACHE_PATH)
 
-# TODO: document this
 def references_to_bib(refs):
     """
+    Takes a list of reference strings and converts them to bibtex
+    entries
 
     Args:
-        refs:
+        refs ([str]): list of string references, which can be
+            bibtex entries, digital object identifiers ("doi:DOI_GOES_HERE")
+            or urls ("url:URL_GOES_HERE")
 
     Returns:
+        (list): list of bibtex formatted strings
 
     """
     parsed_refs = []
