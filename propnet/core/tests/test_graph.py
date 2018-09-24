@@ -1,6 +1,6 @@
 import unittest
 from propnet.core.graph import Graph
-from propnet.core.utils import SymbolPath
+from propnet.core.provenance import SymbolPath
 from propnet.core.materials import Material
 from propnet.core.materials import CompositeMaterial
 from propnet.core.symbols import Symbol
