@@ -66,7 +66,7 @@ class Model(ABC):
         self.connections = connections
         self.description = description
         self.categories = categories
-        self.references = references
+        self.references = references_to_bib(references)
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
         self.symbol_property_map = {}

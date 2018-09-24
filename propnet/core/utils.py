@@ -1,9 +1,52 @@
 import numpy as np
+import os
+from monty.serialization import loadfn, dumpfn
 from monty.json import MSONable
 from uncertainties import unumpy
+from habanero.cn import content_negotiation
 
 from propnet.core.quantity import Quantity
 from propnet.core.models import Model
+
+_REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__), '../data/reference_cache.json')
+_REFERENCE_CACHE = loadfn(_REFERENCE_CACHE_PATH)
+
+# TODO: document this
+def references_to_bib(refs):
+    """
+
+    Args:
+        refs:
+
+    Returns:
+
+    """
+    parsed_refs = []
+    for ref in refs:
+        if ref in _REFERENCE_CACHE:
+            parsed_ref = _REFERENCE_CACHE[ref]
+        elif ref.startswith('@'):
+            parsed_ref = ref
+        elif ref.startswith('url:'):
+            # uses arbitrary key
+            url = ref.split('url:')[1]
+            parsed_ref = """@misc{{url:{0},
+                       url = {{{1}}}
+                       }}""".format(str(abs(url.__hash__()))[0:6], url)
+        elif ref.startswith('doi:'):
+            doi = ref.split('doi:')[1]
+            parsed_ref = content_negotiation(doi, format='bibentry')
+        else:
+            raise ValueError('Unknown reference style for '
+                             'reference: {} (please either '
+                             'supply a BibTeX string, or a string '
+                             'starting with url: followed by a URL or '
+                             'starting with doi: followed by a DOI)'.format(ref))
+        if ref not in _REFERENCE_CACHE:
+            _REFERENCE_CACHE[ref] = parsed_ref
+            dumpfn(_REFERENCE_CACHE, _REFERENCE_CACHE_PATH)
+        parsed_refs.append(parsed_ref)
+    return parsed_refs
 
 
 def weighted_mean(quantities):
