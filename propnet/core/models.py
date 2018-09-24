@@ -40,7 +40,7 @@ class Model(ABC):
 
     Args:
         name (str): title of the model
-        connections (dict): list of connections dictionaries, which take
+        connections ([dict]): list of connections dictionaries, which take
             the form {"inputs": [Symbols], "outputs": [Symbols]}, e. g.:
             connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
                            {"inputs": ["T", "V"], "outputs": ["p"]}]
