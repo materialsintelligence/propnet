@@ -28,10 +28,6 @@ TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
                              "models", "test_data")
 
 # General TODOs:
-# TODO: I'm not sure that symbol_map needs to be present in all models,
-#       maybe just equation models/relegated to that plug_in method
-# TODO: The evaluate/plug_in dichotomy is a big confusing here
-#       I suspect they can be consolidated
 # TODO: Does the unit_map really need to be specified?  Why can't
 #       pint handle this?
 class Model(ABC):
