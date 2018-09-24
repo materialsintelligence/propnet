@@ -1,10 +1,6 @@
-import numpy as np
 import os
 from monty.serialization import loadfn, dumpfn
-from uncertainties import unumpy
 from habanero.cn import content_negotiation
-
-from propnet.core.quantity import Quantity
 
 _REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__), '../data/reference_cache.json')
 _REFERENCE_CACHE = loadfn(_REFERENCE_CACHE_PATH)
@@ -51,56 +47,3 @@ def references_to_bib(refs):
     return parsed_refs
 
 
-def weighted_mean(quantities):
-    """
-    Function to retrieve weighted mean
-
-    Args:
-        quantities ([Quantity]): list of quantities
-
-    Returns:
-        weighted mean
-    """
-    # can't run this twice yet ...
-    # TODO: remove
-    if hasattr(quantities[0].value, "std_dev"):
-        return quantities
-
-    input_symbol = quantities[0].symbol
-    if input_symbol.category == 'object':
-        # TODO: can't average 'objects', highlights a weakness in Quantity class
-        # would be fixed by changing this class design ...
-        return quantities
-
-    if not all(input_symbol == q.symbol for q in quantities):
-        raise ValueError("Can only calculate a weighted mean if all quantities "
-                         "refer to the same symbol.")
-
-    # TODO: an actual weighted mean; just a simple mean at present
-    # TODO: support propagation of uncertainties (this will only work once at present)
-
-    # TODO: test this with units, not magnitudes ... remember units may not be canonical units(?)
-    if isinstance(quantities[0].value, list):
-        # hack to get arrays working for now
-        vals = [q.value for q in quantities]
-    else:
-        vals = [q.value.magnitude for q in quantities]
-
-    new_magnitude = np.mean(vals, axis=0)
-    std_dev = np.std(vals, axis=0)
-    new_value = unumpy.uarray(new_magnitude, std_dev)
-
-    new_tags = set()
-    new_provenance = ProvenanceElement(model='aggregation', inputs=[])
-    for q in quantities:
-        if q.tags:
-            for t in q.tags:
-                new_tags.add(t)
-        new_provenance.inputs.append(q)
-
-    new_quantity = Quantity(symbol_type=input_symbol,
-                            value=new_value,
-                            tags=list(new_tags),
-                            provenance=new_provenance)
-
-    return new_quantity
