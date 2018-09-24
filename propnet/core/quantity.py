@@ -167,11 +167,11 @@ def weighted_mean(quantities):
 
     new_tags = set()
     new_provenance = ProvenanceElement(model='aggregation', inputs=[])
-    for q in quantities:
-        if q.tags:
-            for t in q.tags:
-                new_tags.add(t)
-        new_provenance.inputs.append(q)
+    for quantity in quantities:
+        if quantity.tags:
+            for tag in quantity.tags:
+                new_tags.add(tag)
+        new_provenance.inputs.append(quantity)
 
     new_quantity = Quantity(symbol_type=input_symbol,
                             value=new_value,

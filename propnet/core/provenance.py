@@ -26,10 +26,10 @@ class ProvenanceElement(MSONable):
         self.inputs = inputs
 
     def __str__(self):
-        x = ",".join([
-            "<{}, {}, {}>".format(g._symbol_type.name, q.value, q._provenance)
+        pre = ",".join([
+            "<{}, {}, {}>".format(q._symbol_type.name, q.value, q._provenance)
             for q in self.inputs])
-        return "{{}: [{}]}".format(self.model, x)
+        return "{{{}: [{}]}}".format(self.model, pre)
 
 
 class SymbolTree(object):
