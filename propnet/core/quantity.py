@@ -15,18 +15,18 @@ class Quantity(MSONable):
     """
     Class storing the value of a property.
 
-    Constructed by the user to assign values to abstract Symbol types. Represents the fact
-    that a given Quantity
-    has a given value. They are added to the PropertyNetwork graph in the context of Material
-    objects that store
-    collections of Quantity objects representing that a given material has those properties.
+    Constructed by the user to assign values to abstract Symbol types.
+    Represents the fact that a given Quantity has a given value. They
+    are added to the PropertyNetwork graph in the context of Material
+    objects that store collections of Quantity objects representing
+    that a given material has those properties.
 
     Attributes:
-        symbol_type: (Symbol) the type of information that is represented by the associated value.
+        symbol_type: (Symbol) the type of information that is represented
+            by the associated value.
         value: (id) the value associated with this symbol.
-        tags: (list<str>)
-        material (set<Material>): the materials to which this quantity is bound -- indicates which materials
-                                   this quantity is representing.
+        tags: (list<str>) tags associated with the material, e.g.
+            perovskites or ferroelectrics
     """
 
     def __init__(self,

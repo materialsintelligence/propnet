@@ -139,6 +139,13 @@ class Material(object):
                     return False
         return True
 
+    @property
+    def quantity_types(self):
+        return list(self._symbol_to_quantity.keys())
+
+    def __getitem__(self, item):
+        return self._symbol_to_quantity[item]
+
 
 class CompositeMaterial(Material):
     """

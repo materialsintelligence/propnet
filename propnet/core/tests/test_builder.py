@@ -45,4 +45,7 @@ class BuilderTest(unittest.TestCase):
     # def test_runner_pipeline(self):
     #     from monty.serialization import loadfn
     #     runner = loadfn("../../../runner.json")
+    #     runner.builders[0].connect()
+    #     items = list(runner.builders[0].get_items())
+    #     processed = runner.builders[0].process_item(items[0])
     #     runner.run()
