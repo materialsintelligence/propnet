@@ -8,22 +8,21 @@ from uuid import uuid4
 from os import environ
 from propnet.core.models import EquationModel, PyModel
 from propnet.models import DEFAULT_MODEL_DICT
-from propnet.web.app import app
 from monty.serialization import loadfn
 
 __author__ = "Joseph Montoya <montoyjh@lbl.gov>"
 __version__ = 0.1
 __date__ = "Sep 4 2018"
 
-
 LOG = logging.getLogger(__name__)
-app.server.secret_key = environ.get('FLASK_SECRET_KEY', str(uuid4()))
-SERVER = app.server
+
 
 def run_web_app(args):
     """Runs web app"""
+    from propnet.web.app import app
+    app.server.secret_key = environ.get('FLASK_SECRET_KEY', str(uuid4()))
     if args.debug:
-        log.setLevel('DEBUG')
+        LOG.setLevel('DEBUG')
     app.run_server(debug=args.debug)
 
 
