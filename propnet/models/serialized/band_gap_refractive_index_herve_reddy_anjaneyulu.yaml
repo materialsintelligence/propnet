@@ -7,8 +7,8 @@ description: |
   An empirical model relating index of refraction to band gap
   proposed by Reddy and Ahammed.
 equations:
-  - 154 - n**4*(Eg - 0.365)
-name: band_gap_refractive_index_reddy_ahammed
+  - Eg - 36.3 / exp(n)
+name: band_gap_refractive_index_reddy_anjaneyulu
 references:
     - doi:10.1016/j.infrared.2006.04.001
     - doi:10.1002/pssb.2221310202

@@ -1,7 +1,7 @@
 categories: [optical, empirical]
 connections:
-- inputs: [Eg]
-  outputs: [n]
+- inputs: [n]
+  outputs: [Eg]
 # Note that this model can't work in reverse right now
 description: |
   An empirical model relating index of refraction to band gap
