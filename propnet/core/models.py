@@ -19,6 +19,7 @@ from sympy.parsing.sympy_parser import parse_expr
 from propnet import ureg
 from propnet.core.exceptions import ModelEvaluationError
 from propnet.symbols import DEFAULT_UNITS
+from propnet.core.utils import references_to_bib
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +27,8 @@ logger = logging.getLogger(__name__)
 TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
                              "models", "test_data")
 
+
 # General TODOs:
-# TODO: I'm not sure that symbol_map needs to be present in all models,
-#       maybe just equation models/relegated to that plug_in method
-# TODO: The evaluate/plug_in dichotomy is a big confusing here
-#       I suspect they can be consolidated
 # TODO: Does the unit_map really need to be specified?  Why can't
 #       pint handle this?
 class Model(ABC):
@@ -39,7 +37,7 @@ class Model(ABC):
 
     Args:
         name (str): title of the model
-        connections (dict): list of connections dictionaries, which take
+        connections ([dict]): list of connections dictionaries, which take
             the form {"inputs": [Symbols], "outputs": [Symbols]}, e. g.:
             connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
                            {"inputs": ["T", "V"], "outputs": ["p"]}]
@@ -66,7 +64,7 @@ class Model(ABC):
         self.connections = connections
         self.description = description
         self.categories = categories
-        self.references = references
+        self.references = references_to_bib(references or [])
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
         self.symbol_property_map = {}

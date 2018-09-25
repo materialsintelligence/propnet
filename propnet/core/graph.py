@@ -12,16 +12,14 @@ from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
 from propnet.core.models import CompositeModel
 from propnet.core.quantity import Quantity
-from propnet.core.utils import ProvenanceElement, SymbolTree, TreeElement
+from propnet.core.provenance import ProvenanceElement, SymbolTree, TreeElement
 from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.models import DEFAULT_MODEL_DICT
 from propnet.symbols import DEFAULT_SYMBOLS
 
 logger = logging.getLogger(__name__)
 
-# TODO: consider refactoring with non-mutable quantity attachments, e. g.
-#       graph functionality is purely for path/relationship determination
-#       not for attaching quantities
+
 class Graph(object):
     """
     Class containing methods for creating and interacting with a
@@ -100,7 +98,6 @@ class Graph(object):
         Returns:
             (str) representation of this Graph object.
         """
-        QUANTITY_LENGTH_CAP = 35
         summary = ["Propnet Printout", ""]
         summary += ["Properties"]
         for property in self._symbol_types.keys():

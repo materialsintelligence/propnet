@@ -4,8 +4,8 @@ import math
 
 from propnet.models import DEFAULT_MODEL_NAMES, DEFAULT_MODEL_DICT, DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
-from propnet.core.models import Model, PyModuleModel, PyModel, EquationModel
-from propnet.core.symbols import *
+from propnet.core.models import PyModuleModel, PyModel, EquationModel
+from propnet.core.symbols import Symbol, ureg
 
 
 # TODO: separate these into specific tests of model functionality
@@ -37,6 +37,8 @@ class ModelTest(unittest.TestCase):
                                 model.symbol_property_map[key] in DEFAULT_SYMBOL_TYPE_NAMES)
             self.assertTrue(model.connections is not None and isinstance(model.connections, list)
                             and len(model.connections) > 0)
+            for reference in model.references:
+                self.assertTrue(reference.startswith('@'))
             for item in model.connections:
                 self.assertIsNotNone(item)
                 self.assertTrue(isinstance(item, dict))
