@@ -419,6 +419,8 @@ class EquationModel(Model, MSONable):
             for example:
             connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
                            {"inputs": ["T", "V"], "outputs": ["p"]}]
+            If no connections are specified (as default), EquationModel
+            attempts to find them intelligently by parsing the equations
         constraints ([str]): constraints on models
         description (str): long form description of the model
         categories (str): list of categories applicable to
@@ -427,10 +429,30 @@ class EquationModel(Model, MSONable):
             explaining / supporting the model
 
     """
-    def __init__(self, name, equations, connections, constraints=None,
+    def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
-                 categories=None, references=None, unit_map=None):
-        self.equations = equations
+                 categories=None, references=None, unit_map=None,
+                 solve_for_all_symbols=False):
+
+        if solve_for_all_symbols:
+            sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
+                                 for eq in equations]
+            connections, equations = [], []
+            for expr in sympy_expressions:
+                for symbol in expr.free_symbols:
+                    new = sp.solve(expr, symbol)
+                    connections.append(
+                        {"inputs": [str(v) for v in new.free_symbols],
+                         "outputs": [str(symbol)]})
+        else:
+            self.equations = equations
+
+        if connections is None:
+            connections = []
+            for eqn in equations:
+                output, expr = eqn.split('=')
+                inputs = [str(v) for v in parse_expr(expr).free_symbols]
+                connections.append({"inputs": inputs, "outputs": [output.strip()]})
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
             categories, references, symbol_property_map, unit_map)
@@ -451,7 +473,7 @@ class EquationModel(Model, MSONable):
             symbol-keyed output dictionary
         """
         # Parse equations and substitute
-        eqns = [parse_expr(eq) for eq in self.equations]
+        eqns = [parse_expr(eq.replace('=', '-(')+')') for eq in self.equations]
         eqns = [eqn.subs(symbol_value_dict) for eqn in eqns]
         possible_outputs = set()
         for eqn in eqns:
