@@ -150,10 +150,10 @@ app.css.append_css(
 
 
 @app.callback(Output('material-content', 'children'),
-              [Input('submit-formula', 'n_clicks')],
-              [State('formula-input', 'value'),
+              [Input('submit-query', 'n_clicks')],
+              [State('query-input', 'value'),
                State('derive_options', 'values')])
-def retrieve_material(n_clicks, formula, derive_properties):
+def retrieve_material(n_clicks, query, derive_properties):
     """
     Gets the material view from options
 
@@ -170,7 +170,10 @@ def retrieve_material(n_clicks, formula, derive_properties):
         return ""
 
     log.info("Fetching data from MP for formula {}".format(formula))
-    mpid = mpr.get_mpid_from_formula(formula)
+    if query.startswith("mp-") or query.startswith("mvc-"):
+        mpid = query
+    else:
+        mpid = mpr.get_mpid_from_formula(query)
     material = mpr.get_material_for_mpid(mpid)
     if not material:
         return "Material not found."
@@ -244,12 +247,12 @@ def retrieve_material(n_clicks, formula, derive_properties):
 
 material_layout = html.Div([
     dcc.Input(
-        placeholder='Enter a formula...',
+        placeholder='Enter a formula or mp-id...',
         type='text',
         value='',
-        id='formula-input'
+        id='query-input'
     ),
-    html.Button('Load Material', id='submit-formula'),
+    html.Button('Load Material', id='submit-query'),
     dcc.Checklist(
         id='derive_options',
         options=[
