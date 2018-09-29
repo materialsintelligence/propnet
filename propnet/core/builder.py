@@ -6,6 +6,7 @@ from propnet import logger
 from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
+from propnet.models import DEFAULT_MODEL_DICT
 from propnet.ext.matproj import MPRester
 from pydash import get
 
@@ -58,6 +59,7 @@ class PropnetBuilder(Builder):
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
         graph = Graph()
+        graph.remove_models({"dimensionality": DEFAULT_MODEL_DICT['dimensionality']})
         new_material = graph.evaluate(material)
 
         # Format document and return
@@ -80,6 +82,5 @@ class PropnetBuilder(Builder):
         return jsanitize(doc, strict=True)
 
     def update_targets(self, items):
-        items = [jsanitize(item, strict=True) for item in items]
         self.propstore.update(items)
 
