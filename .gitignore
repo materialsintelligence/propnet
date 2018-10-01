@@ -114,3 +114,6 @@ ENV/
 
 # testing notebook
 demo/test.ipynb
+
+# private files
+propnet_store.json
