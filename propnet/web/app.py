@@ -253,7 +253,7 @@ material_layout = html.Div([
             {'label': 'Derive properties', 'value': 'derive'},
             {'label': 'Aggregate', 'value': 'aggregate'}
         ],
-        values=['aggregate'],
+        values=['derive', 'aggregate'],
         labelStyle={'display': 'inline-block'}
     ),
     html.Br(),
