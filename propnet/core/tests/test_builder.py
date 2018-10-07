@@ -59,6 +59,4 @@ class BuilderTest(unittest.TestCase):
             mgstore, self.propstore, criteria={"pretty_formula": {"$in": formulas},
                                                "e_above_hull": 0})
         builder.connect()
-        items = list(builder.get_items())
-
         dumpfn(list(builder.get_items()), "test_materials.json")
