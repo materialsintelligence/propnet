@@ -1,4 +1,5 @@
 import unittest
+import os
 
 from monty.serialization import loadfn
 from monty.json import jsanitize
@@ -7,12 +8,13 @@ from maggma.runner import Runner
 
 from propnet.core.builder import PropnetBuilder
 
+path = os.path.dirname(os.path.abspath(__file__))
 
 class BuilderTest(unittest.TestCase):
     def setUp(self):
         self.materials = MemoryStore()
         self.materials.connect()
-        materials = loadfn("test_materials.json")
+        materials = loadfn(os.path.join(path, "test_materials.json"))
         materials = jsanitize(materials, strict=True, allow_bson=True)
         self.materials.update(materials)
         self.propstore = MemoryStore()
