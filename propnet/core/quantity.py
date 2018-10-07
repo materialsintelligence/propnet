@@ -1,29 +1,32 @@
 # TODO: remove typing
 from typing import *
 
+import numpy as np
 from monty.json import MSONable
 
 from propnet import ureg
 from propnet.core.symbols import Symbol
+from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_SYMBOLS
+from uncertainties import unumpy
 
 
 class Quantity(MSONable):
     """
     Class storing the value of a property.
 
-    Constructed by the user to assign values to abstract Symbol types. Represents the fact
-    that a given Quantity
-    has a given value. They are added to the PropertyNetwork graph in the context of Material
-    objects that store
-    collections of Quantity objects representing that a given material has those properties.
+    Constructed by the user to assign values to abstract Symbol types.
+    Represents the fact that a given Quantity has a given value. They
+    are added to the PropertyNetwork graph in the context of Material
+    objects that store collections of Quantity objects representing
+    that a given material has those properties.
 
     Attributes:
-        symbol_type: (Symbol) the type of information that is represented by the associated value.
+        symbol_type: (Symbol) the type of information that is represented
+            by the associated value.
         value: (id) the value associated with this symbol.
-        tags: (list<str>)
-        material (set<Material>): the materials to which this quantity is bound -- indicates which materials
-                                   this quantity is representing.
+        tags: (list<str>) tags associated with the material, e.g.
+            perovskites or ferroelectrics
     """
 
     def __init__(self,
@@ -121,3 +124,58 @@ class Quantity(MSONable):
                 "units": units.format_babel() if units else None,
                 "@module": "propnet.core.quantity",
                 "@class": "Quantity"}
+
+
+def weighted_mean(quantities):
+    """
+    Function to retrieve weighted mean
+
+    Args:
+        quantities ([Quantity]): list of quantities
+
+    Returns:
+        weighted mean
+    """
+    # can't run this twice yet ...
+    # TODO: remove
+    if hasattr(quantities[0].value, "std_dev"):
+        return quantities
+
+    input_symbol = quantities[0].symbol
+    if input_symbol.category == 'object':
+        # TODO: can't average 'objects', highlights a weakness in Quantity class
+        # would be fixed by changing this class design ...
+        return quantities
+
+    if not all(input_symbol == q.symbol for q in quantities):
+        raise ValueError("Can only calculate a weighted mean if all quantities "
+                         "refer to the same symbol.")
+
+    # TODO: an actual weighted mean; just a simple mean at present
+    # TODO: support propagation of uncertainties (this will only work once at present)
+
+    # TODO: test this with units, not magnitudes ... remember units may not be canonical units(?)
+    if isinstance(quantities[0].value, list):
+        # hack to get arrays working for now
+        vals = [q.value for q in quantities]
+    else:
+        vals = [q.value.magnitude for q in quantities]
+
+    new_magnitude = np.mean(vals, axis=0)
+    std_dev = np.std(vals, axis=0)
+    new_value = unumpy.uarray(new_magnitude, std_dev)
+
+    new_tags = set()
+    new_provenance = ProvenanceElement(model='aggregation', inputs=[])
+    for quantity in quantities:
+        if quantity.tags:
+            for tag in quantity.tags:
+                new_tags.add(tag)
+        new_provenance.inputs.append(quantity)
+
+    new_quantity = Quantity(symbol_type=input_symbol,
+                            value=new_value,
+                            tags=list(new_tags),
+                            provenance=new_provenance)
+
+    return new_quantity

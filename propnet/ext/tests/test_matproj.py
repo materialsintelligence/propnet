@@ -16,20 +16,27 @@ class MPResterTest(unittest.TestCase):
         self.assertIn('structure', mat.get_symbols())
 
     def test_get_mpid_from_formula(self):
-        pass
+        mp_id = self.mpr.get_mpid_from_formula("Si")
+        self.assertEqual("mp-149", mp_id)
 
     def test_get_properties_for_mpids(self):
-        pass
+        props = self.mpr.get_properties_for_mpids(["mp-124", "mp-81"])
+        self.assertAlmostEqual(props[0]['e_above_hull'], 0)
+        self.assertAlmostEqual(props[1]['pretty_formula'], 'Au')
 
     def test_get_properties_for_mpid(self):
-        pass
+        props = self.mpr.get_properties_for_mpid("mp-2")
+        self.assertEqual(props['pretty_formula'], "Pd")
 
     def test_get_materials_for_mpids(self):
-        pass
+        ag, au = self.mpr.get_materials_for_mpids(["mp-124", "mp-81"])
+        self.assertEqual(list(ag['external_identifier_mp'])[0].value, 'mp-124')
+        self.assertEqual(list(au['external_identifier_mp'])[0].value, 'mp-81')
 
     def test_get_materials_for_mpid(self):
-        pass
+        pd = self.mpr.get_material_for_mpid("mp-2")
+        self.assertEqual(list(pd['external_identifier_mp'])[0].value, 'mp-2')
 
     def test_apply_material_to_graph(self):
         g = Graph()
-        g.evaluate(self.mat)
+        new_mat = g.evaluate(self.mat)

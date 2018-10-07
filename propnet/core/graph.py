@@ -12,12 +12,13 @@ from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
 from propnet.core.models import CompositeModel
 from propnet.core.quantity import Quantity
-from propnet.core.utils import ProvenanceElement, SymbolTree, TreeElement
+from propnet.core.provenance import ProvenanceElement, SymbolTree, TreeElement
 from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.models import DEFAULT_MODEL_DICT
 from propnet.symbols import DEFAULT_SYMBOLS
 
 logger = logging.getLogger(__name__)
+
 
 class Graph(object):
     """

@@ -150,10 +150,10 @@ app.css.append_css(
 
 
 @app.callback(Output('material-content', 'children'),
-              [Input('submit-formula', 'n_clicks')],
-              [State('formula-input', 'value'),
+              [Input('submit-query', 'n_clicks')],
+              [State('query-input', 'value'),
                State('derive_options', 'values')])
-def retrieve_material(n_clicks, formula, derive_properties):
+def retrieve_material(n_clicks, query, derive_properties):
     """
     Gets the material view from options
 
@@ -169,12 +169,15 @@ def retrieve_material(n_clicks, formula, derive_properties):
     if n_clicks is None:
         return ""
 
-    log.info("Fetching data from MP for formula {}".format(formula))
-    mpid = mpr.get_mpid_from_formula(formula)
+    log.info("Fetching data from MP for query {}".format(query))
+    if query.startswith("mp-") or query.startswith("mvc-"):
+        mpid = query
+    else:
+        mpid = mpr.get_mpid_from_formula(query)
     material = mpr.get_material_for_mpid(mpid)
     if not material:
         return "Material not found."
-    log.info("Retrieved material {} for formula {}".format(mpid, formula))
+    log.info("Retrieved material {} for formula {}".format(mpid, material['pretty_formula']))
 
     log.debug("Adding material to graph.")
     p = Graph()
@@ -185,26 +188,18 @@ def retrieve_material(n_clicks, formula, derive_properties):
         log.info("Deriving quantities for {}".format(mpid))
         material = p.evaluate(material)
 
-    new_qs = {}
-    if 'aggregate' in derive_properties:
-        log.debug("Aggregating quantities for material {}".format(mpid))
-        new_qs = material.get_aggregated_quantities()
+        if 'aggregate' in derive_properties:
+            log.debug("Aggregating quantities for material {}".format(mpid))
+            # TODO: get aggregated quantities should return a list
+            quantities = material.get_aggregated_quantities().items()
+        else:
+            quantities = [(q.symbol, q) for q in material.get_quantities()]
+    else:
+        quantities = [(q.symbol, q) for q in material.get_quantities()]
+
 
     rows = []
-    for node in material.get_quantities():
-        if node.symbol.category != 'object':
-            if str(node.symbol.name) not in new_qs:
-                rows.append(
-                    {
-                        'Symbol': str(node.symbol.display_names[0]),
-                        'Value': str(node.value).replace("+/-", "\u00B1"),
-                        # TODO: this breaks because of pint
-                        # 'Units': str(node.symbol.unit_as_string)
-                    }
-                )
-
-    # demo hack
-    for symbol, quantity in new_qs.items():
+    for symbol, quantity in quantities:
         rows.append(
             {
                 'Symbol': symbol.display_names[0],
@@ -222,10 +217,11 @@ def retrieve_material(n_clicks, formula, derive_properties):
         selected_row_indices=[],
         id='datatable'
     )
-    derived_quantity_names = [symbol.name for symbol in new_qs]
+    derived_quantity_names = set([symbol.name for symbol, quantity in quantities]) -\
+        set(material_quantity_names)
     material_graph_data = graph_conversion(
         g, nodes_to_highlight_green=material_quantity_names,
-        nodes_to_highlight_yellow=derived_quantity_names)
+        nodes_to_highlight_yellow=list(derived_quantity_names))
     options = AESTHETICS['global_options']
     options['edges']['color'] = '#000000'
     material_graph_component = html.Div(GraphComponent(
@@ -244,19 +240,20 @@ def retrieve_material(n_clicks, formula, derive_properties):
 
 material_layout = html.Div([
     dcc.Input(
-        placeholder='Enter a formula...',
+        placeholder='Enter a formula or mp-id...',
         type='text',
         value='',
-        id='formula-input'
+        id='query-input',
+        style={"width": "50%"}
     ),
-    html.Button('Load Material', id='submit-formula'),
+    html.Button('Load Material', id='submit-query'),
     dcc.Checklist(
         id='derive_options',
         options=[
             {'label': 'Derive properties', 'value': 'derive'},
             {'label': 'Aggregate', 'value': 'aggregate'}
         ],
-        values=['aggregate'],
+        values=['derive', 'aggregate'],
         labelStyle={'display': 'inline-block'}
     ),
     html.Br(),

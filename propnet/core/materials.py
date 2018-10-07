@@ -5,9 +5,8 @@ Module containing classes and methods for Material functionality in propnet code
 from collections import defaultdict
 from itertools import chain
 
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import Quantity, weighted_mean
 from propnet.core.symbols import Symbol
-from propnet.core.utils import weighted_mean
 
 
 class Material(object):
@@ -139,6 +138,13 @@ class Material(object):
                 if quantity not in other._symbol_to_quantity[symbol]:
                     return False
         return True
+
+    @property
+    def quantity_types(self):
+        return list(self._symbol_to_quantity.keys())
+
+    def __getitem__(self, item):
+        return self._symbol_to_quantity[item]
 
 
 class CompositeMaterial(Material):
