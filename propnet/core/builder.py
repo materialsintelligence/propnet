@@ -2,10 +2,13 @@ from monty.json import jsanitize, MontyDecoder
 from uncertainties import unumpy
 
 from maggma.builder import Builder
+from pymatgen.entries.computed_entries import ComputedEntry
+from pymatgen.entries.compatibility import MaterialsProjectCompatibility
 from propnet import logger
 from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
+from propnet.models import DEFAULT_MODEL_DICT
 from propnet.ext.matproj import MPRester
 from pydash import get
 
@@ -35,7 +38,10 @@ class PropnetBuilder(Builder):
 
     def get_items(self):
         props = list(self.materials_symbol_map.keys())
-        props += ["task_id", "pretty_formula"]
+        props += ["task_id", "pretty_formula", "run_type", "is_hubbard",
+                  "pseudo_potential", "hubbards", "potcar_symbols", "oxide_type",
+                  "final_energy", "unit_cell_formula"]
+        props = list(set(props))
         docs = self.materials.query(criteria=self.criteria, properties=props)
         self.total = docs.count()
         for doc in docs:
@@ -53,11 +59,17 @@ class PropnetBuilder(Builder):
             if value:
                 material.add_quantity(Quantity(property_name, value))
 
+        # Add custom things, e. g. computed entry
+        computed_entry = get_entry(item)
+        material.add_quantity(Quantity("computed_entry", computed_entry))
+        material.add_quantity(Quantity("external_identifier_mp", item['task_id']))
+
         input_quantities = material.get_quantities()
 
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
         graph = Graph()
+        graph.remove_models({"dimensionality": DEFAULT_MODEL_DICT['dimensionality']})
         new_material = graph.evaluate(material)
 
         # Format document and return
@@ -80,6 +92,29 @@ class PropnetBuilder(Builder):
         return jsanitize(doc, strict=True)
 
     def update_targets(self, items):
-        items = [jsanitize(item, strict=True) for item in items]
         self.propstore.update(items)
 
+
+# This is a PITA, but right now there's no way to get this data from the
+# built collection itself
+def get_entry(doc):
+    """
+    Helper function to get a processed computed entry from the document
+
+    Args:
+        doc ({}): doc from which to get the entry
+
+    Returns:
+        (ComputedEntry) computed entry derived from doc
+
+    """
+    params = ["run_type", "is_hubbard", "pseudo_potential", "hubbards",
+              "potcar_symbols", "oxide_type"]
+    doc["potcar_symbols"] = ["%s %s" % (doc["pseudo_potential"]["functional"], l)
+                             for l in doc["pseudo_potential"]["labels"]]
+    entry = ComputedEntry(doc["unit_cell_formula"], doc["final_energy"],
+                          parameters={k: doc[k] for k in params},
+                          data={"oxide_type": doc['oxide_type']},
+                          entry_id=doc["task_id"])
+    entry = MaterialsProjectCompatibility().process_entries([entry])[0]
+    return entry
