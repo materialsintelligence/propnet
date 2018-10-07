@@ -94,6 +94,22 @@ class Quantity(MSONable):
         """
         return self._provenance
 
+    def is_symbol_in_provenance(self, symbol):
+        """
+        Method for determining if symbol is in the provenance of quantity
+
+        Args:
+            symbol (Symbol or str): symbol type to test
+
+        Returns:
+            (bool) whether or not the symbol is in the quantity provenance
+
+        """
+        if self.provenance is None:
+            return False
+        else:
+            return symbol in self.provenance.all_symbols
+
     def __hash__(self):
         return hash(self.symbol.name)
 
