@@ -40,7 +40,7 @@ class PropnetBuilder(Builder):
         props = list(self.materials_symbol_map.keys())
         props += ["task_id", "pretty_formula", "run_type", "is_hubbard",
                   "pseudo_potential", "hubbards", "potcar_symbols", "oxide_type",
-                  "energy", "unit_cell_formula"]
+                  "final_energy", "unit_cell_formula"]
         props = list(set(props))
         docs = self.materials.query(criteria=self.criteria, properties=props)
         self.total = docs.count()
@@ -62,6 +62,7 @@ class PropnetBuilder(Builder):
         # Add custom things, e. g. computed entry
         computed_entry = get_entry(item)
         material.add_quantity(Quantity("computed_entry", computed_entry))
+        material.add_quantity(Quantity("external_identifier_mp", item['task_id']))
 
         input_quantities = material.get_quantities()
 
@@ -111,8 +112,9 @@ def get_entry(doc):
               "potcar_symbols", "oxide_type"]
     doc["potcar_symbols"] = ["%s %s" % (doc["pseudo_potential"]["functional"], l)
                              for l in doc["pseudo_potential"]["labels"]]
-    entry = ComputedEntry(doc["unit_cell_formula"], doc["energy"],
+    entry = ComputedEntry(doc["unit_cell_formula"], doc["final_energy"],
                           parameters={k: doc[k] for k in params},
+                          data={"oxide_type": doc['oxide_type']},
                           entry_id=doc["task_id"])
     entry = MaterialsProjectCompatibility().process_entries([entry])[0]
     return entry
