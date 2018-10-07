@@ -33,6 +33,8 @@ class BuilderTest(unittest.TestCase):
         builder = PropnetBuilder(self.materials, self.propstore)
         processed = builder.process_item(item)
         self.assertIsNotNone(processed)
+        # Ensure vickers hardness gets populated
+        self.assertIn("vickers_hardness", processed)
 
     # @unittest.skipIf(not os.path.isfile("runner.json"), "No runner file")
     # def test_runner_pipeline(self):
