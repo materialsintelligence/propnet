@@ -540,7 +540,37 @@ class Graph(object):
             })
         return input_set_dicts
 
-    def evaluate(self, material, property_type=None):
+    def generate_evaluation_lists(self, new_quantity):
+        return
+
+    @staticmethod
+    def filter_cycle_quantities(quantities):
+        return [quantity for quantity in quantities
+                if not quantity.]
+
+    def derive_all_quantities(self, new_quantities, quantity_pool):
+        # Generate all of the models and input sets to be evaluated
+        models, input_sets = self.generate_models_and_input_sets(
+            new_quantities, quantity_pool)
+        added_quantities = []
+        # Evaluate model for each input set and add new valid quantities
+        for model, input_set in zip(models, input_sets):
+            result = model.evaluate(input_set)
+            if result['successful']:
+                # Filter any cycles in quantities
+                valid_output = self.filter_cycle_quantities(result['output'])
+                added_quantities.extend(valid_output)
+            else:
+                logger.info("Model evaluation unsuccessful %s", result['message'])
+
+        # If there are no new quantities
+        quantity_pool = quantity_pool + new_quantities
+        if added_quantities is None:
+            return quantity_pool
+        else:
+            return self.derive_all_quantities(added_quantities, quantity_pool)
+
+    def evaluate(self, material):
         """
         Given a Material object as input, creates a new Material object
         to include all derivable properties.  Optional argument limits the
@@ -549,8 +579,7 @@ class Graph(object):
 
         Args:
             material (Material): which material's properties will be expanded.
-            property_type ({Symbol}): optional limit on which Symbols
-                will be considered as input.
+
         Returns:
             (Material) reference to the newly derived material object.
         """
@@ -567,24 +596,24 @@ class Graph(object):
 
         logger.debug("Refining input set, setting up candidate_models.")
 
-        for qs in material._symbol_to_quantity.values():
-            for quantity in qs:
-                if property_type is None or quantity.symbol_type in property_type:
-                    quantity_pool[quantity.symbol].add(quantity)
+        for quantity in material.get_quantities():
+            quantity_pool[quantity.symbol].add(quantity)
 
         for symbol in quantity_pool.keys():
             for m in self._input_to_model[symbol]:
                 candidate_models.add(m)
 
         logger.debug("Finished refining input set.")
-        logger.debug("Quantity pool contains {}".format(quantity_pool))
+        logger.debug("Quantity pool contains %s", quantity_pool)
         logger.debug("Beginning main loop.")
 
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
-
         new_models = set()
         continue_loop = True
+
+        input_sets = self.generate_input_sets(candidate_models, quantity_pool)
+        for model, input_set in input_sets:
 
         while continue_loop:
             continue_loop = False
