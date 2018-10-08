@@ -12,7 +12,6 @@ from dash.dependencies import Input, Output, State
 from pydash import get
 
 store = loadfn(environ["PROPNET_STORE_FILE"])
-store.collection_name = 'propnet_copy'
 store.connect()
 
 cut_off = 100  # need at least this many available quantities for plot
