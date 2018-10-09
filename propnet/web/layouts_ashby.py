@@ -46,7 +46,7 @@ def ashby_layout(app):
         html.Div([
             html.Div([dcc.Graph(id='ashby-graph', config={'displayModeBar': False})], className='eight columns'),
             html.Div([html.Br(), html.Br(),
-                      dcc.Markdown(id='point-detail', children="Click on point for more information on that material.")],
+                      dcc.Markdown(id='point-detail', children="Click on a point for more information on that material.")],
                      className='four columns')
         ], className='row')
     ])
