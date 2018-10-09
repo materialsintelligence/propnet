@@ -535,8 +535,7 @@ class Graph(object):
             if prop not in this_quantity_pool.keys():
                 return []
             aggregated_symbols.append(this_quantity_pool[prop])
-        input_set_lists = product(*aggregated_symbols)
-        return [set(islist) for islist in input_set_lists]
+        return product(*aggregated_symbols)
 
     def get_input_sets_for_model(self, model, fixed_quantity, quantity_pool):
         """
@@ -563,8 +562,7 @@ class Graph(object):
             elist_without_fixed.remove(fixed_quantity.symbol)
             input_sets = self.generate_input_sets(elist_without_fixed, quantity_pool)
             for input_set in input_sets:
-                input_set.add(fixed_quantity)
-            all_input_sets.extend(input_sets)
+                all_input_sets.append(list(input_set) + [fixed_quantity])
         return all_input_sets
 
     def generate_models_and_input_sets(self, new_quantities, quantity_pool):
@@ -764,9 +762,9 @@ class Graph(object):
 
                     # Try to evaluate input_set:
 
-                    evaluate_set = {symbol: quantity.value
-                                    for symbol, quantity in input_set.items()}
-                    output = model.evaluate(evaluate_set)
+                    evaluate_set = {prop: quantity.value
+                                    for prop, quantity in zip(combined_list, input_set)}
+                    output = model.evaluate(evaluate_set, allow_failure=False)
                     success = output.pop('successful')
                     if not success:
                         logger.debug("\t\t\tInput set failed -- did not produce a successful output.")
