@@ -1,11 +1,7 @@
-from propnet import ureg
-
-
 def plug_in(symbol_values):
     s = symbol_values['s']
     return {'p': len(s.sites) / s.volume,
-            'rho': float(s.density),
-            'successful': True}
+            'rho': float(s.density)}
 
 
 DESCRIPTION = """

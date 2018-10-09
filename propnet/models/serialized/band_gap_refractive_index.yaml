@@ -18,6 +18,8 @@ references:
     - doi:10.1016/j.infrared.2006.04.001
     - doi:10.1002/pssb.2221310202
     - doi:10.1002/pssb.2221000240
+constraints:
+    - Eg > 0
 symbol_property_map:
     Eg: band_gap
     n_moss: refractive_index

@@ -132,10 +132,7 @@ class Model(ABC):
         """
         return remap(symbols, self.symbol_property_map)
 
-    # TODO: I'm really not crazy about the "successful" key implementation
-    #       preventing model failure using try/except is the path to
-    #       the dark side
-    def evaluate(self, property_value_dict):
+    def evaluate(self, property_value_dict, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
         if the corresponding input symbol_values represents a valid
@@ -151,6 +148,8 @@ class Model(ABC):
         Args:
             property_value_dict ({property_name: value}): a mapping of
                 property names to values to be substituted
+            allow_failure (bool): whether or not to catch
+                errors in model evaluation
 
         Returns:
             dictionary of output properties with associated values
@@ -172,34 +171,23 @@ class Model(ABC):
                 symbol_value_dict[symbol] = value.magnitude
                 old_units[symbol] = value.units
 
-        # check we support this combination of inputs
-        # TODO: this shouldn't be necessary
-        input_matches = [set(input_set) == set(property_value_dict)
-                         for input_set in self.evaluation_list]
-        if not any(input_matches):
-            return {
-                'successful': False,
-                'message': "The {} model cannot generate any outputs for "
-                           "these inputs: {}".format(
-                    self.name, property_value_dict.keys())}
-        # TODO: Remove the try-except functionality, high priority
+        # Plug in and check constraints
         try:
-            # evaluate is allowed to fail
             out = self.plug_in(symbol_value_dict)
-            out['successful'] = True
         except Exception as e:
-            logger.debug("Model evaluation unsuccessful %s", e)
-            return {
-                'successful': False,
-                'message': str(e)
-            }
+            if allow_failure:
+                return {"successful": False,
+                        "message": "{} evaluation failed: {}".format(self, e)}
+            else:
+                raise e
+        if not self.check_constraints({**symbol_value_dict, **out}):
+            return {"successful": False,
+                    "message": "Constraints not satisfied"}
 
-        # add units to output
         out = self.map_symbols_to_properties(out)
         for key in out:
-            if key == 'successful':
-                continue
             out[key] = ureg.Quantity(out[key], self.unit_map.get(key))
+        out['successful'] = True
         return out
 
     @property
@@ -214,8 +202,7 @@ class Model(ABC):
         """
         return self.name.replace('_', ' ').title()
 
-    # Note that these are formulated in terms of properties
-    # rather than symbols
+    # Note: these are formulated in terms of properties rather than symbols
     @property
     def input_sets(self):
         """
@@ -265,8 +252,8 @@ class Model(ABC):
         Returns:
             list of sets of inputs with constraint properties included
         """
-        return [set(input_set | self.constraint_properties)
-                for input_set in self.input_sets]
+        return [list(inputs | self.constraint_properties - outputs)
+                for inputs, outputs in zip(self.input_sets, self.output_sets)]
 
     def test(self, inputs, outputs):
         """
@@ -392,6 +379,12 @@ class Model(ABC):
             example_outputs=example_outputs)
 
         return example_code
+
+    def __str__(self):
+        return "Model: {}".format(self.name)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 CODE_EXAMPLE_TEMPLATE = """
@@ -573,7 +566,8 @@ class CompositeModel(PyModel):
                 e. g. filter({'metal': Material, 'oxide': Material})
             **kwargs: model params, e. g. description, references, etc.
         """
-        PyModel.__init__(self, name=name, connections=connections, plug_in=plug_in, **kwargs)
+        PyModel.__init__(self, name=name, connections=connections,
+                         plug_in=plug_in, **kwargs)
         self.pre_filter = pre_filter
         self.filter = filter
         self.mat_inputs = []
@@ -627,7 +621,8 @@ class CompositeModel(PyModel):
             (list<dict<String, Material>>) mapping from material label to Material object.
         """
 
-        # Group by label all possible candidate materials in a dict<String, list<Material>>
+        # Group by label all possible candidate materials in a
+        # dict<String, list<Material>>
         pre_process = dict()
         for material in self.mat_inputs:
             pre_process[material] = None
@@ -728,24 +723,7 @@ class PyModuleCompositeModel(CompositeModel):
 # Right now I don't see much of a use case for pythonic functionality
 # here but maybe there should be
 # TODO: this could use a bit more finesse
-class ConstraintInterface:
-    def plug_in(self, symbol_value_dict):
-        """
-        ABSTRACT
-        Method analogous to that of the Model class.
-        In this case the method contract demands a boolean
-        be returned representing whether the constraint was
-        met.
-        Args:
-            symbol_value_dict ({symbol: value}): dict containing
-                symbol-keyed values to substitute
-        Returns:
-            (bool) true/false representing whether the constraint
-                   was met.
-        """
-        pass
-
-class Constraint(Model, ConstraintInterface):
+class Constraint(Model):
     """
     Constraint class, resembles a model, but should outputs
     true or false based on a string expression containing
@@ -788,6 +766,8 @@ def will_it_float(input_to_test):
     """
     Helper function to determine if input string can be cast to float
 
+    "If she weights the same as a duck... she's made of wood"
+
     Args:
         input_to_test (str): input string to be tested
     """
@@ -817,6 +797,12 @@ def remap(dict_or_list, mapping):
         for in_key, out_key in mapping.items():
             if in_key in output:
                 output[out_key] = output.pop(in_key)
+    elif isinstance(output, set):
+        for in_item in output:
+            out_item = mapping.get(in_item)
+            if out_item:
+                output.remove(in_item)
+                output.add(out_item)
     else:
         for idx, in_item in enumerate(output):
             out_item = mapping.get(in_item)
