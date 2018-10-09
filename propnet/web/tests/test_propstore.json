@@ -4,5 +4,5 @@
     "database": "test_propnet_db",
     "collection_name": "propnet",
     "host": "localhost",
-    "port": 27017,
+    "port": 27017
 }
