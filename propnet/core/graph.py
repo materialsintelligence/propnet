@@ -4,7 +4,7 @@ Module containing classes and methods for graph functionality in Propnet code.
 
 import logging
 from collections import defaultdict
-from itertools import chain, product
+from itertools import product
 
 import networkx as nx
 
