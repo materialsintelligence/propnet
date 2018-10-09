@@ -31,21 +31,6 @@ class ProvenanceElement(MSONable):
             for q in self.inputs])
         return "{{{}: [{}]}}".format(self.model, pre)
 
-    @property
-    def all_symbols(self):
-        """
-        Returns ({Symbol}): set of all symbols associated with the
-            Provenance Element
-        """
-        provenance_symbols = set()
-        for input in self.inputs:
-            if input._provenance is not None:
-                add_symbols = input._provenance.all_symbols
-            else:
-                add_symbols = set(input.symbol_type)
-            provenance_symbols = provenance_symbols | add_symbols
-        return provenance_symbols
-
 
 class SymbolTree(object):
     """
