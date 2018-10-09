@@ -1,0 +1,9 @@
+name: gruneisen_parameter
+units:
+- 1
+- []
+display_names: ["Gruneisen parameter"]
+display_symbols: [\gamma]
+shape: 1
+comment: ''
+category: property
