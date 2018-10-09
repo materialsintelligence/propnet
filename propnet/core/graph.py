@@ -561,17 +561,19 @@ class Graph(object):
             for model in self._input_to_model[quantity.symbol]:
                 input_sets = self.get_input_sets_for_model(
                     model, quantity, quantity_pool)
-                models_and_input_sets += [tuple([model] + list(input_set))
-                                          for input_set in input_sets]
+                models_and_input_sets += [
+                    tuple([model] + sorted(list(input_set), key=lambda x: (x.symbol.name, x.value)))
+                          for input_set in input_sets]
         # Filter for duplicates
         return set(models_and_input_sets)
 
     @staticmethod
     def filter_cycle_quantities(quantities):
         return [quantity for quantity in quantities
-               if not quantity.is_symbol_in_provenance(quantity.symbol)]
+                if not quantity.is_symbol_in_provenance(quantity.symbol)]
 
-    def derive_quantities(self, new_quantities, quantity_pool=None):
+    def derive_quantities(self, new_quantities, quantity_pool=None,
+                          allow_model_failure=True):
         """
         Algorithm for expanding quantity pool
 
@@ -588,6 +590,7 @@ class Graph(object):
             quantity_pool[quantity.symbol].add(quantity)
 
         # Generate all of the models and input sets to be evaluated
+        logger.info("Generating models and input sets for %s", new_quantities)
         models_and_input_sets = self.generate_models_and_input_sets(
             new_quantities, quantity_pool)
         added_quantities = []
@@ -598,7 +601,8 @@ class Graph(object):
             inputs = model_and_input_set[1:]
             input_dict = {q.symbol: q.value for q in inputs}
             logger.info('Evaluating %s with input %s', model, input_dict)
-            result = model.evaluate(input_dict)
+            result = model.evaluate(
+                input_dict, allow_failure=allow_model_failure)
             # TODO: Maybe provenance should be done in evaluate?
             provenance = ProvenanceElement(model=model, inputs=inputs)
             success = result.pop('successful')
@@ -607,14 +611,14 @@ class Graph(object):
                 result_quantities = [Quantity(self._symbol_types[symbol], value,
                                               provenance=provenance)
                                      for symbol, value in result.items()]
-                result_quantities = self.filter_cycle_quantities(result_quantities)
-                added_quantities.extend(result_quantities)
+                result_quantities = filter(lambda x: not x.is_cyclic(),
+                                           result_quantities)
+                added_quantities.extend(list(result_quantities))
             else:
                 logger.info("Model evaluation unsuccessful %s", result['message'])
         return added_quantities, quantity_pool
 
-
-    def evaluate(self, material):
+    def evaluate(self, material, allow_model_failure=True):
         """
         Given a Material object as input, creates a new Material object
         to include all derivable properties.  Optional argument limits the
@@ -638,23 +642,21 @@ class Graph(object):
         logger.debug("Beginning main loop with quantities %s", new_quantities)
         while new_quantities:
             new_quantities, quantity_pool = self.derive_quantities(
-                new_quantities, quantity_pool)
+                new_quantities, quantity_pool,
+                allow_model_failure=allow_model_failure)
 
         new_material = Material()
         new_material._symbol_to_quantity = quantity_pool
         return new_material
 
-    def super_evaluate(self, material, property_type=None):
+    def super_evaluate(self, material):
         """
         Given a SuperMaterial object as input, creates a new SuperMaterial object to include all derivable properties.
         Returns a reference to the new, augmented SuperMaterial object.
 
-        Optional argument limits the scope of which models or properties are tested.
-            property_type parameter: produces output from models only if all input properties are in the list.
-
         Args:
             material (SuperMaterial): which material's properties will be expanded.
-            property_type (set<Symbol>): optional limit on which Symbols will be considered as input.
+
         Returns:
             (Material) reference to the newly derived material object.
         """
@@ -668,9 +670,9 @@ class Graph(object):
         for m in material.materials:
             logger.debug("Evaluating sub-material: " + str(id(m)))
             if isinstance(m, CompositeMaterial):
-                evaluated_materials.append(self.super_evaluate(m, property_type=property_type))
+                evaluated_materials.append(self.super_evaluate(m))
             else:
-                evaluated_materials.append(self.evaluate(m, property_type=property_type))
+                evaluated_materials.append(self.evaluate(m))
 
         # Run all SuperModels in the graph on this SuperMaterial if a material mapping can be established.
         # Store any derived quantities.

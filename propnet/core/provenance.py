@@ -32,17 +32,27 @@ class ProvenanceElement(MSONable):
         return "{{{}: [{}]}}".format(self.model, pre)
 
     @property
-    def all_symbols(self):
+    def symbol_list(self):
         """
         Returns ({Symbol}): set of all symbols associated with the
             Provenance Element
         """
-        psyms = set()
+        psyms = []
         for input in self.inputs:
+            psyms += [input.symbol]
             if input.provenance is not None:
-                psyms = psyms | input.provenance.all_symbols
-            psyms.add(input.symbol)
+                psyms += input.provenance.symbol_list
         return psyms
+
+    # @property
+    # def all_paths(self):
+    #     branches = []
+    #     for input in self.inputs:
+    #         branch = [self.model, input.symbol]
+    #         if input.provenance is not None:
+    #             for path in input.provenance.all_paths:
+    #             plist += input.provenance.all_paths
+    #     return plist
 
 
 class SymbolTree(object):

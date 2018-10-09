@@ -95,6 +95,26 @@ class Quantity(MSONable):
         """
         return self._provenance
 
+    def is_cyclic(self, visited=None):
+        if visited is None:
+            visited = set()
+        if self.symbol in visited:
+            return True
+        visited.add(self.symbol)
+        if self.provenance is None:
+            return False
+        # add distinct model hash to distinguish properties from models,
+        # e.g. pugh ratio
+        model_hash = "model_{}".format(self.provenance.model)
+        if model_hash in visited:
+            return True
+        visited.add(model_hash)
+        for input in self.provenance.inputs:
+            this_visited = visited.copy()
+            if input.is_cyclic(this_visited):
+                return True
+        return False
+
     def is_symbol_in_provenance(self, symbol):
         """
         Method for determining if symbol is in the provenance of quantity
@@ -144,6 +164,15 @@ class Quantity(MSONable):
                 "units": units.format_babel() if units else None,
                 "@module": "propnet.core.quantity",
                 "@class": "Quantity"}
+
+
+def check_duplicates(input_list):
+    seen = set()
+    for elt in input_list:
+        if elt in seen:
+            return True
+        seen.add(elt)
+    return False
 
 
 def weighted_mean(quantities):

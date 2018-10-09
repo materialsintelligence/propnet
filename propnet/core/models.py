@@ -132,7 +132,7 @@ class Model(ABC):
         """
         return remap(symbols, self.symbol_property_map)
 
-    def evaluate(self, property_value_dict):
+    def evaluate(self, property_value_dict, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
         if the corresponding input symbol_values represents a valid
@@ -148,6 +148,8 @@ class Model(ABC):
         Args:
             property_value_dict ({property_name: value}): a mapping of
                 property names to values to be substituted
+            allow_failure (bool): whether or not to catch
+                errors in model evaluation
 
         Returns:
             dictionary of output properties with associated values
@@ -170,7 +172,14 @@ class Model(ABC):
                 old_units[symbol] = value.units
 
         # Plug in and check constraints
-        out = self.plug_in(symbol_value_dict)
+        try:
+            out = self.plug_in(symbol_value_dict)
+        except Exception as e:
+            if allow_failure:
+                return {"successful": False,
+                        "message": "{} evaluation failed: {}".format(self, e)}
+            else:
+                raise e
         if not self.check_constraints({**symbol_value_dict, **out}):
             return {"successful": False,
                     "message": "Constraints not satisfied"}
@@ -370,6 +379,12 @@ class Model(ABC):
             example_outputs=example_outputs)
 
         return example_code
+
+    def __str__(self):
+        return "Model: {}".format(self.name)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 CODE_EXAMPLE_TEMPLATE = """
