@@ -326,6 +326,7 @@ class Graph(object):
 
         return graph
 
+    # TODO: can we remove this?
     def calculable_properties(self, property_type_set):
         """
         Given a set of Symbol objects, returns all new Symbol objects
@@ -422,6 +423,7 @@ class Graph(object):
 
         return derivable
 
+    # TODO: can we remove this?
     def required_inputs_for_property(self, property):
         """
         Determines all potential paths leading to a given symbol
@@ -501,6 +503,7 @@ class Graph(object):
         # Add outputs to children and fill in their elements.
         to_expand.children = outputs
 
+    # TODO: can we remove this?
     def get_paths(self, start_property, end_property):
         """
         Returns all Paths
@@ -534,15 +537,24 @@ class Graph(object):
             aggregated_symbols.append(this_quantity_pool[prop])
         input_set_lists = product(*aggregated_symbols)
         return [set(islist) for islist in input_set_lists]
-        # input_set_dicts = []
-        # for input_set_list in input_set_lists:
-        #     input_set_dicts.append({
-        #         symbol: input_quantity for symbol, input_quantity
-        #         in zip(props, input_set_list)
-        #     })
-        # return input_set_dicts
 
     def get_input_sets_for_model(self, model, fixed_quantity, quantity_pool):
+        """
+        Generates all of the valid input sets for a given model, a fixed
+        quantity, and a quantity pool from which to draw remaining properties
+
+        Args:
+            model (Model): model for which to evaluate valid input sets
+            fixed_quantity (Quantity): quantity which must be included
+                in all input sets
+            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
+                keyed by symbol from which to draw additional quantities
+                for model inputs
+
+        Returns:
+            list of sets of input quantities for the model
+
+        """
         evaluation_lists = [c for c in model.evaluation_list
                             if fixed_quantity.symbol in c]
         all_input_sets = []
@@ -556,6 +568,21 @@ class Graph(object):
         return all_input_sets
 
     def generate_models_and_input_sets(self, new_quantities, quantity_pool):
+        """
+        Helper method to generate input sets for models
+
+        Args:
+            new_quantities ([Quantity]): list of new quantities from which
+                to derive new input sets (these are "fixed" quantities
+                in generate_input_sets_for_model)
+            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
+                keyed by symbol from which to draw additional quantities
+                for model inputs
+
+        Returns:
+            ([tuple]): list of tuples of models and their associated input
+                sets, uses tuple so duplicate checking can be performed
+        """
         models_and_input_sets = []
         for quantity in new_quantities:
             for model in self._input_to_model[quantity.symbol]:
@@ -567,21 +594,22 @@ class Graph(object):
         # Filter for duplicates
         return set(models_and_input_sets)
 
-    @staticmethod
-    def filter_cycle_quantities(quantities):
-        return [quantity for quantity in quantities
-                if not quantity.is_symbol_in_provenance(quantity.symbol)]
-
     def derive_quantities(self, new_quantities, quantity_pool=None,
                           allow_model_failure=True):
         """
         Algorithm for expanding quantity pool
 
         Args:
-            new_quantities:
-            quantity_pool:
+            new_quantities ([Quantity]): list of quantities which to
+                consider as new inputs to models
+            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
+                keyed by symbol from which to draw additional quantities
+                for model inputs
 
         Returns:
+            additional_quantities ([Quantity]): new derived quantities
+            quantity_pool ({symbol: {Quantity}}): augmented version of
+                quantity pool
 
         """
         # Update quantity pool
@@ -665,7 +693,6 @@ class Graph(object):
             raise Exception("material provided is not a SuperMaterial: " + str(type(material)))
 
         # Evaluate material's sub-materials
-
         evaluated_materials = list()
         for m in material.materials:
             logger.debug("Evaluating sub-material: " + str(id(m)))
