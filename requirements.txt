@@ -23,4 +23,5 @@ maggma>=0.6.5
 gbml>=1.1.0
 mp_dash_components>=0.0.2
 maggma>=0.6.5
+scikit-learn>=0.20.0
 -e .

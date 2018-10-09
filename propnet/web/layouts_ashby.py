@@ -10,6 +10,11 @@ from dash.dependencies import Input, Output, State
 
 from pydash import get
 
+from pymatgen import MPRester
+from pymatgen.util.string import unicodeify
+
+mpr = MPRester()
+
 store = loadfn(environ["PROPNET_STORE_FILE"])
 store.connect()
 
@@ -38,8 +43,39 @@ def ashby_layout(app):
         #dcc.Dropdown(id='choose-y', options=[
         #    {'label': v.display_names[0], 'value': k} for k, v in scalar_symbols.items()
         #], value='volume_unit_cell'),
-        dcc.Graph(id='ashby-graph')
+        html.Div([
+            html.Div([dcc.Graph(id='ashby-graph', config={'displayModeBar': False})], className='eight columns'),
+            html.Div([html.Br(), html.Br(),
+                      dcc.Markdown(id='point-detail', children="Click on point for more information on that material.")],
+                     className='four columns')
+        ], className='row')
     ])
+
+    @app.callback(
+        Output('point-detail', 'children'),
+        [Input('ashby-graph', 'clickData')],
+        [State('choose-x', 'value'),
+         State('choose-y', 'value')]
+    )
+    def update_info_box(clickData, x_prop, y_prop):
+
+        point = clickData['points'][0]
+        mpid = point['text']
+        x = point['x']
+        y = point['y']
+
+        s = mpr.get_structure_by_material_id(mpid)
+        formula = unicodeify(s.composition.reduced_formula)
+
+        return f"""
+        
+### {formula}
+##### [{mpid}](https://materialsproject.org/materials/{mpid})
+        
+x = {x:.2f} {scalar_symbols[x_prop].unit_as_string}
+
+y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
+        """
 
     @app.callback(
         Output('ashby-graph', 'figure'),
@@ -62,15 +98,22 @@ def ashby_layout(app):
                 'x': [get(d, x_key) for d in data],
                 'y': [get(d, y_key) for d in data],
                 'text': [d['task_id'] for d in data],
-                'opacity': 0.8,
                 'mode': 'markers',
+                'marker': {'size': 3},
                 'type': 'scattergl'
             }
         ]
 
+        x_title = "{} / {}".format(scalar_symbols[x_prop].display_names[0],
+                                   scalar_symbols[x_prop].unit_as_string)
+
+        y_title = "{} / {}".format(scalar_symbols[y_prop].display_names[0],
+                                   scalar_symbols[y_prop].unit_as_string)
+
         layout = {
-            'yaxis': {'title': scalar_symbols[y_prop].display_names[0]},
-            'xaxis': {'title': scalar_symbols[x_prop].display_names[0]}
+            'yaxis': {'title': y_title, 'showgrid': False},
+            'xaxis': {'title': x_title, 'showgrid': False},
+            'hovermode': 'closest'
         }
 
         return {'data': data, 'layout': layout}
