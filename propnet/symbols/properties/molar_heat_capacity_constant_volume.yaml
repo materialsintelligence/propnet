@@ -1,4 +1,4 @@
-name: specific_heat_capacity_constant_volume_molar
+name: molar_heat_capacity_constant_volume
 units:
 - 1.0
 - - [joule, 1.0]
