@@ -27,7 +27,7 @@ def plug_in(symbol_values):
     m_metal = float(sm.composition.reduced_composition.weight)
 
     result = m_oxide * so.density / (n * m_metal * sm.density)
-    return {'pilling_bedworth_ratio': result, 'successful': True}
+    return {'pilling_bedworth_ratio': result}
 
 
 DESCRIPTION = """

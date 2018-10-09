@@ -4,9 +4,9 @@ def plug_in(symbol_values):
     structure = symbol_values['s']
     # support other anions too?
     if 'O' not in [sp.symbol for sp in structure.types_of_specie]:
-        return None
+        raise ValueError("No oxygen in structure")
     if structure.composition.anonymized_formula != 'ABC3':
-        return None
+        raise ValueError("Wrong anonymized formula")
     radii = []
     for sp in structure.types_of_specie:
         if sp.symbol != 'O':

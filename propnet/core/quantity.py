@@ -44,7 +44,8 @@ class Quantity(MSONable):
             value (id): value of the property.
             tags (list<str>): list of strings storing metadata from
                 Quantity evaluation.
-            provenance (id): time of creation of the object.
+            provenance (ProvenanceElement): provenance associated with the
+                object (e. g. inputs, model, see ProvenanceElement)
         """
 
         if isinstance(symbol_type, str):
@@ -94,21 +95,25 @@ class Quantity(MSONable):
         """
         return self._provenance
 
-    def is_symbol_in_provenance(self, symbol):
-        """
-        Method for determining if symbol is in the provenance of quantity
-
-        Args:
-            symbol (Symbol or str): symbol type to test
-
-        Returns:
-            (bool) whether or not the symbol is in the quantity provenance
-
-        """
+    def is_cyclic(self, visited=None):
+        if visited is None:
+            visited = set()
+        if self.symbol in visited:
+            return True
+        visited.add(self.symbol)
         if self.provenance is None:
             return False
-        else:
-            return symbol in self.provenance.all_symbols
+        # add distinct model hash to distinguish properties from models,
+        # e.g. pugh ratio
+        model_hash = "model_{}".format(self.provenance.model)
+        if model_hash in visited:
+            return True
+        visited.add(model_hash)
+        for input in self.provenance.inputs:
+            this_visited = visited.copy()
+            if input.is_cyclic(this_visited):
+                return True
+        return False
 
     def __hash__(self):
         return hash(self.symbol.name)
@@ -122,6 +127,9 @@ class Quantity(MSONable):
 
     def __str__(self):
         return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)
+
+    def __repr__(self):
+        return self.__str__()
 
     def __bool__(self):
         return bool(self.value)
