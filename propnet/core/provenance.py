@@ -37,14 +37,12 @@ class ProvenanceElement(MSONable):
         Returns ({Symbol}): set of all symbols associated with the
             Provenance Element
         """
-        provenance_symbols = set()
+        psyms = set()
         for input in self.inputs:
-            if input._provenance is not None:
-                add_symbols = input._provenance.all_symbols
-            else:
-                add_symbols = set(input.symbol_type)
-            provenance_symbols = provenance_symbols | add_symbols
-        return provenance_symbols
+            if input.provenance is not None:
+                psyms = psyms | input.provenance.all_symbols
+            psyms.add(input.symbol)
+        return psyms
 
 
 class SymbolTree(object):

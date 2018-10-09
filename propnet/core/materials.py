@@ -27,11 +27,14 @@ class Material(object):
                                                            Quantity objects of that type.
 
     """
-    def __init__(self):
+    def __init__(self, quantities=None):
         """
         Creates a Material instance, instantiating a trivial graph of one node.
         """
         self._symbol_to_quantity = defaultdict(set)
+        if quantities is not None:
+            for quantity in quantities:
+                self.add_quantity(quantity)
 
     def add_quantity(self, quantity):
         """

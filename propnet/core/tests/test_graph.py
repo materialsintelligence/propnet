@@ -282,6 +282,15 @@ class GraphTest(unittest.TestCase):
                             "Evaluate failed to derive all outputs.")
             self.assertTrue(q in derived_quantities)
 
+    def test_derive_quantities(self):
+        # Simple one quantity test
+        quantity = Quantity("band_gap", 3.2)
+        graph = Graph()
+        new, qpool = graph.derive_quantities([quantity])
+        new_mat = graph.evaluate(Material([quantity]))
+        import nose; nose.tools.set_trace()
+
+
     def test_evaluate_constraints(self):
         """
         Tests the evaluation algorithm on a non-cyclic graph involving

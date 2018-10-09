@@ -187,7 +187,7 @@ class Graph(object):
             self._models[model.name] = model
             added[model.name] = model
             try:
-                for input_set in model.input_sets:
+                for input_set in model.evaluation_list:
                     for property_name in input_set:
                         if property_name not in self._symbol_types.keys():
                             raise KeyError(property_name)
@@ -516,7 +516,8 @@ class Graph(object):
     @staticmethod
     def generate_input_sets(props, this_quantity_pool):
         """
-        Generates all combinatorially-unique sets of input dicts.
+        Generates all combinatorially-unique sets of input dicts given
+        a list of property names and a quantity pool
 
         Args:
             properties ([str]): property names
@@ -532,43 +533,86 @@ class Graph(object):
                 return []
             aggregated_symbols.append(this_quantity_pool[prop])
         input_set_lists = product(*aggregated_symbols)
-        input_set_dicts = []
-        for input_set_list in input_set_lists:
-            input_set_dicts.append({
-                symbol: input_quantity for symbol, input_quantity
-                in zip(props, input_set_list)
-            })
-        return input_set_dicts
+        return [set(islist) for islist in input_set_lists]
+        # input_set_dicts = []
+        # for input_set_list in input_set_lists:
+        #     input_set_dicts.append({
+        #         symbol: input_quantity for symbol, input_quantity
+        #         in zip(props, input_set_list)
+        #     })
+        # return input_set_dicts
 
-    def generate_evaluation_lists(self, new_quantity):
-        return
+    def get_input_sets_for_model(self, model, fixed_quantity, quantity_pool):
+        evaluation_lists = [c for c in model.evaluation_list
+                            if fixed_quantity.symbol in c]
+        all_input_sets = []
+        for elist in evaluation_lists:
+            elist_without_fixed = elist.copy()
+            elist_without_fixed.remove(fixed_quantity.symbol)
+            input_sets = self.generate_input_sets(elist_without_fixed, quantity_pool)
+            for input_set in input_sets:
+                input_set.add(fixed_quantity)
+            all_input_sets.extend(input_sets)
+        return all_input_sets
+
+    def generate_models_and_input_sets(self, new_quantities, quantity_pool):
+        models_and_input_sets = []
+        for quantity in new_quantities:
+            for model in self._input_to_model[quantity.symbol]:
+                input_sets = self.get_input_sets_for_model(
+                    model, quantity, quantity_pool)
+                models_and_input_sets += [tuple([model] + list(input_set))
+                                          for input_set in input_sets]
+        # Filter for duplicates
+        return set(models_and_input_sets)
 
     @staticmethod
     def filter_cycle_quantities(quantities):
         return [quantity for quantity in quantities
-                if not quantity.]
+               if not quantity.is_symbol_in_provenance(quantity.symbol)]
 
-    def derive_all_quantities(self, new_quantities, quantity_pool):
+    def derive_quantities(self, new_quantities, quantity_pool=None):
+        """
+        Algorithm for expanding quantity pool
+
+        Args:
+            new_quantities:
+            quantity_pool:
+
+        Returns:
+
+        """
+        # Update quantity pool
+        quantity_pool = quantity_pool or defaultdict(set)
+        for quantity in new_quantities:
+            quantity_pool[quantity.symbol].add(quantity)
+
         # Generate all of the models and input sets to be evaluated
-        models, input_sets = self.generate_models_and_input_sets(
+        models_and_input_sets = self.generate_models_and_input_sets(
             new_quantities, quantity_pool)
         added_quantities = []
+
         # Evaluate model for each input set and add new valid quantities
-        for model, input_set in zip(models, input_sets):
-            result = model.evaluate(input_set)
-            if result['successful']:
+        for model_and_input_set in models_and_input_sets:
+            model = model_and_input_set[0]
+            inputs = model_and_input_set[1:]
+            input_dict = {q.symbol: q.value for q in inputs}
+            logger.info('Evaluating %s with input %s', model, input_dict)
+            result = model.evaluate(input_dict)
+            # TODO: Maybe provenance should be done in evaluate?
+            provenance = ProvenanceElement(model=model, inputs=inputs)
+            success = result.pop('successful')
+            if success:
                 # Filter any cycles in quantities
-                valid_output = self.filter_cycle_quantities(result['output'])
-                added_quantities.extend(valid_output)
+                result_quantities = [Quantity(self._symbol_types[symbol], value,
+                                              provenance=provenance)
+                                     for symbol, value in result.items()]
+                result_quantities = self.filter_cycle_quantities(result_quantities)
+                added_quantities.extend(result_quantities)
             else:
                 logger.info("Model evaluation unsuccessful %s", result['message'])
+        return added_quantities, quantity_pool
 
-        # If there are no new quantities
-        quantity_pool = quantity_pool + new_quantities
-        if added_quantities is None:
-            return quantity_pool
-        else:
-            return self.derive_all_quantities(added_quantities, quantity_pool)
 
     def evaluate(self, material):
         """
@@ -583,146 +627,22 @@ class Graph(object):
         Returns:
             (Material) reference to the newly derived material object.
         """
-
-        # Determine which Quantity objects are up for evaluation.
-        # Generate the necessary initial data-structures.
-
         logger.debug("Beginning evaluation")
 
-        quantity_pool = defaultdict(set)  # Dict<Symbol, set<Quantity>>, available Quantity objects.
-        plug_in_dict = defaultdict(set)  # Dict<Quantity, set<Model>>, where the Quantities have been plugged in.
-        output_dict = defaultdict(set)  # Dict<Quantity, set<Model>>, where the Quantities have been generated.
-        candidate_models = set()  # set<Model>, which could generate additional outputs.
-
-        logger.debug("Refining input set, setting up candidate_models.")
-
-        for quantity in material.get_quantities():
-            quantity_pool[quantity.symbol].add(quantity)
-
-        for symbol in quantity_pool.keys():
-            for m in self._input_to_model[symbol]:
-                candidate_models.add(m)
-
-        logger.debug("Finished refining input set.")
-        logger.debug("Quantity pool contains %s", quantity_pool)
-        logger.debug("Beginning main loop.")
+        # Generate initial quantity set and pool
+        new_quantities = material.get_quantities()
+        quantity_pool = None
 
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
-        new_models = set()
-        continue_loop = True
+        logger.debug("Beginning main loop with quantities %s", new_quantities)
+        while new_quantities:
+            new_quantities, quantity_pool = self.derive_quantities(
+                new_quantities, quantity_pool)
 
-        input_sets = self.generate_input_sets(candidate_models, quantity_pool)
-        for model, input_set in input_sets:
-
-        while continue_loop:
-            continue_loop = False
-
-            # Clean up after last loop.
-
-            for model in new_models:
-                candidate_models.add(model)
-            new_models = set()
-
-            logger.debug("Checking if model inputs are supplied.")
-
-            for model in candidate_models:
-
-                logger.debug("Checking model %s", model.title)
-                # logger.debug("Quantity pool contains %s quantities:",
-                #     len(list(chain.from_iterable(quantity_pool.values()))))
-
-                for property_input_sets in model.evaluation_list:
-
-                    logger.debug("\tGenerating input sets for: %s",
-                                 property_input_sets)
-
-                    input_sets = self.generate_input_sets(
-                        property_input_sets, quantity_pool)
-
-                    for input_set in input_sets:
-
-                        logger.debug("\t\tEvaluating input set: %s", input_set)
-
-                        override = False
-                        can_evaluate = False
-
-                        # Check if input_set can be evaluated --
-                        #       input_set has never been seen before by the model
-                        #       input_set contains no values that were previously derived from the model
-                        #       input_set must pass the necessary model constraints
-
-                        for q in input_set.values():
-                            if model in output_dict[q]:
-                                override = True
-                                break
-                        if override:
-                            logger.debug("\t\t\tInput set failed -- input previously derived from the model.")
-                            continue
-                        for q in input_set.values():
-                            if model not in plug_in_dict[q]:
-                                can_evaluate = True
-                                break
-                        if not can_evaluate:
-                            logger.debug("\t\t\tInput set failed -- input set previously plugged in to the model.")
-                            continue
-                        if not model.check_constraints(input_set):
-                            logger.debug("\t\t\tInput set failed -- did not pass model constraints.")
-                            continue
-
-                        # Try to evaluate input_set:
-
-                        evaluate_set = {symbol: quantity.value
-                                        for symbol, quantity in input_set.items()}
-                        output = model.evaluate(evaluate_set)
-                        success = output.pop('successful')
-                        if not success:
-                            logger.debug("Model %s unsuccessful: %s",
-                                         model.name, output['message'])
-                            continue
-
-                        # input_set led to output from the Model -- gather output
-                        #                       -- add output to the graph
-                        #                       -- add additional candidate models
-
-                        logger.debug("\t\t\tInput set produced successful output.")
-                        continue_loop = True
-                        for symbol, quantity in output.items():
-                            st = self._symbol_types.get(symbol)
-                            if not st:
-                                raise ValueError(
-                                    "Symbol type {} not found".format(symbol))
-                            for m in self._input_to_model[st]:
-                                new_models.add(m)
-                            q = Quantity(st, quantity)
-
-                            # Set the provenance of the derived quantity
-                            q_prov = ProvenanceElement(model=model)
-                            q_child = list()
-                            for item in input_set.items():
-                                q_child.append(item[1])
-                            q_prov.inputs = q_child
-                            q._provenance = q_prov
-
-                            quantity_pool[st].add(q)
-                            output_dict[q].add(model)
-                            logger.debug("\t\t\tNew output: " + str(q))
-
-                            # Derive the chain of all models that were required
-                            # to get to the new quantity
-
-                            for input_quantity in input_set.values():
-                                for link in output_dict[input_quantity]:
-                                    output_dict[q].add(link)
-
-                    # Store all input sets to avoid duplicate evaluation in the future.
-                    for input_set in input_sets:
-                        for quantity in input_set.values():
-                            plug_in_dict[quantity].add(model)
-
-        toReturn = Material()
-        toReturn._symbol_to_quantity = quantity_pool
-        return toReturn
+        new_material = Material()
+        new_material._symbol_to_quantity = quantity_pool
+        return new_material
 
     def super_evaluate(self, material, property_type=None):
         """

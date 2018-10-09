@@ -169,14 +169,11 @@ class Model(ABC):
                 symbol_value_dict[symbol] = value.magnitude
                 old_units[symbol] = value.units
 
-        # Check input constraints, plug in, and check output constraints
-        if not self.check_constraints(symbol_value_dict):
-            return {"successful": False,
-                    "message": "Input constraints not satisfied"}
+        # Plug in and check constraints
         out = self.plug_in(symbol_value_dict)
-        if not self.check_constraints(out):
+        if not self.check_constraints({**symbol_value_dict, **out}):
             return {"successful": False,
-                    "message": "Output constraints not satisfied"}
+                    "message": "Constraints not satisfied"}
 
         out = self.map_symbols_to_properties(out)
         for key in out:
@@ -246,7 +243,7 @@ class Model(ABC):
         Returns:
             list of sets of inputs with constraint properties included
         """
-        return [inputs | self.constraint_properties - outputs
+        return [list(inputs | self.constraint_properties - outputs)
                 for inputs, outputs in zip(self.input_sets, self.output_sets)]
 
     def test(self, inputs, outputs):
@@ -754,6 +751,8 @@ def will_it_float(input_to_test):
     """
     Helper function to determine if input string can be cast to float
 
+    "If she weights the same as a duck... she's made of wood"
+
     Args:
         input_to_test (str): input string to be tested
     """
@@ -783,6 +782,12 @@ def remap(dict_or_list, mapping):
         for in_key, out_key in mapping.items():
             if in_key in output:
                 output[out_key] = output.pop(in_key)
+    elif isinstance(output, set):
+        for in_item in output:
+            out_item = mapping.get(in_item)
+            if out_item:
+                output.remove(in_item)
+                output.add(out_item)
     else:
         for idx, in_item in enumerate(output):
             out_item = mapping.get(in_item)

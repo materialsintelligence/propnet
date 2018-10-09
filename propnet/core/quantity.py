@@ -44,7 +44,8 @@ class Quantity(MSONable):
             value (id): value of the property.
             tags (list<str>): list of strings storing metadata from
                 Quantity evaluation.
-            provenance (id): time of creation of the object.
+            provenance (ProvenanceElement): provenance associated with the
+                object (e. g. inputs, model, see ProvenanceElement)
         """
 
         if isinstance(symbol_type, str):
@@ -122,6 +123,9 @@ class Quantity(MSONable):
 
     def __str__(self):
         return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)
+
+    def __repr__(self):
+        return self.__str__()
 
     def __bool__(self):
         return bool(self.value)
