@@ -40,4 +40,4 @@ class MPResterTest(unittest.TestCase):
     def test_apply_material_to_graph(self):
         g = Graph()
         new_mat = g.evaluate(self.mat)
-        self.assertEqual(len(new_mat.get_quantities()), 12)
+        self.assertEqual(len(new_mat.get_quantities()), 263)
