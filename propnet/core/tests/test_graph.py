@@ -236,12 +236,6 @@ class GraphTest(unittest.TestCase):
             Quantity(symbols['D'], 23826),
             Quantity(symbols['D'], 28842),
             Quantity(symbols['D'], 34914),
-            # Derives -3 (M6, M3, M4, M1)
-            # Quantity(symbols['A'], 107741172),
-            # Quantity(symbols['A'], 130423524),
-            # Quantity(symbols['A'], 157881108),
-            # Quantity(symbols['A'], 191119236),
-            # Derivable outputs include Derives -4 and Derives -5
 
             # Derives -1 (M2)
             Quantity(symbols['G'], 95),
@@ -250,25 +244,6 @@ class GraphTest(unittest.TestCase):
             Quantity(symbols['D'], 70395),
             Quantity(symbols['D'], 85215),
             Quantity(symbols['D'], 103155),
-            # Derives -3 (M6, M5, M1, M2)
-            # Quantity(symbols['A'], 318326190),
-            # Quantity(symbols['A'], 385342230),
-            # Quantity(symbols['A'], 466466910),
-            # Quantity(symbols['A'], 564670470),
-            # Any derivable outputs are then snubbed.
-
-            # Derives -4 (M2, M6, M3, M4, M1)
-            # Quantity(symbols['G'], 538705860),
-            # Quantity(symbols['G'], 652117620),
-            # Quantity(symbols['G'], 789405540),
-            # Quantity(symbols['G'], 955596180),
-            # Derives -5 (M5, M2, M6, M3, M4, M1)
-            # (57 & 69)
-            # Quantity(symbols['D'], 399181042260),
-            # Quantity(symbols['D'], 483219156420),
-            # Quantity(symbols['D'], 584949505140),
-            # Quantity(symbols['D'], 708096769380),
-            # Quantity(symbols['D'], 857169773460)
         ]
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
@@ -364,10 +339,6 @@ class GraphTest(unittest.TestCase):
             Quantity(symbols['D'], 70395),
             Quantity(symbols['D'], 85215),
             Quantity(symbols['D'], 103155),
-            # Quantity(symbols['A'], 318326190),
-            # Quantity(symbols['A'], 385342230),
-            # Quantity(symbols['A'], 466466910),
-            # Quantity(symbols['A'], 564670470)
         ]
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
