@@ -1,7 +1,6 @@
 import dash_core_components as dcc
 import dash_html_components as html
 
-from maggma.stores import MongoStore
 from os import environ
 from monty.serialization import loadfn
 
