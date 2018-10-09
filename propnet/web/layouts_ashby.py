@@ -22,7 +22,6 @@ scalar_symbols = {k: v for k, v in DEFAULT_SYMBOLS.items()
 def _ensure_indices():
     for property_name in scalar_symbols.keys():
         store.ensure_index(property_name)
-#_ensure_indices()
 
 def ashby_layout(app):
 
