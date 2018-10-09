@@ -64,7 +64,9 @@ def ashby_layout(app):
                 'x': [get(d, x_key) for d in data],
                 'y': [get(d, y_key) for d in data],
                 'text': [d['task_id'] for d in data],
-                'mode': 'markers'
+                'opacity': 0.8,
+                'mode': 'markers',
+                'type': 'scattergl'
             }
         ]
 
