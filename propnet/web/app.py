@@ -8,8 +8,9 @@ from dash.dependencies import Input, Output, State
 from propnet import log_stream
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_symbols import symbol_layout, symbols_index
+from propnet.web.layouts_ashby import ashby_layout
 
-from dash_react_graph_vis import GraphComponent
+from mp_dash_components import GraphComponent
 from propnet.web.utils import graph_conversion, parse_path, AESTHETICS
 from propnet.core.graph import Graph
 
@@ -45,12 +46,12 @@ def get_graph_component(props):
     aesthetics = AESTHETICS.copy()
     show_properties = 'show_properties' in props
     show_models = 'show_models' in props
-    print(props)
-    print("Updating graph to {}, {}".format(show_properties, show_models))
+    #print(props)
+    #print("Updating graph to {}, {}".format(show_properties, show_models))
     set_(aesthetics, "node_aesthetics.Symbol.show_labels", show_properties)
     set_(aesthetics, "node_aesthetics.Model.show_labels", show_models)
     graph_data = graph_conversion(g, aesthetics=aesthetics)
-    print(graph_data)
+    #print(graph_data)
     from uuid import uuid4
     graph_component = html.Div(
         id=str(uuid4()),
@@ -89,6 +90,8 @@ layout_menu = html.Div(
               dcc.Link('All Models', href='/model'),
               html.Span(' • '),
               dcc.Link('Explore with Materials Project', href='/load_material'),
+              html.Span(' • '),
+              dcc.Link('Ashby Plots', href='/ashby'),
               ])
 
 # home page
@@ -253,7 +256,7 @@ material_layout = html.Div([
             {'label': 'Derive properties', 'value': 'derive'},
             {'label': 'Aggregate', 'value': 'aggregate'}
         ],
-        values=['aggregate'],
+        values=['derive', 'aggregate'],
         labelStyle={'display': 'inline-block'}
     ),
     html.Br(),
@@ -261,6 +264,8 @@ material_layout = html.Div([
     html.Div(id='material-content')
 ])
 
+
+ASHBY_LAYOUT = ashby_layout(app)
 
 # routing, current routes defined are:
 # / for home page
@@ -298,6 +303,8 @@ def display_page(pathname):
             return material_layout
         elif path_info['mode'] == 'graph':
             return graph_layout
+        elif path_info['mode'] == 'ashby':
+            return ASHBY_LAYOUT
         else:
             return '404'
     else:

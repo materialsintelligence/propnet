@@ -141,16 +141,6 @@ def references_to_markdown(references):
 
     # hack to not print labels (may remove this later)
     def write_entry(self, key, label, text):
-        """
-
-        Args:
-          key:
-          label:
-          text:
-
-        Returns:
-
-        """
         self.output(u'%s  \n' % text)
     pybtex_md_backend.write_entry = write_entry
     pybtex_md_backend = pybtex_md_backend()
@@ -165,17 +155,6 @@ def references_to_markdown(references):
     references_md.replace('\n', '\n> ')
 
     return references_md
-
-def uri_to_breadcrumb_layout(uri):
-    """
-
-    Args:
-      uri: return:
-
-    Returns:
-
-    """
-    return
 
 
 def parse_path(pathname):
@@ -220,6 +199,8 @@ def parse_path(pathname):
         value = pathname.split('/')[-1]
     elif pathname.startswith('/graph'):
         mode = 'graph'
+    elif pathname.startswith('/ashby'):
+        mode = 'ashby'
 
     return {
         'mode': mode,
