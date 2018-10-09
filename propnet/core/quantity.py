@@ -115,22 +115,6 @@ class Quantity(MSONable):
                 return True
         return False
 
-    def is_symbol_in_provenance(self, symbol):
-        """
-        Method for determining if symbol is in the provenance of quantity
-
-        Args:
-            symbol (Symbol or str): symbol type to test
-
-        Returns:
-            (bool) whether or not the symbol is in the quantity provenance
-
-        """
-        if self.provenance is None:
-            return False
-        else:
-            return symbol in self.provenance.all_symbols
-
     def __hash__(self):
         return hash(self.symbol.name)
 
@@ -164,15 +148,6 @@ class Quantity(MSONable):
                 "units": units.format_babel() if units else None,
                 "@module": "propnet.core.quantity",
                 "@class": "Quantity"}
-
-
-def check_duplicates(input_list):
-    seen = set()
-    for elt in input_list:
-        if elt in seen:
-            return True
-        seen.add(elt)
-    return False
 
 
 def weighted_mean(quantities):
