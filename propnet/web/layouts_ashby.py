@@ -86,6 +86,8 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
 
         x_key = '{}.mean'.format(x_prop)
         y_key = '{}.mean'.format(y_prop)
+        x_std_dev = '{}.std_dev'.format(x_prop)
+        y_std_dev = '{}.std_dev'.format(y_prop)
 
         data = store.query(criteria={
             x_key: {"$exists": True},
@@ -97,6 +99,8 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
             {
                 'x': [get(d, x_key) for d in data],
                 'y': [get(d, y_key) for d in data],
+                #'error_x': {'type': 'data', 'array': [get(d, x_std_dev, 0) for d in data], 'visible': True},
+                #'error_y': {'type': 'data', 'array': [get(d, y_std_dev, 0) for d in data], 'visible': True},
                 'text': [d['task_id'] for d in data],
                 'mode': 'markers',
                 'marker': {'size': 3},
