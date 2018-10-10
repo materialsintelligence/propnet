@@ -13,6 +13,8 @@ from uncertainties import unumpy
 from propnet.core.exceptions import SymbolConstraintError
 
 
+#TODO: Generally the propnet Quantity/pint Quantity distinction is not
+#      very facile, I think this can be streamlined a bit
 class Quantity(MSONable):
     """
     Class storing the value of a property.
@@ -60,8 +62,8 @@ class Quantity(MSONable):
         elif type(value) == ureg.Quantity:
             value = value.to(symbol_type.units)
 
-        if symbol_type.constraint:
-            if not symbol_type.constraint.subs({symbol_type.name: value}):
+        if symbol_type.constraint is not None:
+            if not symbol_type.constraint.subs({symbol_type.name: value.magnitude}):
                 raise SymbolConstraintError(
                     "Quantity with {} value does not satisfy {}".format(
                         value, symbol_type.constraint))

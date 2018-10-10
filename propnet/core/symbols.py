@@ -70,9 +70,8 @@ class Symbol(MSONable):
             raise ValueError(
                 "The canonical name ({}) is not valid.".format(name))
 
-        if display_names is None or len(display_names) == 0:
-            raise ValueError(
-                "Insufficient display names for ({}).".format(name))
+        if not display_names:
+            display_names = [name]
 
         if category in ('property', 'condition'):
 
@@ -109,7 +108,7 @@ class Symbol(MSONable):
         # Note that symbol constraints are not constraint objects
         # at the moment because using them would result in a circular
         # dependence, this might be resolved with some reorganization
-        self.constraint = parse_expr(constraint)
+        self.constraint = parse_expr(constraint) if constraint else None
 
     @property
     def dimension_as_string(self):
