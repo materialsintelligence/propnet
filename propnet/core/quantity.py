@@ -1,5 +1,5 @@
-# TODO: remove typing
-from typing import *
+# TODO: remove typing?
+from typing import Union, Any, Optional, List
 
 import numpy as np
 from monty.json import MSONable
@@ -9,6 +9,8 @@ from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_SYMBOLS
 from uncertainties import unumpy
+
+from propnet.core.exceptions import SymbolConstraintError
 
 
 class Quantity(MSONable):
@@ -57,6 +59,12 @@ class Quantity(MSONable):
             value = ureg.Quantity(value, symbol_type.units)
         elif type(value) == ureg.Quantity:
             value = value.to(symbol_type.units)
+
+        if symbol_type.constraint:
+            if not symbol_type.constraint.subs({symbol_type.name: value}):
+                raise SymbolConstraintError(
+                    "Quantity with {} value does not satisfy {}".format(
+                        value, symbol_type.constraint))
 
         self._symbol_type = symbol_type
         self._value = value
