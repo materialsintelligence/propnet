@@ -1,5 +1,5 @@
-# TODO: remove typing
-from typing import *
+# TODO: remove typing?
+from typing import Union, Any, Optional, List
 
 import numpy as np
 from monty.json import MSONable
@@ -10,7 +10,11 @@ from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_SYMBOLS
 from uncertainties import unumpy
 
+from propnet.core.exceptions import SymbolConstraintError
 
+
+#TODO: Generally the propnet Quantity/pint Quantity distinction is not
+#      very facile, I think this can be streamlined a bit
 class Quantity(MSONable):
     """
     Class storing the value of a property.
@@ -57,6 +61,12 @@ class Quantity(MSONable):
             value = ureg.Quantity(value, symbol_type.units)
         elif type(value) == ureg.Quantity:
             value = value.to(symbol_type.units)
+
+        if symbol_type.constraint is not None:
+            if not symbol_type.constraint.subs({symbol_type.name: value.magnitude}):
+                raise SymbolConstraintError(
+                    "Quantity with {} value does not satisfy {}".format(
+                        value, symbol_type.constraint))
 
         self._symbol_type = symbol_type
         self._value = value
@@ -149,57 +159,51 @@ class Quantity(MSONable):
                 "@module": "propnet.core.quantity",
                 "@class": "Quantity"}
 
+    @classmethod
+    def from_weighted_mean(cls, quantities):
+        """
+        Function to invoke weighted mean quantity from other
+        quantities
 
-def weighted_mean(quantities):
-    """
-    Function to retrieve weighted mean
+        Args:
+            quantities ([Quantity]): list of quantities
 
-    Args:
-        quantities ([Quantity]): list of quantities
+        Returns:
+            weighted mean
+        """
+        input_symbol = quantities[0].symbol
+        if input_symbol.category == 'object':
+            # TODO: can't average 'objects', highlights a weakness in
+            # Quantity class that might be fixed by changing class design
+            raise ValueError("Weighted mean cannot be applied to objects")
 
-    Returns:
-        weighted mean
-    """
-    # can't run this twice yet ...
-    # TODO: remove
-    if hasattr(quantities[0].value, "std_dev"):
-        return quantities
+        if not all(input_symbol == q.symbol for q in quantities):
+            raise ValueError("Can only calculate a weighted mean if "
+                             "all quantities refer to the same symbol.")
 
-    input_symbol = quantities[0].symbol
-    if input_symbol.category == 'object':
-        # TODO: can't average 'objects', highlights a weakness in Quantity class
-        # would be fixed by changing this class design ...
-        return quantities
+        # TODO: an actual weighted mean; just a simple mean at present
+        # TODO: support propagation of uncertainties (this will only work
+        # once at present)
 
-    if not all(input_symbol == q.symbol for q in quantities):
-        raise ValueError("Can only calculate a weighted mean if all quantities "
-                         "refer to the same symbol.")
+        # TODO: test this with units, not magnitudes ... remember units
+        # may not be canonical units(?)
+        if isinstance(quantities[0].value, list):
+            # hack to get arrays working for now
+            vals = [q.value for q in quantities]
+        else:
+            vals = [q.value.magnitude for q in quantities]
 
-    # TODO: an actual weighted mean; just a simple mean at present
-    # TODO: support propagation of uncertainties (this will only work once at present)
+        new_magnitude = np.mean(vals, axis=0)
+        std_dev = np.std(vals, axis=0)
+        new_value = unumpy.uarray(new_magnitude, std_dev)
 
-    # TODO: test this with units, not magnitudes ... remember units may not be canonical units(?)
-    if isinstance(quantities[0].value, list):
-        # hack to get arrays working for now
-        vals = [q.value for q in quantities]
-    else:
-        vals = [q.value.magnitude for q in quantities]
+        new_tags = set()
+        new_provenance = ProvenanceElement(model='aggregation', inputs=[])
+        for quantity in quantities:
+            if quantity.tags:
+                for tag in quantity.tags:
+                    new_tags.add(tag)
+            new_provenance.inputs.append(quantity)
 
-    new_magnitude = np.mean(vals, axis=0)
-    std_dev = np.std(vals, axis=0)
-    new_value = unumpy.uarray(new_magnitude, std_dev)
-
-    new_tags = set()
-    new_provenance = ProvenanceElement(model='aggregation', inputs=[])
-    for quantity in quantities:
-        if quantity.tags:
-            for tag in quantity.tags:
-                new_tags.add(tag)
-        new_provenance.inputs.append(quantity)
-
-    new_quantity = Quantity(symbol_type=input_symbol,
-                            value=new_value,
-                            tags=list(new_tags),
-                            provenance=new_provenance)
-
-    return new_quantity
+        return cls(symbol_type=input_symbol, value=new_value,
+                   tags=list(new_tags), provenance=new_provenance)

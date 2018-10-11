@@ -11,3 +11,8 @@ class ModelEvaluationError(RuntimeError):
 class IncompleteData(Warning):
     """When necessary data is missing for a given model or symbol."""
     pass
+
+
+class SymbolConstraintError(RuntimeError):
+    """Invalid quantity value with respect to symbol constraints"""
+    pass

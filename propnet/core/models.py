@@ -453,9 +453,10 @@ class EquationModel(Model, MSONable):
         # Determine outputs from solutions to substituted equations
         for possible_output in possible_outputs:
             solutions = sp.nonlinsolve(eqns, possible_output)
-            # taking first solution only, and only asking for one output symbol
+            # Taking max solution only, and only asking for one output symbol
             # so know length of output tuple for solutions will be 1
-            solution = list(solutions)[0][0]
+            svals = [s[0] for s in solutions]
+            solution = max([s for s in svals if not s.coeff('I')])
             if not isinstance(solution, sp.EmptySet):
                 outputs[str(possible_output)] = float(sp.N(solution))
         return outputs
