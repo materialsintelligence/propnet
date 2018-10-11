@@ -1,22 +1,27 @@
+# TODO: maybe a bridge between atomic density, density, and average mass?
+# Right now we're using those implicitly to calculate average atomic mass
 categories: [thermal, mechanical]
 connections:
-- inputs: [t_d, y, d, m, n, T]
+- inputs: [t_d, y, mbar, n, T, d]
   outputs: [k]
 description: |
-  An expression for the Gruneisen constants of solids is obtained
-  involving only the velocities of propagation of the elastic waves.
-  The new relation is applied for determining the Grüneisen constants
-  of metals, ionic crystals, and ionic-molecular crystals.
+  An expression for the thermal conductivity of a solid from density, debye
+  temperature parameters, young's modulus
 equations:
-  - k - (3.1*10**-6) * ((rho * volume_unit_cell) / n) * t_d**3 * (1/p) / (y**2 * n**(2/3) * T)
+  - k - (2.43*10**-8/ (1 - 0.514 / y + 0.228 / y**2)) * mbar * t_d**3 * d / (y**2 * n**(2/3) * T)
 name: slack_equation
-references: ["url:https://link.springer.com/article/10.1134/1.1666949"]
+references:
+  - doi:10.1007/0-387-25100-6_2
+  - doi:10.1002/adfm.201600718
+  - url:https://link.springer.com/article/10.1134/1.1666949
 constraints: null
 symbol_property_map:
     y: gruneisen_parameter
     n: nsites
     T: temperature
     t_d: debye_temperature
-    p: atomic_density
-    rho: density
-    v: volume_unit_cell
+    mbar: mass_per_atom
+    d: interatomic_spacing
+unit_map:
+    d: angstrom
+    mbar: amu / atom
