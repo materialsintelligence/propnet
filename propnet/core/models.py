@@ -18,8 +18,9 @@ from sympy.parsing.sympy_parser import parse_expr
 
 from propnet import ureg
 from propnet.core.exceptions import ModelEvaluationError
-from propnet.symbols import DEFAULT_UNITS
+from propnet.core.quantity import Quantity
 from propnet.core.utils import references_to_bib
+from propnet.symbols import DEFAULT_UNITS
 
 logger = logging.getLogger(__name__)
 
@@ -72,11 +73,10 @@ class Model(ABC):
         self.symbol_property_map.update(symbol_property_map or {})
 
         # Use hard-coded units for properties unless otherwise specified
-        if unit_map:
-            self.unit_map = unit_map
-        else:
-            self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
-                             for prop_name in self.all_properties}
+        self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
+                         for prop_name in self.all_properties}
+        if unit_map is not None:
+            self.unit_map.update(self.map_symbols_to_properties(unit_map))
 
         # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
@@ -132,7 +132,7 @@ class Model(ABC):
         """
         return remap(symbols, self.symbol_property_map)
 
-    def evaluate(self, property_value_dict, allow_failure=True):
+    def evaluate(self, symbol_quantity_dict, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
         if the corresponding input symbol_values represents a valid
@@ -146,8 +146,8 @@ class Model(ABC):
         evaluate also handles any requisite unit_mapping
 
         Args:
-            property_value_dict ({property_name: value}): a mapping of
-                property names to values to be substituted
+            symbol_quantity_dict ({property_name: Quantity}): a mapping of
+                symbol names to quantities to be substituted
             allow_failure (bool): whether or not to catch
                 errors in model evaluation
 
@@ -157,19 +157,17 @@ class Model(ABC):
             substitution succeeds
         """
         # Remap symbols and units if symbol map isn't none
-        symbol_value_dict = self.map_properties_to_symbols(
-            property_value_dict)
+        symbol_quantity_dict = self.map_properties_to_symbols(
+            symbol_quantity_dict)
 
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
         # strip units from input and keep for reassignment
-        old_units = {}
-        for symbol, value in symbol_value_dict.items():
-            if isinstance(value, ureg.Quantity):
-                if self.unit_map.get(symbol):
-                    value = value.to(self.unit_map[symbol])
-                symbol_value_dict[symbol] = value.magnitude
-                old_units[symbol] = value.units
+        symbol_value_dict = {}
+        for symbol, quantity in symbol_quantity_dict.items():
+            if self.unit_map.get(symbol):
+                quantity = quantity.to(self.unit_map[symbol])
+            symbol_value_dict[symbol] = quantity.value
 
         # Plug in and check constraints
         try:
@@ -185,8 +183,10 @@ class Model(ABC):
                     "message": "Constraints not satisfied"}
 
         out = self.map_symbols_to_properties(out)
-        for key in out:
-            out[key] = ureg.Quantity(out[key], self.unit_map.get(key))
+        out = {symbol: Quantity(symbol, value, self.unit_map[symbol])
+               for symbol, value in out.items()}
+        # for key in out:
+        #     out[key] = Quantity(key, out[key], self.unit_map.get(key))
         out['successful'] = True
         return out
 
@@ -266,19 +266,35 @@ class Model(ABC):
 
         Returns (bool): True if test succeeds
         """
-        model_outputs = self.plug_in(inputs)
+        # Get plug_in_outputs
+        plug_in_outputs = self.plug_in(inputs)
+        # Get evaluate inputs/outputs and remap for comparison
+        evaluate_inputs = self.map_symbols_to_properties(inputs)
+        evaluate_inputs = {s: Quantity(s, v, self.unit_map[s])
+                           for s, v in evaluate_inputs.items()}
+        evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
+        evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
         errmsg = "Model does not match known output for {}".format(
             self.name)
         for k, known_output in outputs.items():
-            model_output = model_outputs[k]
+            plug_in_output = plug_in_outputs[k]
             # TODO: address as part of unit refactor
-            if hasattr(model_output, 'magnitude'):
-                model_output = model_output.magnitude
             if isinstance(known_output, (float, list)):
-                if not np.allclose(model_output, known_output):
+                if not np.allclose(plug_in_output, known_output):
                     raise ModelEvaluationError(errmsg)
-            elif model_output != known_output:
+            elif plug_in_output != known_output:
+                errmsg = "{} model test failed on plug-in\n".format(self.name)
+                errmsg += "{}(test data) = {}\n".format(k, known_output)
+                errmsg += "{}(model output) = {}".format(k, plug_in_output)
                 raise ModelEvaluationError(errmsg)
+            symbol = self.symbol_property_map[k]
+            units = self.unit_map[symbol]
+            known_quantity = Quantity(symbol, known_output, units)
+            if known_quantity != evaluate_outputs[k]:
+                errmsg = "{} model test failed on evaluate\n".format(self.name)
+                errmsg += "{}(test data) = {}\n".format(k, known_quantity)
+                errmsg += "{}(model output) = {}".format(k, evaluate_outputs[k])
+
         return True
 
     def validate_from_preset_test(self):
