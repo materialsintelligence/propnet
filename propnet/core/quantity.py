@@ -27,51 +27,64 @@ class Quantity(MSONable):
 
     Attributes:
         symbol_type: (Symbol) the type of information that is represented
-            by the associated value.
+            by the associated value.  If a string, assigns a symbol from
+            the default symbols that has that string name
         value: (id) the value associated with this symbol.
         tags: (list<str>) tags associated with the material, e.g.
             perovskites or ferroelectrics
+        _pint_quantity: If the symbol is associated with a unitized
+            numeric (e. g. float/int), the _pint_quantity attribute
+            is used to manage those unit conversions
     """
 
-    def __init__(self,
-                 symbol_type: Union[str, Symbol],
-                 value: Any,
-                 tags: Optional[List[str]]=None,
+    def __init__(self, symbol_type, value, units=None, tags=None,
                  provenance=None):
         """
         Parses inputs for constructing a Property object.
 
         Args:
-            symbol_type (Symbol): pointer to an existing PropertyMetadata
-                object or String giving the name of a SymbolType object,
-                identifies the type of data stored in the property.
+            symbol_type (Symbol): pointer to an existing Symbol
+                object in default_symbols or string giving the name
+                of a SymbolType object identifies the type of data
+                stored in the property.
             value (id): value of the property.
+            units: (None): units associated with the quantity's value
             tags (list<str>): list of strings storing metadata from
                 Quantity evaluation.
             provenance (ProvenanceElement): provenance associated with the
                 object (e. g. inputs, model, see ProvenanceElement)
         """
 
+        # Invoke default symbol if symbol is a string
         if isinstance(symbol_type, str):
             if symbol_type not in DEFAULT_SYMBOLS.keys():
                 raise ValueError("Quantity type {} not recognized".format(symbol_type))
             symbol_type = DEFAULT_SYMBOLS[symbol_type]
 
-        if type(value) == float or type(value) == int:
-            value = ureg.Quantity(value, symbol_type.units)
-        elif type(value) == ureg.Quantity:
-            value = value.to(symbol_type.units)
+        # Set default units if not supplied
+        units = units or symbol_type.units
+
+        # Invoke pint quantity if supplied or input is float/int
+        if isinstance(value, (float, int)):
+            self._contents = ureg.Quantity(value, units)
+        elif isinstance(value, ureg.Quantity):
+            self._contents = value.to(units)
+        else:
+            self._contents = value
 
         if symbol_type.constraint is not None:
-            if not symbol_type.constraint.subs({symbol_type.name: value.magnitude}):
+            if not symbol_type.constraint.subs({symbol_type.name: self.value}):
                 raise SymbolConstraintError(
                     "Quantity with {} value does not satisfy {}".format(
                         value, symbol_type.constraint))
 
         self._symbol_type = symbol_type
-        self._value = value
         self._tags = tags
         self._provenance = provenance
+
+    @property
+    def is_pint(self):
+        return isinstance(self._contents, ureg.Quantity)
 
     @property
     def value(self):
@@ -79,7 +92,10 @@ class Quantity(MSONable):
         Returns:
             (id): value of the Quantity
         """
-        return self._value
+        if self.is_pint:
+            return self._contents.magnitude
+        else:
+            return self._contents
 
     @property
     def symbol(self):

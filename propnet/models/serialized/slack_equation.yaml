@@ -22,6 +22,7 @@ symbol_property_map:
     t_d: debye_temperature
     mbar: mass_per_atom
     d: interatomic_spacing
+    k: thermal_expansion_coefficient
 unit_map:
     d: angstrom
     mbar: amu / atom
