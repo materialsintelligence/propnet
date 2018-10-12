@@ -3,7 +3,6 @@ Module containing classes and methods for provenance generation and parsing
 """
 
 from monty.json import MSONable
-from propnet.core.models import Model
 
 
 class ProvenanceElement(MSONable):
@@ -22,7 +21,7 @@ class ProvenanceElement(MSONable):
                 to generate the quantity object this ProvenanceElement
                 is attached to.
         """
-        self.model = model.name if isinstance(model, Model) else model
+        self.model = getattr(model, 'name', model)
         self.inputs = inputs
 
     def __str__(self):
