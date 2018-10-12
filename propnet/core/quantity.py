@@ -106,6 +106,19 @@ class Quantity(MSONable):
         return self._provenance
 
     def is_cyclic(self, visited=None):
+        """
+        Algorithm for determining if there are any cycles in
+        the provenance tree, i. e. a repeated quantity in a
+        tree branch
+
+        Args:
+            visited (list of visited model/symbols in the built tree
+                that allows for recursion
+
+        Returns:
+            (bool) whether or not there is a cycle in the quantity
+                provenance, i. e. repeated value in a tree branch
+        """
         if visited is None:
             visited = set()
         if self.symbol in visited:
