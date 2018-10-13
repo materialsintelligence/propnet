@@ -7,7 +7,7 @@ from monty.json import MSONable
 from ruamel.yaml import safe_dump
 
 from propnet import logger, ureg
-
+from sympy.parsing.sympy_parser import parse_expr
 
 # TODO: This could be split into separate classes
 #       or a base class + subclasses for symbols with
@@ -29,7 +29,7 @@ class Symbol(MSONable):
 
     def __init__(self, name, display_names=None, display_symbols=None,
                  units=None, shape=None, object_type=None, comment=None,
-                 category='property'):
+                 category='property', constraint=None):
         """
         Parses and validates a series of inputs into a PropertyMetadata
         tuple, a format that PropNet expects.
@@ -54,7 +54,11 @@ class Symbol(MSONable):
             category (str): 'property', for property of a material,
                             'condition', for other variables,
                             'object', for a value that is a python object.
-            object_type (class): class representing the object stored in these symbols.
+            object_type (class): class representing the object stored in
+                these symbols.
+            constraint (str): constraint associated with the symbol, must
+                be a string expression (e. g. inequality) using the symbol
+                name, e. g. bulk_modulus > 0.
         """
 
         # TODO: not sure object should be distinguished
@@ -66,9 +70,8 @@ class Symbol(MSONable):
             raise ValueError(
                 "The canonical name ({}) is not valid.".format(name))
 
-        if display_names is None or len(display_names) == 0:
-            raise ValueError(
-                "Insufficient display names for ({}).".format(name))
+        if not display_names:
+            display_names = [name]
 
         if category in ('property', 'condition'):
 
@@ -101,6 +104,11 @@ class Symbol(MSONable):
         self.display_symbols = display_symbols
         self.shape = shape
         self.comment = comment
+
+        # Note that symbol constraints are not constraint objects
+        # at the moment because using them would result in a circular
+        # dependence, this might be resolved with some reorganization
+        self.constraint = parse_expr(constraint) if constraint else None
 
     @property
     def dimension_as_string(self):

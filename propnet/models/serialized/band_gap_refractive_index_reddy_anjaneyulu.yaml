@@ -3,6 +3,7 @@ connections:
 - inputs: [n]
   outputs: [Eg]
 # Note that this model can't work in reverse right now
+# TODO: fix this
 description: |
   An empirical model relating index of refraction to band gap
   proposed by Reddy and Ahammed.

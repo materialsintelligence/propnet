@@ -16,10 +16,11 @@ import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
-from propnet import ureg
+
 from propnet.core.exceptions import ModelEvaluationError
-from propnet.symbols import DEFAULT_UNITS
+from propnet.core.quantity import Quantity
 from propnet.core.utils import references_to_bib
+from propnet.symbols import DEFAULT_UNITS
 
 logger = logging.getLogger(__name__)
 
@@ -72,11 +73,10 @@ class Model(ABC):
         self.symbol_property_map.update(symbol_property_map or {})
 
         # Use hard-coded units for properties unless otherwise specified
-        if unit_map:
-            self.unit_map = unit_map
-        else:
-            self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
-                             for prop_name in self.all_properties}
+        self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
+                         for prop_name in self.all_properties}
+        if unit_map is not None:
+            self.unit_map.update(self.map_symbols_to_properties(unit_map))
 
         # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
@@ -132,10 +132,7 @@ class Model(ABC):
         """
         return remap(symbols, self.symbol_property_map)
 
-    # TODO: I'm really not crazy about the "successful" key implementation
-    #       preventing model failure using try/except is the path to
-    #       the dark side
-    def evaluate(self, property_value_dict):
+    def evaluate(self, symbol_quantity_dict, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
         if the corresponding input symbol_values represents a valid
@@ -149,8 +146,10 @@ class Model(ABC):
         evaluate also handles any requisite unit_mapping
 
         Args:
-            property_value_dict ({property_name: value}): a mapping of
-                property names to values to be substituted
+            symbol_quantity_dict ({property_name: Quantity}): a mapping of
+                symbol names to quantities to be substituted
+            allow_failure (bool): whether or not to catch
+                errors in model evaluation
 
         Returns:
             dictionary of output properties with associated values
@@ -158,48 +157,37 @@ class Model(ABC):
             substitution succeeds
         """
         # Remap symbols and units if symbol map isn't none
-        symbol_value_dict = self.map_properties_to_symbols(
-            property_value_dict)
+        symbol_quantity_dict = self.map_properties_to_symbols(
+            symbol_quantity_dict)
 
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
         # strip units from input and keep for reassignment
-        old_units = {}
-        for symbol, value in symbol_value_dict.items():
-            if isinstance(value, ureg.Quantity):
-                if self.unit_map.get(symbol):
-                    value = value.to(self.unit_map[symbol])
-                symbol_value_dict[symbol] = value.magnitude
-                old_units[symbol] = value.units
+        symbol_value_dict = {}
+        for symbol, quantity in symbol_quantity_dict.items():
+            if self.unit_map.get(symbol):
+                quantity = quantity.to(self.unit_map[symbol])
+            symbol_value_dict[symbol] = quantity.value
 
-        # check we support this combination of inputs
-        # TODO: this shouldn't be necessary
-        input_matches = [set(input_set) == set(property_value_dict)
-                         for input_set in self.evaluation_list]
-        if not any(input_matches):
-            return {
-                'successful': False,
-                'message': "The {} model cannot generate any outputs for "
-                           "these inputs: {}".format(
-                    self.name, property_value_dict.keys())}
-        # TODO: Remove the try-except functionality, high priority
+        # Plug in and check constraints
         try:
-            # evaluate is allowed to fail
             out = self.plug_in(symbol_value_dict)
-            out['successful'] = True
         except Exception as e:
-            logger.debug("Model evaluation unsuccessful %s", e)
-            return {
-                'successful': False,
-                'message': str(e)
-            }
+            if allow_failure:
+                return {"successful": False,
+                        "message": "{} evaluation failed: {}".format(self, e)}
+            else:
+                raise e
+        if not self.check_constraints({**symbol_value_dict, **out}):
+            return {"successful": False,
+                    "message": "Constraints not satisfied"}
 
-        # add units to output
         out = self.map_symbols_to_properties(out)
-        for key in out:
-            if key == 'successful':
-                continue
-            out[key] = ureg.Quantity(out[key], self.unit_map.get(key))
+        out = {symbol: Quantity(symbol, value, self.unit_map[symbol])
+               for symbol, value in out.items()}
+        # for key in out:
+        #     out[key] = Quantity(key, out[key], self.unit_map.get(key))
+        out['successful'] = True
         return out
 
     @property
@@ -214,8 +202,7 @@ class Model(ABC):
         """
         return self.name.replace('_', ' ').title()
 
-    # Note that these are formulated in terms of properties
-    # rather than symbols
+    # Note: these are formulated in terms of properties rather than symbols
     @property
     def input_sets(self):
         """
@@ -265,8 +252,8 @@ class Model(ABC):
         Returns:
             list of sets of inputs with constraint properties included
         """
-        return [set(input_set | self.constraint_properties)
-                for input_set in self.input_sets]
+        return [list(inputs | self.constraint_properties - outputs)
+                for inputs, outputs in zip(self.input_sets, self.output_sets)]
 
     def test(self, inputs, outputs):
         """
@@ -279,19 +266,35 @@ class Model(ABC):
 
         Returns (bool): True if test succeeds
         """
-        model_outputs = self.plug_in(inputs)
+        # Get plug_in_outputs
+        plug_in_outputs = self.plug_in(inputs)
+        # Get evaluate inputs/outputs and remap for comparison
+        evaluate_inputs = self.map_symbols_to_properties(inputs)
+        evaluate_inputs = {s: Quantity(s, v, self.unit_map[s])
+                           for s, v in evaluate_inputs.items()}
+        evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
+        evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
         errmsg = "Model does not match known output for {}".format(
             self.name)
         for k, known_output in outputs.items():
-            model_output = model_outputs[k]
+            plug_in_output = plug_in_outputs[k]
             # TODO: address as part of unit refactor
-            if hasattr(model_output, 'magnitude'):
-                model_output = model_output.magnitude
             if isinstance(known_output, (float, list)):
-                if not np.allclose(model_output, known_output):
+                if not np.allclose(plug_in_output, known_output):
                     raise ModelEvaluationError(errmsg)
-            elif model_output != known_output:
+            elif plug_in_output != known_output:
+                errmsg = "{} model test failed on plug-in\n".format(self.name)
+                errmsg += "{}(test data) = {}\n".format(k, known_output)
+                errmsg += "{}(model output) = {}".format(k, plug_in_output)
                 raise ModelEvaluationError(errmsg)
+            symbol = self.symbol_property_map[k]
+            units = self.unit_map[symbol]
+            known_quantity = Quantity(symbol, known_output, units)
+            if known_quantity != evaluate_outputs[k]:
+                errmsg = "{} model test failed on evaluate\n".format(self.name)
+                errmsg += "{}(test data) = {}\n".format(k, known_quantity)
+                errmsg += "{}(model output) = {}".format(k, evaluate_outputs[k])
+
         return True
 
     def validate_from_preset_test(self):
@@ -393,6 +396,12 @@ class Model(ABC):
 
         return example_code
 
+    def __str__(self):
+        return "Model: {}".format(self.name)
+
+    def __repr__(self):
+        return self.__str__()
+
 
 CODE_EXAMPLE_TEMPLATE = """
 from propnet.models import load_default_model
@@ -482,9 +491,10 @@ class EquationModel(Model, MSONable):
         # Determine outputs from solutions to substituted equations
         for possible_output in possible_outputs:
             solutions = sp.nonlinsolve(eqns, possible_output)
-            # taking first solution only, and only asking for one output symbol
+            # Taking max solution only, and only asking for one output symbol
             # so know length of output tuple for solutions will be 1
-            solution = list(solutions)[0][0]
+            svals = [s[0] for s in solutions]
+            solution = max([s for s in svals if not s.coeff('I')])
             if not isinstance(solution, sp.EmptySet):
                 outputs[str(possible_output)] = float(sp.N(solution))
         return outputs
@@ -595,7 +605,8 @@ class CompositeModel(PyModel):
                 e. g. filter({'metal': Material, 'oxide': Material})
             **kwargs: model params, e. g. description, references, etc.
         """
-        PyModel.__init__(self, name=name, connections=connections, plug_in=plug_in, **kwargs)
+        PyModel.__init__(self, name=name, connections=connections,
+                         plug_in=plug_in, **kwargs)
         self.pre_filter = pre_filter
         self.filter = filter
         self.mat_inputs = []
@@ -649,7 +660,8 @@ class CompositeModel(PyModel):
             (list<dict<String, Material>>) mapping from material label to Material object.
         """
 
-        # Group by label all possible candidate materials in a dict<String, list<Material>>
+        # Group by label all possible candidate materials in a
+        # dict<String, list<Material>>
         pre_process = dict()
         for material in self.mat_inputs:
             pre_process[material] = None
@@ -750,24 +762,7 @@ class PyModuleCompositeModel(CompositeModel):
 # Right now I don't see much of a use case for pythonic functionality
 # here but maybe there should be
 # TODO: this could use a bit more finesse
-class ConstraintInterface:
-    def plug_in(self, symbol_value_dict):
-        """
-        ABSTRACT
-        Method analogous to that of the Model class.
-        In this case the method contract demands a boolean
-        be returned representing whether the constraint was
-        met.
-        Args:
-            symbol_value_dict ({symbol: value}): dict containing
-                symbol-keyed values to substitute
-        Returns:
-            (bool) true/false representing whether the constraint
-                   was met.
-        """
-        pass
-
-class Constraint(Model, ConstraintInterface):
+class Constraint(Model):
     """
     Constraint class, resembles a model, but should outputs
     true or false based on a string expression containing
@@ -810,6 +805,8 @@ def will_it_float(input_to_test):
     """
     Helper function to determine if input string can be cast to float
 
+    "If she weights the same as a duck... she's made of wood"
+
     Args:
         input_to_test (str): input string to be tested
     """
@@ -839,6 +836,12 @@ def remap(dict_or_list, mapping):
         for in_key, out_key in mapping.items():
             if in_key in output:
                 output[out_key] = output.pop(in_key)
+    elif isinstance(output, set):
+        for in_item in output:
+            out_item = mapping.get(in_item)
+            if out_item:
+                output.remove(in_item)
+                output.add(out_item)
     else:
         for idx, in_item in enumerate(output):
             out_item = mapping.get(in_item)

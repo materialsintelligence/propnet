@@ -9,7 +9,9 @@ description: |
 equations: [H - 2*(G/k**2)**0.585 + 3]
 name: vickers_hardness_chen
 references: []
-symbol_property_map: 
-    G: shear_modulus
-    H: vickers_hardness
-    k: pugh_ratio
+constraints:
+  - H > 0
+symbol_property_map:
+  G: shear_modulus
+  H: vickers_hardness
+  k: pugh_ratio

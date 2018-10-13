@@ -7,3 +7,4 @@ display_symbols: [K]
 shape: 1
 comment: ''
 category: property
+constraint: bulk_modulus > 0
