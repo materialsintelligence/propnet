@@ -29,12 +29,10 @@ class Quantity(MSONable):
         symbol_type: (Symbol) the type of information that is represented
             by the associated value.  If a string, assigns a symbol from
             the default symbols that has that string name
-        value: (id) the value associated with this symbol.
-        tags: (list<str>) tags associated with the material, e.g.
-            perovskites or ferroelectrics
-        _pint_quantity: If the symbol is associated with a unitized
-            numeric (e. g. float/int), the _pint_quantity attribute
-            is used to manage those unit conversions
+        _value: (id) the value associated with this symbol.  Note that
+            this should be either a pint quantity or an object.
+        tags: (list<str>) tags associated with the quantity, typically
+            related to its provenance, e. g. "DFT" or "ML"
     """
 
     def __init__(self, symbol_type, value, units=None, tags=None,
@@ -66,11 +64,11 @@ class Quantity(MSONable):
 
         # Invoke pint quantity if supplied or input is float/int
         if isinstance(value, (float, int)):
-            self._contents = ureg.Quantity(value, units)
+            self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
-            self._contents = value.to(units)
+            self._value = value.to(units)
         else:
-            self._contents = value
+            self._value = value
 
         if symbol_type.constraint is not None:
             if not symbol_type.constraint.subs({symbol_type.name: self.value}):
@@ -84,7 +82,7 @@ class Quantity(MSONable):
 
     @property
     def is_pint(self):
-        return isinstance(self._contents, ureg.Quantity)
+        return isinstance(self._value, ureg.Quantity)
 
     @property
     def value(self):
@@ -92,10 +90,17 @@ class Quantity(MSONable):
         Returns:
             (id): value of the Quantity
         """
-        if self.is_pint:
-            return self._contents.magnitude
-        else:
-            return self._contents
+        return self._value
+
+    @pint_only
+    @property
+    def magnitude(self):
+        return self._value.magnitude
+
+    @pint_only
+    @property
+    def units(self):
+        return self._value.units
 
     @property
     def symbol(self):
@@ -236,3 +241,16 @@ class Quantity(MSONable):
 
         return cls(symbol_type=input_symbol, value=new_value,
                    tags=list(new_tags), provenance=new_provenance)
+
+
+def pint_only(f):
+    """
+    Decorator for methods or properties that should raise an error
+    if the value is not a pint quantity
+    """
+    def wrapper(self, *args, **kwargs):
+        if not self.is_pint:
+            raise ValueError("{} only implemented for pint quantities".format(
+                f.__name__))
+        return f(self, *args, **kwargs)
+    return wrapper

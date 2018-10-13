@@ -16,7 +16,7 @@ import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
-from propnet import ureg
+
 from propnet.core.exceptions import ModelEvaluationError
 from propnet.core.quantity import Quantity
 from propnet.core.utils import references_to_bib

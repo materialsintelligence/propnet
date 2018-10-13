@@ -39,3 +39,17 @@ class QuantityTest(unittest.TestCase):
     def test_is_cyclic(self):
         # Simple test
         pass
+
+    def test_properties(self):
+        # Test units, magnitude
+        q = Quantity("bulk_modulus", 100)
+        self.assertEqual(q.units, "GPa")
+        self.assertEqual(q.magnitude, 100)
+
+        # Ensure non-pint values raise error with units, magnitude
+        structure = PymatgenTest.get_structure('Si')
+        q = Quantity("structure", structure)
+        with self.assertRaises(ValueError):
+            print(q.units)
+        with self.assertRaises(ValueError):
+            print(q.magnitude)
