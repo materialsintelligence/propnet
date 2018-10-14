@@ -26,8 +26,6 @@ def pint_only(f):
     return wrapper
 
 
-#TODO: Generally the propnet Quantity/pint Quantity distinction is not
-#      very facile, I think this can be streamlined a bit
 class Quantity(MSONable):
     """
     Class storing the value of a property.
@@ -134,7 +132,8 @@ class Quantity(MSONable):
         Returns:
 
         """
-        return Quantity(self.symbol, self._value, units)
+        return Quantity(self.symbol, self._value, units, self.tags,
+                        self._provenance, self.uncertainty)
 
     @property
     @pint_only
