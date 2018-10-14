@@ -1,7 +1,5 @@
 name: absorption_coefficient
-units:
-- 1.0
-- - [meter, -1.0]
+units: 1 / cm
 display_names: ['Absorption Coefficient']
 display_symbols: ['\alpha']
 shape: 1
