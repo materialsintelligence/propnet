@@ -8,6 +8,7 @@ from ruamel.yaml import safe_dump
 
 from propnet import logger, ureg
 from sympy.parsing.sympy_parser import parse_expr
+import sympy as sp
 
 # TODO: This could be split into separate classes
 #       or a base class + subclasses for symbols with
@@ -108,7 +109,11 @@ class Symbol(MSONable):
         # Note that symbol constraints are not constraint objects
         # at the moment because using them would result in a circular
         # dependence, this might be resolved with some reorganization
-        self.constraint = parse_expr(constraint) if constraint else None
+        if constraint:
+            expr = parse_expr(constraint)
+            self.constraint = sp.lambdify(self.name, expr)
+        else:
+            self.constraint = None
 
     @property
     def dimension_as_string(self):

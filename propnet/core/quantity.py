@@ -86,7 +86,7 @@ class Quantity(MSONable):
         #       constraints as a whole need to be refactored and
         #       put into a separate module
         if symbol_type.constraint is not None:
-            if not symbol_type.constraint.subs({symbol_type.name: self.magnitude}):
+            if not symbol_type.constraint(**{symbol_type.name: self.magnitude}):
                 raise SymbolConstraintError(
                     "Quantity with {} value does not satisfy {}".format(
                         value, symbol_type.constraint))
