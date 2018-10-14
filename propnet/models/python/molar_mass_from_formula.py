@@ -10,7 +10,7 @@ Simple conversion from formula to molar mass
 """
 
 config = {
-    "name": "clarke_thermal_conductivity",
+    "name": "molar_mass_from_formula",
     "connections": [
         {
             "inputs": [

@@ -7,7 +7,7 @@ def plug_in(symbol_values):
     t_ratio = temp / t_d
     integrand = lambda x: (x**4 * exp(x) / (exp(x) - 1)**2)
     c_v = 9 * 8.314 * t_ratio**3 * quad(integrand, 0, t_ratio**-1)[0]
-    return {"specific_heat_capacity_constant_volume_molar": c_v}
+    return {"molar_heat_capacity_constant_volume": c_v}
 
 
 DESCRIPTION = """
@@ -20,11 +20,11 @@ config = {
     "connections": [
         {
             "inputs": [
-                "debye_temperature"
+                "debye_temperature",
                 "temperature"
             ],
             "outputs": [
-                "specific_heat_capacity_constant_volume_molar",
+                "molar_heat_capacity_constant_volume",
             ]
         }
     ],

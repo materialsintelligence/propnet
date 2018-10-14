@@ -94,7 +94,7 @@ class Symbol(MSONable):
         else:
             if units is not None:
                 raise ValueError("Cannot define units for generic objects.")
-            units = ureg.parse_expression("")  # dimensionless
+            units = None # ureg.parse_expression("")  # dimensionless
 
         self.name = name
         self.category = category

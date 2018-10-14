@@ -1,0 +1,10 @@
+name: molar_mass
+units:
+- 1.0
+- - [gram, 1.0]
+  - [mole, -1.0]
+display_names: [Molar mass]
+display_symbols: ["m"]
+shape: 1
+comment: ''
+category: property

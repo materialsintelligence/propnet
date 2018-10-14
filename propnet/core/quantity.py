@@ -65,7 +65,6 @@ class Quantity(MSONable):
             provenance (ProvenanceElement): provenance associated with the
                 object (e. g. inputs, model, see ProvenanceElement)
         """
-
         # Invoke default symbol if symbol is a string
         if isinstance(symbol_type, str):
             if symbol_type not in DEFAULT_SYMBOLS.keys():
@@ -76,15 +75,18 @@ class Quantity(MSONable):
         units = units or symbol_type.units
 
         # Invoke pint quantity if supplied or input is float/int
-        if isinstance(value, (float, int)):
+        if isinstance(value, (float, int, list, np.ndarray)):
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
         else:
             self._value = value
 
+        # TODO: Symbol-level constraints are hacked together atm,
+        #       constraints as a whole need to be refactored and
+        #       put into a separate module
         if symbol_type.constraint is not None:
-            if not symbol_type.constraint.subs({symbol_type.name: self.value}):
+            if not symbol_type.constraint.subs({symbol_type.name: self.magnitude}):
                 raise SymbolConstraintError(
                     "Quantity with {} value does not satisfy {}".format(
                         value, symbol_type.constraint))

@@ -5,7 +5,7 @@
       "debye_temperature": 310
     },
     "outputs": {
-      "specific_heat_capacity_constant_volume_molar": 23.6429
+      "molar_heat_capacity_constant_volume": 23.6429
     }
   }
 ]
