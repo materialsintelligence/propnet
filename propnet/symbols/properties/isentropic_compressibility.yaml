@@ -1,7 +1,5 @@
 name: isentropic_compressibility
-units:
-- 1.0
-- - [gigapascal, -1.0]
+units: 1 / GPa
 display_names: [Isentropic compressibility]
 display_symbols: [\beta_S]
 shape: 1

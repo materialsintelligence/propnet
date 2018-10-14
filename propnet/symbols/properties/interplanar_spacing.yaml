@@ -1,7 +1,5 @@
 name: interplanar_spacing
-units:
-- 1.0
-- - [angstrom, 1.0]
+units: angstrom
 display_names: ['Interplanar Spacing']
 display_symbols: ['a']
 shape: 1

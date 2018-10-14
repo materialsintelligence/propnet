@@ -1,7 +1,5 @@
 name: vickers_hardness
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: [Vicker's Hardness]
 display_symbols: [H_v]
 shape: 1

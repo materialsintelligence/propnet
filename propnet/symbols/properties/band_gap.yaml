@@ -1,7 +1,5 @@
 name: band_gap
-units:
-- 1.0
-- - [electron_volt, 1.0]
+units: eV
 display_names: [Band gap]
 display_symbols: ["E_g"]
 shape: 1

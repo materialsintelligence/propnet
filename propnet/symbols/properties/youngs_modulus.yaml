@@ -1,7 +1,5 @@
 name: youngs_modulus
-units:
-- 1.0
-- - [gigapascal, 1.0]
+units: GPa
 display_names: [Young's modulus, Elastic modulus]
 display_symbols: [E]
 shape: 1

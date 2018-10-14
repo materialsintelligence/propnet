@@ -1,7 +1,5 @@
 name: temperature
-units:
-- 1.0
-- - [kelvin, 1.0]
+units: kelvin
 display_names: [Temperature]
 display_symbols: [T]
 shape: 1

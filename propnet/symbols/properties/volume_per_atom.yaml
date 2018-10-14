@@ -1,8 +1,5 @@
 name: volume_per_atom
-units:
-- 1.0
-- - [angstrom, 3.0]
-  - [atom, -1.0]
+units: angstrom ** 3 / atom
 display_names: [Volume per atom]
 display_symbols: ["V_{a}"]
 shape: 1

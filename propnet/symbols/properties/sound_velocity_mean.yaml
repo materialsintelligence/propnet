@@ -1,8 +1,5 @@
 name: sound_velocity_mean
-units:
-- 1.0
-- - [meter, 1.0]
-  - [second, -1.0]
+units: m / s
 display_names: [Elasticity-Derived Mean Sound Velocity]
 display_symbols: [v_L]
 shape: 1

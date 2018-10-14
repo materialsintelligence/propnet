@@ -1,8 +1,5 @@
 name: electrical_conductivity
-units:
-- 1.0
-- - [ohm, -1.0]
-  - [meter, -1.0]
+units: 1 / ohm / meter
 display_names: ['Electrical conductivity']
 display_symbols: ['\sigma']
 shape: 1

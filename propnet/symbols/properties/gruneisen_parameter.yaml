@@ -1,7 +1,5 @@
 name: gruneisen_parameter
-units:
-- 1
-- []
+units: dimensionless
 display_names: ["Gruneisen parameter"]
 display_symbols: [\gamma]
 shape: 1

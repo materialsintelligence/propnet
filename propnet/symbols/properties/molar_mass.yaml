@@ -1,8 +1,5 @@
 name: molar_mass
-units:
-- 1.0
-- - [gram, 1.0]
-  - [mole, -1.0]
+units: g / mol
 display_names: [Molar mass]
 display_symbols: ["m"]
 shape: 1

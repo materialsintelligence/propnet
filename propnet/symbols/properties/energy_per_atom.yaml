@@ -1,8 +1,5 @@
 name: energy_per_atom
-units:
-- 1.0
-- - [electron_volt, 1.0]
-  - [atom, -1.0]
+units: eV / atom
 display_names: [Energy per atom]
 display_symbols: ["E_{a}"]
 shape: 1

@@ -1,7 +1,5 @@
 name: dielectric_figure_of_merit_current_leakage
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Dielectric Figure of Merit: Current Leakage']
 display_symbols: ['c']
 shape: 1

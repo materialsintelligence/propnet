@@ -4,6 +4,4 @@ display_names: ['Optical loss function, loss function']
 display_symbols: [l]
 name: loss_function
 shape: 1
-units:
-- 1
-- []
+units: dimensionless

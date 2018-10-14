@@ -1,9 +1,5 @@
 name: thermal_conductivity
-units:
-- 1.0
-- - [watt, 1.0]
-  - [meter, -1.0]
-  - [kelvin, -1.0]
+units: W / m / K
 display_names: [Thermal conductivity]
 display_symbols: [\kappa]
 shape: 1

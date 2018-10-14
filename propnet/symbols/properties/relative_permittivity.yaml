@@ -1,7 +1,5 @@
 name: relative_permittivity
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Relative permittivity','Dielectric constant']
 display_symbols: ['\epsilon_{r}']
 shape: 1
