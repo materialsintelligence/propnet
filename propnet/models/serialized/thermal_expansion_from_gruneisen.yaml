@@ -1,0 +1,25 @@
+# TODO: maybe a bridge between atomic density, density, and average mass?
+# Right now we're using those implicitly to calculate average atomic mass
+categories: [thermal, mechanical]
+connections:
+- inputs: [y, K, c_v, p]
+  outputs: [a]
+description: |
+  An expression for the thermal expansion of a solid from density, constant
+  volume heat capacity, bulk modulus, and gruneisen parameter
+equations:
+  - a - y * c_v * p / k
+name: thermal_expansion_from_gruneisen_parameter
+references:
+  - url:https://en.wikipedia.org/wiki/Gr%C3%BCneisen_parameter
+constraints: null
+symbol_property_map:
+    y: gruneisen_parameter
+    a: thermal_expansion_coefficient
+    c_v: specific_heat_capacity_cosntant_volume
+    p: density
+    k: bulk_modulus
+unit_map:
+    d: angstrom
+    mbar: amu / atom
+    k: W / (cm * K)

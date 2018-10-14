@@ -1,0 +1,10 @@
+name: mass_per_atom
+units:
+- 1.0
+- - [amu, 1.0]
+  - [atom, -1.0]
+display_names: [Mass per atom]
+display_symbols: ["\bar{M}"]
+shape: 1
+comment: ''
+category: property
