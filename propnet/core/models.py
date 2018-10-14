@@ -54,13 +54,15 @@ class Model(ABC):
         symbol_property_map ({str: str}): mapping of symbols enumerated
             in the plug-in method to canonical symbols, e. g.
             {"n": "index_of_refraction"} etc.
-        unit_map ({str: str}): mapping of units to be used in model
-            before evaluation of plug_in in evaluate, defaults to
-            symbol defaults
+        scrub_units (bool or {str: str}): whether or not units should
+            be scrubbed in evaluation procedure, if a boolean is specified,
+            quantities are converted to default units before scrubbing, if
+            a dict, quantities are specified to units corresponding to the
+            unit assigned to the symbol in the dict
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_property_map=None, unit_map=None):
+                 symbol_property_map=None, scrub_units=None):
         self.name = name
         self.connections = connections
         self.description = description
@@ -72,11 +74,14 @@ class Model(ABC):
         self.symbol_property_map = {k: k for k in self.all_properties}
         self.symbol_property_map.update(symbol_property_map or {})
 
-        # Use hard-coded units for properties unless otherwise specified
-        self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
-                         for prop_name in self.all_properties}
-        if unit_map is not None:
-            self.unit_map.update(self.map_symbols_to_properties(unit_map))
+        if scrub_units is not None:
+            self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
+                             for prop_name in self.all_properties}
+            # Update with explicitly supplied units if specified
+            if isinstance(scrub_units, dict):
+                self.unit_map.update(self.map_symbols_to_properties(scrub_units))
+        else:
+            self.unit_map = {}
 
         # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
@@ -165,9 +170,13 @@ class Model(ABC):
         # strip units from input and keep for reassignment
         symbol_value_dict = {}
         for symbol, quantity in symbol_quantity_dict.items():
-            if self.unit_map.get(symbol):
+            # If unit map convert and then scrub units
+            if self.unit_map:
                 quantity = quantity.to(self.unit_map[symbol])
-            symbol_value_dict[symbol] = quantity.value
+                symbol_value_dict[symbol] = quantity.magnitude
+            # Otherwise use values
+            else:
+                symbol_value_dict[symbol] = quantity.value
 
         # Plug in and check constraints
         try:
@@ -183,7 +192,7 @@ class Model(ABC):
                     "message": "Constraints not satisfied"}
 
         out = self.map_symbols_to_properties(out)
-        out = {symbol: Quantity(symbol, value, self.unit_map[symbol])
+        out = {symbol: Quantity(symbol, value, self.unit_map.get(symbol))
                for symbol, value in out.items()}
         # for key in out:
         #     out[key] = Quantity(key, out[key], self.unit_map.get(key))
@@ -240,9 +249,6 @@ class Model(ABC):
         """
         return self.all_inputs.union(self.all_outputs)
 
-    # TODO: I think this should be merged with input_sets maybe called
-    # relevant properties or something, also shouldn't need both syms
-    # and props
     @property
     def evaluation_list(self):
         """
@@ -443,31 +449,42 @@ class EquationModel(Model, MSONable):
                  categories=None, references=None, unit_map=None,
                  solve_for_all_symbols=False):
 
+        self.equations = equations
+        sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
+                             for eq in equations]
         if solve_for_all_symbols:
-            sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
-                                 for eq in equations]
             connections, equations = [], []
             for expr in sympy_expressions:
                 for symbol in expr.free_symbols:
                     new = sp.solve(expr, symbol)
+                    inputs = get_syms_from_str(new)
                     connections.append(
-                        {"inputs": [str(v) for v in new.free_symbols],
-                         "outputs": [str(symbol)]})
+                        {"inputs": inputs,
+                         "outputs": [str(symbol)],
+                         "_lambda": sp.lambdify(inputs, new)
+                         })
         else:
+            for eqn in equations:
+                output_expr, input_expr = eqn.split('=')
+                inputs = get_syms_from_str(input_expr)
+                outputs = get_syms_from_str(output_expr)
+                connections.append(
+                    {"inputs": inputs,
+                     "outputs": outputs,
+                     "_lambda": sp.lambdify(inputs, parse_expr(input_expr))
+                     })
             self.equations = equations
 
-        if connections is None:
-            connections = []
-            for eqn in equations:
-                output, expr = eqn.split('=')
-                inputs = [str(v) for v in parse_expr(expr).free_symbols]
-                connections.append({"inputs": inputs, "outputs": [output.strip()]})
+        # if connections is None:
+        #     connections = []
+        #     for eqn in equations:
+        #         output, expr = eqn.split('=')
+        #         inputs = [str(v) for v in parse_expr(expr).free_symbols]
+        #         connections.append({"inputs": inputs, "outputs": [output.strip()]})
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
             categories, references, symbol_property_map, unit_map)
 
-    # TODO: shouldn't this respect/use connections info,
-    #       or is that done elsewhere?
     def plug_in(self, symbol_value_dict):
         """
         Equation plug-in solves the equation for all input
@@ -481,23 +498,37 @@ class EquationModel(Model, MSONable):
         Returns (dict):
             symbol-keyed output dictionary
         """
-        # Parse equations and substitute
-        eqns = [parse_expr(eq.replace('=', '-(')+')') for eq in self.equations]
-        eqns = [eqn.subs(symbol_value_dict) for eqn in eqns]
-        possible_outputs = set()
-        for eqn in eqns:
-            possible_outputs = possible_outputs.union(eqn.free_symbols)
-        outputs = {}
-        # Determine outputs from solutions to substituted equations
-        for possible_output in possible_outputs:
-            solutions = sp.nonlinsolve(eqns, possible_output)
-            # Taking max solution only, and only asking for one output symbol
-            # so know length of output tuple for solutions will be 1
-            svals = [s[0] for s in solutions]
-            solution = max([s for s in svals if not s.coeff('I')])
-            if not isinstance(solution, sp.EmptySet):
-                outputs[str(possible_output)] = float(sp.N(solution))
-        return outputs
+        for connection in self.connections:
+            if set(symbol_value_dict.keys()) == set(connection['inputs'].keys()):
+                output_sym = connection['outputs'][0]
+                output_vals = connection['_lambda'](**symbol_value_dict)
+                # TODO: this decision to only take max real values should
+                #       should probably be reevaluated at some point
+                # Scrub nan values and take max
+                output_vals = [s for s in output_vals if not np.isnan(s)]
+                output_val = max([output_vals])
+                return {output_sym: output_val}
+        raise ValueError("No valid input set found in connections")
+
+        # # Parse equations and substitute
+        # eqns = [parse_expr(eq.replace('=', '-(')+')') for eq in self.equations]
+        # # eqns = [eqn.subs(symbol_value_dict) for eqn in eqns]
+        # possible_outputs = set()
+        # for eqn in eqns:
+        #     possible_outputs = possible_outputs.union(eqn.free_symbols)
+        # outputs = {}
+        # # Determine outputs from solutions to substituted equations
+        # for possible_output in possible_outputs:
+        #     solutions = sp.solve(eqns, possible_output)
+        #     funcs = [sp.lambdify(possible_output, solution)
+        #              for solution in solutions]
+        #     svals = [func(**symbol_value_dict) for func in funcs]
+        #     # scrub nans
+        #     svals = [s for s in svals if not np.isnan(s)]
+        #     # Taking max solution only, and only asking for one output symbol
+        #     solution = max([s for s in svals])
+        #     outputs[str(possible_output)] = solution
+        # return outputs
 
     @classmethod
     def from_file(cls, filename):
@@ -659,7 +690,6 @@ class CompositeModel(PyModel):
         Returns:
             (list<dict<String, Material>>) mapping from material label to Material object.
         """
-
         # Group by label all possible candidate materials in a
         # dict<String, list<Material>>
         pre_process = dict()
@@ -848,3 +878,13 @@ def remap(dict_or_list, mapping):
             if out_item:
                 output[idx] = out_item
     return output
+
+
+def get_syms_from_str(string_expr):
+    """
+    Helper function to get all sympy symbols from a string expression
+
+    Args:
+        string_expr (str): string expression
+    """
+    return [str(v) for v in parse_expr(string_expr).free_symbols]
