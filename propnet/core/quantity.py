@@ -49,7 +49,7 @@ class Quantity(MSONable):
     """
 
     def __init__(self, symbol_type, value, units=None, tags=None,
-                 provenance=None):
+                 provenance=None, uncertainty=None):
         """
         Parses inputs for constructing a Property object.
 
@@ -82,6 +82,13 @@ class Quantity(MSONable):
         else:
             self._value = value
 
+        if isinstance(uncertainty, (float, int, list, np.ndarray)):
+            self._uncertainty = ureg.Quantity(value, units)
+        elif isinstance(uncertainty, ureg.Quantity):
+            self._uncertainty = uncertainty.to(units)
+        else:
+            self._uncertainty = uncertainty
+
         # TODO: Symbol-level constraints are hacked together atm,
         #       constraints as a whole need to be refactored and
         #       put into a separate module
@@ -111,6 +118,10 @@ class Quantity(MSONable):
     @pint_only
     def magnitude(self):
         return self._value.magnitude
+
+    @property
+    def uncertainty(self):
+        return self._uncertainty
 
     @pint_only
     def to(self, units):
@@ -247,18 +258,20 @@ class Quantity(MSONable):
         # TODO: support propagation of uncertainties (this will only work
         # once at present)
 
-        # TODO: test this with units, not magnitudes ... remember units
-        # may not be canonical units(?)
-        if isinstance(quantities[0].value, list):
-            # hack to get arrays working for now
-            vals = [q.value for q in quantities]
-        else:
-            vals = [q.value.magnitude for q in quantities]
+        # # TODO: test this with units, not magnitudes ... remember units
+        # # may not be canonical units(?)
+        # if isinstance(quantities[0].value, list):
+        #     # hack to get arrays working for now
+        #     vals = [q.value for q in quantities]
+        # else:
+        #     vals = [q.value.magnitude for q in quantities]
+        vals = [q.value for q in quantities]
 
-        new_magnitude = np.mean(vals, axis=0)
-        std_dev = np.std(vals, axis=0)
-        new_value = unumpy.uarray(new_magnitude, std_dev)
+        # Explicit formulas for mean / standard dev for pint support
+        new_value = sum(vals) / len(vals)
+        std_dev = (sum([(v - new_value)**2 for v in vals]) / len(vals))**(1/2)
 
+        # Accumulate provenance and tags for new quantities
         new_tags = set()
         new_provenance = ProvenanceElement(model='aggregation', inputs=[])
         for quantity in quantities:
@@ -268,4 +281,5 @@ class Quantity(MSONable):
             new_provenance.inputs.append(quantity)
 
         return cls(symbol_type=input_symbol, value=new_value,
-                   tags=list(new_tags), provenance=new_provenance)
+                   tags=list(new_tags), provenance=new_provenance,
+                   uncertainty=std_dev)

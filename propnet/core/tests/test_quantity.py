@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 
+from pymatgen.util.testing import PymatgenTest
 from propnet.core.quantity import Quantity
 from propnet.core.symbols import Symbol
 from propnet.core.exceptions import SymbolConstraintError
@@ -33,8 +34,8 @@ class QuantityTest(unittest.TestCase):
         qlist = [Quantity(self.custom_symbol, val)
                  for val in np.arange(1, 2.01, 0.01)]
         qagg = Quantity.from_weighted_mean(qlist)
-        self.assertEqual(qagg.value.magnitude, 1.5)
-        self.assertEqual(qagg.value.std_dev, 0.25)
+        self.assertAlmostEqual(qagg.magnitude, 1.5)
+        self.assertAlmostEqual(qagg.uncertainty, 0.2915475947422652)
 
     def test_is_cyclic(self):
         # Simple test
@@ -49,7 +50,7 @@ class QuantityTest(unittest.TestCase):
     def test_properties(self):
         # Test units, magnitude
         q = Quantity("bulk_modulus", 100)
-        self.assertEqual(q.units, "GPa")
+        self.assertEqual(q.units, "gigapascal")
         self.assertEqual(q.magnitude, 100)
 
         # Ensure non-pint values raise error with units, magnitude
