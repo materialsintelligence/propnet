@@ -18,9 +18,10 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 
-from propnet.core.exceptions import ModelEvaluationError
+from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import Quantity
 from propnet.core.utils import references_to_bib
+from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_UNITS
 
 logger = logging.getLogger(__name__)
@@ -185,21 +186,29 @@ class Model(ABC):
         # Plug in and check constraints
         try:
             out = self.plug_in(symbol_value_dict)
-        except Exception as e:
+        except Exception as err:
             if allow_failure:
                 return {"successful": False,
-                        "message": "{} evaluation failed: {}".format(self, e)}
+                        "message": "{} evaluation failed: {}".format(self, err)}
             else:
-                raise e
+                raise err
         if not self.check_constraints({**symbol_value_dict, **out}):
             return {"successful": False,
                     "message": "Constraints not satisfied"}
-
+        provenance = ProvenanceElement(
+            model=self.name, inputs=list(symbol_quantity_dict.values()))
         out = self.map_symbols_to_properties(out)
-        out = {symbol: Quantity(symbol, value, self.unit_map.get(symbol))
-               for symbol, value in out.items()}
-        # for key in out:
-        #     out[key] = Quantity(key, out[key], self.unit_map.get(key))
+        for symbol, value in out.items():
+            try:
+                out[symbol] = Quantity(symbol, value, self.unit_map.get(symbol),
+                                       provenance=provenance)
+            except SymbolConstraintError as err:
+                if allow_failure:
+                    errmsg = "{} symbol constraint failed: {}".format(self, err)
+                    return {"successful": False,
+                            "message": errmsg}
+                else:
+                    raise err
         out['successful'] = True
         return out
 
@@ -499,7 +508,7 @@ class EquationModel(Model, MSONable):
         """
         output = {}
         for connection in self.connections:
-            if set(symbol_value_dict.keys()) == set(connection['inputs']):
+            if set(connection['inputs']) <= set(symbol_value_dict.keys()):
                 output_sym = connection['outputs'][0]
                 output_vals = connection['_lambda'](**symbol_value_dict)
                 # TODO: this decision to only take max real values should
@@ -697,7 +706,8 @@ class CompositeModel(PyModel):
         Args:
             materials (list<Material>): list of candidate Material objects.
         Returns:
-            (list<dict<String, Material>>) mapping from material label to Material object.
+            (list<dict<String, Material>>) mapping from material label
+                to Material object.
         """
         # Group by label all possible candidate materials in a
         # dict<String, list<Material>>
@@ -708,10 +718,12 @@ class CompositeModel(PyModel):
             cache = self.pre_filter(materials)
             for key in cache.keys():
                 if key not in pre_process.keys():
-                    raise Exception("pre_filter method returned unrecognized material name.")
+                    raise Exception("pre_filter method returned unrecognized "
+                                    "material name.")
                 val = cache[key]
                 if not isinstance(val, list):
-                    raise Exception("pre_filter method did not return a list of candidate materials.")
+                    raise Exception("pre_filter method did not return a list "
+                                    "of candidate materials.")
                 pre_process[key] = val
         for key in pre_process.keys():
             if pre_process[key] is None:
