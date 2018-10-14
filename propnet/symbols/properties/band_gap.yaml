@@ -7,4 +7,7 @@ display_symbols: ["E_g"]
 shape: 1
 comment: ''
 category: property
-constraint: band_gap >= 0
+# This constraint breaks a lot of things because in principle,
+# the models associated with these should return something with a
+# minimum of zero, I think symbol should be refactored
+# constraint: band_gap >= 0
