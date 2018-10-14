@@ -4,10 +4,12 @@ import math
 
 from propnet.models import DEFAULT_MODEL_NAMES, DEFAULT_MODEL_DICT, DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
-from propnet.core.models import PyModuleModel, PyModel, EquationModel
-from propnet.core.symbols import Symbol, ureg
+from propnet.core.models import EquationModel
+from propnet.core.symbols import Symbol
+from propnet.core.quantity import Quantity
 
 
+# TODO: test PyModule, PyModel
 # TODO: separate these into specific tests of model functionality
 #       and validation of default models
 class ModelTest(unittest.TestCase):
@@ -81,11 +83,12 @@ class ModelTest(unittest.TestCase):
             'name': 'area',
             # 'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
             'equations': ['a = l1 * l2'],
-            'unit_map': {'l1': "cm", "l2": "cm", 'a': "cm^2"}
+            # 'unit_map': {'l1': "cm", "l2": "cm", 'a': "cm^2"}
+            'symbol_property_map': {"a": A, "l1": L, "l2": L}
         }
         model = EquationModel(**get_area_config)
-        out = model.evaluate({'l1': 1 * ureg.Quantity.from_tuple([1.0, [['meter', 1.0]]]),
-                              'l2': 2 * L.units})
+        out = model.evaluate({'l1': Quantity(L, 1, 'meter'),
+                              'l2': Quantity(L, 2)}, allow_failure=False)
 
         self.assertTrue(math.isclose(out['a'].magnitude, 200.0))
         self.assertTrue(out['a'].units == A.units)

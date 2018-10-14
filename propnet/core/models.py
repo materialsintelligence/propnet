@@ -10,6 +10,7 @@ from itertools import chain
 from glob import glob
 from copy import copy
 
+import six
 from monty.serialization import loadfn
 from monty.json import MSONable
 import numpy as np
@@ -58,7 +59,9 @@ class Model(ABC):
             be scrubbed in evaluation procedure, if a boolean is specified,
             quantities are converted to default units before scrubbing, if
             a dict, quantities are specified to units corresponding to the
-            unit assigned to the symbol in the dict
+            unit assigned to the symbol in the dicts.  Units are scrubbed
+            by default for PyModels/PyModule models and EquationModels with
+            'empirical' categories
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None,
@@ -66,7 +69,7 @@ class Model(ABC):
         self.name = name
         self.connections = connections
         self.description = description
-        self.categories = categories
+        self.categories = categories or []
         self.references = references_to_bib(references or [])
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
@@ -74,7 +77,7 @@ class Model(ABC):
         self.symbol_property_map = {k: k for k in self.all_properties}
         self.symbol_property_map.update(symbol_property_map or {})
 
-        if scrub_units is not None:
+        if scrub_units is not None or 'empirical' in self.categories:
             self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
                              for prop_name in self.all_properties}
             # Update with explicitly supplied units if specified
@@ -467,7 +470,7 @@ class EquationModel(Model, MSONable):
             for expr in sympy_expressions:
                 for symbol in expr.free_symbols:
                     new = sp.solve(expr, symbol)
-                    inputs = get_syms_from_str(new)
+                    inputs = get_syms_from_expression(new)
                     connections.append(
                         {"inputs": inputs,
                          "outputs": [str(symbol)],
@@ -476,8 +479,8 @@ class EquationModel(Model, MSONable):
         else:
             for eqn in equations:
                 output_expr, input_expr = eqn.split('=')
-                inputs = get_syms_from_str(input_expr)
-                outputs = get_syms_from_str(output_expr)
+                inputs = get_syms_from_expression(input_expr)
+                outputs = get_syms_from_expression(output_expr)
                 connections.append(
                     {"inputs": inputs,
                      "outputs": outputs,
@@ -516,7 +519,10 @@ class EquationModel(Model, MSONable):
                 #       should probably be reevaluated at some point
                 # Scrub nan values and take max
                 # output_vals = [s for s in output_vals if not np.isnan(s)]
-                output_val = np.nanmax([output_vals])
+                if isinstance(output_vals, list):
+                    output_val = max([v for v in output_vals if np.isreal(v)])
+                else:
+                    output_val = output_vals
                 return {output_sym: output_val}
         raise ValueError("No valid input set found in connections")
 
@@ -891,11 +897,18 @@ def remap(dict_or_list, mapping):
     return output
 
 
-def get_syms_from_str(string_expr):
+def get_syms_from_expression(expression):
     """
     Helper function to get all sympy symbols from a string expression
 
     Args:
-        string_expr (str): string expression
+        expression (str or sympy expression): string or sympy expression
     """
-    return [str(v) for v in parse_expr(string_expr).free_symbols]
+    if isinstance(expression, six.string_types):
+        expression = parse_expr(expression)
+    if isinstance(expression, list):
+        out = list(chain.from_iterable([get_syms_from_expression(expr)
+                                        for expr in expression]))
+    else:
+        out = [str(v) for v in expression.free_symbols]
+    return list(set(out))

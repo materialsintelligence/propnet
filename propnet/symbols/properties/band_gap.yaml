@@ -7,3 +7,4 @@ display_symbols: ["E_g"]
 shape: 1
 comment: ''
 category: property
+constraint: band_gap >= 0
