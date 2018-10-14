@@ -276,9 +276,6 @@ class Model(ABC):
 
         Returns (bool): True if test succeeds
         """
-        # Get plug_in_outputs
-        plug_in_outputs = self.plug_in(inputs)
-        # Get evaluate inputs/outputs and remap for comparison
         evaluate_inputs = self.map_symbols_to_properties(inputs)
         evaluate_inputs = {s: Quantity(s, v, self.unit_map.get(s))
                            for s, v in evaluate_inputs.items()}
@@ -288,17 +285,6 @@ class Model(ABC):
         errmsg += "{}(test data) = {}\n"#.format(k, known_output)
         errmsg += "{}(model output) = {}"#.format(k, plug_in_output)
         for k, known_output in outputs.items():
-            plug_in_output = plug_in_outputs[k]
-            # TODO: address as part of unit refactor
-            if isinstance(known_output, (float, list)):
-                if not np.allclose(plug_in_output, known_output):
-                    errmsg = errmsg.format("plug-in", k, known_output,
-                                           k, plug_in_output)
-                    raise ModelEvaluationError(errmsg)
-            elif plug_in_output != known_output:
-                errmsg = errmsg.format("plug-in", k, known_output,
-                                       k, plug_in_output)
-                raise ModelEvaluationError(errmsg)
             symbol = self.symbol_property_map[k]
             units = self.unit_map.get(k)
             known_quantity = Quantity(symbol, known_output, units)
@@ -511,6 +497,7 @@ class EquationModel(Model, MSONable):
         Returns (dict):
             symbol-keyed output dictionary
         """
+        output = {}
         for connection in self.connections:
             if set(symbol_value_dict.keys()) == set(connection['inputs']):
                 output_sym = connection['outputs'][0]
@@ -519,12 +506,17 @@ class EquationModel(Model, MSONable):
                 #       should probably be reevaluated at some point
                 # Scrub nan values and take max
                 # output_vals = [s for s in output_vals if not np.isnan(s)]
+                # import nose; nose.tools.set_trace()
                 if isinstance(output_vals, list):
-                    output_val = max([v for v in output_vals if np.isreal(v)])
+                    output_val = max([v for v in output_vals
+                                      if not isinstance(v, complex)])
                 else:
                     output_val = output_vals
-                return {output_sym: output_val}
-        raise ValueError("No valid input set found in connections")
+                output.update({output_sym: output_val})
+        if not output:
+            raise ValueError("No valid input set found in connections")
+        else:
+            return output
 
         # # Parse equations and substitute
         # eqns = [parse_expr(eq.replace('=', '-(')+')') for eq in self.equations]
