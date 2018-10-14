@@ -1,5 +1,5 @@
 name: shear_modulus
-units: gigapascal
+units: GPa
 display_names: [Shear modulus]
 display_symbols: [\mu]
 shape: 1

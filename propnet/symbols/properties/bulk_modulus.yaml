@@ -1,5 +1,5 @@
 name: bulk_modulus
-units: gigapascal
+units: GPa
 display_names: [Bulk modulus]
 display_symbols: [K]
 shape: 1
