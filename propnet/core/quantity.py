@@ -1,6 +1,3 @@
-# TODO: remove typing?
-from typing import Union, Any, Optional, List
-
 import numpy as np
 from monty.json import MSONable
 
@@ -8,7 +5,6 @@ from propnet import ureg
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_SYMBOLS
-from uncertainties import unumpy
 
 from propnet.core.exceptions import SymbolConstraintError
 
