@@ -1,11 +1,18 @@
 [
   {
     "inputs": {
-      "E_g_PBE": 1.4020618557,
       "E_g_expt": 1
     },
     "outputs": {
       "E_g_GW": 1.0160320641
+    }
+  },
+  {
+    "inputs": {
+      "E_g_GW": 1.0160320641
+    },
+    "outputs": {
+      "E_g_expt": 1
     }
   }
 ]
