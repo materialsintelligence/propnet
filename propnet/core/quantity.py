@@ -13,6 +13,19 @@ from uncertainties import unumpy
 from propnet.core.exceptions import SymbolConstraintError
 
 
+def pint_only(f):
+    """
+    Decorator for methods or properties that should raise an error
+    if the value is not a pint quantity
+    """
+    def wrapper(self, *args, **kwargs):
+        if not self.is_pint:
+            raise ValueError("{} only implemented for pint quantities".format(
+                f.__name__))
+        return f(self, *args, **kwargs)
+    return wrapper
+
+
 #TODO: Generally the propnet Quantity/pint Quantity distinction is not
 #      very facile, I think this can be streamlined a bit
 class Quantity(MSONable):
@@ -92,13 +105,26 @@ class Quantity(MSONable):
         """
         return self._value
 
-    @pint_only
     @property
+    @pint_only
     def magnitude(self):
         return self._value.magnitude
 
     @pint_only
+    def to(self, units):
+        """
+        Method to convert quantities between units, a la pint
+
+        Args:
+            units (tuple or str): units to convert quantity to
+
+        Returns:
+
+        """
+        return Quantity(self.symbol, self._value, units)
+
     @property
+    @pint_only
     def units(self):
         return self._value.units
 
@@ -241,16 +267,3 @@ class Quantity(MSONable):
 
         return cls(symbol_type=input_symbol, value=new_value,
                    tags=list(new_tags), provenance=new_provenance)
-
-
-def pint_only(f):
-    """
-    Decorator for methods or properties that should raise an error
-    if the value is not a pint quantity
-    """
-    def wrapper(self, *args, **kwargs):
-        if not self.is_pint:
-            raise ValueError("{} only implemented for pint quantities".format(
-                f.__name__))
-        return f(self, *args, **kwargs)
-    return wrapper

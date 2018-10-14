@@ -40,6 +40,12 @@ class QuantityTest(unittest.TestCase):
         # Simple test
         pass
 
+    def test_to(self):
+        quantity = Quantity('band_gap', 3.0, 'eV')
+        new = quantity.to('joules')
+        self.assertEqual(new.magnitude, 4.80652959e-19)
+        self.assertEqual(new.units, 'joule')
+
     def test_properties(self):
         # Test units, magnitude
         q = Quantity("bulk_modulus", 100)

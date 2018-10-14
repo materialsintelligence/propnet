@@ -80,6 +80,7 @@ class Model(ABC):
             # Update with explicitly supplied units if specified
             if isinstance(scrub_units, dict):
                 self.unit_map.update(self.map_symbols_to_properties(scrub_units))
+            self.unit_map = self.map_properties_to_symbols(self.unit_map)
         else:
             self.unit_map = {}
 
@@ -171,7 +172,7 @@ class Model(ABC):
         symbol_value_dict = {}
         for symbol, quantity in symbol_quantity_dict.items():
             # If unit map convert and then scrub units
-            if self.unit_map:
+            if self.unit_map.get(symbol):
                 quantity = quantity.to(self.unit_map[symbol])
                 symbol_value_dict[symbol] = quantity.magnitude
             # Otherwise use values
@@ -276,30 +277,38 @@ class Model(ABC):
         plug_in_outputs = self.plug_in(inputs)
         # Get evaluate inputs/outputs and remap for comparison
         evaluate_inputs = self.map_symbols_to_properties(inputs)
-        evaluate_inputs = {s: Quantity(s, v, self.unit_map[s])
+        evaluate_inputs = {s: Quantity(s, v, self.unit_map.get(s))
                            for s, v in evaluate_inputs.items()}
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
-        errmsg = "Model does not match known output for {}".format(
-            self.name)
+        errmsg = "{} model test failed on ".format(self.name) + "{}\n"
+        errmsg += "{}(test data) = {}\n"#.format(k, known_output)
+        errmsg += "{}(model output) = {}"#.format(k, plug_in_output)
         for k, known_output in outputs.items():
             plug_in_output = plug_in_outputs[k]
             # TODO: address as part of unit refactor
             if isinstance(known_output, (float, list)):
                 if not np.allclose(plug_in_output, known_output):
+                    errmsg = errmsg.format("plug-in", k, known_output,
+                                           k, plug_in_output)
                     raise ModelEvaluationError(errmsg)
             elif plug_in_output != known_output:
-                errmsg = "{} model test failed on plug-in\n".format(self.name)
-                errmsg += "{}(test data) = {}\n".format(k, known_output)
-                errmsg += "{}(model output) = {}".format(k, plug_in_output)
+                errmsg = errmsg.format("plug-in", k, known_output,
+                                       k, plug_in_output)
                 raise ModelEvaluationError(errmsg)
             symbol = self.symbol_property_map[k]
-            units = self.unit_map[symbol]
+            units = self.unit_map.get(k)
             known_quantity = Quantity(symbol, known_output, units)
-            if known_quantity != evaluate_outputs[k]:
-                errmsg = "{} model test failed on evaluate\n".format(self.name)
-                errmsg += "{}(test data) = {}\n".format(k, known_quantity)
-                errmsg += "{}(model output) = {}".format(k, evaluate_outputs[k])
+            evaluate_output = evaluate_outputs[k]
+            if known_quantity.is_pint or isinstance(known_quantity.value, list):
+                if not np.allclose(known_quantity.value, evaluate_output.value):
+                    errmsg = errmsg.format("evaluate", k, evaluate_output,
+                                           k, known_quantity)
+                    raise ModelEvaluationError(errmsg)
+            elif known_quantity != evaluate_output:
+                errmsg = errmsg.format("evaluate", k, evaluate_output,
+                                       k, known_quantity)
+                raise ModelEvaluationError(errmsg)
 
         return True
 
@@ -446,12 +455,13 @@ class EquationModel(Model, MSONable):
     """
     def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
-                 categories=None, references=None, unit_map=None,
+                 categories=None, references=None, scrub_units=None,
                  solve_for_all_symbols=False):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
                              for eq in equations]
+        connections = []
         if solve_for_all_symbols:
             connections, equations = [], []
             for expr in sympy_expressions:
@@ -483,7 +493,7 @@ class EquationModel(Model, MSONable):
         #         connections.append({"inputs": inputs, "outputs": [output.strip()]})
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, unit_map)
+            categories, references, symbol_property_map, scrub_units)
 
     def plug_in(self, symbol_value_dict):
         """
@@ -499,14 +509,14 @@ class EquationModel(Model, MSONable):
             symbol-keyed output dictionary
         """
         for connection in self.connections:
-            if set(symbol_value_dict.keys()) == set(connection['inputs'].keys()):
+            if set(symbol_value_dict.keys()) == set(connection['inputs']):
                 output_sym = connection['outputs'][0]
                 output_vals = connection['_lambda'](**symbol_value_dict)
                 # TODO: this decision to only take max real values should
                 #       should probably be reevaluated at some point
                 # Scrub nan values and take max
-                output_vals = [s for s in output_vals if not np.isnan(s)]
-                output_val = max([output_vals])
+                # output_vals = [s for s in output_vals if not np.isnan(s)]
+                output_val = np.nanmax([output_vals])
                 return {output_sym: output_val}
         raise ValueError("No valid input set found in connections")
 
@@ -551,15 +561,16 @@ class PyModel(Model):
     """
     Purely python based model which allows for a flexible "plug_in"
     method as input, then invokes that method in the defined plug-in
-    method
+    method.  Note that PyModels scrub units by default, in contrast
+    to EquationModels
     """
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_property_map=None, unit_map=None):
+                 symbol_property_map=None, scrub_units=True):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, unit_map)
+            categories, references, symbol_property_map, scrub_units)
 
     def plug_in(self, symbol_value_dict):
         """

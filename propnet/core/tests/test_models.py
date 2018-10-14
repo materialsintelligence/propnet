@@ -79,8 +79,8 @@ class ModelTest(unittest.TestCase):
         A = Symbol('a', ['A'], ['A'], units=[1.0, [['centimeter', 2.0]]], shape=[1])
         get_area_config = {
             'name': 'area',
-            'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
-            'equations': ['a - l1 * l2'],
+            # 'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
+            'equations': ['a = l1 * l2'],
             'unit_map': {'l1': "cm", "l2": "cm", 'a': "cm^2"}
         }
         model = EquationModel(**get_area_config)
