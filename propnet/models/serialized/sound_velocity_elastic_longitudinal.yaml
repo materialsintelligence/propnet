@@ -1,0 +1,13 @@
+categories: [elastic]
+description: |
+    The sound velocity from the elastic modulus is determined by
+    estimating the characteristic frequencies of the normal and
+    transverse modes, and then estimating a speed from these frequencies.
+equations: [v_l = ((B+4/3*G)/p)**(1/2)]
+name: sound_velocity_elastic_longitudinal
+references: []
+symbol_property_map:
+    B: bulk_modulus
+    G: shear_modulus
+    p: density
+    v_l: sound_velocity_longitudinal
