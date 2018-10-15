@@ -217,6 +217,7 @@ def retrieve_material(n_clicks, query, derive_properties):
         row_selectable=True,
         filterable=True,
         sortable=True,
+        editable=False,
         selected_row_indices=[],
         id='datatable'
     )
