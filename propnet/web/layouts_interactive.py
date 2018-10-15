@@ -41,7 +41,7 @@ def interactive_layout(app):
         dt.DataTable(id='input-table', rows=DEFAULT_ROWS),
         dcc.Markdown('## Output'),
         html.Div(id='error'),
-        dt.DataTable(id='output-table', rows=[{'Property': None, 'Value': None}])
+        dt.DataTable(id='output-table', rows=[{'Property': None, 'Value': None, 'Provenance': None}], editable=False)
     ])
 
     @app.callback(
@@ -65,7 +65,8 @@ def interactive_layout(app):
 
         output_rows = [{
             'Property': symbol.display_names[0],
-            'Value': str(quantity.value)
+            'Value': str(quantity.value),
+            'Provenance': None
         } for symbol, quantity in output_quantities.items()]
 
         return output_rows
