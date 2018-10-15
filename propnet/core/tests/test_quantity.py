@@ -41,6 +41,10 @@ class QuantityTest(unittest.TestCase):
         # Simple test
         pass
 
+    def test_pretty_string(self):
+        quantity = Quantity('bulk_modulus', 100)
+        self.assertEqual(quantity.pretty_string(3), "100 GPa")
+
     def test_to(self):
         quantity = Quantity('band_gap', 3.0, 'eV')
         new = quantity.to('joules')

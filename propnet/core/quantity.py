@@ -100,6 +100,19 @@ class Quantity(MSONable):
     def is_pint(self):
         return isinstance(self._value, ureg.Quantity)
 
+    def pretty_string(self, sigfigs=4):
+        if self.is_pint:
+            if isinstance(self.magnitude, (float, int)):
+                out = "{0:.4g}".format(self.magnitude)
+                if self.uncertainty:
+                    out += "\u00B1{0:.4g}".format(self.uncertainty.magnitude)
+            else:
+                out = "{}".format(self.magnitude)
+            out += " {:~P}".format(self.units)
+        else:
+            out = "{}".format(self.value)
+        return out
+
     @property
     def value(self):
         """

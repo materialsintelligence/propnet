@@ -206,7 +206,7 @@ def retrieve_material(n_clicks, query, derive_properties):
         rows.append(
             {
                 'Symbol': symbol.display_names[0],
-                'Value': str(quantity.value).replace("+/-", "\u00B1"),
+                'Value': quantity.pretty_string(3),
             # TODO: node.node_value.value? this has to make sense
                 # 'Units': str(node.node_value.symbol.unit_as_string)
             }
