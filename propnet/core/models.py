@@ -31,9 +31,6 @@ TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
                              "models", "test_data")
 
 
-# General TODOs:
-# TODO: Does the unit_map really need to be specified?  Why can't
-#       pint handle this?
 class Model(ABC):
     """
     Abstract model class for all models appearing in Propnet
