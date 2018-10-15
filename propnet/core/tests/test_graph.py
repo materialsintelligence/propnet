@@ -400,7 +400,6 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(q is not None,
                             "Quantity missing from evaluate.")
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_symbol_expansion(self):
         """
         Tests the Symbol Expansion algorithm on a non-cyclic graph.
@@ -434,7 +433,6 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(ts[i] == ans[i],
                             "Symbol Expansion failed: test - " + str(i))\
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_symbol_expansion_cyclic(self):
         """
         Tests the Symbol Expansion algorithm on a cyclic graph.
@@ -467,7 +465,6 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(ts[i] == ans[i],
                             "Symbol Expansion failed: test - " + str(i))
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_symbol_expansion_constraints(self):
         """
         Tests the Symbol Expansion algorithm on a non-cyclic graph with constraints.
@@ -504,7 +501,6 @@ class GraphTest(unittest.TestCase):
             self.assertEqual(ts[i], ans[i],
                              "Symbol Expansion failed: test - " + str(i))
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_symbol_expansion_cyclic_constraints(self):
         """
         Tests the Symbol Expansion algorithm on a cyclic graph with constraints.
