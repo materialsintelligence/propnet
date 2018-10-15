@@ -865,37 +865,28 @@ def will_it_float(input_to_test):
         return False
 
 
-def remap(dict_or_list, mapping):
+def remap(obj, mapping):
     """
     Helper method to remap entries in a list or keys in a dictionary
     based on an input map, used to translate symbols to properties
     and vice-versa
 
     Args:
-        dict_or_list ([] or {}) a list of properties or property-keyed
+        obj ([] or {} or set) a list of properties or property-keyed
             dictionary to be remapped using symbols.
         mapping ({}): dictionary of values to remap
 
     Returns:
         remapped list of items or item-keyed dictionary
     """
-    output = copy(dict_or_list)
-    if isinstance(output, dict):
-        for in_key, out_key in mapping.items():
-            if in_key in output:
-                output[out_key] = output.pop(in_key)
-    elif isinstance(output, set):
-        for in_item in output:
-            out_item = mapping.get(in_item)
-            if out_item:
-                output.remove(in_item)
-                output.add(out_item)
+    if isinstance(obj, dict):
+        new = {mapping.get(in_key) or in_key: obj.get(in_key)
+               for in_key in obj.keys()}
     else:
-        for idx, in_item in enumerate(output):
-            out_item = mapping.get(in_item)
-            if out_item:
-                output[idx] = out_item
-    return output
+        new = [mapping.get(in_item) or in_item for in_item in obj]
+        if isinstance(obj, set):
+            new = set(new)
+    return new
 
 
 def get_syms_from_expression(expression):
