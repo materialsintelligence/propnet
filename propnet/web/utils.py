@@ -201,6 +201,8 @@ def parse_path(pathname):
         mode = 'graph'
     elif pathname.startswith('/ashby'):
         mode = 'ashby'
+    elif pathname.startswith('/interactive'):
+        mode = 'interactive'
 
     return {
         'mode': mode,
