@@ -11,3 +11,9 @@ symbol_property_map:
     G: shear_modulus
     p: density
     v_l: sound_velocity_longitudinal
+# Note that this shouldn't be necessary but seems to fix the travis CI tests
+scrub_units:
+    B: Pa
+    G: Pa
+    p: kg / m^3
+    v_l: m / s
