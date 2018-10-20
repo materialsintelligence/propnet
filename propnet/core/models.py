@@ -439,7 +439,11 @@ class EquationModel(Model, MSONable):
             connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
                            {"inputs": ["T", "V"], "outputs": ["p"]}]
             If no connections are specified (as default), EquationModel
-            attempts to find them intelligently by parsing the equations
+            attempts to find them by the convention that the symbol
+            in front of the equals sign is the output and the symbols
+            to the right are the inputs, e. g. OUTPUT = INPUT_1 + INPUT_2,
+            alternatively, using solve_for_all_symbols will derive all
+            possible input-output connections
         constraints ([str]): constraints on models
         description (str): long form description of the model
         categories (str): list of categories applicable to
@@ -456,36 +460,41 @@ class EquationModel(Model, MSONable):
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
                              for eq in equations]
-        connections = []
-        if solve_for_all_symbols:
-            connections, equations = [], []
-            for expr in sympy_expressions:
-                for symbol in expr.free_symbols:
-                    new = sp.solve(expr, symbol)
-                    inputs = get_syms_from_expression(new)
+        # If no connections specified, derive connections
+        if connections is None:
+            connections = []
+            if solve_for_all_symbols:
+                connections, equations = [], []
+                for expr in sympy_expressions:
+                    for symbol in expr.free_symbols:
+                        new = sp.solve(expr, symbol)
+                        inputs = get_syms_from_expression(new)
+                        connections.append(
+                            {"inputs": inputs,
+                             "outputs": [str(symbol)],
+                             "_lambdas": {str(symbol): sp.lambdify(inputs, new)}
+                             })
+            else:
+                for eqn in equations:
+                    output_expr, input_expr = eqn.split('=')
+                    inputs = get_syms_from_expression(input_expr)
+                    outputs = get_syms_from_expression(output_expr)
                     connections.append(
                         {"inputs": inputs,
-                         "outputs": [str(symbol)],
-                         "_lambda": sp.lambdify(inputs, new)
+                         "outputs": outputs,
+                         "_lambdas": {outputs[0]: sp.lambdify(inputs, parse_expr(input_expr))}
                          })
         else:
-            for eqn in equations:
-                output_expr, input_expr = eqn.split('=')
-                inputs = get_syms_from_expression(input_expr)
-                outputs = get_syms_from_expression(output_expr)
-                connections.append(
-                    {"inputs": inputs,
-                     "outputs": outputs,
-                     "_lambda": sp.lambdify(inputs, parse_expr(input_expr))
-                     })
-            self.equations = equations
+            # TODO: I don't think this needs to be supported necessarily
+            #       but it's causing problems with models with one input
+            #       and two outputs where you only want one connection
+            for connection in connections:
+                new = sp.solve(sympy_expressions, connection['outputs'])
+                lambdas = {str(sym): sp.lambdify(connection['inputs'], solved)
+                           for sym, solved in new.items()}
+                connection["_lambdas"] = lambdas
 
-        # if connections is None:
-        #     connections = []
-        #     for eqn in equations:
-        #         output, expr = eqn.split('=')
-        #         inputs = [str(v) for v in parse_expr(expr).free_symbols]
-        #         connections.append({"inputs": inputs, "outputs": [output.strip()]})
+        self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
             categories, references, symbol_property_map, scrub_units)
@@ -506,19 +515,17 @@ class EquationModel(Model, MSONable):
         output = {}
         for connection in self.connections:
             if set(connection['inputs']) <= set(symbol_value_dict.keys()):
-                output_sym = connection['outputs'][0]
-                output_vals = connection['_lambda'](**symbol_value_dict)
-                # TODO: this decision to only take max real values should
-                #       should probably be reevaluated at some point
-                # Scrub nan values and take max
-                # output_vals = [s for s in output_vals if not np.isnan(s)]
-                # import nose; nose.tools.set_trace()
-                if isinstance(output_vals, list):
-                    output_val = max([v for v in output_vals
-                                      if not isinstance(v, complex)])
-                else:
-                    output_val = output_vals
-                output.update({output_sym: output_val})
+                for output_sym, func in connection['_lambdas'].items():
+                    output_vals = func(**symbol_value_dict)
+                    # TODO: this decision to only take max real values should
+                    #       should probably be reevaluated at some point
+                    # Scrub nan values and take max
+                    if isinstance(output_vals, list):
+                        output_val = max([v for v in output_vals
+                                          if not isinstance(v, complex)])
+                    else:
+                        output_val = output_vals
+                    output.update({output_sym: output_val})
         if not output:
             raise ValueError("No valid input set found in connections")
         else:
