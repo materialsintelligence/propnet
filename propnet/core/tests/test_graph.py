@@ -49,7 +49,9 @@ class GraphTest(unittest.TestCase):
         Returns: (dict<str, Model>)
         """
         sym_map = GraphTest.generate_canonical_symbols()
+        # TODO: Resolve the connections issue here
         model1 = EquationModel(name="model1", equations=['B=2*A', 'C=3*A'],
+                               connections=[{"inputs": ["A"], "outputs": ['B', 'C']}],
                                symbol_property_map=sym_map)
         model2 = EquationModel(name="model2", equations=['G=5*A'],
                                symbol_property_map=sym_map)
@@ -535,7 +537,6 @@ class GraphTest(unittest.TestCase):
             self.assertEqual(ts[i], ans[i],
                              "Symbol Expansion failed: test - " + str(i))
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_symbol_ancestry(self):
         """
         Tests the Symbol Ancestry algorithm on a non-cyclic graph.
@@ -597,7 +598,6 @@ class GraphTest(unittest.TestCase):
                         m_map_2[models['model2']].children[0].inputs == {symbols['A']},
                         "Tree branch improperly formed.")
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_symbol_ancestry_cyclic(self):
         """
         Tests the Symbol Ancestry algorithm on a cyclic graph.
@@ -658,7 +658,6 @@ class GraphTest(unittest.TestCase):
                         m_map_2[models['model2']].children[0].inputs == {symbols['A']},
                         "Tree branch improperly formed.")
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_symbol_ancestry_constraint(self):
         """
         Tests the Symbol Ancestry algorithm on a non-cyclic graph with constraints.
@@ -732,7 +731,6 @@ class GraphTest(unittest.TestCase):
                         m_map_1[models['model2']].children[0].inputs == {symbols['A']},
                         "Tree branch improperly formed.")
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_symbol_ancestry_cyclic_constraint(self):
         """
         Tests the Symbol Ancestry algorithm on a cyclic graph with constraints.
@@ -805,7 +803,6 @@ class GraphTest(unittest.TestCase):
                         m_map_1[models['model2']].children[0].inputs == {symbols['A']},
                         "Tree branch improperly formed.")
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_get_path(self):
         """
         Tests the ability to generate all paths from one symbol to another.
@@ -838,7 +835,6 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(i in ans_2,
                             "Incorrect paths generated.")
 
-    @unittest.skipIf(NO_EXPANSION_METHODS, EXPANSION_METHOD_MESSAGE)
     def test_get_path_constraint(self):
         """
         Tests the ability to generate all paths from one symbol to another with constraints.
