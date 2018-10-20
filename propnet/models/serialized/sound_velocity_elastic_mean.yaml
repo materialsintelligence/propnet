@@ -1,7 +1,4 @@
 categories: [elastic]
-connections:
-- inputs: [v_t, v_l]
-  outputs: [v_m]
 description: |
     The sound velocity from the elastic modulus is determined by
     estimating the characteristic frequencies of the normal and
