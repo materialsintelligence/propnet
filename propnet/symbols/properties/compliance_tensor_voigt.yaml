@@ -1,7 +1,5 @@
 name: compliance_tensor_voigt
-units:
-- 1.0
-- - [gigapascal, -1.0]
+units: 1 / GPa
 display_names: ['Compliance tensor (in Voigt notation)']
 display_symbols: ['S_{ij}']
 shape: [6, 6]

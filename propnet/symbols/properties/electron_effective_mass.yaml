@@ -1,7 +1,5 @@
 name: electron_effective_mass
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Electron effective mass']
 display_symbols: ['m_e^*']
 shape: 1

@@ -1,0 +1,11 @@
+categories: [thermal]
+description: |
+  simple conversion formula for specific and molar mass
+equations: [c_v_specific = c_v_molar / molar_mass]
+name: heat_capacity_conversion
+references: []
+symbol_property_map:
+  c_v_specific: specific_heat_capacity_constant_volume
+  c_v_molar: molar_heat_capacity_constant_volume
+  molar_mass: molar_mass
+solve_for_all_symbols: True

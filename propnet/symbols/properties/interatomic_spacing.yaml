@@ -1,7 +1,5 @@
 name: interatomic_spacing
-units:
-- 1.0
-- - [angstrom, 1.0]
+units: angstrom
 display_names: ['Interatomic Spacing']
 display_symbols: ['b']
 shape: 1

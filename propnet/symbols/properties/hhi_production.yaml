@@ -4,6 +4,4 @@ display_names: [Herfindahl-Hirschman Index (Production)]
 display_symbols: [HHI_production]
 name: hhi_production
 shape: 1
-units:
-- 1
-- []
+units: dimensionless

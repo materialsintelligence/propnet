@@ -4,6 +4,4 @@ display_names: [Herfindahl-Hirschman Index (Reserve)]
 display_symbols: [HHI_reserve]
 name: hhi_reserve
 shape: 1
-units:
-- 1
-- []
+units: dimensionless

@@ -1,8 +1,5 @@
 name: energy_above_hull
-units:
-- 1.0
-- - [electron_volt, 1.0]
-  - [atom, -1.0]
+units: eV / atom
 display_names: [Energy above hull]
 display_symbols: [e above hull]
 shape: 1

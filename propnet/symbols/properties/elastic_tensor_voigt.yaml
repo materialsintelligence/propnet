@@ -1,7 +1,5 @@
 name: elastic_tensor_voigt
-units:
-- 1.0
-- - [gigapascal, 1.0]
+units: GPa
 display_names: ['Elastic tensor (in Voigt notation)']
 display_symbols: ["C_{ij}"]
 shape: [6, 6]

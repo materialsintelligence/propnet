@@ -12,7 +12,7 @@ from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
 from propnet.core.models import CompositeModel
 from propnet.core.quantity import Quantity
-from propnet.core.provenance import ProvenanceElement, SymbolTree, TreeElement
+from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.models import DEFAULT_MODEL_DICT
 from propnet.symbols import DEFAULT_SYMBOLS
@@ -460,7 +460,6 @@ class Graph(object):
         Returns:
             None
         """
-
         # Get set of symbols that no longer need to be replaced and
         # symbols that are candidates for replacement.
         replaced_symbols = set()    # set of all symbols already replaced.
@@ -625,21 +624,15 @@ class Graph(object):
         for model_and_input_set in models_and_input_sets:
             model = model_and_input_set[0]
             inputs = model_and_input_set[1:]
-            input_dict = {q.symbol: q.value for q in inputs}
+            input_dict = {q.symbol: q for q in inputs}
             logger.info('Evaluating %s with input %s', model, input_dict)
             result = model.evaluate(
                 input_dict, allow_failure=allow_model_failure)
             # TODO: Maybe provenance should be done in evaluate?
-            provenance = ProvenanceElement(model=model, inputs=inputs)
             success = result.pop('successful')
             if success:
-                # Filter any cycles in quantities
-                result_quantities = [Quantity(self._symbol_types[symbol], value,
-                                              provenance=provenance)
-                                     for symbol, value in result.items()]
-                result_quantities = filter(lambda x: not x.is_cyclic(),
-                                           result_quantities)
-                added_quantities.extend(list(result_quantities))
+                noncyclic = filter(lambda x: not x.is_cyclic(), result.values())
+                added_quantities.extend(list(noncyclic))
             else:
                 logger.info("Model evaluation unsuccessful %s", result['message'])
         return added_quantities, quantity_pool
@@ -677,11 +670,13 @@ class Graph(object):
 
     def super_evaluate(self, material):
         """
-        Given a SuperMaterial object as input, creates a new SuperMaterial object to include all derivable properties.
-        Returns a reference to the new, augmented SuperMaterial object.
+        Given a SuperMaterial object as input, creates a new SuperMaterial
+        object to include all derivable properties.  Returns a reference to
+        the new, augmented SuperMaterial object.
 
         Args:
-            material (SuperMaterial): which material's properties will be expanded.
+            material (SuperMaterial): material for which properties
+                will be expanded.
 
         Returns:
             (Material) reference to the newly derived material object.
@@ -699,9 +694,8 @@ class Graph(object):
             else:
                 evaluated_materials.append(self.evaluate(m))
 
-        # Run all SuperModels in the graph on this SuperMaterial if a material mapping can be established.
-        # Store any derived quantities.
-
+        # Run all SuperModels in the graph on this SuperMaterial if
+        # a material mapping can be established.  Store any derived quantities.
         all_quantities = defaultdict(set)
         for (k, v) in material._symbol_to_quantity:
             all_quantities[k].add(v)
@@ -719,7 +713,8 @@ class Graph(object):
 
             mat_mappings = model.gen_material_mappings(to_return.materials)
 
-            if len(mat_mappings) != 1:      # Avoid ambiguous or impossible mappings, at least for now.
+            # Avoid ambiguous or impossible mappings, at least for now.
+            if len(mat_mappings) != 1:
                 continue
 
             mat_mapping = mat_mappings[0]
@@ -755,15 +750,12 @@ class Graph(object):
                     logger.debug("\t\t\tEvaluating input set: " + str(input_set))
 
                     # Check if input_set can be evaluated -- input_set must pass the necessary model constraints
-
                     if not model.check_constraints(input_set):
                         logger.debug("\t\t\tInput set failed -- did not pass model constraints.")
                         continue
 
                     # Try to evaluate input_set:
-
-                    evaluate_set = {prop: quantity.value
-                                    for prop, quantity in zip(combined_list, input_set)}
+                    evaluate_set = dict(zip(combined_list, input_set))
                     output = model.evaluate(evaluate_set, allow_failure=False)
                     success = output.pop('successful')
                     if not success:

@@ -1,13 +1,11 @@
 categories: [stability]
-connections:
-- inputs: [r_cation_B, r_cation_A, r_anion]
-  outputs: [t]
+# I think this model should be revised to be a python model based on structure
 description: |
   The Goldchmidt Tolerance Factor is a dimensionless number used to indicate
   the stability and distorition of crystal structures.
 
   It can be reliably used as a metric in perovskites and ilmenites.
-equations: [t - (r_cation_A + r_anion)/(2**.5 * (r_cation_B + r_anion))]
+equations: [t = (r_cation_A + r_anion)/(2**.5 * (r_cation_B + r_anion))]
 name: goldschmidt_tolerance
 references: []
 symbol_property_map:

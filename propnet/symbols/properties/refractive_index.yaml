@@ -1,7 +1,5 @@
 name: refractive_index
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Refractive index','Index of Refraction']
 display_symbols: ['n']
 shape: 1

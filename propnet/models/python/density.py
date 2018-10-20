@@ -1,7 +1,13 @@
 def plug_in(symbol_values):
     s = symbol_values['s']
+    p = len(s.sites) / s.volume
+    rho = float(s.density)
+    mbar = rho / p
+    v_a = 1 / p
     return {'p': len(s.sites) / s.volume,
-            'rho': float(s.density)}
+            'rho': float(s.density),
+            'v_a': v_a,
+            'mbar': mbar}
 
 
 DESCRIPTION = """
@@ -18,7 +24,9 @@ config = {
             ],
             "outputs": [
                 "p",
-                "rho"
+                "rho",
+                "mbar",
+                "v_a"
             ]
         }
     ],
@@ -28,7 +36,9 @@ config = {
     "symbol_property_map": {
         "s": "structure",
         "p": "atomic_density",
-        "rho": "density"
+        "rho": "density",
+        "v_a": "volume_per_atom",
+        "mbar": "mass_per_atom"
     },
     "description": DESCRIPTION,
     "references": [],

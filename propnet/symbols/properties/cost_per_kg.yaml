@@ -5,7 +5,4 @@ display_names: [Cost (USD) per kg]
 display_symbols: ['Cost ($) per kg']
 name: cost_per_kg
 shape: 1
-units:
-- 1.0
-- - [USD, 1.0]
-  - [kilogram, -1.0]
+units: USD / kg

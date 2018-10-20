@@ -1,15 +1,11 @@
 import unittest
 
-from propnet.core.symbols import *
-from propnet import ureg
-
+from propnet.core.symbols import Symbol
 from propnet.symbols import DEFAULT_SYMBOLS
 
 
-class PropertiesTest(unittest.TestCase):
-
+class SymbolTest(unittest.TestCase):
     def test_property_construction(self):
-
         sample_symbol_type_dict = {
             'name': 'youngs_modulus',
             'units': [1.0, [["gigapascal", 1.0]]],

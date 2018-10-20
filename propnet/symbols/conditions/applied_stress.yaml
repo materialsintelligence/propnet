@@ -1,7 +1,5 @@
 name: applied_stress
-units:
-- 1.0
-- - [gigapascal, 1]
+units: gigapascal
 display_names: ['Applied stress']
 display_symbols: ['/sigma']
 shape: 1

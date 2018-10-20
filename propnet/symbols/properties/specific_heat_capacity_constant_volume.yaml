@@ -1,9 +1,5 @@
 name: specific_heat_capacity_constant_volume
-units:
-- 1.0
-- - [joule, 1.0]
-  - [kilogram, -1.0]
-  - [kelvin, -1.0]
+units: J / kg / K
 display_names: [Specific heat capacity (constant volume)]
 display_symbols: [c_v]
 shape: 1

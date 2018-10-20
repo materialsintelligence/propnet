@@ -1,9 +1,11 @@
 name: band_gap
-units:
-- 1.0
-- - [electron_volt, 1.0]
+units: eV
 display_names: [Band gap]
 display_symbols: ["E_g"]
 shape: 1
 comment: ''
 category: property
+# This constraint breaks a lot of things because in principle,
+# the models associated with these should return something with a
+# minimum of zero, I think symbol should be refactored
+# constraint: band_gap >= 0
