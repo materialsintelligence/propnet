@@ -531,26 +531,6 @@ class EquationModel(Model, MSONable):
         else:
             return output
 
-        # # Parse equations and substitute
-        # eqns = [parse_expr(eq.replace('=', '-(')+')') for eq in self.equations]
-        # # eqns = [eqn.subs(symbol_value_dict) for eqn in eqns]
-        # possible_outputs = set()
-        # for eqn in eqns:
-        #     possible_outputs = possible_outputs.union(eqn.free_symbols)
-        # outputs = {}
-        # # Determine outputs from solutions to substituted equations
-        # for possible_output in possible_outputs:
-        #     solutions = sp.solve(eqns, possible_output)
-        #     funcs = [sp.lambdify(possible_output, solution)
-        #              for solution in solutions]
-        #     svals = [func(**symbol_value_dict) for func in funcs]
-        #     # scrub nans
-        #     svals = [s for s in svals if not np.isnan(s)]
-        #     # Taking max solution only, and only asking for one output symbol
-        #     solution = max([s for s in svals])
-        #     outputs[str(possible_output)] = solution
-        # return outputs
-
     @classmethod
     def from_file(cls, filename):
         """
