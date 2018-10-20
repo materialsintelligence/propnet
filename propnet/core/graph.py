@@ -460,7 +460,6 @@ class Graph(object):
         Returns:
             None
         """
-
         # Get set of symbols that no longer need to be replaced and
         # symbols that are candidates for replacement.
         replaced_symbols = set()    # set of all symbols already replaced.
