@@ -5,6 +5,8 @@ Module containing classes and methods for graph functionality in Propnet code.
 import logging
 from collections import defaultdict
 from itertools import product
+from chronic import Timer, timings
+from pandas import DataFrame
 
 import networkx as nx
 
@@ -627,9 +629,10 @@ class Graph(object):
             inputs = model_and_input_set[1:]
             input_dict = {q.symbol: q.value for q in inputs}
             logger.info('Evaluating %s with input %s', model, input_dict)
-            result = model.evaluate(
-                input_dict, allow_failure=allow_model_failure)
-            # TODO: Maybe provenance should be done in evaluate?
+            with Timer(model.name):
+                result = model.evaluate(input_dict,
+                                        allow_failure=allow_model_failure)
+            # TODO: Maybe provenance should be done in evaluate? (Yes!)
             provenance = ProvenanceElement(model=model, inputs=inputs)
             success = result.pop('successful')
             if success:
@@ -641,7 +644,8 @@ class Graph(object):
                                            result_quantities)
                 added_quantities.extend(list(result_quantities))
             else:
-                logger.info("Model evaluation unsuccessful %s", result['message'])
+                logger.info("Model evaluation unsuccessful %s",
+                            result['message'])
         return added_quantities, quantity_pool
 
     def evaluate(self, material, allow_model_failure=True):
@@ -653,6 +657,8 @@ class Graph(object):
 
         Args:
             material (Material): which material's properties will be expanded.
+            allow_model_failure (Bool): whether to continue with graph evaluation
+            if a model fails.
 
         Returns:
             (Material) reference to the newly derived material object.
@@ -670,6 +676,8 @@ class Graph(object):
             new_quantities, quantity_pool = self.derive_quantities(
                 new_quantities, quantity_pool,
                 allow_model_failure=allow_model_failure)
+
+        print(self.evaluation_statistics)
 
         new_material = Material()
         new_material._symbol_to_quantity = quantity_pool
@@ -786,3 +794,31 @@ class Graph(object):
         mappings = self.evaluate(to_return)._symbol_to_quantity
         to_return._symbol_to_quantity = mappings
         return to_return
+
+    @property
+    def _evaluation_statistics(self):
+        """
+        :return: A dictionary containing statistics on how many times
+        each model was evaluated, average time per model, and the total
+        time taken for that model.
+        """
+        return timings
+
+    @property
+    def evaluation_statistics(self):
+        """
+        :return: A Pandas DataFrame containing statistics on how
+        many times each model was evaluated, average time per model,
+        and the total time taken for that model.
+        """
+
+        rows = [{'Model Name': model,
+                 'Total Evaluation Time /s': stats['total_elapsed'],
+                 'Average Evaluation Time /s': stats['average_elapsed'],
+                 'Number of Evaluations': stats['count']}
+                for model, stats in self._evaluation_statistics.items()]
+
+        return DataFrame(rows, columns=['Model Name',
+                                        'Total Evaluation Time /s',
+                                        'Number of Evaluations',
+                                        'Average Evaluate Time /s'])
