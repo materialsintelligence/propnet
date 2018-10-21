@@ -629,7 +629,7 @@ class Graph(object):
             inputs = model_and_input_set[1:]
             input_dict = {q.symbol: q for q in inputs}
             logger.info('Evaluating %s with input %s', model, input_dict)
-            
+
             with Timer(model.name):
                 result = model.evaluate(input_dict,
                                         allow_failure=allow_model_failure)
