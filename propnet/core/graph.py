@@ -677,8 +677,6 @@ class Graph(object):
                 new_quantities, quantity_pool,
                 allow_model_failure=allow_model_failure)
 
-        print(self.evaluation_statistics)
-
         new_material = Material()
         new_material._symbol_to_quantity = quantity_pool
         return new_material
