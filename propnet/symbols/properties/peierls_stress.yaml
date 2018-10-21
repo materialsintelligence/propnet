@@ -1,7 +1,5 @@
 name: peierls_stress
-units:
-- 1.0
-- - [gigapascal, 1]
+units: GPa
 display_names: ['Peierls Stress']
 display_symbols: ['/tau_{PN}']
 shape: 1

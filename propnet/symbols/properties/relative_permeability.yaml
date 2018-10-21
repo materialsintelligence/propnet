@@ -1,7 +1,5 @@
 name: relative_permeability
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Relative permeability']
 display_symbols: ['\mu_{r}']
 shape: 1

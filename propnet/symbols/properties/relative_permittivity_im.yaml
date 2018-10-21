@@ -1,7 +1,5 @@
 name: relative_permittivity_im
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Imaginary part of relative permittivity']
 display_symbols: ['\epsilon_{c}']
 shape: 1

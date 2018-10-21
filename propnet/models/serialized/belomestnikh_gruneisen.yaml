@@ -1,0 +1,15 @@
+categories: [thermal, mechanical]
+description: |
+  An expression for the Gruneisen constants of solids is obtained
+  involving only the velocities of propagation of the elastic waves.
+  The new relation is applied for determining the Grüneisen constants
+  of metals, ionic crystals, and ionic-molecular crystals.
+equations:
+  - gamma_d = 1.5 * ((3*(v_l / v_t)**2 - 4) / ((v_l / v_t)**2 + 2))
+name: belomestnikh_gruneisen
+references: ["url:https://link.springer.com/article/10.1134/1.1666949"]
+constraints: null
+symbol_property_map:
+    gamma_d: gruneisen_parameter
+    v_l: sound_velocity_longitudinal
+    v_t: sound_velocity_transverse

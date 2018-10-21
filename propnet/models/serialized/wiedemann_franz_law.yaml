@@ -1,14 +1,9 @@
 categories: [thermal, empirical]
-connections:
-- inputs: [T, k]
-  outputs: [o]
-- inputs: [T, o]
-  outputs: [k]
 description: |
   The Wiedemann-Franz Law states that the ratio of the
   electronic component of thermal conductivity to electrical
   conductivity is proportional to temperature.
-  
+
   This model is based on the application of the drude model, using
   predictions from the kinetic model of an ideal gas. Thus, the
   Wiedemann-Franz Law is only widely applicable to metallic solids.
@@ -21,11 +16,14 @@ description: |
 
   Strongly correlated systems can also exhibit substantial deviations
   from this relation where heat and charge transfer become decoupled.
-equations: [T * 2.45*10**-8 * o - k]
+equations: [k = T * 2.45*10**-8 * o]
 name: wiedemann_franz_law
-references: ["url:http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/thercond.html#c2"] 
-symbol_property_map: 
+references: ["url:http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/thercond.html#c2"]
+# TODO: does this only apply to metals?  If so should be fixed
+symbol_property_map:
     T: temperature
     is_metallic: is_metallic
     k: electronic_thermal_conductivity
     o: electrical_conductivity
+solve_for_all_symbols: True
+scrub_units: True

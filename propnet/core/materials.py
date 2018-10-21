@@ -5,7 +5,7 @@ Module containing classes and methods for Material functionality in propnet code
 from collections import defaultdict
 from itertools import chain
 
-from propnet.core.quantity import Quantity, weighted_mean
+from propnet.core.quantity import Quantity
 from propnet.core.symbols import Symbol
 
 
@@ -110,7 +110,7 @@ class Material(object):
         aggregated = {}
         for symbol, quantities in self._symbol_to_quantity.items():
             if not symbol.category =='object':
-                aggregated[symbol] = weighted_mean(list(quantities))
+                aggregated[symbol] = Quantity.from_weighted_mean(list(quantities))
         return aggregated
 
     def __str__(self):
@@ -168,5 +168,5 @@ class CompositeMaterial(Material):
         Args:
             materials_list (list<Material>): list of materials contained in the Composite
         """
-        Material.__init__(self)
         self.materials = materials_list
+        super(CompositeMaterial, self).__init__()

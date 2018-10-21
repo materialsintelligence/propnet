@@ -1,7 +1,5 @@
 name: wavelength
-units:
-- 1.0
-- - [nanometer, 1.0]
+units: nanometer
 display_names: [Wavelength]
 display_symbols: [\lambda]
 shape: 1

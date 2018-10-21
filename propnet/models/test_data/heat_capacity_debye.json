@@ -1,0 +1,11 @@
+[
+  {
+    "inputs": {
+      "temperature": 298,
+      "debye_temperature": 310
+    },
+    "outputs": {
+      "molar_heat_capacity_constant_volume": 23.6429
+    }
+  }
+]

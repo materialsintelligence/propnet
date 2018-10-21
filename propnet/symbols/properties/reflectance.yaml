@@ -1,7 +1,5 @@
 name: reflectance
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Reflectance']
 display_symbols: ['R']
 shape: 1

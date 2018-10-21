@@ -1,9 +1,5 @@
 name: electron_mobility
-units:
-- 1.0
-- - [centimeter, 2.0]
-  - [volt, -1.0]
-  - [second, -1.0]
+units: cm^2 / volt / second
 display_names: ['Electron mobility']
 display_symbols: ['\mu_e']
 shape: 1

@@ -1,7 +1,5 @@
 name: thickness
-units:
-- 1.0
-- - [nanometer, 1.0]
+units: nanometer
 display_names: [Thickness]
 display_symbols: [t]
 shape: 1

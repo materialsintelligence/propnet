@@ -1,7 +1,5 @@
 name: band_gap_gw
-units:
-- 1.0
-- - [electron_volt, 1.0]
+units: eV
 display_names: ["Quasiparticle band gap (GW)"]
 display_symbols: ["E_{g, GW}"]
 shape: 1

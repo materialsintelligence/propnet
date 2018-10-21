@@ -1,7 +1,5 @@
 name: absorbance
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Absorbance']
 display_symbols: ['A']
 shape: 1

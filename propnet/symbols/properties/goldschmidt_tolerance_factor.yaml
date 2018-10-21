@@ -1,7 +1,5 @@
 name: goldschmidt_tolerance_factor
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Goldschmidt tolerance factor']
 display_symbols: ['t']
 shape: 1

@@ -1,8 +1,5 @@
 name: piezoelectric_tensor
-units:
-- 1.0
-- - [coulomb, 1.0]
-  - [meter, -2.0]
+units: coulomb / meter**2
 display_names: ['Piezoelectric Tensor']
 display_symbols: ['d_{ij}']
 shape: [3, 6]

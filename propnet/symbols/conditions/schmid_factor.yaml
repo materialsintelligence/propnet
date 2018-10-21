@@ -1,7 +1,5 @@
 name: schmid_factor
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Schmid factor']
 display_symbols: ['m']
 shape: 1

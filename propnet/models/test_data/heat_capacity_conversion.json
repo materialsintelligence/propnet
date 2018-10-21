@@ -1,0 +1,20 @@
+[
+  {
+    "inputs": {
+      "c_v_molar": 23.9,
+      "molar_mass": 63.546
+    },
+    "outputs": {
+      "c_v_specific": 376.10549
+    }
+  },
+  {
+    "inputs": {
+      "c_v_specific": 376.10549,
+      "molar_mass": 63.546
+    },
+    "outputs": {
+      "c_v_molar": 23.9
+    }
+  }
+]

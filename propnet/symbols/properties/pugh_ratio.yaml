@@ -1,7 +1,5 @@
 name: pugh_ratio
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: [Pugh's ratio]
 display_symbols: [k]
 shape: 1

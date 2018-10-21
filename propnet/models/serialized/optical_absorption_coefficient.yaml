@@ -1,18 +1,11 @@
 categories: [optical]
-connections:
-- inputs: [k, l]
-  outputs: [alpha]
-- inputs: [alpha, l]
-  outputs: [k]
-- inputs: [k, alpha]
-  outputs: [l]
 description: |
   Absorption coefficient characterizes the decay of intensity as light goes
   through the material.
 
   It scales linearly with frequency and extinction coefficient (imaginary part
   of relative permittivity).
-equations: [alpha - (4*pi*k*l**-1)]
+equations: [alpha = (4*pi*k / l)]
 name: optical_absorption_coefficient
 references:
   - url:https://en.wikipedia.org/wiki/Refractive_index#Complex_refractive_index
@@ -21,3 +14,4 @@ symbol_property_map:
   alpha: absorption_coefficient
   k: extinction_coefficient
   l: wavelength
+solve_for_all_symbols: True

@@ -5,7 +5,4 @@ display_names: [Cost (USD) per mol]
 display_symbols: ['Cost ($) per Mol']
 name: cost_per_mol
 shape: 1
-units:
-- 1.0
-- - [USD, 1.0]
-  - [mole, -1.0]
+units: USD / mole
