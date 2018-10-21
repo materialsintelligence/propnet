@@ -5,6 +5,8 @@ Module containing classes and methods for graph functionality in Propnet code.
 import logging
 from collections import defaultdict
 from itertools import product
+from chronic import Timer, timings, clear
+from pandas import DataFrame
 
 import networkx as nx
 
@@ -75,6 +77,7 @@ class Graph(object):
         self._composite_models = dict()
         self._input_to_model = defaultdict(set)
         self._output_to_model = defaultdict(set)
+        self._timings = None
 
         if symbol_types:
             self.update_symbol_types(symbol_types)
@@ -626,15 +629,19 @@ class Graph(object):
             inputs = model_and_input_set[1:]
             input_dict = {q.symbol: q for q in inputs}
             logger.info('Evaluating %s with input %s', model, input_dict)
-            result = model.evaluate(
-                input_dict, allow_failure=allow_model_failure)
+
+            with Timer(model.name):
+                result = model.evaluate(input_dict,
+                                        allow_failure=allow_model_failure)
             # TODO: Maybe provenance should be done in evaluate?
+            
             success = result.pop('successful')
             if success:
                 noncyclic = filter(lambda x: not x.is_cyclic(), result.values())
                 added_quantities.extend(list(noncyclic))
             else:
-                logger.info("Model evaluation unsuccessful %s", result['message'])
+                logger.info("Model evaluation unsuccessful %s",
+                            result['message'])
         return added_quantities, quantity_pool
 
     def evaluate(self, material, allow_model_failure=True):
@@ -646,6 +653,8 @@ class Graph(object):
 
         Args:
             material (Material): which material's properties will be expanded.
+            allow_model_failure (Bool): whether to continue with graph evaluation
+            if a model fails.
 
         Returns:
             (Material) reference to the newly derived material object.
@@ -656,6 +665,9 @@ class Graph(object):
         new_quantities = material.get_quantities()
         quantity_pool = None
 
+        # clear existing model evaluation statistics
+        clear()
+
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
         logger.debug("Beginning main loop with quantities %s", new_quantities)
@@ -663,6 +675,9 @@ class Graph(object):
             new_quantities, quantity_pool = self.derive_quantities(
                 new_quantities, quantity_pool,
                 allow_model_failure=allow_model_failure)
+
+        # store model evaluation statistics
+        self._timings = timings
 
         new_material = Material()
         new_material._symbol_to_quantity = quantity_pool
@@ -778,3 +793,22 @@ class Graph(object):
         mappings = self.evaluate(to_return)._symbol_to_quantity
         to_return._symbol_to_quantity = mappings
         return to_return
+
+    @property
+    def evaluation_statistics(self):
+        """
+        :return: A Pandas DataFrame containing statistics on how
+        many times each model was evaluated, average time per model,
+        and the total time taken for that model.
+        """
+
+        rows = [{'Model Name': model,
+                 'Total Evaluation Time /s': stats['total_elapsed'],
+                 'Average Evaluation Time /s': stats['average_elapsed'],
+                 'Number of Evaluations': stats['count']}
+                for model, stats in self._timings.items()]
+
+        return DataFrame(rows, columns=['Model Name',
+                                        'Total Evaluation Time /s',
+                                        'Number of Evaluations',
+                                        'Average Evaluation Time /s'])
