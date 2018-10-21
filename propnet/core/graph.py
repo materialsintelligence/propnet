@@ -5,7 +5,7 @@ Module containing classes and methods for graph functionality in Propnet code.
 import logging
 from collections import defaultdict
 from itertools import product
-from chronic import Timer, timings
+from chronic import Timer, timings, clear
 from pandas import DataFrame
 
 import networkx as nx
@@ -77,6 +77,7 @@ class Graph(object):
         self._composite_models = dict()
         self._input_to_model = defaultdict(set)
         self._output_to_model = defaultdict(set)
+        self._timings = None
 
         if symbol_types:
             self.update_symbol_types(symbol_types)
@@ -664,6 +665,9 @@ class Graph(object):
         new_quantities = material.get_quantities()
         quantity_pool = None
 
+        # clear existing model evaluation statistics
+        clear()
+
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
         logger.debug("Beginning main loop with quantities %s", new_quantities)
@@ -671,6 +675,9 @@ class Graph(object):
             new_quantities, quantity_pool = self.derive_quantities(
                 new_quantities, quantity_pool,
                 allow_model_failure=allow_model_failure)
+
+        # store model evaluation statistics
+        self._timings = timings
 
         new_material = Material()
         new_material._symbol_to_quantity = quantity_pool
@@ -788,15 +795,6 @@ class Graph(object):
         return to_return
 
     @property
-    def _evaluation_statistics(self):
-        """
-        :return: A dictionary containing statistics on how many times
-        each model was evaluated, average time per model, and the total
-        time taken for that model.
-        """
-        return timings
-
-    @property
     def evaluation_statistics(self):
         """
         :return: A Pandas DataFrame containing statistics on how
@@ -808,9 +806,9 @@ class Graph(object):
                  'Total Evaluation Time /s': stats['total_elapsed'],
                  'Average Evaluation Time /s': stats['average_elapsed'],
                  'Number of Evaluations': stats['count']}
-                for model, stats in self._evaluation_statistics.items()]
+                for model, stats in self._timings.items()]
 
         return DataFrame(rows, columns=['Model Name',
                                         'Total Evaluation Time /s',
                                         'Number of Evaluations',
-                                        'Average Evaluate Time /s'])
+                                        'Average Evaluation Time /s'])
