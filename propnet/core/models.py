@@ -60,10 +60,12 @@ class Model(ABC):
             unit assigned to the symbol in the dicts.  Units are scrubbed
             by default for PyModels/PyModule models and EquationModels with
             'empirical' categories
+        test_data (list of {'inputs': [], 'outputs': []): test data with
+            which to evaluate the model
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_property_map=None, scrub_units=None):
+                 symbol_property_map=None, scrub_units=None, test_data=None):
         self.name = name
         self.connections = connections
         self.description = description
@@ -93,6 +95,8 @@ class Model(ABC):
                 self.constraints.append(constraint)
             else:
                 self.constraints.append(Constraint(constraint))
+
+        self._test_data = test_data
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -450,12 +454,14 @@ class EquationModel(Model, MSONable):
             the model
         references ([str]): list of the informational links
             explaining / supporting the model
+        test_data (list of {'inputs': [], 'outputs': []): test data with
+            which to evaluate the model
 
     """
     def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
                  categories=None, references=None, scrub_units=None,
-                 solve_for_all_symbols=False):
+                 solve_for_all_symbols=False, test_data=None):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -557,11 +563,12 @@ class PyModel(Model):
     """
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_property_map=None, scrub_units=True):
+                 symbol_property_map=None, scrub_units=True, test_data=None):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, scrub_units)
+            categories, references, symbol_property_map, scrub_units,
+            test_data=test_data)
 
     def plug_in(self, symbol_value_dict):
         """
