@@ -1,15 +1,17 @@
 categories: [optical, empirical]
-description: |
-  An empirical model relating a material''s band gap to its
+description: 'An empirical model relating a material''''s band gap to its
+
   refractive index.
-equations:
-  - n = (95/Eg)**(1/4)
+
+  '
+equations: [n = (95/Eg)**(1/4)]
 name: band_gap_refractive_index_moss
-references:
-    - doi:10.1016/j.infrared.2006.04.001
-    - doi:10.1002/pssb.2221310202
-    - doi:10.1002/pssb.2221000240
-solve_for_all_symbols: True
-symbol_property_map:
-    Eg: band_gap
-    n: refractive_index
+references: ['doi:10.1016/j.infrared.2006.04.001', 'doi:10.1002/pssb.2221310202',
+  'doi:10.1002/pssb.2221000240']
+solve_for_all_symbols: true
+symbol_property_map: {Eg: band_gap, n: refractive_index}
+test_data:
+- inputs: {Eg: 3.2}
+  outputs: {n: 2.334228}
+- inputs: {n: 2.334228}
+  outputs: {Eg: 3.2}

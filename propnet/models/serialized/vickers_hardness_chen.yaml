@@ -1,13 +1,15 @@
 categories: [mechanical]
-description: |
-  Model calculating the Vicker''s Hardness from bulk and shear moduli.
+description: 'Model calculating the Vicker''''s Hardness from bulk and shear moduli.
+
 
   Uses model from X.Q. Chen et al., Intermetallics 19, 1275-1281 (2011)
+
+  '
 equations: [H = 2*(G/k**2)**0.585 - 3]
 name: vickers_hardness_chen
 references: []
-symbol_property_map:
-  G: shear_modulus
-  H: vickers_hardness
-  k: pugh_ratio
-scrub_units: True
+scrub_units: true
+symbol_property_map: {G: shear_modulus, H: vickers_hardness, k: pugh_ratio}
+test_data:
+- inputs: {G: 73.44285714285714, k: 2.482655773844259}
+  outputs: {H: 5.522326655806999}

@@ -1,18 +1,16 @@
 categories: [elastic]
-description: |
-    The sound velocity from the elastic modulus is determined by
-    estimating the characteristic frequencies of the normal and
-    transverse modes, and then estimating a speed from these frequencies.
+description: 'The sound velocity from the elastic modulus is determined by
+
+  estimating the characteristic frequencies of the normal and
+
+  transverse modes, and then estimating a speed from these frequencies.
+
+  '
 equations: [v_t = (G/p)**(1/2)]
 name: sound_velocity_elastic_transverse
 references: []
-symbol_property_map:
-  G: shear_modulus
-  p: density
-  v_t: sound_velocity_transverse
-# Note that this shouldn't be necessary but seems to fix the travis CI tests
-scrub_units:
-    B: Pa
-    G: Pa
-    p: kg / m^3
-    v_l: m / s
+scrub_units: {B: Pa, G: Pa, p: kg / m^3, v_l: m / s}
+symbol_property_map: {G: shear_modulus, p: density, v_t: sound_velocity_transverse}
+test_data:
+- inputs: {G: 73.44285714285714, p: 8.027685486298079}
+  outputs: {v_t: 3024.6812029245752}
