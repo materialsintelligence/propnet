@@ -9,13 +9,14 @@ from propnet.core.graph import Graph
 from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.web.utils import graph_conversion, AESTHETICS
 
-# layouts for symbol detail pages
 
+# layouts for symbol detail pages
 def symbol_layout(symbol_name, aesthetics=None):
     """Create a Dash layout for a provided symbol.
 
     Args:
-      model: a symbol name
+      symbol_name (str): a symbol name
+      aesthetics (dict): an aesthetics configuration dictionary
 
     Returns:
       Dash layout

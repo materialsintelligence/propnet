@@ -18,6 +18,8 @@ import sympy as sp
 # TODO: I think object properties (e. g. structure)
 #       should have a "unitizer" metaclass that unitizes
 #       their attributes
+
+
 class Symbol(MSONable):
     """
     Class storing the complete description of a Symbol.
@@ -26,7 +28,6 @@ class Symbol(MSONable):
     .yaml files are read in from the symbols folder.
 
     """
-
 
     def __init__(self, name, display_names=None, display_symbols=None,
                  units=None, shape=None, object_type=None, comment=None,

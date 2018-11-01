@@ -525,7 +525,7 @@ class Graph(object):
         a list of property names and a quantity pool
 
         Args:
-            properties ([str]): property names
+            props ([str]): property names
             this_quantity_pool ({Symbol: Set(Quantity)}): quantities
                 keyed by symbols
 
@@ -634,7 +634,7 @@ class Graph(object):
                 result = model.evaluate(input_dict,
                                         allow_failure=allow_model_failure)
             # TODO: Maybe provenance should be done in evaluate?
-            
+
             success = result.pop('successful')
             if success:
                 noncyclic = filter(lambda x: not x.is_cyclic(), result.values())

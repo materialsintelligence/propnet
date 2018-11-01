@@ -33,7 +33,7 @@ class Quantity(MSONable):
     that a given material has those properties.
 
     Attributes:
-        symbol_type: (Symbol) the type of information that is represented
+        symbol_type: (Symbol or str) the type of information that is represented
             by the associated value.  If a string, assigns a symbol from
             the default symbols that has that string name
         _value: (id) the value associated with this symbol.  Note that

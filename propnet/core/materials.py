@@ -99,9 +99,6 @@ class Material(object):
         """
         Return mean values for all quantities for each symbol.
 
-        Args:
-            func (callable): function with which to aggregate quantities
-
         Returns:
             (dict<Symbol, weighted_mean) mapping from a Symbol to
             an aggregated statistic.
@@ -109,7 +106,7 @@ class Material(object):
         # TODO: proper weighting system, and more flexibility in object handling
         aggregated = {}
         for symbol, quantities in self._symbol_to_quantity.items():
-            if not symbol.category =='object':
+            if not symbol.category == 'object':
                 aggregated[symbol] = Quantity.from_weighted_mean(list(quantities))
         return aggregated
 
@@ -154,19 +151,22 @@ class CompositeMaterial(Material):
     """
     Class representing a material composed of one or more sub-materials.
 
-    Useful for representing materials properties that arise from multiple materials
-    (ie. contact voltage in metals)
+    Useful for representing materials properties that arise from
+    multiple materials (i. e. contact voltage in metals)
 
     Attributes:
-        _symbol_to_quantity (dict<Symbol, set<Quantity>>): data-structure storing all properties / descriptors
-                                                           that arise from the joining of multiple materials
+        _symbol_to_quantity (dict<Symbol, set<Quantity>>): data-structure
+            storing all properties / descriptors that arise from the
+            joining of multiple materials
         materials (list<Material>): set of materials contained in the Composite
     """
     def __init__(self, materials_list):
         """
         Creates a Composite Material instance.
+
         Args:
-            materials_list (list<Material>): list of materials contained in the Composite
+            materials_list (list<Material>): list of materials contained
+                in the Composite
         """
         self.materials = materials_list
         super(CompositeMaterial, self).__init__()
