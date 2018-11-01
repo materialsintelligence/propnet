@@ -69,7 +69,9 @@ class PropnetBuilder(Builder):
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
         graph = Graph()
-        graph.remove_models({"dimensionality": DEFAULT_MODEL_DICT['dimensionality']})
+        graph.remove_models(
+            {"dimensionality_cheon": DEFAULT_MODEL_DICT['dimensionality_cheon'],
+             "dimensionality_gorai": DEFAULT_MODEL_DICT['dimensionality_gorai']})
         new_material = graph.evaluate(material)
 
         # Format document and return

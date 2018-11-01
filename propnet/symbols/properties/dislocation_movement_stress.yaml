@@ -1,7 +1,5 @@
 name: dislocation_movement_stress
-units:
-- 1.0
-- - [gigapascal, 1.0]
+units: GPa
 display_names: ['Minimum stress needed for dislocation movement']
 display_symbols: ['/sigma_{0}']
 shape: 1

@@ -1,0 +1,7 @@
+name: molar_heat_capacity_constant_volume
+units: J / mol / K
+display_names: [Molar heat capacity (constant volume)]
+display_symbols: [c_v]
+shape: 1
+comment: ''
+category: property

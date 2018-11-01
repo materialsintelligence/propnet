@@ -1,0 +1,7 @@
+name: molar_mass
+units: g / mol
+display_names: [Molar mass]
+display_symbols: ["m"]
+shape: 1
+comment: ''
+category: property

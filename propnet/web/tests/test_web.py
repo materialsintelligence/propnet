@@ -4,7 +4,6 @@ import json
 from propnet.web.app import app, retrieve_material, symbol_layout,\
     model_layout, graph_conversion
 from propnet.core.graph import Graph
-from propnet.ext.matproj import MPRester
 
 routes = [
     '/',

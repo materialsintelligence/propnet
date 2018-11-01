@@ -1,7 +1,5 @@
 name: extinction_coefficient
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Extinction Coefficient']
 display_symbols: ['k']
 shape: 1

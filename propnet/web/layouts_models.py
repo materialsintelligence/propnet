@@ -2,13 +2,12 @@ from collections import OrderedDict
 
 import dash_html_components as html
 import dash_core_components as dcc
-from dash_react_graph_vis import GraphComponent
+from mp_dash_components import GraphComponent
 
 import networkx as nx
 from propnet.core.graph import Graph
 from propnet.models import DEFAULT_MODEL_DICT
 
-# import propnet.models as models
 from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.web.utils import references_to_markdown, graph_conversion, AESTHETICS
 

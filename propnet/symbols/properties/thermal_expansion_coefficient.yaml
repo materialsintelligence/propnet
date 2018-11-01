@@ -1,7 +1,5 @@
 name: thermal_expansion_coefficient
-units:
-- 1.0
-- - [kelvin, -1.0]
+units: 1 / K
 display_names: [Coefficient of Thermal Expansion]
 display_symbols: [\alpha]
 shape: 1

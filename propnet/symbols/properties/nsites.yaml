@@ -1,7 +1,5 @@
 name: nsites
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Number of atomic sites']
 display_symbols: ['Number of Atomic Sites']
 shape: 1

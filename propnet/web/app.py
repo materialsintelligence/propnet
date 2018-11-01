@@ -9,6 +9,7 @@ from propnet import log_stream
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_symbols import symbol_layout, symbols_index
 from propnet.web.layouts_ashby import ashby_layout
+from propnet.web.layouts_interactive import interactive_layout
 
 from mp_dash_components import GraphComponent
 from propnet.web.utils import graph_conversion, parse_path, AESTHETICS
@@ -92,6 +93,8 @@ layout_menu = html.Div(
               dcc.Link('Explore with Materials Project', href='/load_material'),
               html.Span(' • '),
               dcc.Link('Ashby Plots', href='/ashby'),
+              html.Span(' • '),
+              dcc.Link('Interact', href='/interactive'),
               ])
 
 # home page
@@ -206,7 +209,7 @@ def retrieve_material(n_clicks, query, derive_properties):
         rows.append(
             {
                 'Symbol': symbol.display_names[0],
-                'Value': str(quantity.value).replace("+/-", "\u00B1"),
+                'Value': quantity.pretty_string(3),
             # TODO: node.node_value.value? this has to make sense
                 # 'Units': str(node.node_value.symbol.unit_as_string)
             }
@@ -217,6 +220,7 @@ def retrieve_material(n_clicks, query, derive_properties):
         row_selectable=True,
         filterable=True,
         sortable=True,
+        editable=False,
         selected_row_indices=[],
         id='datatable'
     )
@@ -266,6 +270,7 @@ material_layout = html.Div([
 
 
 ASHBY_LAYOUT = ashby_layout(app)
+INTERACTIVE_LAYOUT = interactive_layout(app)
 
 # routing, current routes defined are:
 # / for home page
@@ -305,6 +310,8 @@ def display_page(pathname):
             return graph_layout
         elif path_info['mode'] == 'ashby':
             return ASHBY_LAYOUT
+        elif path_info['mode'] == 'interactive':
+            return INTERACTIVE_LAYOUT
         else:
             return '404'
     else:

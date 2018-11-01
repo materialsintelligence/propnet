@@ -1,8 +1,5 @@
 name: electrical_resistivity
-units:
-- 1.0
-- - [ohm, 1.0]
-  - [meter, 1.0]
+units: ohm * meter
 display_names: ['Electrical resistivity']
 display_symbols: ['\ohm']
 shape: 1

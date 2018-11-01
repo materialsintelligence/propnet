@@ -90,8 +90,7 @@
       }
     },
     "outputs": {
-      "dimensionality_cheon": "3D",
-      "dimensionality_gorai": 3
+      "dimensionality": 3
     }
   }
 ]

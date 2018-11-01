@@ -1,7 +1,5 @@
 name: resolved_shear_stress
-units:
-- 1.0
-- - [gigapascal, 1.0]
+units: gigapascal
 display_names: [Resolved shear stress]
 display_symbols: [\tau]
 shape: 1

@@ -1,7 +1,5 @@
 name: elastic_anisotropy
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: [Elastic Anisotropy]
 display_symbols: ['E_{anisotropy}']
 shape: 1

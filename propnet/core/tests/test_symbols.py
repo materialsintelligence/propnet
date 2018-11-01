@@ -1,15 +1,11 @@
 import unittest
 
-from propnet.core.symbols import *
-from propnet import ureg
-
+from propnet.core.symbols import Symbol
 from propnet.symbols import DEFAULT_SYMBOLS
 
 
-class PropertiesTest(unittest.TestCase):
-
+class SymbolTest(unittest.TestCase):
     def test_property_construction(self):
-
         sample_symbol_type_dict = {
             'name': 'youngs_modulus',
             'units': [1.0, [["gigapascal", 1.0]]],
@@ -37,7 +33,8 @@ class PropertiesTest(unittest.TestCase):
         """
         for st in DEFAULT_SYMBOLS.values():
             self.assertTrue(st.name is not None and st.name.isidentifier())
-            self.assertTrue(st.category is not None and st.category in ('property', 'condition', 'object'))
+            self.assertTrue(st.category is not None and st.category
+                            in ('property', 'condition', 'object'))
             self.assertTrue(st.display_names is not None and isinstance(st.display_names, list) and
                             len(st.display_names) != 0)
             self.assertTrue(st.display_symbols is not None and isinstance(st.display_symbols, list) and

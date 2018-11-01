@@ -1,8 +1,6 @@
-from collections import OrderedDict
-
 import dash_html_components as html
 import dash_core_components as dcc
-from dash_react_graph_vis import GraphComponent
+from mp_dash_components import GraphComponent
 from pydash import set_
 
 import networkx as nx

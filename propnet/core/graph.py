@@ -4,7 +4,9 @@ Module containing classes and methods for graph functionality in Propnet code.
 
 import logging
 from collections import defaultdict
-from itertools import chain, product
+from itertools import product
+from chronic import Timer, timings, clear
+from pandas import DataFrame
 
 import networkx as nx
 
@@ -12,7 +14,7 @@ from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
 from propnet.core.models import CompositeModel
 from propnet.core.quantity import Quantity
-from propnet.core.provenance import ProvenanceElement, SymbolTree, TreeElement
+from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.models import DEFAULT_MODEL_DICT
 from propnet.symbols import DEFAULT_SYMBOLS
@@ -75,6 +77,7 @@ class Graph(object):
         self._composite_models = dict()
         self._input_to_model = defaultdict(set)
         self._output_to_model = defaultdict(set)
+        self._timings = None
 
         if symbol_types:
             self.update_symbol_types(symbol_types)
@@ -187,7 +190,7 @@ class Graph(object):
             self._models[model.name] = model
             added[model.name] = model
             try:
-                for input_set in model.input_sets:
+                for input_set in model.evaluation_list:
                     for property_name in input_set:
                         if property_name not in self._symbol_types.keys():
                             raise KeyError(property_name)
@@ -326,6 +329,7 @@ class Graph(object):
 
         return graph
 
+    # TODO: can we remove this?
     def calculable_properties(self, property_type_set):
         """
         Given a set of Symbol objects, returns all new Symbol objects
@@ -422,6 +426,7 @@ class Graph(object):
 
         return derivable
 
+    # TODO: can we remove this?
     def required_inputs_for_property(self, property):
         """
         Determines all potential paths leading to a given symbol
@@ -458,7 +463,6 @@ class Graph(object):
         Returns:
             None
         """
-
         # Get set of symbols that no longer need to be replaced and
         # symbols that are candidates for replacement.
         replaced_symbols = set()    # set of all symbols already replaced.
@@ -501,6 +505,7 @@ class Graph(object):
         # Add outputs to children and fill in their elements.
         to_expand.children = outputs
 
+    # TODO: can we remove this?
     def get_paths(self, start_property, end_property):
         """
         Returns all Paths
@@ -516,7 +521,8 @@ class Graph(object):
     @staticmethod
     def generate_input_sets(props, this_quantity_pool):
         """
-        Generates all combinatorially-unique sets of input dicts.
+        Generates all combinatorially-unique sets of input dicts given
+        a list of property names and a quantity pool
 
         Args:
             properties ([str]): property names
@@ -531,179 +537,162 @@ class Graph(object):
             if prop not in this_quantity_pool.keys():
                 return []
             aggregated_symbols.append(this_quantity_pool[prop])
-        input_set_lists = product(*aggregated_symbols)
-        input_set_dicts = []
-        for input_set_list in input_set_lists:
-            input_set_dicts.append({
-                symbol: input_quantity for symbol, input_quantity
-                in zip(props, input_set_list)
-            })
-        return input_set_dicts
+        return product(*aggregated_symbols)
 
-    def evaluate(self, material, property_type=None):
+    def get_input_sets_for_model(self, model, fixed_quantity, quantity_pool):
         """
-        Given a Material object as input, creates a new Material object to include all derivable properties.
-        Returns a reference to the new, augmented Material object.
+        Generates all of the valid input sets for a given model, a fixed
+        quantity, and a quantity pool from which to draw remaining properties
 
-        Optional argument limits the scope of which models or properties are tested.
-            property_type parameter: produces output from models only if all input properties are in the list.
+        Args:
+            model (Model): model for which to evaluate valid input sets
+            fixed_quantity (Quantity): quantity which must be included
+                in all input sets
+            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
+                keyed by symbol from which to draw additional quantities
+                for model inputs
+
+        Returns:
+            list of sets of input quantities for the model
+
+        """
+        evaluation_lists = [c for c in model.evaluation_list
+                            if fixed_quantity.symbol in c]
+        all_input_sets = []
+        for elist in evaluation_lists:
+            elist_without_fixed = elist.copy()
+            elist_without_fixed.remove(fixed_quantity.symbol)
+            input_sets = self.generate_input_sets(elist_without_fixed, quantity_pool)
+            for input_set in input_sets:
+                all_input_sets.append(list(input_set) + [fixed_quantity])
+        return all_input_sets
+
+    def generate_models_and_input_sets(self, new_quantities, quantity_pool):
+        """
+        Helper method to generate input sets for models
+
+        Args:
+            new_quantities ([Quantity]): list of new quantities from which
+                to derive new input sets (these are "fixed" quantities
+                in generate_input_sets_for_model)
+            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
+                keyed by symbol from which to draw additional quantities
+                for model inputs
+
+        Returns:
+            ([tuple]): list of tuples of models and their associated input
+                sets, uses tuple so duplicate checking can be performed
+        """
+        models_and_input_sets = []
+        for quantity in new_quantities:
+            for model in self._input_to_model[quantity.symbol]:
+                input_sets = self.get_input_sets_for_model(
+                    model, quantity, quantity_pool)
+                models_and_input_sets += [
+                    tuple([model] + sorted(list(input_set), key=lambda x: (x.symbol.name, x.value)))
+                          for input_set in input_sets]
+        # Filter for duplicates
+        return set(models_and_input_sets)
+
+    def derive_quantities(self, new_quantities, quantity_pool=None,
+                          allow_model_failure=True):
+        """
+        Algorithm for expanding quantity pool
+
+        Args:
+            new_quantities ([Quantity]): list of quantities which to
+                consider as new inputs to models
+            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
+                keyed by symbol from which to draw additional quantities
+                for model inputs
+
+        Returns:
+            additional_quantities ([Quantity]): new derived quantities
+            quantity_pool ({symbol: {Quantity}}): augmented version of
+                quantity pool
+
+        """
+        # Update quantity pool
+        quantity_pool = quantity_pool or defaultdict(set)
+        for quantity in new_quantities:
+            quantity_pool[quantity.symbol].add(quantity)
+
+        # Generate all of the models and input sets to be evaluated
+        logger.info("Generating models and input sets for %s", new_quantities)
+        models_and_input_sets = self.generate_models_and_input_sets(
+            new_quantities, quantity_pool)
+        added_quantities = []
+
+        # Evaluate model for each input set and add new valid quantities
+        for model_and_input_set in models_and_input_sets:
+            model = model_and_input_set[0]
+            inputs = model_and_input_set[1:]
+            input_dict = {q.symbol: q for q in inputs}
+            logger.info('Evaluating %s with input %s', model, input_dict)
+
+            with Timer(model.name):
+                result = model.evaluate(input_dict,
+                                        allow_failure=allow_model_failure)
+            # TODO: Maybe provenance should be done in evaluate?
+            
+            success = result.pop('successful')
+            if success:
+                noncyclic = filter(lambda x: not x.is_cyclic(), result.values())
+                added_quantities.extend(list(noncyclic))
+            else:
+                logger.info("Model evaluation unsuccessful %s",
+                            result['message'])
+        return added_quantities, quantity_pool
+
+    def evaluate(self, material, allow_model_failure=True):
+        """
+        Given a Material object as input, creates a new Material object
+        to include all derivable properties.  Optional argument limits the
+        scope of which models or properties are tested. Returns a
+        reference to the new, augmented Material object.
 
         Args:
             material (Material): which material's properties will be expanded.
-            property_type (set<Symbol>): optional limit on which Symbols will be considered as input.
+            allow_model_failure (Bool): whether to continue with graph evaluation
+            if a model fails.
+
         Returns:
             (Material) reference to the newly derived material object.
         """
-
-        # Determine which Quantity objects are up for evaluation.
-        # Generate the necessary initial data-structures.
-
         logger.debug("Beginning evaluation")
 
-        quantity_pool = defaultdict(set)  # Dict<Symbol, set<Quantity>>, available Quantity objects.
-        plug_in_dict = defaultdict(set)  # Dict<Quantity, set<Model>>, where the Quantities have been plugged in.
-        output_dict = defaultdict(set)  # Dict<Quantity, set<Model>>, where the Quantities have been generated.
-        candidate_models = set()  # set<Model>, which could generate additional outputs.
+        # Generate initial quantity set and pool
+        new_quantities = material.get_quantities()
+        quantity_pool = None
 
-        logger.debug("Refining input set, setting up candidate_models.")
-
-        for qs in material._symbol_to_quantity.values():
-            for quantity in qs:
-                if property_type is None or quantity.symbol_type in property_type:
-                    quantity_pool[quantity.symbol].add(quantity)
-
-        for symbol in quantity_pool.keys():
-            for m in self._input_to_model[symbol]:
-                candidate_models.add(m)
-
-        logger.debug("Finished refining input set.")
-        logger.debug("Quantity pool contains {}".format(quantity_pool))
-        logger.debug("Beginning main loop.")
+        # clear existing model evaluation statistics
+        clear()
 
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
+        logger.debug("Beginning main loop with quantities %s", new_quantities)
+        while new_quantities:
+            new_quantities, quantity_pool = self.derive_quantities(
+                new_quantities, quantity_pool,
+                allow_model_failure=allow_model_failure)
 
-        new_models = set()
-        continue_loop = True
+        # store model evaluation statistics
+        self._timings = timings
 
-        while continue_loop:
-            continue_loop = False
+        new_material = Material()
+        new_material._symbol_to_quantity = quantity_pool
+        return new_material
 
-            # Clean up after last loop.
-
-            for model in new_models:
-                candidate_models.add(model)
-            new_models = set()
-
-            logger.debug("Checking if model inputs are supplied.")
-
-            for model in candidate_models:
-
-                logger.debug("Checking model {}".format(model.title))
-                logger.debug("Quantity pool contains {} quantities:".format(
-                    len(list(chain.from_iterable(quantity_pool.values())))))
-
-                for property_input_sets in model.evaluation_list:
-
-                    logger.debug("\tGenerating input sets for: " + str(property_input_sets))
-
-                    input_sets = self.generate_input_sets(property_input_sets, quantity_pool)
-
-                    for input_set in input_sets:
-
-                        logger.debug("\t\tEvaluating input set: " + str(input_set))
-
-                        override = False
-                        can_evaluate = False
-
-                        # Check if input_set can be evaluated --
-                        #       input_set has never been seen before by the model
-                        #       input_set contains no values that were previously derived from the model
-                        #       input_set must pass the necessary model constraints
-
-                        for q in input_set.values():
-                            if model in output_dict[q]:
-                                override = True
-                                break
-                        if override:
-                            logger.debug("\t\t\tInput set failed -- input previously derived from the model.")
-                            continue
-                        for q in input_set.values():
-                            if model not in plug_in_dict[q]:
-                                can_evaluate = True
-                                break
-                        if not can_evaluate:
-                            logger.debug("\t\t\tInput set failed -- input set previously plugged in to the model.")
-                            continue
-                        if not model.check_constraints(input_set):
-                            logger.debug("\t\t\tInput set failed -- did not pass model constraints.")
-                            continue
-
-                        # Try to evaluate input_set:
-
-                        evaluate_set = {symbol: quantity.value
-                                        for symbol, quantity in input_set.items()}
-                        output = model.evaluate(evaluate_set)
-                        success = output.pop('successful')
-                        if not success:
-                            logger.debug("Model %s unsuccessful: %s",
-                                         model.name, output['message'])
-                            continue
-
-                        # input_set led to output from the Model -- gather output
-                        #                       -- add output to the graph
-                        #                       -- add additional candidate models
-
-                        logger.debug("\t\t\tInput set produced successful output.")
-                        continue_loop = True
-                        for symbol, quantity in output.items():
-                            st = self._symbol_types.get(symbol)
-                            if not st:
-                                raise ValueError(
-                                    "Symbol type {} not found".format(symbol))
-                            for m in self._input_to_model[st]:
-                                new_models.add(m)
-                            q = Quantity(st, quantity)
-
-                            # Set the provenance of the derived quantity
-                            q_prov = ProvenanceElement(model=model)
-                            q_child = list()
-                            for item in input_set.items():
-                                q_child.append(item[1])
-                            q_prov.inputs = q_child
-                            q._provenance = q_prov
-
-                            quantity_pool[st].add(q)
-                            output_dict[q].add(model)
-                            logger.debug("\t\t\tNew output: " + str(q))
-
-                            # Derive the chain of all models that were required
-                            # to get to the new quantity
-
-                            for input_quantity in input_set.values():
-                                for link in output_dict[input_quantity]:
-                                    output_dict[q].add(link)
-
-                    # Store all input sets to avoid duplicate evaluation in the future.
-                    for input_set in input_sets:
-                        for quantity in input_set.values():
-                            plug_in_dict[quantity].add(model)
-
-        toReturn = Material()
-        toReturn._symbol_to_quantity = quantity_pool
-        return toReturn
-
-    def super_evaluate(self, material, property_type=None):
+    def super_evaluate(self, material):
         """
-        Given a SuperMaterial object as input, creates a new SuperMaterial object to include all derivable properties.
-        Returns a reference to the new, augmented SuperMaterial object.
-
-        Optional argument limits the scope of which models or properties are tested.
-            property_type parameter: produces output from models only if all input properties are in the list.
+        Given a SuperMaterial object as input, creates a new SuperMaterial
+        object to include all derivable properties.  Returns a reference to
+        the new, augmented SuperMaterial object.
 
         Args:
-            material (SuperMaterial): which material's properties will be expanded.
-            property_type (set<Symbol>): optional limit on which Symbols will be considered as input.
+            material (SuperMaterial): material for which properties
+                will be expanded.
+
         Returns:
             (Material) reference to the newly derived material object.
         """
@@ -712,18 +701,16 @@ class Graph(object):
             raise Exception("material provided is not a SuperMaterial: " + str(type(material)))
 
         # Evaluate material's sub-materials
-
         evaluated_materials = list()
         for m in material.materials:
             logger.debug("Evaluating sub-material: " + str(id(m)))
             if isinstance(m, CompositeMaterial):
-                evaluated_materials.append(self.super_evaluate(m, property_type=property_type))
+                evaluated_materials.append(self.super_evaluate(m))
             else:
-                evaluated_materials.append(self.evaluate(m, property_type=property_type))
+                evaluated_materials.append(self.evaluate(m))
 
-        # Run all SuperModels in the graph on this SuperMaterial if a material mapping can be established.
-        # Store any derived quantities.
-
+        # Run all SuperModels in the graph on this SuperMaterial if
+        # a material mapping can be established.  Store any derived quantities.
         all_quantities = defaultdict(set)
         for (k, v) in material._symbol_to_quantity:
             all_quantities[k].add(v)
@@ -741,7 +728,8 @@ class Graph(object):
 
             mat_mappings = model.gen_material_mappings(to_return.materials)
 
-            if len(mat_mappings) != 1:      # Avoid ambiguous or impossible mappings, at least for now.
+            # Avoid ambiguous or impossible mappings, at least for now.
+            if len(mat_mappings) != 1:
                 continue
 
             mat_mapping = mat_mappings[0]
@@ -777,16 +765,13 @@ class Graph(object):
                     logger.debug("\t\t\tEvaluating input set: " + str(input_set))
 
                     # Check if input_set can be evaluated -- input_set must pass the necessary model constraints
-
                     if not model.check_constraints(input_set):
                         logger.debug("\t\t\tInput set failed -- did not pass model constraints.")
                         continue
 
                     # Try to evaluate input_set:
-
-                    evaluate_set = {symbol: quantity.value
-                                    for symbol, quantity in input_set.items()}
-                    output = model.evaluate(evaluate_set)
+                    evaluate_set = dict(zip(combined_list, input_set))
+                    output = model.evaluate(evaluate_set, allow_failure=False)
                     success = output.pop('successful')
                     if not success:
                         logger.debug("\t\t\tInput set failed -- did not produce a successful output.")
@@ -808,3 +793,22 @@ class Graph(object):
         mappings = self.evaluate(to_return)._symbol_to_quantity
         to_return._symbol_to_quantity = mappings
         return to_return
+
+    @property
+    def evaluation_statistics(self):
+        """
+        :return: A Pandas DataFrame containing statistics on how
+        many times each model was evaluated, average time per model,
+        and the total time taken for that model.
+        """
+
+        rows = [{'Model Name': model,
+                 'Total Evaluation Time /s': stats['total_elapsed'],
+                 'Average Evaluation Time /s': stats['average_elapsed'],
+                 'Number of Evaluations': stats['count']}
+                for model, stats in self._timings.items()]
+
+        return DataFrame(rows, columns=['Model Name',
+                                        'Total Evaluation Time /s',
+                                        'Number of Evaluations',
+                                        'Average Evaluation Time /s'])

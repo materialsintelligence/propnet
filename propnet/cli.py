@@ -4,26 +4,26 @@ A simple command-line interface to propnet
 
 import argparse
 import logging
+import pdb
 from uuid import uuid4
 from os import environ
 from propnet.core.models import EquationModel, PyModel
 from propnet.models import DEFAULT_MODEL_DICT
-from propnet.web.app import app
 from monty.serialization import loadfn
 
 __author__ = "Joseph Montoya <montoyjh@lbl.gov>"
 __version__ = 0.1
 __date__ = "Sep 4 2018"
 
-
 LOG = logging.getLogger(__name__)
-app.server.secret_key = environ.get('FLASK_SECRET_KEY', str(uuid4()))
-SERVER = app.server
+
 
 def run_web_app(args):
     """Runs web app"""
+    from propnet.web.app import app
+    app.server.secret_key = environ.get('FLASK_SECRET_KEY', str(uuid4()))
     if args.debug:
-        log.setLevel('DEBUG')
+        LOG.setLevel('DEBUG')
     app.run_server(debug=args.debug)
 
 
@@ -32,7 +32,7 @@ def validate(args):
     if args.name is not None:
         model = DEFAULT_MODEL_DICT[args.name]
         if not args.test_data:
-            model.validate_from_preset_test()
+            test_wrapper(model.validate_from_preset_test, pdb)
             print("Model validated with test data")
             return True
     elif args.file is not None:
@@ -49,9 +49,19 @@ def validate(args):
     if args.test_data is not None:
         td_data = loadfn(args.test_data)
         for td_datum in td_data:
-            model.test(**td_datum)
+            test_wrapper(model.test, args.pdb, **td_datum)
         print("{} validated with test data".format(model.name))
     return True
+
+
+def test_wrapper(func, pdb, *args, **kwargs):
+    """Simple wrapper that allows for pdb if chosen"""
+    try:
+        return func(*args, **kwargs)
+    except Exception as e:
+        if pdb:
+            pdb.post_mortem()
+        raise(e)
 
 
 def main():
@@ -76,6 +86,8 @@ def main():
     parser_validate.add_argument("-n", "--name", help="Default model name")
     parser_validate.add_argument("-f", "--file", help="Non-default model filename")
     parser_validate.add_argument("-t", "--test_data", help="Test data file")
+    parser_validate.add_argument("--pdb", help="Invoke debugger on failure",
+                                 action="store_true")
     parser_validate.set_defaults(func=validate)
 
     args = parser.parse_args()

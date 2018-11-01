@@ -1,7 +1,5 @@
 name: transmittance
-units:
-- 1.0
-- []
+units: dimensionless
 display_names: ['Transmittance']
 display_symbols: ['T']
 shape: 1

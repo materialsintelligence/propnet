@@ -1,7 +1,5 @@
 name: grain_diameter
-units:
-- 1.0
-- - [nanometer, 1.0]
+units: nanometer
 display_names: [Average grain diameter]
 display_symbols: [d]
 shape: 1

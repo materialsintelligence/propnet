@@ -1,15 +1,13 @@
 categories: [mechanical]
-connections:
-- inputs: [k, G]
-  outputs: [H]
 description: |
   Model calculating the Vicker''s Hardness from bulk and shear moduli.
 
   From Y. Tian et al., Int. J. Refract. Met. Hard Matter. 33, 93-106 (2012)
-equations: [H - 0.92*(1/k)**1.137*G**0.708]
+equations: [H = 0.92*(1/k)**1.137*G**0.708]
 name: vickers_hardness_tian
 references: []
 symbol_property_map:
   G: shear_modulus
   H: vickers_hardness
   k: pugh_ratio
+scrub_units: True
