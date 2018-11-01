@@ -879,6 +879,9 @@ class GraphTest(unittest.TestCase):
         """
         mpr = MPRester()
         m1 = mpr.get_material_for_mpid("mp-13")
+        # Temporary hack for problem with zero band-gap materials
+        m1.remove_symbol("band_gap_pbe")
+        m1.add_quantity(Quantity("band_gap", 0.0))
         m2 = mpr.get_material_for_mpid("mp-24972")
         sm = CompositeMaterial([m1, m2])
 
