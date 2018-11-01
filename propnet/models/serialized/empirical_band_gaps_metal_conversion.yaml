@@ -4,10 +4,9 @@ description: |
   of zero to band gaps that are zero
 equations:
     - E_g = E_g_pbe
-name: empirical_band_gaps_garcia_pbe
+name: empirical_band_gaps_metal_conversion
 references: []
 symbol_property_map:
-  E_g_PBE: band_gap_pbe
+  E_g_pbe: band_gap_pbe
   E_g: band_gap
-solve_for_all_symbols: True
-constraint: E_g_pbe = 0
+constraints: [E_g_pbe==0]

@@ -8,4 +8,4 @@ category: property
 # This constraint breaks a lot of things because in principle,
 # the models associated with these should return something with a
 # minimum of zero, I think symbol should be refactored
-# constraint: band_gap >= 0
+constraint: band_gap >= 0

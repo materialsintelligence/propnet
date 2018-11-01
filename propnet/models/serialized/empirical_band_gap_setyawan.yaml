@@ -11,4 +11,4 @@ symbol_property_map:
   E_g_expt: band_gap
   E_g_pbe: band_gap_pbe
 solve_for_all_symbols: True
-constraint: E_g_pbe > 0
+constraints: [E_g_pbe > 0]
