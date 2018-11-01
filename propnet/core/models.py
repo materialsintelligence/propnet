@@ -7,11 +7,10 @@ import re
 import logging
 from abc import ABC, abstractmethod
 from itertools import chain
-import json
 
 import six
 from monty.serialization import loadfn
-from monty.json import MSONable, MontyDecoder, MontyEncoder
+from monty.json import MSONable, MontyDecoder
 import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
@@ -361,11 +360,6 @@ class Model(ABC):
         if test_data_path is None:
             test_data_path = os.path.join(TEST_DATA_LOC,
                                           "{}.json".format(self.name))
-        # filelist = glob(os.path.join(test_data_loc, "{}.*".format(name)))
-        # # Raise error if 0 files or more than 1 file
-        # if len(filelist) != 1:
-        #     raise ValueError("{} test data files for {}".format(
-        #         len(filelist), name))
         cls = MontyDecoder if deserialize else None
         return loadfn(test_data_path, cls=cls)
 
