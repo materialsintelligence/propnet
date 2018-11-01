@@ -99,15 +99,22 @@ class ModelTest(unittest.TestCase):
 
         # TODO: this is ugly, any way to fix it?
         example_code = """
-from propnet.models import load_default_model
+from propnet.models import semi_empirical_mobility
+
 
 K = 64
 m_e = 0.009
 
-model = load_default_model("semi_empirical_mobility")
-model.evaluate({
-\t'K': K
-\t'm_e': m_e
+semi_empirical_mobility.plug_in({
+\t'K': K,
+\t'm_e': m_e,
 })  # returns {'mu_e': 8994.92312225673}
 """
         self.assertEqual(example_model.example_code, example_code)
+
+        import nose; nose.tools.set_trace()
+        for name, model in DEFAULT_MODEL_DICT.items():
+            try:
+                exec(model.example_code)
+            except:
+                import nose; nose.tools.set_trace()

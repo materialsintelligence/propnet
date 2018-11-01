@@ -383,15 +383,28 @@ class Model(ABC):
 
         symbol_definitions = []
         evaluate_args = []
+        imports = []
         for input_name, input_value in example_inputs.items():
-
+            if isinstance(input_value, MSONable):
+                input_value_dict = input_value.as_dict()
+                input_value_string = "{}.from_dict({})".format(
+                    input_value_dict['@class'], input_value_dict)
+                imports += ["from {} import {}".format(
+                    input_value_dict['@module'], input_value_dict['@class'])]
+            else:
+                if isinstance(input_value, six.string_types):
+                    input_value_string = '"{}"'.format(input_value)
+                elif isinstance(input_value, np.ndarray):
+                    input_value_string = input_value.tolist()
+                else:
+                    input_value_string = input_value
             symbol_str = "{input_name} = {input_value}".format(
                 input_name=input_name,
-                input_value=input_value,
+                input_value=input_value_string,
             )
             symbol_definitions.append(symbol_str)
 
-            evaluate_str = "\t'{}': {}".format(input_name, input_name)
+            evaluate_str = "\t'{}': {},".format(input_name, input_name)
             evaluate_args.append(evaluate_str)
 
         symbol_definitions = '\n'.join(symbol_definitions)
@@ -399,6 +412,7 @@ class Model(ABC):
 
         example_code = CODE_EXAMPLE_TEMPLATE.format(
             model_name=self.name,
+            imports='\n'.join(imports),
             symbol_definitions=symbol_definitions,
             evaluate_args=evaluate_args,
             example_outputs=example_outputs)
@@ -413,12 +427,12 @@ class Model(ABC):
 
 
 CODE_EXAMPLE_TEMPLATE = """
-from propnet.models import load_default_model
+from propnet.models import {model_name}
+{imports}
 
 {symbol_definitions}
 
-model = load_default_model("{model_name}")
-model.evaluate({{
+{model_name}.plug_in({{
 {evaluate_args}
 }})  # returns {example_outputs}
 """
