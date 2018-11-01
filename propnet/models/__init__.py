@@ -38,3 +38,6 @@ COMPOSITE_MODEL_NAMES = list(COMPOSITE_MODEL_DICT.keys())
 def load_default_model(name):
     """Helper method to load a default model from a name"""
     return DEFAULT_MODEL_DICT[name]
+
+for name, model in DEFAULT_MODEL_DICT.items():
+    globals()[name] = model
