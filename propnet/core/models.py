@@ -8,7 +8,6 @@ import logging
 from abc import ABC, abstractmethod
 from itertools import chain
 from glob import glob
-from copy import copy
 
 import six
 from monty.serialization import loadfn
