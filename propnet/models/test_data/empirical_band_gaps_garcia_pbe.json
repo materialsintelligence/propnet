@@ -4,12 +4,12 @@
       "E_g_expt": 2.262
     },
     "outputs": {
-      "E_g_PBE": 1
+      "E_g_pbe": 1
     }
   },
   {
     "inputs": {
-      "E_g_PBE": 1
+      "E_g_pbe": 1
     },
     "outputs": {
       "E_g_expt": 2.262
