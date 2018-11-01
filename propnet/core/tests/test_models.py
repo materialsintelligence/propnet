@@ -108,13 +108,16 @@ m_e = 0.009
 semi_empirical_mobility.plug_in({
 \t'K': K,
 \t'm_e': m_e,
-})  # returns {'mu_e': 8994.92312225673}
+})
+\"\"\"
+returns {'mu_e': 8994.92312225673}
+\"\"\"
 """
         self.assertEqual(example_model.example_code, example_code)
 
-        import nose; nose.tools.set_trace()
         for name, model in DEFAULT_MODEL_DICT.items():
+            # A little weird, but otherwise you don't get the explicit error
             try:
                 exec(model.example_code)
-            except:
-                import nose; nose.tools.set_trace()
+            except Exception as e:
+                raise e

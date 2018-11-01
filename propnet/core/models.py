@@ -7,11 +7,11 @@ import re
 import logging
 from abc import ABC, abstractmethod
 from itertools import chain
-from glob import glob
+import json
 
 import six
 from monty.serialization import loadfn
-from monty.json import MSONable
+from monty.json import MSONable, MontyDecoder, MontyEncoder
 import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
@@ -313,7 +313,7 @@ class Model(ABC):
         Returns:
             True if validation completes successfully
         """
-        test_datasets = self.load_test_data(self.name)
+        test_datasets = self.load_test_data()
         for test_dataset in test_datasets:
             self.test(**test_dataset)
         return True
@@ -345,8 +345,7 @@ class Model(ABC):
                 return False
         return True
 
-    @staticmethod
-    def load_test_data(name, test_data_loc=TEST_DATA_LOC):
+    def load_test_data(self, test_data_path=None, deserialize=True):
         """
         Loads test data from preset or specified directory.
         Finds a json or yaml file with the prefix "name" and
@@ -359,12 +358,16 @@ class Model(ABC):
         Returns (dict):
             Dictionary of test data
         """
-        filelist = glob(os.path.join(test_data_loc, "{}.*".format(name)))
-        # Raise error if 0 files or more than 1 file
-        if len(filelist) != 1:
-            raise ValueError("{} test data files for {}".format(
-                len(filelist), name))
-        return loadfn(filelist[0])
+        if test_data_path is None:
+            test_data_path = os.path.join(TEST_DATA_LOC,
+                                          "{}.json".format(self.name))
+        # filelist = glob(os.path.join(test_data_loc, "{}.*".format(name)))
+        # # Raise error if 0 files or more than 1 file
+        # if len(filelist) != 1:
+        #     raise ValueError("{} test data files for {}".format(
+        #         len(filelist), name))
+        cls = MontyDecoder if deserialize else None
+        return loadfn(test_data_path, cls=cls)
 
     @property
     def example_code(self):
@@ -375,9 +378,7 @@ class Model(ABC):
         Returns: example code for this model
 
         """
-        test_data = self.load_test_data(self.name)
-
-
+        test_data = self.load_test_data(deserialize=False)
         example_inputs = test_data[0]['inputs']
         example_outputs = str(test_data[0]['outputs'])
 
@@ -385,12 +386,11 @@ class Model(ABC):
         evaluate_args = []
         imports = []
         for input_name, input_value in example_inputs.items():
-            if isinstance(input_value, MSONable):
-                input_value_dict = input_value.as_dict()
+            if isinstance(input_value, dict) and input_value.get("@module"):
                 input_value_string = "{}.from_dict({})".format(
-                    input_value_dict['@class'], input_value_dict)
+                    input_value['@class'], input_value)
                 imports += ["from {} import {}".format(
-                    input_value_dict['@module'], input_value_dict['@class'])]
+                    input_value['@module'], input_value['@class'])]
             else:
                 if isinstance(input_value, six.string_types):
                     input_value_string = '"{}"'.format(input_value)
@@ -434,7 +434,10 @@ from propnet.models import {model_name}
 
 {model_name}.plug_in({{
 {evaluate_args}
-}})  # returns {example_outputs}
+}})
+\"\"\"
+returns {example_outputs}
+\"\"\"
 """
 
 
