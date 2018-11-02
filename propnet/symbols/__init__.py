@@ -2,7 +2,6 @@ import os
 
 from glob import glob
 from monty.serialization import loadfn
-from propnet import logger
 
 from propnet.core.symbols import Symbol
 
@@ -24,11 +23,6 @@ for f in _DEFAULT_SYMBOL_TYPE_FILES:
         DEFAULT_SYMBOL_VALUES[symbol_type] = symbol_type.default_value
     if "{}.yaml".format(symbol_type.name) not in f:
         raise ValueError('Name/filename mismatch in {}'.format(f))
-    # TODO: remove this if tests pass
-    # try:
-    #
-    # except Exception as e:
-    #     logger.error('Failed to parse {}, {}.'.format(os.path.basename(f), e))
 
 # Stores all loaded properties' names in a tuple in the global scope.
 DEFAULT_UNITS = {name: symbol.units
