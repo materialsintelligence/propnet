@@ -2,7 +2,8 @@ import os
 from monty.serialization import loadfn, dumpfn
 from habanero.cn import content_negotiation
 
-_REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__), '../data/reference_cache.json')
+_REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__),
+                                     '../data/reference_cache.json')
 _REFERENCE_CACHE = loadfn(_REFERENCE_CACHE_PATH)
 
 def references_to_bib(refs):

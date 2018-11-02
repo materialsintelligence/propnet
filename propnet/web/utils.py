@@ -40,23 +40,23 @@ def graph_conversion(graph,
     log.info(aesthetics['node_aesthetics']['Model'])
     for n in graph.nodes():
 
-        id = None
+        name = None
 
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
         # TODO: more dumb crap related to graph
         if isinstance(n, Symbol):
             # property
-            id = n.name
+            name = n.name
             label = n.display_names[0]
             node_type = 'Symbol'
         elif isinstance(n, Model):
             # model
-            id = n.title
+            name = n.title
             label = n.title
             node_type = 'Model'
-        if id:
-            # Get node, labels, id, and title
+        if name:
+            # Get node, labels, name, and title
             node = aesthetics['node_aesthetics'][node_type].copy()
             if node.get("show_labels"):
                 node.update({"label": label,
@@ -73,7 +73,7 @@ def graph_conversion(graph,
                              "label": "",
                              "title": ""})
 
-            node['id'] = id
+            node['id'] = name
             nodes.append(node)
 
     log.info("Nodes to highlight green: {}".format(
@@ -163,12 +163,11 @@ def parse_path(pathname):
     a few places for callbacks.
 
     Args:
-      path: path from URL
-      pathname:
+      pathname (str): path from url
 
     Returns:
-      dictionary containing 'mode' ('property', 'model' etc.),
-      'value' (name of property etc.)
+        (dict) dictionary containing 'mode' ('property', 'model' etc.),
+        'value' (name of property etc.)
 
     """
 

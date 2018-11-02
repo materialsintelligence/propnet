@@ -4,9 +4,12 @@ Module containing classes and methods for Material functionality in propnet code
 
 from collections import defaultdict
 from itertools import chain
+import warnings
 
 from propnet.core.quantity import Quantity
 from propnet.core.symbols import Symbol
+
+from propnet.symbols import DEFAULT_SYMBOL_VALUES
 
 
 class Material(object):
@@ -27,14 +30,23 @@ class Material(object):
                                                            Quantity objects of that type.
 
     """
-    def __init__(self, quantities=None):
+    def __init__(self, quantities=None, add_default_quantities=False):
         """
         Creates a Material instance, instantiating a trivial graph of one node.
+
+        Args:
+            quantities ([Quantity]): list of quantities to add to
+                the material
+            add_default_quantities (bool): whether to add default
+                quantities (e. g. room temperature) to the graph
         """
         self._symbol_to_quantity = defaultdict(set)
         if quantities is not None:
             for quantity in quantities:
                 self.add_quantity(quantity)
+
+        if add_default_quantities:
+            self.add_default_quantities()
 
     def add_quantity(self, quantity):
         """
@@ -60,8 +72,24 @@ class Material(object):
             None
         """
         if quantity.symbol not in self._symbol_to_quantity:
-            raise Exception("Attempting to remove quantity not present in the material.")
+            raise Exception("Attempting to remove quantity not present in "
+                            "the material.")
         self._symbol_to_quantity[quantity.symbol].remove(quantity)
+
+    def add_default_quantities(self):
+        """
+        Adds any default symbols which are not present in the graph
+
+        Returns:
+            None
+        """
+        new_syms = set(DEFAULT_SYMBOL_VALUES.keys())
+        new_syms -= set(self._symbol_to_quantity.keys())
+        for sym in new_syms:
+            quantity = Quantity.from_default(sym)
+            warnings.warn("Adding default {} quantity with value {}".format(
+                          sym, quantity))
+            self.add_quantity(quantity)
 
     def remove_symbol(self, symbol):
         """
@@ -99,9 +127,6 @@ class Material(object):
         """
         Return mean values for all quantities for each symbol.
 
-        Args:
-            func (callable): function with which to aggregate quantities
-
         Returns:
             (dict<Symbol, weighted_mean) mapping from a Symbol to
             an aggregated statistic.
@@ -109,7 +134,7 @@ class Material(object):
         # TODO: proper weighting system, and more flexibility in object handling
         aggregated = {}
         for symbol, quantities in self._symbol_to_quantity.items():
-            if not symbol.category =='object':
+            if not symbol.category == 'object':
                 aggregated[symbol] = Quantity.from_weighted_mean(list(quantities))
         return aggregated
 
@@ -154,19 +179,22 @@ class CompositeMaterial(Material):
     """
     Class representing a material composed of one or more sub-materials.
 
-    Useful for representing materials properties that arise from multiple materials
-    (ie. contact voltage in metals)
+    Useful for representing materials properties that arise from
+    multiple materials (i. e. contact voltage in metals)
 
     Attributes:
-        _symbol_to_quantity (dict<Symbol, set<Quantity>>): data-structure storing all properties / descriptors
-                                                           that arise from the joining of multiple materials
+        _symbol_to_quantity (dict<Symbol, set<Quantity>>): data-structure
+            storing all properties / descriptors that arise from the
+            joining of multiple materials
         materials (list<Material>): set of materials contained in the Composite
     """
     def __init__(self, materials_list):
         """
         Creates a Composite Material instance.
+
         Args:
-            materials_list (list<Material>): list of materials contained in the Composite
+            materials_list (list<Material>): list of materials contained
+                in the Composite
         """
         self.materials = materials_list
         super(CompositeMaterial, self).__init__()

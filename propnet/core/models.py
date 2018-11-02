@@ -351,8 +351,9 @@ class Model(ABC):
         loads it.
 
         Args:
-            name (str): name for test data to load
-            test_data_loc (str): directory location for test data
+            test_data_path (str): test data file location
+            deserialize (bool): whether or not to deserialize the test
+                data, primarily used for printing example code
 
         Returns (dict):
             Dictionary of test data
