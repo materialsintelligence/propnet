@@ -4,9 +4,12 @@ Module containing classes and methods for Material functionality in propnet code
 
 from collections import defaultdict
 from itertools import chain
+import warnings
 
 from propnet.core.quantity import Quantity
 from propnet.core.symbols import Symbol
+
+from propnet.symbols import DEFAULT_SYMBOL_VALUES
 
 
 class Material(object):
@@ -27,14 +30,23 @@ class Material(object):
                                                            Quantity objects of that type.
 
     """
-    def __init__(self, quantities=None):
+    def __init__(self, quantities=None, add_default_quantities=False):
         """
         Creates a Material instance, instantiating a trivial graph of one node.
+
+        Args:
+            quantities ([Quantity]): list of quantities to add to
+                the material
+            add_default_quantities (bool): whether to add default
+                quantities (e. g. room temperature) to the graph
         """
         self._symbol_to_quantity = defaultdict(set)
         if quantities is not None:
             for quantity in quantities:
                 self.add_quantity(quantity)
+
+        if add_default_quantities:
+            self.add_default_quantities()
 
     def add_quantity(self, quantity):
         """
@@ -60,8 +72,24 @@ class Material(object):
             None
         """
         if quantity.symbol not in self._symbol_to_quantity:
-            raise Exception("Attempting to remove quantity not present in the material.")
+            raise Exception("Attempting to remove quantity not present in "
+                            "the material.")
         self._symbol_to_quantity[quantity.symbol].remove(quantity)
+
+    def add_default_quantities(self):
+        """
+        Adds any default symbols which are not present in the graph
+
+        Returns:
+            None
+        """
+        new_syms = set(DEFAULT_SYMBOL_VALUES.keys())
+        new_syms -= set(self._symbol_to_quantity.keys())
+        for sym in new_syms:
+            quantity = Quantity.from_default(sym)
+            warnings.warn("Adding default {} quantity with value {}".format(
+                          sym, quantity))
+            self.add_quantity(quantity)
 
     def remove_symbol(self, symbol):
         """

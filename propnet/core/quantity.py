@@ -255,7 +255,8 @@ class Quantity(MSONable):
         val = DEFAULT_SYMBOL_VALUES.get(symbol)
         if val is None:
             raise ValueError("No default value for {}".format(symbol))
-        return cls(symbol, val)
+        prov = ProvenanceElement(model='default', inputs=[])
+        return cls(symbol, val, provenance=prov)
 
     @classmethod
     def from_weighted_mean(cls, quantities):
