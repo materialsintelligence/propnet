@@ -11,21 +11,29 @@ from propnet.core.symbols import Symbol
 # stores all loaded properties as PropertyMetadata instances in a dictionary,
 # mapped to their names
 DEFAULT_SYMBOLS = {}
+DEFAULT_SYMBOL_VALUES = {}
 
-_DEFAULT_SYMBOL_TYPE_FILES = glob(os.path.join(os.path.dirname(__file__),
-                                           '../symbols/**/*.yaml'),
-                                  recursive=True)
+_DEFAULT_SYMBOL_TYPE_FILES = glob(
+    os.path.join(os.path.dirname(__file__), '../symbols/**/*.yaml'),
+    recursive=True)
 
 for f in _DEFAULT_SYMBOL_TYPE_FILES:
-    try:
-        symbol_type = Symbol.from_dict(loadfn(f))
-        DEFAULT_SYMBOLS[symbol_type.name] = symbol_type
-        if "{}.yaml".format(symbol_type.name) not in f:
-            raise ValueError('Name/filename mismatch in {}'.format(f))
-    except Exception as e:
-        logger.error('Failed to parse {}, {}.'.format(os.path.basename(f), e))
+    symbol_type = Symbol.from_dict(loadfn(f))
+    DEFAULT_SYMBOLS[symbol_type.name] = symbol_type
+    if symbol_type.default_value is not None:
+        DEFAULT_SYMBOL_VALUES[symbol_type] = symbol_type.default_value
+    if "{}.yaml".format(symbol_type.name) not in f:
+        raise ValueError('Name/filename mismatch in {}'.format(f))
+    # TODO: remove this if tests pass
+    # try:
+    #
+    # except Exception as e:
+    #     logger.error('Failed to parse {}, {}.'.format(os.path.basename(f), e))
 
 # Stores all loaded properties' names in a tuple in the global scope.
 DEFAULT_UNITS = {name: symbol.units
                  for name, symbol in DEFAULT_SYMBOLS.items()}
 DEFAULT_SYMBOL_TYPE_NAMES = tuple(DEFAULT_SYMBOLS.keys())
+
+for name, symbol in DEFAULT_SYMBOLS.items():
+    globals()[name] = symbol

@@ -4,7 +4,7 @@ from monty.json import MSONable
 from propnet import ureg
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
-from propnet.symbols import DEFAULT_SYMBOLS
+from propnet.symbols import DEFAULT_SYMBOLS, DEFAULT_SYMBOL_VALUES
 
 from propnet.core.exceptions import SymbolConstraintError
 
@@ -239,6 +239,23 @@ class Quantity(MSONable):
                 "units": units.format_babel() if units else None,
                 "@module": "propnet.core.quantity",
                 "@class": "Quantity"}
+
+    @classmethod
+    def from_default(cls, symbol):
+        """
+        Class method to invoke a default quantity from a symbol name
+
+        Args:
+            symbol (Symbol or str): symbol or string corresponding to
+                the symbol name
+
+        Returns:
+            Quantity corresponding to default quantity from default
+        """
+        val = DEFAULT_SYMBOL_VALUES.get(symbol)
+        if val is None:
+            raise ValueError("No default value for {}".format(symbol))
+        return cls(symbol, val)
 
     @classmethod
     def from_weighted_mean(cls, quantities):

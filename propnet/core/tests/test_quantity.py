@@ -30,6 +30,12 @@ class QuantityTest(unittest.TestCase):
         with self.assertRaises(SymbolConstraintError):
             Quantity("bulk_modulus", -500)
 
+    def test_from_default(self):
+        default = Quantity.from_default('temperature')
+        self.assertEqual(default, Quantity('temperature', 300))
+        default = Quantity.from_default('relative_permeability')
+        self.assertEqual(default, Quantity("relative_permeability", 1))
+
     def test_from_weighted_mean(self):
         qlist = [Quantity(self.custom_symbol, val)
                  for val in np.arange(1, 2.01, 0.01)]
