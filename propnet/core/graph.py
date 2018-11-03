@@ -292,7 +292,6 @@ class Graph(object):
             to_return.add(model)
         return to_return
 
-    # TODO: deprecate this and use web app
     def get_networkx_graph(self, include_orphans=True):
         """
         Generates a networkX data structure representing the property
@@ -322,13 +321,13 @@ class Graph(object):
         # Format nodes
         for node in graph:
             if isinstance(node, Symbol):
-                # nx.set_node_attributes(graph, {node: "blue"}, "fillcolor")
-                # nx.set_node_attributes(graph, {node: "white"}, "fontcolor")
+                nx.set_node_attributes(graph, {node: "#43A1F8"}, "fillcolor")
+                nx.set_node_attributes(graph, {node: "white"}, "fontcolor")
                 nx.set_node_attributes(graph, {node: "ellipse"}, "shape")
                 nx.set_node_attributes(graph, {node: node.name}, "label")
             else:
-                # nx.set_node_attributes(graph, {node: "orange"}, "fillcolor")
-                # nx.set_node_attributes(graph, {node: "white"}, "fontcolor")
+                nx.set_node_attributes(graph, {node: "orange"}, "fillcolor")
+                nx.set_node_attributes(graph, {node: "white"}, "fontcolor")
                 nx.set_node_attributes(graph, {node: "box"}, "shape")
                 nx.set_node_attributes(graph, {node: node.name}, "label")
         return graph
@@ -350,6 +349,7 @@ class Graph(object):
         """
         nxgraph = self.get_networkx_graph(include_orphans)
         agraph = nx.nx_agraph.to_agraph(nxgraph)
+        agraph.node_attr['style'] = 'filled'
         if draw:
             agraph.draw(filename, **kwargs)
         else:
