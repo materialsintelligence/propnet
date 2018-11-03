@@ -176,6 +176,13 @@ class Symbol(MSONable):
             return self.name == other
 
     def __str__(self):
+        return "Symbol: {}".format(self.name)
+
+    @property
+    def summary(self):
+        """
+        Prints a full summary of the symbol
+        """
         to_return = self.name + ":\n"
         for k, v in self.__dict__.items():
             to_return += "\t" + k + ":\t" + str(v) + "\n"

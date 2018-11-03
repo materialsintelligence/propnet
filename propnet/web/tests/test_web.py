@@ -65,7 +65,7 @@ class WebTest(unittest.TestCase):
 
     def test_graph_conversion(self):
         graph = Graph()
-        converted = graph_conversion(graph.graph)
+        converted = graph_conversion(graph.get_networkx_graph())
         serialized = json.dumps(converted)
         self.assertIsNotNone(serialized)
         # Ensure that there are both nodes and proper edges

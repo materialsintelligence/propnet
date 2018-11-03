@@ -38,7 +38,7 @@ cache = Cache(app.server, config={
 
 mpr = MPRester()
 
-g = Graph().graph
+g = Graph().get_networkx_graph()
 
 # Define default graph component
 @app.callback(Output('graph_explorer', 'children'),
@@ -189,7 +189,7 @@ def retrieve_material(n_clicks, query, derive_properties):
     log.debug("Adding material to graph.")
     p = Graph()
     material_quantity_names = [q.symbol.name for q in material.get_quantities()]
-    g = p.graph
+    g = p.get_networkx_graph()
 
     if 'derive' in derive_properties:
         log.info("Deriving quantities for {}".format(mpid))
