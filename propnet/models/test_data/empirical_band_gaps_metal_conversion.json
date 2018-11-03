@@ -1,10 +1,10 @@
 [
   {
     "inputs": {
-      "E_g_pbe": 0.5
+      "E_g_pbe": 0
     },
     "outputs": {
-      "E_g_expt": 1.5870
+      "E_g": 0
     }
   }
 ]

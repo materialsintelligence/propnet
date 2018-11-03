@@ -16,7 +16,7 @@ from propnet.web.utils import graph_conversion, parse_path, AESTHETICS
 from propnet.core.graph import Graph
 
 from propnet.ext.matproj import MPRester
-from pydash import set_, get
+from pydash import set_
 
 from flask_caching import Cache
 import logging
@@ -38,7 +38,7 @@ cache = Cache(app.server, config={
 
 mpr = MPRester()
 
-g = Graph().graph
+g = Graph().get_networkx_graph()
 
 # Define default graph component
 @app.callback(Output('graph_explorer', 'children'),
@@ -183,12 +183,13 @@ def retrieve_material(n_clicks, query, derive_properties):
     material = mpr.get_material_for_mpid(mpid)
     if not material:
         return "Material not found."
-    log.info("Retrieved material {} for formula {}".format(mpid, material['pretty_formula']))
+    log.info("Retrieved material {} for formula {}".format(
+        mpid, material['pretty_formula']))
 
     log.debug("Adding material to graph.")
     p = Graph()
     material_quantity_names = [q.symbol.name for q in material.get_quantities()]
-    g = p.graph
+    g = p.get_networkx_graph()
 
     if 'derive' in derive_properties:
         log.info("Deriving quantities for {}".format(mpid))
@@ -210,8 +211,6 @@ def retrieve_material(n_clicks, query, derive_properties):
             {
                 'Symbol': symbol.display_names[0],
                 'Value': quantity.pretty_string(3),
-            # TODO: node.node_value.value? this has to make sense
-                # 'Units': str(node.node_value.symbol.unit_as_string)
             }
         )
 
@@ -278,6 +277,8 @@ INTERACTIVE_LAYOUT = interactive_layout(app)
 # /model/model_name for information on that model
 # /property for property summary
 # /property/property_name for information on that property
+
+
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):

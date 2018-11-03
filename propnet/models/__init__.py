@@ -34,7 +34,5 @@ for _, module_name, _ in COMPOSITE_MODULE_LIST:
 COMPOSITE_MODEL_DICT = {c.name: c for c in DEFAULT_COMPOSITE_MODELS}
 COMPOSITE_MODEL_NAMES = list(COMPOSITE_MODEL_DICT.keys())
 
-# Convenience function for loading a specific model by name
-def load_default_model(name):
-    """Helper method to load a default model from a name"""
-    return DEFAULT_MODEL_DICT[name]
+for name, model in DEFAULT_MODEL_DICT.items():
+    globals()[name] = model

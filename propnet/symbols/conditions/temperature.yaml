@@ -5,3 +5,5 @@ display_symbols: [T]
 shape: 1
 comment: ''
 category: condition
+# Add a default for room temperature
+default_value: 300

@@ -40,7 +40,8 @@ class MPRester(_MPRester):
     #"piezo.v_max": "null_symbol", # TODO": "add property
     #"piezo.eij_max": "null_symbol", # TODO": "add property
     "structure": "structure",
-    #"total_magnetization": "null_symbol", # TODO": "add property total_magnetization_per_unit_cell
+    #"total_magnetization": "null_symbol",
+        #  TODO": "add property total_magnetization_per_unit_cell
 }
 
     def __init__(self):

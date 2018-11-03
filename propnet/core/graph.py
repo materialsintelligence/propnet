@@ -17,7 +17,7 @@ from propnet.core.quantity import Quantity
 from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.models import DEFAULT_MODEL_DICT
-from propnet.symbols import DEFAULT_SYMBOLS
+from propnet.symbols import Symbol, DEFAULT_SYMBOLS
 
 logger = logging.getLogger(__name__)
 
@@ -292,9 +292,7 @@ class Graph(object):
             to_return.add(model)
         return to_return
 
-    # TODO: deprecate this and use web app
-    @property
-    def graph(self):
+    def get_networkx_graph(self, include_orphans=True):
         """
         Generates a networkX data structure representing the property
         network and returns this object.
@@ -314,20 +312,49 @@ class Graph(object):
                 sym_type = self._symbol_types[symbol]
                 graph.add_edge(model, sym_type)
 
-        # TODO: revisit necessity of this
-        # # Add the concrete graph.
-        # for symbol in self._symbol_to_quantity:
-        #     for quantity in self._symbol_to_quantity[symbol]:
-        #         for material in quantity._material:
-        #             graph.add_edge(material, quantity)
-        #         graph.add_edge(quantity, symbol)
-
         # Add orphan nodes
-        for symbol in self._symbol_types.values():
-            if symbol not in graph.nodes:
-                graph.add_node(symbol)
+        if include_orphans:
+            for symbol in self._symbol_types.values():
+                if symbol not in graph.nodes:
+                    graph.add_node(symbol)
 
+        # Format nodes
+        for node in graph:
+            if isinstance(node, Symbol):
+                nx.set_node_attributes(graph, {node: "#43A1F8"}, "fillcolor")
+                nx.set_node_attributes(graph, {node: "white"}, "fontcolor")
+                nx.set_node_attributes(graph, {node: "ellipse"}, "shape")
+                nx.set_node_attributes(graph, {node: node.name}, "label")
+            else:
+                nx.set_node_attributes(graph, {node: "orange"}, "fillcolor")
+                nx.set_node_attributes(graph, {node: "white"}, "fontcolor")
+                nx.set_node_attributes(graph, {node: "box"}, "shape")
+                nx.set_node_attributes(graph, {node: node.name}, "label")
         return graph
+
+    def create_file(self, filename='out.dot', draw=False,
+                    include_orphans=False, **kwargs):
+        """
+        Output the graph to a file
+
+        Args:
+            filename (str): filename for file
+            draw (bool): whether to draw or write file
+            include_orphans (bool): whether to include orphan symbols
+                in graph output
+            **kwargs (kwargs): kwargs to draw or write
+
+        Returns:
+            None
+        """
+        nxgraph = self.get_networkx_graph(include_orphans)
+        agraph = nx.nx_agraph.to_agraph(nxgraph)
+        agraph.node_attr['style'] = 'filled'
+        if draw:
+            agraph.draw(filename, **kwargs)
+        else:
+            agraph.write(filename, **kwargs)
+
 
     # TODO: can we remove this?
     def calculable_properties(self, property_type_set):
@@ -525,7 +552,7 @@ class Graph(object):
         a list of property names and a quantity pool
 
         Args:
-            properties ([str]): property names
+            props ([str]): property names
             this_quantity_pool ({Symbol: Set(Quantity)}): quantities
                 keyed by symbols
 
@@ -634,6 +661,7 @@ class Graph(object):
                 result = model.evaluate(input_dict,
                                         allow_failure=allow_model_failure)
             # TODO: Maybe provenance should be done in evaluate?
+
             success = result.pop('successful')
             if success:
                 noncyclic = filter(lambda x: not x.is_cyclic(), result.values())
