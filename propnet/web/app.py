@@ -38,7 +38,7 @@ cache = Cache(app.server, config={
 
 mpr = MPRester()
 
-g = Graph().graph
+g = Graph().get_networkx_graph()
 
 # Define default graph component
 @app.callback(Output('graph_explorer', 'children'),
