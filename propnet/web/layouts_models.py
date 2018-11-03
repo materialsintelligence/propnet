@@ -39,7 +39,7 @@ def model_layout(model_name):
 
     # TODO: costly, should just construct subgraph directly?
     g = Graph()
-    subgraph = nx.ego_graph(g.graph, model, undirected=True)
+    subgraph = nx.ego_graph(g.get_networkx_graph(), model, undirected=True)
     options = AESTHETICS['global_options']
     if "arrows" in options["edges"]:
         options["edges"]["arrows"] = "to"
