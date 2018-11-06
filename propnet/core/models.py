@@ -96,7 +96,7 @@ class Model(ABC):
             else:
                 self.constraints.append(Constraint(constraint))
 
-        self._test_data = test_data
+        self._test_data = test_data or self.load_test_data(name)
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -318,8 +318,7 @@ class Model(ABC):
         Returns:
             True if validation completes successfully
         """
-        test_datasets = self.load_test_data(self.name)
-        for test_dataset in test_datasets:
+        for test_dataset in self._test_data:
             self.test(**test_dataset)
         return True
 
@@ -365,11 +364,8 @@ class Model(ABC):
             Dictionary of test data
         """
         filelist = glob(os.path.join(test_data_loc, "{}.*".format(name)))
-        # Raise error if 0 files or more than 1 file
-        if len(filelist) != 1:
-            raise ValueError("{} test data files for {}".format(
-                len(filelist), name))
-        return loadfn(filelist[0])
+        if filelist:
+            return loadfn(filelist[0])
 
     @property
     def example_code(self):
@@ -380,11 +376,9 @@ class Model(ABC):
         Returns: example code for this model
 
         """
-        test_data = self.load_test_data(self.name)
 
-
-        example_inputs = test_data[0]['inputs']
-        example_outputs = str(test_data[0]['outputs'])
+        example_inputs = self._test_data[0]['inputs']
+        example_outputs = str(self._test_data[0]['outputs'])
 
         symbol_definitions = []
         evaluate_args = []
@@ -503,7 +497,8 @@ class EquationModel(Model, MSONable):
         self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, scrub_units)
+            categories, references, symbol_property_map, scrub_units,
+            test_data=test_data)
 
     def plug_in(self, symbol_value_dict):
         """
