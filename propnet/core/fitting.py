@@ -26,12 +26,13 @@ def aggregate_quantities(quantities, model_score_dict=None):
     Returns:
 
     """
-    if not all([q.symbol == quantities[0].symbol for q in quantities]):
+    symbol = next(iter(quantities)).symbol
+    if not all([q.symbol == symbol for q in quantities]):
         raise ValueError("Quantities passed to aggregate must be same symbol")
     weights = [get_weight(q, model_score_dict) for q in quantities]
     result_value = sum(
         [w * q.value for w, q in zip(weights, quantities)]) / sum(weights)
-    return Quantity(quantities[0].symbol, result_value)
+    return Quantity(symbol, result_value)
 
 
 def get_weight(quantity, model_score_dict=None):
@@ -86,7 +87,7 @@ def fit_model_scores(materials, benchmarks, models=None,
 
     scores = OrderedDict((m, 1) for m in model_list)
     scores.update(init_scores or {})
-    result = minimize(f, x0=np.array(scores.values()))
+    result = minimize(f, x0=np.array(list(scores.values())))
     vec = [max(s, min_score) for s in result.x]
     return OrderedDict(zip(model_list, vec))
 

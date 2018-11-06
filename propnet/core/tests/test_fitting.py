@@ -19,18 +19,18 @@ class FittingTests(unittest.TestCase):
         materials = [Material([Quantity("band_gap", bg)])
                      for bg in test_data['band_gap']]
         self.evaluated = [graph.evaluate(mat) for mat in materials]
-        self.benchmarks = [{"refractive_index", n}
+        self.benchmarks = [{"refractive_index": n}
                            for n in test_data['refractive_index']]
 
     def test_get_sse(self):
-        mats = [Material(Quantity("band_gap", n)) for n in range(1, 5)]
+        mats = [Material([Quantity("band_gap", n)]) for n in range(1, 5)]
         benchmarks = [{"band_gap": 1.1*n} for n in range(1, 5)]
         err = get_sse(mats, benchmarks)
         test_val = sum([0.01*n**2 for n in range(1, 5)])
-        self.assertEqual(err, test_val)
+        self.assertAlmostEqual(err, test_val)
         # Big dataset
         err = get_sse(self.evaluated, self.benchmarks)
-        self.assertEqual(err, 123.01)
+        self.assertAlmostEqual(err, 173.5710251)
 
     def test_get_weight(self):
         q1 = Quantity("band_gap", 3.2)
@@ -46,14 +46,12 @@ class FittingTests(unittest.TestCase):
         self.assertEqual(wt3, 0.125)
 
     def test_fit_model_scores(self):
-        scores = fit_model_scores(self.evaluated, self.benchmarks)
-        self.assertEqual(scores['bug'])
-
-    def dumb_test(self):
-        from propnet.core.graph import Graph
-        from propnet.ext.matproj import MPRester
-        mpr = MPRester()
-        g = Graph()
-        mat = mpr.get_material_for_mpid("mp-66")
-        mat.add_default_quantities()
-        g.evaluate(mat)
+        model_names=["band_gap_refractive_index_herve_vandamme",
+                     "band_gap_refractive_index_moss",
+                     "band_gap_refractive_index_ravindra",
+                     "band_gap_refractive_index_reddy_ahammed",
+                     "band_gap_refractive_index_reddy_anjaneyulu"]
+        scores = fit_model_scores(self.evaluated, self.benchmarks,
+                                  models=model_names)
+        self.assertAlmostEqual(
+            scores['band_gap_refractive_index_herve_vandamme'], 1.371478, 5)

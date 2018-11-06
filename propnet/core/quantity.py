@@ -1,14 +1,10 @@
 import numpy as np
 from monty.json import MSONable
-from collections import OrderedDict
-
-from scipy.optimize import minimize
 
 from propnet import ureg
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_SYMBOLS, DEFAULT_SYMBOL_VALUES
-from propnet.models import DEFAULT_MODEL_NAMES
 
 from propnet.core.exceptions import SymbolConstraintError
 
