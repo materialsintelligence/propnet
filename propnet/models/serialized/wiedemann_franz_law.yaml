@@ -1,4 +1,6 @@
-categories: [thermal, empirical]
+categories:
+- thermal
+- empirical
 description: 'The Wiedemann-Franz Law states that the ratio of the
 
   electronic component of thermal conductivity to electrical
@@ -29,13 +31,21 @@ description: 'The Wiedemann-Franz Law states that the ratio of the
   from this relation where heat and charge transfer become decoupled.
 
   '
-equations: [k = T * 2.45*10**-8 * o]
+equations:
+- k = T * 2.45*10**-8 * o
 name: wiedemann_franz_law
-references: ['url:http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/thercond.html#c2']
+references:
+- url:http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/thercond.html#c2
 scrub_units: true
 solve_for_all_symbols: true
-symbol_property_map: {T: temperature, is_metallic: is_metallic, k: electronic_thermal_conductivity,
-  o: electrical_conductivity}
+symbol_property_map:
+  T: temperature
+  is_metallic: is_metallic
+  k: electronic_thermal_conductivity
+  o: electrical_conductivity
 test_data:
-- inputs: {T: 298, k: 1}
-  outputs: {o: 136967.53869333}
+- inputs:
+    T: 298
+    k: 1
+  outputs:
+    o: 136967.53869333

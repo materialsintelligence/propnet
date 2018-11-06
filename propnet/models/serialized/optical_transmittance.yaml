@@ -1,4 +1,5 @@
-categories: [optical]
+categories:
+- optical
 description: 'Transmittance T is the portion of the transmitted intencity of the incident
 
   light.  Reflectance R is the amout of reflected light.  Absorbance A is the
@@ -9,15 +10,28 @@ description: 'Transmittance T is the portion of the transmitted intencity of the
   These 3 quantities add up to 1.
 
   '
-equations: [1 = A + T + R]
+equations:
+- 1 = A + T + R
 name: optical_transmittance
 references: []
 solve_for_all_symbols: true
-symbol_property_map: {A: absorbance, R: reflectance, T: transmittance}
+symbol_property_map:
+  A: absorbance
+  R: reflectance
+  T: transmittance
 test_data:
-- inputs: {A: 0.1, R: 0.2}
-  outputs: {T: 0.7}
-- inputs: {A: 0.0, T: 0.2}
-  outputs: {R: 0.8}
-- inputs: {R: 0.2, T: 0.15}
-  outputs: {A: 0.65}
+- inputs:
+    A: 0.1
+    R: 0.2
+  outputs:
+    T: 0.7
+- inputs:
+    A: 0.0
+    T: 0.2
+  outputs:
+    R: 0.8
+- inputs:
+    R: 0.2
+    T: 0.15
+  outputs:
+    A: 0.65

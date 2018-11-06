@@ -1,4 +1,5 @@
-categories: [electrical]
+categories:
+- electrical
 description: 'Relation from Yim, K. et al. Novel high-\u03BA dielectrics for next-generation
 
   electronic devices screened by automated ab initio calculations. NPG Asia Mater.
@@ -14,12 +15,18 @@ description: 'Relation from Yim, K. et al. Novel high-\u03BA dielectrics for nex
   increase in energy density afforded by the linear response.
 
   '
-equations: [c = epsilon*E_g]
+equations:
+- c = epsilon*E_g
 name: dielectric_figure_of_merit_current_leakage
 references: []
 scrub_units: true
-symbol_property_map: {E_g: band_gap, c: dielectric_figure_of_merit_current_leakage,
-  epsilon: relative_permittivity}
+symbol_property_map:
+  E_g: band_gap
+  c: dielectric_figure_of_merit_current_leakage
+  epsilon: relative_permittivity
 test_data:
-- inputs: {E_g: 2, epsilon: 1.5}
-  outputs: {c: 3}
+- inputs:
+    E_g: 2
+    epsilon: 1.5
+  outputs:
+    c: 3

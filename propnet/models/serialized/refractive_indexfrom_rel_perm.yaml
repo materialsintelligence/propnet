@@ -1,4 +1,5 @@
-categories: [optical]
+categories:
+- optical
 description: 'The refractive index gives the factor by which the speed of light is
   reduced in
 
@@ -16,15 +17,29 @@ description: 'The refractive index gives the factor by which the speed of light 
   of the relative permittivity and the relative permeability.
 
   '
-equations: [n = sqrt(Ur*Er)]
+equations:
+- n = sqrt(Ur*Er)
 name: refractive_indexfrom_rel_perm
-references: ['url:https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability}']
+references:
+- url:https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability}
 solve_for_all_symbols: true
-symbol_property_map: {Er: relative_permeability, Ur: relative_permittivity, n: refractive_index}
+symbol_property_map:
+  Er: relative_permeability
+  Ur: relative_permittivity
+  n: refractive_index
 test_data:
-- inputs: {Er: 1.0, n: 1.0}
-  outputs: {Ur: 1.0}
-- inputs: {Er: 3.0, Ur: 1.0}
-  outputs: {n: 1.73205080757}
-- inputs: {Ur: 3.0, n: 3.0}
-  outputs: {Er: 3.0}
+- inputs:
+    Er: 1.0
+    n: 1.0
+  outputs:
+    Ur: 1.0
+- inputs:
+    Er: 3.0
+    Ur: 1.0
+  outputs:
+    n: 1.73205080757
+- inputs:
+    Ur: 3.0
+    n: 3.0
+  outputs:
+    Er: 3.0

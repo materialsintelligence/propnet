@@ -1,16 +1,26 @@
-categories: [electronic, empirical]
+categories:
+- electronic
+- empirical
 description: 'Band gaps estimated using Density Functional Theory (and the PBE exchange-correlation
 
   functional) typically underestimate the true band gap.
 
   '
-equations: [E_g_expt = 0.998*E_g_GW - 0.014]
+equations:
+- E_g_expt = 0.998*E_g_GW - 0.014
 name: empirical_band_gaps_garcia_gw
-references: ['doi:10.1021/acs.jpcc.7b07421']
+references:
+- doi:10.1021/acs.jpcc.7b07421
 solve_for_all_symbols: true
-symbol_property_map: {E_g_GW: band_gap_gw, E_g_expt: band_gap}
+symbol_property_map:
+  E_g_GW: band_gap_gw
+  E_g_expt: band_gap
 test_data:
-- inputs: {E_g_expt: 1}
-  outputs: {E_g_GW: 1.0160320641}
-- inputs: {E_g_GW: 1.0160320641}
-  outputs: {E_g_expt: 1}
+- inputs:
+    E_g_expt: 1
+  outputs:
+    E_g_GW: 1.0160320641
+- inputs:
+    E_g_GW: 1.0160320641
+  outputs:
+    E_g_expt: 1

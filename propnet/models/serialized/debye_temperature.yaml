@@ -1,4 +1,5 @@
-categories: [thermal]
+categories:
+- thermal
 description: 'Assuming a linear dispersion relationship between angular frequency
   and
 
@@ -30,11 +31,18 @@ description: 'Assuming a linear dispersion relationship between angular frequenc
   of the dispersion relationship for real materials.
 
   '
-equations: [T = (6*3.14159**2*p*1E10**3*v**3)**(1/3) * 6.626E-34/2/3.14159 / 1.38E-23]
+equations:
+- T = (6*3.14159**2*p*1E10**3*v**3)**(1/3) * 6.626E-34/2/3.14159 / 1.38E-23
 name: debye_temperature
 references: []
 scrub_units: true
-symbol_property_map: {T: debye_temperature, p: atomic_density, v: sound_velocity_mean}
+symbol_property_map:
+  T: debye_temperature
+  p: atomic_density
+  v: sound_velocity_mean
 test_data:
-- inputs: {p: 0.08656792234059726, v: 3478.868431962869}
-  outputs: {T: 458.3880285036698}
+- inputs:
+    p: 0.08656792234059726
+    v: 3478.868431962869
+  outputs:
+    T: 458.3880285036698

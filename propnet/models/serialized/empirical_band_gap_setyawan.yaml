@@ -1,4 +1,6 @@
-categories: [electronic, empirical]
+categories:
+- electronic
+- empirical
 description: 'Band gaps estimated using Density Functional Theory (and the PBE exchange-correlation
 
   functional) typically underestimate the true band gap. A linear least squares fit
@@ -9,11 +11,17 @@ description: 'Band gaps estimated using Density Functional Theory (and the PBE e
   against 100 compounds with gaps between ~1 and ~12 eV).
 
   '
-equations: [E_g_expt = 1.348*E_g_pbe - 0.913]
+equations:
+- E_g_expt = 1.348*E_g_pbe - 0.913
 name: empirical_band_gap_setyawan
-references: ['doi:10.1021/co200012w']
+references:
+- doi:10.1021/co200012w
 solve_for_all_symbols: true
-symbol_property_map: {E_g_expt: band_gap, E_g_pbe: band_gap_pbe}
+symbol_property_map:
+  E_g_expt: band_gap
+  E_g_pbe: band_gap_pbe
 test_data:
-- inputs: {E_g_expt: 0.5}
-  outputs: {E_g_pbe: 1.0482195846}
+- inputs:
+    E_g_expt: 0.5
+  outputs:
+    E_g_pbe: 1.0482195846
