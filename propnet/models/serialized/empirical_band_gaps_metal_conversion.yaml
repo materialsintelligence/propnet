@@ -10,3 +10,8 @@ symbol_property_map:
   E_g_pbe: band_gap_pbe
   E_g: band_gap
 constraints: [E_g_pbe==0]
+test_data:
+- inputs:
+    E_g_pbe: 0
+  outputs:
+    E_g:  0

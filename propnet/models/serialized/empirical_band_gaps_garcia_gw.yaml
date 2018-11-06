@@ -10,3 +10,12 @@ symbol_property_map:
   E_g_GW: band_gap_gw
   E_g_expt: band_gap
 solve_for_all_symbols: True
+test_data:
+- inputs:
+    E_g_expt: 1.012
+  outputs:
+    E_g_GW: 1.0
+- inputs:
+    E_g_GW: 1.0
+  outputs:
+    E_g_expt: 1.012

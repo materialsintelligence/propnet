@@ -58,10 +58,12 @@ class Model(ABC):
             unit assigned to the symbol in the dicts.  Units are scrubbed
             by default for PyModels/PyModule models and EquationModels with
             'empirical' categories
+        test_data (list of {'inputs': [], 'outputs': []): test data with
+            which to evaluate the model
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_property_map=None, scrub_units=None):
+                 symbol_property_map=None, scrub_units=None, test_data=None):
         self.name = name
         self.connections = connections
         self.description = description
@@ -91,6 +93,8 @@ class Model(ABC):
                 self.constraints.append(constraint)
             else:
                 self.constraints.append(Constraint(constraint))
+
+        self._test_data = test_data or self.load_test_data()
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -312,8 +316,7 @@ class Model(ABC):
         Returns:
             True if validation completes successfully
         """
-        test_datasets = self.load_test_data()
-        for test_dataset in test_datasets:
+        for test_dataset in self._test_data:
             self.test(**test_dataset)
         return True
 
@@ -361,8 +364,9 @@ class Model(ABC):
         if test_data_path is None:
             test_data_path = os.path.join(TEST_DATA_LOC,
                                           "{}.json".format(self.name))
-        cls = MontyDecoder if deserialize else None
-        return loadfn(test_data_path, cls=cls)
+        if os.path.exists(test_data_path):
+            cls = MontyDecoder if deserialize else None
+            return loadfn(test_data_path, cls=cls)
 
     @property
     def example_code(self):
@@ -373,26 +377,31 @@ class Model(ABC):
         Returns: example code for this model
 
         """
-        test_data = self.load_test_data(deserialize=False)
-        example_inputs = test_data[0]['inputs']
-        example_outputs = str(test_data[0]['outputs'])
+        example_inputs = self._test_data[0]['inputs']
+        example_outputs = str(self._test_data[0]['outputs'])
 
         symbol_definitions = []
         evaluate_args = []
         imports = []
         for input_name, input_value in example_inputs.items():
+
+            if hasattr(input_value, 'as_dict'):
+                input_value = input_value.as_dict()
+                # temp fix for ComputedEntry pending pymatgen fix
+                if 'composition' in input_value:
+                    input_value['composition'] = dict(input_value['composition'])
+
             if isinstance(input_value, dict) and input_value.get("@module"):
                 input_value_string = "{}.from_dict({})".format(
                     input_value['@class'], input_value)
                 imports += ["from {} import {}".format(
                     input_value['@module'], input_value['@class'])]
+            elif isinstance(input_value, six.string_types):
+                input_value_string = '"{}"'.format(input_value)
+            elif isinstance(input_value, np.ndarray):
+                input_value_string = input_value.tolist()
             else:
-                if isinstance(input_value, six.string_types):
-                    input_value_string = '"{}"'.format(input_value)
-                elif isinstance(input_value, np.ndarray):
-                    input_value_string = input_value.tolist()
-                else:
-                    input_value_string = input_value
+                input_value_string = input_value
             symbol_str = "{input_name} = {input_value}".format(
                 input_name=input_name,
                 input_value=input_value_string,
@@ -461,12 +470,14 @@ class EquationModel(Model, MSONable):
             the model
         references ([str]): list of the informational links
             explaining / supporting the model
+        test_data (list of {'inputs': [], 'outputs': []): test data with
+            which to evaluate the model
 
     """
     def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
                  categories=None, references=None, scrub_units=None,
-                 solve_for_all_symbols=False):
+                 solve_for_all_symbols=False, test_data=None):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -508,7 +519,8 @@ class EquationModel(Model, MSONable):
         self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, scrub_units)
+            categories, references, symbol_property_map, scrub_units,
+            test_data=test_data)
 
     def plug_in(self, symbol_value_dict):
         """
@@ -568,11 +580,12 @@ class PyModel(Model):
     """
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_property_map=None, scrub_units=True):
+                 symbol_property_map=None, scrub_units=True, test_data=None):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, scrub_units)
+            categories, references, symbol_property_map, scrub_units,
+            test_data=test_data)
 
     def plug_in(self, symbol_value_dict):
         """

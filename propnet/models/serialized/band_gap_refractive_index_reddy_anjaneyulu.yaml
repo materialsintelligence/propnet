@@ -1,15 +1,23 @@
-categories: [optical, empirical]
-# Note that this model can't work in reverse right now
-description: |
-  An empirical model relating index of refraction to band gap
+categories:
+- optical
+- empirical
+description: 'An empirical model relating index of refraction to band gap
+
   proposed by Reddy and Ahammed.
+
+  '
 equations:
-  - Eg = 36.3 / exp(n)
+- Eg = 36.3 / exp(n)
 name: band_gap_refractive_index_reddy_anjaneyulu
 references:
-    - doi:10.1016/j.infrared.2006.04.001
-    - doi:10.1002/pssb.2221310202
-    - doi:10.1002/pssb.2221000240
+- doi:10.1016/j.infrared.2006.04.001
+- doi:10.1002/pssb.2221310202
+- doi:10.1002/pssb.2221000240
 symbol_property_map:
-    Eg: band_gap
-    n: refractive_index
+  Eg: band_gap
+  n: refractive_index
+test_data:
+- inputs:
+    n: 2.2
+  outputs:
+    Eg: 4.02215
