@@ -100,11 +100,11 @@ class Quantity(MSONable):
     def is_pint(self):
         return isinstance(self._value, ureg.Quantity)
 
-    def pretty_string(self):
+    def pretty_string(self, sigfigs=4):
         # TODO: maybe support a rounding kwarg?
         if self.is_pint:
             if isinstance(self.magnitude, (float, int)):
-                out = "{0:.4g}".format(self.magnitude)
+                out = "{1:.{0}g}".format(sigfigs, self.magnitude)
                 if self.uncertainty:
                     out += "\u00B1{0:.4g}".format(self.uncertainty.magnitude)
             else:
