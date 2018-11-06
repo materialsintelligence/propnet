@@ -70,3 +70,17 @@ class QuantityTest(unittest.TestCase):
             print(q.units)
         with self.assertRaises(ValueError):
             print(q.magnitude)
+
+
+class FittingTests(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_get_sse(self):
+        pass
+
+    def test_get_weight(self):
+        pass
+
+    def test_fit_model_scores(self):
+        pass
