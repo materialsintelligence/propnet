@@ -13,4 +13,6 @@ references:
 symbol_property_map:
     Eg: band_gap
     n: refractive_index
+constraints:
+  - Eg > 0.365
 solve_for_all_symbols: True

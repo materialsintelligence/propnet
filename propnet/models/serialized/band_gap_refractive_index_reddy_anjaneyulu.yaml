@@ -13,3 +13,4 @@ references:
 symbol_property_map:
     Eg: band_gap
     n: refractive_index
+solve_for_all_symbols: True
