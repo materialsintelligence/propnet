@@ -1,8 +1,10 @@
 categories:
 - optical
-description: |
-  The optical loss function derived from real and imaginary parts of
+description: 'The optical loss function derived from real and imaginary parts of
+
   complex permittivity, which is -[Im(1/\epsilon)].
+
+  '
 equations:
 - l = e2**2/(e1**2+e2**2)
 name: loss_function_from_complex_perm

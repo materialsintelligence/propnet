@@ -1,14 +1,22 @@
 categories:
 - optical
-description: |
-  The refractive index gives the factor by which the speed of light is
-  reduced in a medium.  Likewise, modeling the induced magnetic and electric dipoles as linear
+description: 'The refractive index gives the factor by which the speed of light is
+  reduced in
+
+  a medium.  Likewise, modeling the induced magnetic and electric dipoles as linear
+
   within a material, a relative spatial electrical permittivity and relative spatial
+
   magnetic permeability arise from consideration of the total electrical and magnetic
+
   fields.
 
+
   From the Maxwell Relations, the index of refraction is equal to the geometric mean
+
   of the relative permittivity and the relative permeability.
+
+  '
 equations:
 - n = sqrt(Ur*Er)
 name: refractive_indexfrom_rel_perm

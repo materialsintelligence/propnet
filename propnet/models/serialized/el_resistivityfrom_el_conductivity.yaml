@@ -1,8 +1,10 @@
 categories:
 - electronic
-description: |
-  The electrical resistivity and conductivity are related by a simple
+description: 'The electrical resistivity and conductivity are related by a simple
+
   inverse relationship.
+
+  '
 equations:
 - sigma = 1/rho
 name: el_resistivityfrom_el_conductivity

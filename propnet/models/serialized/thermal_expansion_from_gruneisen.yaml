@@ -2,9 +2,11 @@ categories:
 - thermal
 - mechanical
 constraints: null
-description: |
-  An expression for the thermal expansion of a solid from density, constant
+description: 'An expression for the thermal expansion of a solid from density, constant
+
   volume heat capacity, bulk modulus, and gruneisen parameter
+
+  '
 equations:
 - a = y * c_v * p / k
 name: thermal_expansion_from_gruneisen

@@ -1,9 +1,12 @@
 categories:
 - elastic
-description: |
-  The sound velocity from the elastic modulus is determined by
+description: 'The sound velocity from the elastic modulus is determined by
+
   estimating the characteristic frequencies of the normal and
+
   transverse modes, and then estimating a speed from these frequencies.
+
+  '
 equations:
 - v_m = (1/3*(2/v_t**3 + 1/v_l**3))**(-1/3)
 name: sound_velocity_elastic_mean
