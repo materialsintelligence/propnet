@@ -82,3 +82,10 @@ class MaterialTest(unittest.TestCase):
         self.material.add_quantity(self.q3)
         agg = self.material.get_aggregated_quantities()
         # TODO: add a meaningful test here
+
+    def test_add_default_quantities(self):
+        material = Material(add_default_quantities=True)
+        self.assertEqual(list(material['temperature'])[0],
+                         Quantity("temperature", 300))
+        self.assertEqual(list(material['relative_permeability'])[0],
+                         Quantity("relative_permeability", 1))

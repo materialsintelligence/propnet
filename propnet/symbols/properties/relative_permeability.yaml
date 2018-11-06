@@ -5,3 +5,4 @@ display_symbols: ['\mu_{r}']
 shape: 1
 comment: ''
 category: property
+default_value: 1

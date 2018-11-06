@@ -11,13 +11,13 @@ from propnet.models import DEFAULT_MODEL_DICT
 from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.web.utils import references_to_markdown, graph_conversion, AESTHETICS
 
-# layouts for model detail pages
 
+# layouts for model detail pages
 def model_layout(model_name):
     """Create a Dash layout for a provided model.
 
     Args:
-      model: an instance of an AbstractModel subclass
+      model_name: an instance of an AbstractModel subclass
 
     Returns:
       Dash layout
@@ -39,7 +39,7 @@ def model_layout(model_name):
 
     # TODO: costly, should just construct subgraph directly?
     g = Graph()
-    subgraph = nx.ego_graph(g.graph, model, undirected=True)
+    subgraph = nx.ego_graph(g.get_networkx_graph(), model, undirected=True)
     options = AESTHETICS['global_options']
     if "arrows" in options["edges"]:
         options["edges"]["arrows"] = "to"
@@ -55,7 +55,8 @@ def model_layout(model_name):
     if model.categories:
         tags = html.Ul(
             className="tags",
-            children=[html.Li(tag, className="tag") for tag in model.categories]
+            children=[html.Li(tag, className="tag")
+                      for tag in model.categories]
         )
         layouts['Tags'] = tags
 
@@ -121,7 +122,8 @@ def model_layout(model_name):
             ]
         )
 
-        layouts['Sample Code'] = dcc.Markdown('```\n{}```'.format(model.example_code))
+        layouts['Sample Code'] = dcc.Markdown(
+            '```\n{}```'.format(model.example_code))
 
     sublayouts = []
     for title, layout in layouts.items():

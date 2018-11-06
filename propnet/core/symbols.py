@@ -18,6 +18,8 @@ import sympy as sp
 # TODO: I think object properties (e. g. structure)
 #       should have a "unitizer" metaclass that unitizes
 #       their attributes
+
+
 class Symbol(MSONable):
     """
     Class storing the complete description of a Symbol.
@@ -27,10 +29,9 @@ class Symbol(MSONable):
 
     """
 
-
     def __init__(self, name, display_names=None, display_symbols=None,
                  units=None, shape=None, object_type=None, comment=None,
-                 category='property', constraint=None):
+                 category='property', constraint=None, default_value=None):
         """
         Parses and validates a series of inputs into a PropertyMetadata
         tuple, a format that PropNet expects.
@@ -60,6 +61,8 @@ class Symbol(MSONable):
             constraint (str): constraint associated with the symbol, must
                 be a string expression (e. g. inequality) using the symbol
                 name, e. g. bulk_modulus > 0.
+            default_value: default value for the symbol, e. g. 300 for
+                temperature or 1 for magnetic permeability
         """
 
         # TODO: not sure object should be distinguished
@@ -105,6 +108,7 @@ class Symbol(MSONable):
         self.display_symbols = display_symbols
         self.shape = shape
         self.comment = comment
+        self.default_value = default_value
 
         # Note that symbol constraints are not constraint objects
         # at the moment because using them would result in a circular
@@ -172,6 +176,13 @@ class Symbol(MSONable):
             return self.name == other
 
     def __str__(self):
+        return "Symbol: {}".format(self.name)
+
+    @property
+    def summary(self):
+        """
+        Prints a full summary of the symbol
+        """
         to_return = self.name + ":\n"
         for k, v in self.__dict__.items():
             to_return += "\t" + k + ":\t" + str(v) + "\n"

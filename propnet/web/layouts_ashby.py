@@ -24,9 +24,12 @@ scalar_symbols = {k: v for k, v in DEFAULT_SYMBOLS.items()
                       and store.query(criteria={f'{k}.mean': {'$exists': True}}).count() > cut_off)}
 
 # this is dependent on the schema format
+
+
 def _ensure_indices():
     for property_name in scalar_symbols.keys():
         store.ensure_index(property_name)
+
 
 def ashby_layout(app):
 
@@ -39,10 +42,6 @@ def ashby_layout(app):
         dcc.Dropdown(id='choose-y', options=[
             {'label': v.display_names[0], 'value': k} for k, v in scalar_symbols.items()
         ], value='volume_unit_cell'),
-        #html.Label('Choose property to color by: '),
-        #dcc.Dropdown(id='choose-y', options=[
-        #    {'label': v.display_names[0], 'value': k} for k, v in scalar_symbols.items()
-        #], value='volume_unit_cell'),
         html.Div([
             html.Div([dcc.Graph(id='ashby-graph', config={'displayModeBar': False})], className='eight columns'),
             html.Div([html.Br(), html.Br(),

@@ -10,7 +10,7 @@ monty==1.0.3
 networkx>=2.0
 numpy>=1.15.1
 Pint==0.8.1
-plotly==2.0.15
+plotly>=2.0.15
 pybtex==0.21
 pydash==4.5.0
 pylatexenc==1.2
