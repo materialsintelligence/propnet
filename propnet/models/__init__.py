@@ -3,6 +3,7 @@ import os
 from propnet.core.models import EquationModel, PyModuleModel,\
     PyModuleCompositeModel
 from propnet.models import python, composite
+from glob import glob
 
 
 DEFAULT_MODELS = []
@@ -10,7 +11,7 @@ DEFAULT_COMPOSITE_MODELS = []
 
 # Load equation models
 EQUATION_MODEL_DIR = os.path.join(os.path.dirname(__file__), "serialized")
-EQUATION_MODULE_FILES = os.listdir(EQUATION_MODEL_DIR)
+EQUATION_MODULE_FILES = glob(EQUATION_MODEL_DIR+'/*.yaml')
 for filename in EQUATION_MODULE_FILES:
     model_path = os.path.join(EQUATION_MODEL_DIR, filename)
     model = EquationModel.from_file(model_path)
