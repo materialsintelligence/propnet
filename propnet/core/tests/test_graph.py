@@ -884,7 +884,6 @@ class GraphTest(unittest.TestCase):
         m1.add_quantity(Quantity("band_gap", 0.0))
         m2 = mpr.get_material_for_mpid("mp-24972")
         sm = CompositeMaterial([m1, m2])
-        import nose; nose.tools.set_trace()
 
         g = Graph()
 
