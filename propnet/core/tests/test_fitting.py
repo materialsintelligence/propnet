@@ -55,4 +55,4 @@ class FittingTests(unittest.TestCase):
         scores = fit_model_scores(self.evaluated, self.benchmarks,
                                   models=model_names)
         self.assertAlmostEqual(
-            scores['band_gap_refractive_index_herve_vandamme'], 1.371478, 5)
+            scores['band_gap_refractive_index_herve_vandamme'], 1.371478, 3)
