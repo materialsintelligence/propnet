@@ -48,7 +48,7 @@ class Quantity(MSONable):
         Parses inputs for constructing a Property object.
 
         Args:
-            symbol_type (Symbol): pointer to an existing Symbol
+            symbol_type (Symbol or str): pointer to an existing Symbol
                 object in default_symbols or string giving the name
                 of a SymbolType object identifies the type of data
                 stored in the property.
@@ -101,9 +101,10 @@ class Quantity(MSONable):
         return isinstance(self._value, ureg.Quantity)
 
     def pretty_string(self, sigfigs=4):
+        # TODO: maybe support a rounding kwarg?
         if self.is_pint:
             if isinstance(self.magnitude, (float, int)):
-                out = "{0:.4g}".format(self.magnitude)
+                out = "{1:.{0}g}".format(sigfigs, self.magnitude)
                 if self.uncertainty:
                     out += "\u00B1{0:.4g}".format(self.uncertainty.magnitude)
             else:
@@ -309,3 +310,5 @@ class Quantity(MSONable):
         return cls(symbol_type=input_symbol, value=new_value,
                    tags=list(new_tags), provenance=new_provenance,
                    uncertainty=std_dev)
+
+

@@ -24,7 +24,7 @@ symbol_property_map:
   l: wavelength
 test_data:
 - inputs:
-    k: 3e-06
+    k: 3.0e-06
     l: 596
   outputs:
     alpha: 0.63254

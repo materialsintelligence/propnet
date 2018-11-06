@@ -27,4 +27,5 @@ scikit-learn>=0.20.0
 chronic>=0.3.4
 matminer>=0.4.3
 pandas>=0.23.4
+scipy>=1.0.1
 -e .

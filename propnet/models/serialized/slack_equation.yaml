@@ -13,20 +13,20 @@ equations:
   n**(2/3) * T)
 name: slack_equation
 references:
-- doi:10.1007/0-387-25100-6_2
-- doi:10.1002/adfm.201600718
-- url:https://link.springer.com/article/10.1134/1.1666949
+  - doi:10.1007/0-387-25100-6_2
+  - doi:10.1002/adfm.201600718
+  - url:https://link.springer.com/article/10.1134/1.1666949
+symbol_property_map:
+    y: gruneisen_parameter
+    n: nsites
+    T: temperature
+    t_d: debye_temperature
+    mbar: mass_per_atom
+    d: interatomic_spacing
+    k: thermal_conductivity
 scrub_units:
   d: angstrom
   mbar: amu / atom
-symbol_property_map:
-  T: temperature
-  d: interatomic_spacing
-  k: thermal_expansion_coefficient
-  mbar: mass_per_atom
-  n: nsites
-  t_d: debye_temperature
-  y: gruneisen_parameter
 test_data:
 - inputs:
     T: 300

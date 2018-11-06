@@ -710,7 +710,7 @@ class Graph(object):
         new_material._symbol_to_quantity = quantity_pool
         return new_material
 
-    def super_evaluate(self, material):
+    def super_evaluate(self, material, allow_model_failure=True):
         """
         Given a SuperMaterial object as input, creates a new SuperMaterial
         object to include all derivable properties.  Returns a reference to
@@ -798,7 +798,8 @@ class Graph(object):
 
                     # Try to evaluate input_set:
                     evaluate_set = dict(zip(combined_list, input_set))
-                    output = model.evaluate(evaluate_set, allow_failure=False)
+                    output = model.evaluate(
+                        evaluate_set, allow_failure=allow_model_failure)
                     success = output.pop('successful')
                     if not success:
                         logger.debug("\t\t\tInput set failed -- did not produce a successful output.")

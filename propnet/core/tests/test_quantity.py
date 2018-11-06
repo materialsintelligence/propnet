@@ -1,12 +1,16 @@
 import unittest
+import os
 
 import numpy as np
 
 from pymatgen.util.testing import PymatgenTest
-from propnet.core.quantity import Quantity
 from propnet.core.symbols import Symbol
 from propnet.core.exceptions import SymbolConstraintError
+from propnet.core.quantity import Quantity
 from propnet import ureg
+
+
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class QuantityTest(unittest.TestCase):

@@ -887,7 +887,7 @@ class GraphTest(unittest.TestCase):
 
         g = Graph()
 
-        sm = g.super_evaluate(sm)
+        sm = g.super_evaluate(sm, allow_model_failure=False)
 
         self.assertTrue('pilling_bedworth_ratio' in sm._symbol_to_quantity.keys(),
                         "Super Evaluate failed to derive expected outputs.")
