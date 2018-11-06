@@ -1,15 +1,11 @@
 categories:
 - optical
-description: 'Transmittance T is the portion of the transmitted intencity of the incident
-
+description: |
+  Transmittance T is the portion of the transmitted intencity of the incident
   light.  Reflectance R is the amout of reflected light.  Absorbance A is the
-
   amount of absorbed light.
-
-
+  
   These 3 quantities add up to 1.
-
-  '
 equations:
 - 1 = A + T + R
 name: optical_transmittance

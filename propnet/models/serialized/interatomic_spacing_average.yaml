@@ -1,10 +1,8 @@
 categories:
 - conversion
-description: 'Simple approximation for interatomic spacing as cube root of volume
-
+description: |
+  Simple approximation for interatomic spacing as cube root of volume
   per atom (inverse atomic density)
-
-  '
 equations:
 - d = (p)**(-1/3)
 name: interatomic_spacing_average

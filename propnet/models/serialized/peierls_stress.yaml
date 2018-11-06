@@ -1,10 +1,8 @@
 categories:
 - dislocations
-description: 'Peierls stress is the force required to move a dislocation within
-
+description: |
+  Peierls stress is the force required to move a dislocation within
   a plane of atoms in a unit cell.
-
-  '
 equations:
 - T_pn = G*2.7182818285**(-2*3.14159*a/(1-nu)/b)
 name: peierls_stress

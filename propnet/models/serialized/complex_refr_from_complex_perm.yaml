@@ -1,16 +1,11 @@
 categories:
 - optical
-description: 'When light passes through a medium, some part of it will always be attenuated.
-
+description: |
+  When light passes through a medium, some part of it will always be attenuated.
   This can be conveniently taken into account by defining a complex refractive
-
   index.  Both real and imaginary parts of the refractive index can be derived
-
   from the complex permittivity epsilon. This implementaiton assumes that
-
   magnetic permeability \mu is 1.
-
-  '
 equations:
 - n = sqrt((sqrt(e1**2+e2**2)+e1)/2)
 - k = sqrt((sqrt(e1**2+e2**2)-e1)/2)

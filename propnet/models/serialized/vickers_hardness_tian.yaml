@@ -1,11 +1,8 @@
 categories:
 - mechanical
-description: 'Model calculating the Vicker''''s Hardness from bulk and shear moduli.
-
-
+description: |
+  Model calculating the Vicker's Hardness from bulk and shear moduli.
   From Y. Tian et al., Int. J. Refract. Met. Hard Matter. 33, 93-106 (2012)
-
-  '
 equations:
 - H = 0.92*(1/k)**1.137*G**0.708
 name: vickers_hardness_tian

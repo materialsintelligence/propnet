@@ -1,11 +1,8 @@
 categories:
 - mechanical
-description: 'Model calculating the Pugh ratio (an indicator of ductility) from bulk
-  and
-
-  shear moduli.
-
-  '
+description: |
+  Model calculating the Pugh ratio (an indicator of ductility) from bulk
+  and shear moduli.
 equations:
 - k = B/G
 name: pugh_ratio

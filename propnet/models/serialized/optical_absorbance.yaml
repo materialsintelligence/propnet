@@ -1,21 +1,14 @@
 categories:
 - optical
-description: 'Absorbance A quantifies the reduction of light intensity as it passes
-
+description: |
+  Absorbance A quantifies the reduction of light intensity as it passes
   through the material, i.e. I = I_0(1 - R - A), where I_0 is the intensity
-
   at the surface and I is the intensity of the light that comes out. R is
-
   the reflectance, which is the proportion of the reflected light at the interface.
 
-
   Frequency-dependent absorption coefficient alpha models the rate of the
-
   exponential decay of intensity as the light passes through medium, and
-
   is derived from the extinction coefficient k.
-
-  '
 equations:
 - A = (1 - R) * (1 - exp(-alpha * t))
 name: optical_absorbance

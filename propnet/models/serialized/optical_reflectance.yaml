@@ -1,11 +1,8 @@
 categories:
 - optical
-description: 'Reflectance R at the vacuum/material interface using real and imaginary
-  parts of
-
-  the complex refractive index.
-
-  '
+description: |
+  Reflectance R at the vacuum/material interface using real and imaginary
+  parts of the complex refractive index.
 equations:
 - R = ((1-n)**2+k**2)/((1+n)**2+k**2)
 name: optical_reflectance

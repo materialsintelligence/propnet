@@ -1,11 +1,9 @@
 categories:
 - optical
 - empirical
-description: 'An empirical model relating index of refraction to band gap
-
+description: |
+  An empirical model relating index of refraction to band gap
   proposed by Reddy and Ahammed.
-
-  '
 equations:
 - Eg = 36.3 / exp(n)
 name: band_gap_refractive_index_reddy_anjaneyulu

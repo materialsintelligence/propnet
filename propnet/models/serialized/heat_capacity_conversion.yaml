@@ -1,8 +1,7 @@
 categories:
 - thermal
-description: 'simple conversion formula for specific and molar mass
-
-  '
+description: |
+ Simple conversion formula for specific and molar mass.
 equations:
 - c_v_specific = c_v_molar / molar_mass
 name: heat_capacity_conversion
