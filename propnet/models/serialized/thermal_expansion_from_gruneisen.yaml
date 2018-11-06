@@ -16,4 +16,6 @@ symbol_property_map:
     c_v: specific_heat_capacity_constant_volume
     p: density
     k: bulk_modulus
-solve_for_all_symbols: True
+# This really breaks the graph evaluation, it would be
+# nice if it worked though
+# solve_for_all_symbols: True
