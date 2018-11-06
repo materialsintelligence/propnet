@@ -384,7 +384,7 @@ class Model(ABC):
         evaluate_args = []
         imports = []
         for input_name, input_value in example_inputs.items():
-            
+
             if hasattr(input_value, 'as_dict'):
                 input_value = input_value.as_dict()
                 # temp fix for ComputedEntry pending pymatgen fix
