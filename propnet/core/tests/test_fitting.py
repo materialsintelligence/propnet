@@ -46,6 +46,7 @@ class FittingTests(unittest.TestCase):
         self.assertEqual(wt3, 0.125)
 
     def test_fit_model_scores(self):
+        # Note this test is a bit heavy
         model_names=["band_gap_refractive_index_herve_vandamme",
                      "band_gap_refractive_index_moss",
                      "band_gap_refractive_index_ravindra",
