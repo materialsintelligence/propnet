@@ -1,27 +1,19 @@
-categories:
-- electronic
-- empirical
-description: 'Band gaps estimated using Density Functional Theory (and the PBE exchange-correlation
-
-  functional) typically underestimate the true band gap. A linear least squares fit
-
-  can provide an estimate of the true band gap from the PBE gap (R\xB2 = 0.886 when
-  tested
-
-  against 100 compounds with gaps between ~1 and ~12 eV).
-
-  '
-equations:
-- E_g_expt = 1.348*E_g_pbe - 0.913
+categories: [electronic, empirical]
+description: |
+    Band gaps estimated using Density Functional Theory (and the PBE exchange-correlation
+    functional) typically underestimate the true band gap. A linear least squares fit
+    can provide an estimate of the true band gap from the PBE gap (R\xB2 = 0.886 when tested
+    against 100 compounds with gaps between ~1 and ~12 eV).
+equations: [E_g_expt = 1.348*E_g_pbe + 0.913]
 name: empirical_band_gap_setyawan
-references:
-- doi:10.1021/co200012w
-solve_for_all_symbols: true
+references: ["doi:10.1021/co200012w"]
 symbol_property_map:
   E_g_expt: band_gap
   E_g_pbe: band_gap_pbe
+solve_for_all_symbols: True
+constraints: [E_g_pbe > 0]
 test_data:
 - inputs:
-    E_g_expt: 0.5
+    E_g_expt: 1.5870
   outputs:
-    E_g_pbe: 1.0482195846
+    E_g_pbe: 0.5
