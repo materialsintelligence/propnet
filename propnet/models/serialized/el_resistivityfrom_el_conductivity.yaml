@@ -1,12 +1,22 @@
-categories: [electronic]
-description: |
-  The electrical resistivity and conductivity are related by a simple
+categories:
+- electronic
+description: 'The electrical resistivity and conductivity are related by a simple
+
   inverse relationship.
-equations: [sigma = 1/rho]
+
+  '
+equations:
+- sigma = 1/rho
 name: el_resistivityfrom_el_conductivity
-references: ["url:https://en.wikipedia.org/wiki/Electrical_resistivity_and_conductivity"]
+references:
+- url:https://en.wikipedia.org/wiki/Electrical_resistivity_and_conductivity
+solve_for_all_symbols: true
 symbol_property_map:
-    is_metallic: is_metallic
-    rho: electrical_resistivity
-    sigma: electrical_conductivity
-solve_for_all_symbols: True
+  is_metallic: is_metallic
+  rho: electrical_resistivity
+  sigma: electrical_conductivity
+test_data:
+- inputs:
+    rho: 2.0
+  outputs:
+    sigma: 0.5
