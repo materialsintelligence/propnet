@@ -11,6 +11,7 @@ symbol_property_map:
   E_g_expt: band_gap
 solve_for_all_symbols: True
 constraints: [E_g_pbe > 0]
+test_data:
 - inputs:
     E_g_expt:  2.262
   outputs:

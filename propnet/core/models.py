@@ -94,7 +94,7 @@ class Model(ABC):
             else:
                 self.constraints.append(Constraint(constraint))
 
-        self._test_data = test_data or self.load_test_data(name)
+        self._test_data = test_data or self.load_test_data()
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -361,9 +361,12 @@ class Model(ABC):
         Returns (dict):
             Dictionary of test data
         """
-        filelist = glob(os.path.join(test_data_loc, "{}.*".format(name)))
-        if filelist:
-            return loadfn(filelist[0])
+        if test_data_path is None:
+            test_data_path = os.path.join(TEST_DATA_LOC,
+                                          "{}.json".format(self.name))
+        if os.path.exists(test_data_path):
+            cls = MontyDecoder if deserialize else None
+            return loadfn(test_data_path, cls=cls)
 
     @property
     def example_code(self):
@@ -381,18 +384,24 @@ class Model(ABC):
         evaluate_args = []
         imports = []
         for input_name, input_value in example_inputs.items():
+            
+            if hasattr(input_value, 'as_dict'):
+                input_value = input_value.as_dict()
+                # temp fix for ComputedEntry pending pymatgen fix
+                if 'composition' in input_value:
+                    input_value['composition'] = dict(input_value['composition'])
+
             if isinstance(input_value, dict) and input_value.get("@module"):
                 input_value_string = "{}.from_dict({})".format(
                     input_value['@class'], input_value)
                 imports += ["from {} import {}".format(
                     input_value['@module'], input_value['@class'])]
+            elif isinstance(input_value, six.string_types):
+                input_value_string = '"{}"'.format(input_value)
+            elif isinstance(input_value, np.ndarray):
+                input_value_string = input_value.tolist()
             else:
-                if isinstance(input_value, six.string_types):
-                    input_value_string = '"{}"'.format(input_value)
-                elif isinstance(input_value, np.ndarray):
-                    input_value_string = input_value.tolist()
-                else:
-                    input_value_string = input_value
+                input_value_string = input_value
             symbol_str = "{input_name} = {input_value}".format(
                 input_name=input_name,
                 input_value=input_value_string,
