@@ -203,9 +203,9 @@ class Quantity(MSONable):
         if model_hash in visited:
             return True
         visited.add(model_hash)
-        for input in self.provenance.inputs or []:
+        for p_input in self.provenance.inputs or []:
             this_visited = visited.copy()
-            if input.is_cyclic(this_visited):
+            if p_input.is_cyclic(this_visited):
                 return True
         return False
 
