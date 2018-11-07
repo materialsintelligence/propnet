@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 from monty import tempfile
+import networkx as nx
 
 from pymatgen.util.testing import PymatgenTest
 from propnet.core.symbols import Symbol
@@ -80,14 +81,19 @@ class QuantityTest(unittest.TestCase):
 
     def test_get_provenance_graph(self):
         g = Graph()
-        mat = Material([Quantity("bulk_modulus", 100),
-                        Quantity("shear_modulus", 50),
-                        Quantity("density", 8.96)])
+        qs = [Quantity("bulk_modulus", 100),
+              Quantity("shear_modulus", 50),
+              Quantity("density", 8.96)]
+        mat = Material(qs)
         evaluated = g.evaluate(mat)
         # TODO: this should be tested more thoroughly
         out = list(evaluated['vickers_hardness'])[0]
         with tempfile.ScratchDir('.'):
             out.draw_provenance_graph("out.png")
+        pgraph = out.get_provenance_graph()
+        end = list(evaluated['vickers_hardness'])[0]
+        shortest_lengths = nx.shortest_path_length(pgraph, qs[0])
+        self.assertEqual(shortest_lengths[end], 4)
 
         # This test is useful if one wants to actually make a plot, leaving
         # it in for now
