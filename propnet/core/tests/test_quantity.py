@@ -2,11 +2,14 @@ import unittest
 import os
 
 import numpy as np
+from monty import tempfile
 
 from pymatgen.util.testing import PymatgenTest
 from propnet.core.symbols import Symbol
 from propnet.core.exceptions import SymbolConstraintError
 from propnet.core.quantity import Quantity
+from propnet.core.materials import Material
+from propnet.core.graph import Graph
 from propnet import ureg
 
 
@@ -74,3 +77,14 @@ class QuantityTest(unittest.TestCase):
             print(q.units)
         with self.assertRaises(ValueError):
             print(q.magnitude)
+
+    def test_get_provenance_graph(self):
+        g = Graph()
+        mat = Material([Quantity("bulk_modulus", 100),
+                        Quantity("shear_modulus", 50),
+                        Quantity("density", 8.96)])
+        evaluated = g.evaluate(mat)
+        # TODO: this should be tested more thoroughly
+        out = list(evaluated['vickers_hardness'])[0]
+        with tempfile.ScratchDir('.'):
+            out.draw_provenance_graph("out.png", prog='dot')
