@@ -12,7 +12,7 @@ class ProvenanceElement(MSONable):
 
     __slots__ = ['m', 'inputs']
 
-    def __init__(self, model=None, inputs=None):
+    def __init__(self, model=None, inputs=None, source=None):
         """
         Args:
             model: (Model) model that outputs the quantity object this
@@ -20,6 +20,7 @@ class ProvenanceElement(MSONable):
             inputs: (list<Quantity>) quantities fed in to the model
                 to generate the quantity object this ProvenanceElement
                 is attached to.
+            source: static source, e. g. Materials Project
         """
         self.model = getattr(model, 'name', model)
         self.inputs = inputs
