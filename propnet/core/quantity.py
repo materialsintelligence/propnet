@@ -339,14 +339,12 @@ class Quantity(MSONable):
                 graph = model_input.get_provenance_graph(start=graph)
                 graph.add_edge(model_input, model)
         elif source is not None:
-            graph.add_node(source, label=source, fillcolor='green',
-                           fontcolor='white')
-            self.add_edge(source, self)
+            graph.add_edge(source, self)
 
         return graph
 
-    def draw_provenance_graph(self, filename, **kwargs):
+    def draw_provenance_graph(self, filename, prog='dot',**kwargs):
         nx_graph = self.get_provenance_graph()
         a_graph = nx.nx_agraph.to_agraph(nx_graph)
         a_graph.node_attr['style'] = 'filled'
-        a_graph.draw(filename, **kwargs)
+        a_graph.draw(filename, prog=prog, **kwargs)

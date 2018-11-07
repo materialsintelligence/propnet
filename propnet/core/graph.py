@@ -332,7 +332,7 @@ class Graph(object):
                 nx.set_node_attributes(graph, {node: node.name}, "label")
         return graph
 
-    def create_file(self, filename='out.dot', draw=False,
+    def create_file(self, filename='out.dot', draw=False, prog='dot',
                     include_orphans=False, **kwargs):
         """
         Output the graph to a file
@@ -351,7 +351,7 @@ class Graph(object):
         agraph = nx.nx_agraph.to_agraph(nxgraph)
         agraph.node_attr['style'] = 'filled'
         if draw:
-            agraph.draw(filename, **kwargs)
+            agraph.draw(filename, prog=prog, **kwargs)
         else:
             agraph.write(filename, **kwargs)
 
