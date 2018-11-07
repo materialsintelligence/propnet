@@ -87,4 +87,11 @@ class QuantityTest(unittest.TestCase):
         # TODO: this should be tested more thoroughly
         out = list(evaluated['vickers_hardness'])[0]
         with tempfile.ScratchDir('.'):
-            out.draw_provenance_graph("out.png", prog='dot')
+            out.draw_provenance_graph("out.png")
+
+        from propnet.ext.matproj import MPRester
+        mpr = MPRester()
+        mat = mpr.get_material_for_mpid("mp-66")
+        evaluated = g.evaluate(mat)
+        out = list(evaluated['vickers_hardness'])[-1]
+        out.draw_provenance_graph("out.png", prog='dot')

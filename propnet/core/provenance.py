@@ -24,6 +24,7 @@ class ProvenanceElement(MSONable):
         """
         self.model = getattr(model, 'name', model)
         self.inputs = inputs
+        self.source = source
 
     def __str__(self):
         pre = ",".join([

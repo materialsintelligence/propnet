@@ -203,7 +203,7 @@ class Quantity(MSONable):
         if model_hash in visited:
             return True
         visited.add(model_hash)
-        for input in self.provenance.inputs:
+        for input in self.provenance.inputs or []:
             this_visited = visited.copy()
             if input.is_cyclic(this_visited):
                 return True
@@ -313,7 +313,7 @@ class Quantity(MSONable):
                    tags=list(new_tags), provenance=new_provenance,
                    uncertainty=std_dev)
 
-    def get_provenance_graph(self, start=None):
+    def get_provenance_graph(self, start=None, filter_long_labels=True):
         """
         Gets an nxgraph object corresponding to the provenance graph
 
@@ -325,9 +325,12 @@ class Quantity(MSONable):
         """
         graph = start or nx.MultiDiGraph()
         # import nose; nose.tools.set_trace()
+        label = self.pretty_string()
+        label = "{}: {}".format(self.symbol.name, self.pretty_string())
+        if filter_long_labels and len(label) > 30:
+            label = "{}".format(self.symbol.name)
         graph.add_node(
-            self, fillcolor="#43A1F8", fontcolor='white',
-            label="{}: {}".format(self.symbol.name, self.pretty_string(4)))
+            self, fillcolor="#43A1F8", fontcolor='white', label=label)
         model = getattr(self.provenance, 'model', None)
         source = getattr(self.provenance, 'source', None)
         if model is not None:
