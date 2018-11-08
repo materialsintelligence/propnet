@@ -2,11 +2,15 @@ import unittest
 import os
 
 import numpy as np
+from monty import tempfile
+import networkx as nx
 
 from pymatgen.util.testing import PymatgenTest
 from propnet.core.symbols import Symbol
 from propnet.core.exceptions import SymbolConstraintError
 from propnet.core.quantity import Quantity
+from propnet.core.materials import Material
+from propnet.core.graph import Graph
 from propnet import ureg
 
 
@@ -74,3 +78,28 @@ class QuantityTest(unittest.TestCase):
             print(q.units)
         with self.assertRaises(ValueError):
             print(q.magnitude)
+
+    def test_get_provenance_graph(self):
+        g = Graph()
+        qs = [Quantity("bulk_modulus", 100),
+              Quantity("shear_modulus", 50),
+              Quantity("density", 8.96)]
+        mat = Material(qs)
+        evaluated = g.evaluate(mat)
+        # TODO: this should be tested more thoroughly
+        out = list(evaluated['vickers_hardness'])[0]
+        with tempfile.ScratchDir('.'):
+            out.draw_provenance_graph("out.png")
+        pgraph = out.get_provenance_graph()
+        end = list(evaluated['vickers_hardness'])[0]
+        shortest_lengths = nx.shortest_path_length(pgraph, qs[0])
+        self.assertEqual(shortest_lengths[end], 4)
+
+        # This test is useful if one wants to actually make a plot, leaving
+        # it in for now
+        # from propnet.ext.matproj import MPRester
+        # mpr = MPRester()
+        # mat = mpr.get_material_for_mpid("mp-66")
+        # evaluated = g.evaluate(mat)
+        # out = list(evaluated['vickers_hardness'])[-1]
+        # out.draw_provenance_graph("out.png", prog='dot')

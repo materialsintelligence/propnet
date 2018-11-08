@@ -1,6 +1,8 @@
 import numpy as np
 from monty.json import MSONable
 
+import networkx as nx
+
 from propnet import ureg
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
@@ -201,9 +203,9 @@ class Quantity(MSONable):
         if model_hash in visited:
             return True
         visited.add(model_hash)
-        for input in self.provenance.inputs:
+        for p_input in self.provenance.inputs or []:
             this_visited = visited.copy()
-            if input.is_cyclic(this_visited):
+            if p_input.is_cyclic(this_visited):
                 return True
         return False
 
@@ -311,4 +313,41 @@ class Quantity(MSONable):
                    tags=list(new_tags), provenance=new_provenance,
                    uncertainty=std_dev)
 
+    def get_provenance_graph(self, start=None, filter_long_labels=True):
+        """
+        Gets an nxgraph object corresponding to the provenance graph
 
+        Args:
+            start (nxgraph): starting graph to build from
+
+        Returns:
+            (nxgraph): graph representation of provenance
+        """
+        graph = start or nx.MultiDiGraph()
+        # import nose; nose.tools.set_trace()
+        label = self.pretty_string()
+        label = "{}: {}".format(self.symbol.name, self.pretty_string())
+        if filter_long_labels and len(label) > 30:
+            label = "{}".format(self.symbol.name)
+        graph.add_node(
+            self, fillcolor="#43A1F8", fontcolor='white', label=label)
+        model = getattr(self.provenance, 'model', None)
+        source = getattr(self.provenance, 'source', None)
+        if model is not None:
+            model = "Model: {}".format(model)
+            graph.add_node(model, label=model, fillcolor='orange',
+                           fontcolor='white', shape='rectangle')
+            graph.add_edge(model, self)
+            for model_input in self.provenance.inputs:
+                graph = model_input.get_provenance_graph(start=graph)
+                graph.add_edge(model_input, model)
+        elif source is not None:
+            graph.add_edge(source, self)
+
+        return graph
+
+    def draw_provenance_graph(self, filename, prog='dot',**kwargs):
+        nx_graph = self.get_provenance_graph()
+        a_graph = nx.nx_agraph.to_agraph(nx_graph)
+        a_graph.node_attr['style'] = 'filled'
+        a_graph.draw(filename, prog=prog, **kwargs)
