@@ -56,7 +56,7 @@ DEFAULT_Z = 'atomic_density'
 
 def plot_layout(app):
 
-    graph_layout = dcc.Graph(id='ashby-graph', config={'displayModeBar': True})
+    graph_layout = dcc.Graph(id='ashby-graph', config={'displayModeBar': False})
 
     controls_layout = html.Div([
         html.Label('Choose property for x-axis: '),
@@ -104,15 +104,15 @@ def plot_layout(app):
                               dcc.Markdown(id='point-detail',
                                            children="Click on a point for more information on that material."),
                               html.Div(
-                                  html.Details(html.Summary(
-                                      'Provenance for x datapoint')),
-                                  html.Details(html.Summary(
-                                      'Provenance for y datapoint'))
+                                  #html.Details(html.Summary(
+                                  #    'Provenance for x datapoint')),
+                                  #html.Details(html.Summary(
+                                  #    'Provenance for y datapoint'))
                               )])
 
-    description_layout = html.Span(
+    description_layout = dcc.Markdown(
         "Plot materials properties pre-computed by propnet and seeded with "
-        "input data from the Materials Project (additional data source integration "
+        "input data from the [Materials Project](https://materialsproject.org) (additional data source integration "
         "is pending).")
 
     layout = html.Div([
@@ -234,9 +234,11 @@ def plot_layout(app):
         Output('point-detail', 'children'),
         [Input('ashby-graph', 'clickData')],
         [State('choose-x', 'value'),
-         State('choose-y', 'value')]
+         State('choose-y', 'value'),
+         State('choose-z', 'value'),
+         State('choose-color', 'value')]
     )
-    def update_info_box(clickData, x_prop, y_prop):
+    def update_info_box(clickData, x_prop, y_prop, z_prop, color_prop):
 
         if clickData is None:
             raise PreventUpdate
@@ -245,11 +247,12 @@ def plot_layout(app):
         mpid = point['text']
         x = point['x']
         y = point['y']
+        print(point)
 
         s = mpr.get_structure_by_material_id(mpid)
         formula = unicodeify(s.composition.reduced_formula)
 
-        return f"""
+        info = f"""
         
 ### {formula}
 ##### [{mpid}](https://materialsproject.org/materials/{mpid})
@@ -258,8 +261,18 @@ x = {x:.2f} {scalar_symbols[x_prop].unit_as_string}
 
 y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
 
-{store.query_one(criteria={'task_id': mpid}, properties=[x_prop, y_prop])}
-        """
+"""
+        if 'z' in point:
+            z = point['z']
+            info += f"z = {z:.2f} {scalar_symbols[z_prop].unit_as_string}"
+
+        if 'marker.color' in point:
+            c = point['marker.color']
+            info += f"c = {c:.2f} {scalar_symbols[color_prop].unit_as_string}"
+
+        return info
+
+# {store.query_one(criteria={'task_id': mpid}, properties=[x_prop, y_prop])}
 
     @app.callback(
         Output('query-counter', 'children'),
@@ -349,7 +362,7 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
                     # 'error_y': {'type': 'data', 'array': [get(d, y_std_dev, 0) for d in data], 'visible': True},
                     'text': [d['task_id'] for d in data],
                     'mode': 'markers',
-                    'marker': {'size': 4},
+                    'marker': {'size': 5},
                     'type': 'scatter3d'
                 }
             ]
@@ -362,9 +375,10 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
 
                 traces[0]['marker']['color'] = c
                 traces[0]['marker']['colorscale'] = 'Viridis'
-                traces[0]['colorbar'] = {'title': color_title}
-                traces[0]['cmin'] = color_range[0]
-                traces[0]['cmax'] = color_range[1]
+                traces[0]['marker']['showscale'] = True
+                traces[0]['marker']['colorbar'] = {'title': color_title}
+                traces[0]['marker']['cmin'] = color_range[0]
+                traces[0]['marker']['cmax'] = color_range[1]
 
 
             x_title = "{} / {}".format(scalar_symbols[x_prop].display_names[0],
@@ -408,7 +422,7 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
                     # 'error_y': {'type': 'data', 'array': [get(d, y_std_dev, 0) for d in data], 'visible': True},
                     'text': [d['task_id'] for d in data],
                     'mode': 'markers',
-                    'marker': {'size': 4},
+                    'marker': {'size': 5},
                     'type': 'scattergl'
                 }
             ]
@@ -421,9 +435,10 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
 
                 traces[0]['marker']['color'] = c
                 traces[0]['marker']['colorscale'] = 'Viridis'
-                traces[0]['colorbar'] = {'title': color_title}
-                traces[0]['cmin'] = color_range[0]
-                traces[0]['cmax'] = color_range[1]
+                traces[0]['marker']['showscale'] = True
+                traces[0]['marker']['colorbar'] = {'title': color_title}
+                traces[0]['marker']['cmin'] = color_range[0]
+                traces[0]['marker']['cmax'] = color_range[1]
 
 
             x_title = "{} / {}".format(scalar_symbols[x_prop].display_names[0],
