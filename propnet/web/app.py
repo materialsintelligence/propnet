@@ -8,7 +8,8 @@ from dash.dependencies import Input, Output, State
 from propnet import log_stream
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_symbols import symbol_layout, symbols_index
-from propnet.web.layouts_ashby import ashby_layout
+from propnet.web.layouts_plot import plot_layout
+from propnet.web.layouts_home import home_layout
 from propnet.web.layouts_interactive import interactive_layout
 
 from mp_dash_components import GraphComponent
@@ -29,7 +30,7 @@ app = dash.Dash()
 server = app.server
 app.config.supress_callback_exceptions = True  # TODO: remove this?
 app.scripts.config.serve_locally = True
-app.title = "Property Network Project"
+app.title = "propnet"
 route = dcc.Location(id='url', refresh=False)
 
 cache = Cache(app.server, config={
@@ -84,54 +85,24 @@ graph_layout = html.Div(
                  children=[graph_component])])
 
 layout_menu = html.Div(
-    children=[dcc.Link('Explore Graph', href='/graph'),
+    children=[dcc.Link('What is propnet?', href='/home'),
               html.Span(' • '),
-              dcc.Link('All Symbols', href='/property'),
+              dcc.Link('Explore', href='/graph'),
               html.Span(' • '),
-              dcc.Link('All Models', href='/model'),
+              dcc.Link('Generate', href='/generate'),
               html.Span(' • '),
-              dcc.Link('Explore with Materials Project', href='/load_material'),
+              dcc.Link('Plot', href='/plot'),
               html.Span(' • '),
-              dcc.Link('Ashby Plots', href='/ashby'),
-              html.Span(' • '),
-              dcc.Link('Interact', href='/interactive'),
+              dcc.Link('Map', href='/map')
               ])
 
 # home page
 home_manifesto = """
-**Under active development, pre-alpha.**
-Real materials are complex. In the field of Materials Science, 
-we often rely on empirical relationships and rules-of-thumb to 
-provide insights into the behavior of materials. This project
-is designed to codify our knowledge of these empirical models 
-and the relationships between them, along with providing tested, 
-unit-aware implementations of each model.
-
-When given a set of known properties of a material, the knowledge 
-graph can help derive additional properties automatically. 
-Integration with the [Materials Project](https://materialsproject.org) 
-and other databases provides these sets of initial properties for 
-a given material, as well as information on the real world 
-distributions of these properties.
-
-We also provide interfaces to machine-learned models. Machine 
-learning is **great**, and one day might replace our conventional 
-wisdom, but until then as scientists we still need to understand 
-how to use and interpret these machine-learned models. 
-Additionally, formally codifying our existing models will help 
-train further machine-learned models in the future.
+**Not intended for public use at this time.**
 """
 
-graph_log = """
-```
-Graph initialization log:
-{}
-```
-""".format(log_stream.getvalue())
-
 index = html.Div([html.Br(),
-                  dcc.Markdown(home_manifesto),
-                  dcc.Markdown(graph_log)])
+                  dcc.Markdown(home_manifesto)])
 
 # header
 app.layout = html.Div(
@@ -148,7 +119,7 @@ app.layout = html.Div(
 # standard Dash css, fork this for a custom theme
 # we real web devs now
 app.css.append_css(
-    {'external_url': 'https://codepen.io/mkhorton/pen/zPgJJw.css'})
+    {'external_url': 'https://codepen.io/mkhorton-the-reactor/pen/oQbddV.css'})
 # app.css.append_css(
 #     {'external_url': 'https://codepen.io/montoyjh/pen/YjPKae.css'})
 app.css.append_css(
@@ -268,7 +239,7 @@ material_layout = html.Div([
 ])
 
 
-ASHBY_LAYOUT = ashby_layout(app)
+PLOT_LAYOUT = plot_layout(app)
 INTERACTIVE_LAYOUT = interactive_layout(app)
 
 # routing, current routes defined are:
@@ -309,10 +280,12 @@ def display_page(pathname):
             return material_layout
         elif path_info['mode'] == 'graph':
             return graph_layout
-        elif path_info['mode'] == 'ashby':
-            return ASHBY_LAYOUT
+        elif path_info['mode'] == 'plot':
+            return PLOT_LAYOUT
         elif path_info['mode'] == 'interactive':
             return INTERACTIVE_LAYOUT
+        elif path_info['mode'] == 'home':
+            return home_layout
         else:
             return '404'
     else:
