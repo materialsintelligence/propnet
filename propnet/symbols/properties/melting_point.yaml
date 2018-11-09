@@ -1,0 +1,7 @@
+name: melting_point
+units: K
+display_names: [Melting point]
+display_symbols: [T_m]
+shape: 1
+comment: ''
+category: property
