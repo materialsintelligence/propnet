@@ -89,11 +89,13 @@ layout_menu = html.Div(
               html.Span(' • '),
               dcc.Link('Explore', href='/graph'),
               html.Span(' • '),
+              dcc.Link('Models', href='/model'),
+              html.Span(' • '),
+              dcc.Link('Properties', href='/property'),
+              html.Span(' • '),
               dcc.Link('Generate', href='/generate'),
               html.Span(' • '),
-              dcc.Link('Plot', href='/plot'),
-              html.Span(' • '),
-              dcc.Link('Map', href='/map')
+              dcc.Link('Plot', href='/plot')
               ])
 
 # home page
@@ -101,8 +103,8 @@ home_manifesto = """
 **Not intended for public use at this time.**
 """
 
-index = html.Div([html.Br(),
-                  dcc.Markdown(home_manifesto)])
+home = html.Div([html.Br(),
+                 dcc.Markdown(home_manifesto)])
 
 # header
 app.layout = html.Div(
@@ -124,120 +126,6 @@ app.css.append_css(
 #     {'external_url': 'https://codepen.io/montoyjh/pen/YjPKae.css'})
 app.css.append_css(
     {'external_url': 'https://codepen.io/mikesmith1611/pen/QOKgpG.css'})
-
-
-@app.callback(Output('material-content', 'children'),
-              [Input('submit-query', 'n_clicks')],
-              [State('query-input', 'value'),
-               State('derive_options', 'values')])
-def retrieve_material(n_clicks, query, derive_properties):
-    """
-    Gets the material view from options
-
-    Args:
-        n_clicks (int): load material click
-        formula (string): formula to find
-        derive_properties ([str]): list of derivation options
-
-    Returns:
-        Div of graph component with fulfilled options
-
-    """
-    if n_clicks is None:
-        return ""
-
-    log.info("Fetching data from MP for query {}".format(query))
-    if query.startswith("mp-") or query.startswith("mvc-"):
-        mpid = query
-    else:
-        mpid = mpr.get_mpid_from_formula(query)
-    material = mpr.get_material_for_mpid(mpid)
-    if not material:
-        return "Material not found."
-    log.info("Retrieved material {} for formula {}".format(
-        mpid, material['pretty_formula']))
-
-    log.debug("Adding material to graph.")
-    p = Graph()
-    material_quantity_names = [q.symbol.name for q in material.get_quantities()]
-    g = p.get_networkx_graph()
-
-    if 'derive' in derive_properties:
-        log.info("Deriving quantities for {}".format(mpid))
-        material = p.evaluate(material)
-
-        if 'aggregate' in derive_properties:
-            log.debug("Aggregating quantities for material {}".format(mpid))
-            # TODO: get aggregated quantities should return a list
-            quantities = material.get_aggregated_quantities().items()
-        else:
-            quantities = [(q.symbol, q) for q in material.get_quantities()]
-    else:
-        quantities = [(q.symbol, q) for q in material.get_quantities()]
-
-
-    rows = []
-    for symbol, quantity in quantities:
-        rows.append(
-            {
-                'Symbol': symbol.display_names[0],
-                'Value': quantity.pretty_string(3),
-            }
-        )
-
-    table = dt.DataTable(
-        rows=rows,
-        row_selectable=True,
-        filterable=True,
-        sortable=True,
-        editable=False,
-        selected_row_indices=[],
-        id='datatable'
-    )
-    derived_quantity_names = set([symbol.name for symbol, quantity in quantities]) -\
-        set(material_quantity_names)
-    material_graph_data = graph_conversion(
-        g, nodes_to_highlight_green=material_quantity_names,
-        nodes_to_highlight_yellow=list(derived_quantity_names))
-    options = AESTHETICS['global_options']
-    options['edges']['color'] = '#000000'
-    material_graph_component = html.Div(GraphComponent(
-        id='material-graph',
-        graph=material_graph_data,
-        options=options
-    ), style={'width': '100%', 'height': '400px'})
-
-    return html.Div([
-        html.H3('Graph'),
-        material_graph_component,
-        html.H3('Table'),
-        table
-    ])
-
-
-material_layout = html.Div([
-    dcc.Input(
-        placeholder='Enter a formula or mp-id...',
-        type='text',
-        value='',
-        id='query-input',
-        style={"width": "50%"}
-    ),
-    html.Button('Load Material', id='submit-query'),
-    dcc.Checklist(
-        id='derive_options',
-        options=[
-            {'label': 'Derive properties', 'value': 'derive'},
-            {'label': 'Aggregate', 'value': 'aggregate'}
-        ],
-        values=['derive', 'aggregate'],
-        labelStyle={'display': 'inline-block'}
-    ),
-    html.Br(),
-    html.Br(),
-    html.Div(id='material-content')
-])
-
 
 PLOT_LAYOUT = plot_layout(app)
 INTERACTIVE_LAYOUT = interactive_layout(app)
@@ -276,20 +164,18 @@ def display_page(pathname):
                 return symbol_layout(property_name)
             else:
                 return symbols_index()
-        elif path_info['mode'] == 'load_material':
-            return material_layout
         elif path_info['mode'] == 'graph':
             return graph_layout
         elif path_info['mode'] == 'plot':
             return PLOT_LAYOUT
-        elif path_info['mode'] == 'interactive':
+        elif path_info['mode'] == 'generate':
             return INTERACTIVE_LAYOUT
         elif path_info['mode'] == 'home':
-            return home_layout
+            return home_layout()
         else:
             return '404'
     else:
-        return index
+        return home
 
 
 if __name__ == '__main__':

@@ -177,6 +177,8 @@ def parse_path(pathname):
     mode = None  # 'property' or 'model'
     value = None  # property name / model name
 
+    # TODO: get rid of this
+
     if pathname == '/model':
         mode = 'model'
     elif pathname.startswith('/model'):
@@ -200,8 +202,8 @@ def parse_path(pathname):
         mode = 'graph'
     elif pathname.startswith('/plot'):
         mode = 'plot'
-    elif pathname.startswith('/interactive'):
-        mode = 'interactive'
+    elif pathname.startswith('/generate'):
+        mode = 'generate'
 
     return {
         'mode': mode,
