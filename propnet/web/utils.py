@@ -193,17 +193,14 @@ def parse_path(pathname):
         for property in DEFAULT_SYMBOL_TYPE_NAMES:
             if pathname.startswith('/property/{}'.format(property)):
                 value = property
-    elif pathname == '/load_material':
-        mode = 'load_material'
-    elif pathname.startswith('/load_material'):
-        mode = 'load_material'
-        value = pathname.split('/')[-1]
-    elif pathname.startswith('/graph'):
-        mode = 'graph'
+    elif pathname.startswith('/explore'):
+        mode = 'explore'
     elif pathname.startswith('/plot'):
         mode = 'plot'
     elif pathname.startswith('/generate'):
         mode = 'generate'
+    elif pathname.startswith('/home'):
+        mode = 'home'
 
     return {
         'mode': mode,

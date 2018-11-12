@@ -72,19 +72,13 @@ def symbol_layout(symbol_name, aesthetics=None):
         html.Br(),
         html.Div(layouts),
         html.Br(),
-        dcc.Link('< Back to Properties', href='/property'),
-        html.Br(),
-        dcc.Link('<< Back to Home', href='/')
+        #dcc.Link('< Back to Properties', href='/property'),
+        #html.Br(),
+        dcc.Link('< Back', href='/explore')
     ])
 
 
-def symbols_index(available_hists=None):
-
-    # properties for which we have values from a database, e.g. MP
-    # this was used in a demo, needs to be replaced with something
-    # more permanent
-    if not available_hists:
-        available_hists = {}
+def symbols_index():
 
     symbol_links = {}
     for symbol_name in DEFAULT_SYMBOLS:
@@ -96,14 +90,9 @@ def symbols_index(available_hists=None):
         if symbol_type not in symbol_links:
             symbol_links[symbol_type] = []
 
-        if available_hists.get(symbol_name, None):
-            token = "• "
-        else:
-            token = ""
-
         symbol_links[symbol_type].append(
             html.Div([
-                dcc.Link("{}{}".format(token, display_name),
+                dcc.Link("{}".format(display_name),
                          href='/property/{}'.format(symbol_name)),
                 html.Br()
             ])
@@ -120,6 +109,6 @@ def symbols_index(available_hists=None):
     return html.Div([
     html.H5('Currently supported symbols:'),
     html.Div(symbol_links_grouped),
-    html.Br(),
-    dcc.Link('< Back', href='/')
+    #html.Br(),
+    #dcc.Link('< Back', href='/')
 ])

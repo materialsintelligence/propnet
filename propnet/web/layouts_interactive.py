@@ -3,7 +3,7 @@ import dash_html_components as html
 import dash_table_experiments as dt
 
 from mp_dash_components import GraphComponent
-from propnet.web.utils import graph_conversion, parse_path, AESTHETICS
+from propnet.web.utils import graph_conversion, AESTHETICS
 
 import json
 from monty.json import MontyEncoder, MontyDecoder

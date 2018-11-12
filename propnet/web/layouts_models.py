@@ -135,9 +135,9 @@ def model_layout(model_name):
         html.Br(),
         *sublayouts,
         html.Br(),
-        dcc.Link('< Back to Models', href='/model'),
-        html.Br(),
-        dcc.Link('<< Back to Home', href='/')
+        #dcc.Link('< Back to Models', href='/model'),
+        #html.Br(),
+        dcc.Link('< Back', href='/explore')
     ])
 
 
@@ -174,6 +174,6 @@ for tag, links in model_links.items():
 models_index = html.Div([
     html.H5('Current models:'),
     html.Div(model_links_grouped),
-    html.Br(),
-    dcc.Link('< Back', href='/')
+    #html.Br(),
+    #dcc.Link('< Back', href='/')
 ])
