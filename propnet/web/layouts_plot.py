@@ -81,7 +81,7 @@ def plot_layout(app):
             dcc.Dropdown(id='choose-color', options=[
                 {'label': v.display_names[0], 'value': k} for k, v in
                 scalar_symbols.items()
-            ], value=DEFAULT_COLOR,
+            ], value=DEFAULT_COLOR),
             html.Label('Set range for color scale: '),
             dcc.RangeSlider(id='color-scale-range', step=0.01),
             html.Br()
