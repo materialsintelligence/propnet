@@ -122,8 +122,12 @@ def model_layout(model_name):
             ]
         )
 
-        layouts['Sample Code'] = dcc.Markdown(
-            '```\n{}```'.format(model.example_code))
+        layouts['Sample Code'] = html.Div([
+            dcc.Markdown("Propnet models can be called directly, with propnet acting "
+                         "as a library of tested materials science models. Sample code for this "
+                         "model is as follows:"),
+            dcc.SyntaxHighlighter(model.example_code)
+        ])
 
     sublayouts = []
     for title, layout in layouts.items():
@@ -135,9 +139,9 @@ def model_layout(model_name):
         html.Br(),
         *sublayouts,
         html.Br(),
-        dcc.Link('< Back to Models', href='/model'),
-        html.Br(),
-        dcc.Link('<< Back to Home', href='/')
+        #dcc.Link('< Back to Models', href='/model'),
+        #html.Br(),
+        dcc.Link('< Back', href='/explore')
     ])
 
 
@@ -174,6 +178,6 @@ for tag, links in model_links.items():
 models_index = html.Div([
     html.H5('Current models:'),
     html.Div(model_links_grouped),
-    html.Br(),
-    dcc.Link('< Back', href='/')
+    #html.Br(),
+    #dcc.Link('< Back', href='/')
 ])

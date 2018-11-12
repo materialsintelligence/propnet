@@ -1,17 +1,12 @@
 import unittest
 import json
 
-from propnet.web.app import app, retrieve_material, symbol_layout,\
-    model_layout, graph_conversion
+from propnet.web.app import app, symbol_layout, model_layout
+from propnet.web.utils import graph_conversion
 from propnet.core.graph import Graph
 
 routes = [
-    '/',
-    '/models'
-    '/properties',
-    '/developer',
-    '/utilities',
-    '/utilities/load/materials'
+    '/'
 ]
 
 # auto add final /
@@ -31,26 +26,9 @@ class WebTest(unittest.TestCase):
         models = self.client.get('/models')
         self.assertEqual(models.status_code, 200)
 
-    def test_developer(self):
-        developer = self.client.get('/developer')
-        self.assertEqual(developer.status_code, 200)
-
-    def test_utilities(self):
-        utilities = self.client.get('/utilities')
-        self.assertEqual(utilities.status_code, 200)
-
     def test_property(self):
         properties = self.client.get('/property')
         self.assertEqual(properties.status_code, 200)
-
-    def test_load_material(self):
-        # Test retrieve material method
-        material_no_derive = retrieve_material(1, "Ag", [])
-        self.assertEqual(material_no_derive.status_code, 200)
-        material_derive = retrieve_material(1, "Ag", ['derive'])
-        self.assertEqual(material_derive.status_code, 200)
-        material_aggregate = retrieve_material(1, "Ag", ['derive', 'aggregate'])
-        self.assertEqual(material_aggregate.status_code, 200)
 
     def test_symbol_layout(self):
         layout = symbol_layout("applied_stress")
