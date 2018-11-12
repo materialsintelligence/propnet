@@ -1,5 +1,6 @@
 from propnet.core.materials import Material
 from propnet.core.quantity import Quantity
+from propnet.core.provenance import ProvenanceElement
 
 from pymatgen import MPRester as _MPRester
 
@@ -133,7 +134,9 @@ class MPRester(_MPRester):
         for material_properties in materials_properties:
             material = Material()
             for property_name, property_value in material_properties.items():
-                quantity = Quantity(self.mapping[property_name], property_value)
+                provenance = ProvenanceElement(source='Materials Project')
+                quantity = Quantity(self.mapping[property_name], property_value,
+                                    provenance=provenance)
                 material.add_quantity(quantity)
             materials.append(material)
 
