@@ -123,7 +123,7 @@ def model_layout(model_name):
         )
 
         layouts['Sample Code'] = html.Div([
-            dcc.Markdown("Propnet models can be called directly, with propnet acting"
+            dcc.Markdown("Propnet models can be called directly, with propnet acting "
                          "as a library of tested materials science models. Sample code for this "
                          "model is as follows:"),
             dcc.SyntaxHighlighter(model.example_code)
