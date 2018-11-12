@@ -52,7 +52,7 @@ def _ensure_indices():
 DEFAULT_X = 'band_gap'
 DEFAULT_Y = 'volume_unit_cell'
 DEFAULT_Z = 'atomic_density'
-
+DEFAULT_COLOR = 'energy_above_hull'
 
 def plot_layout(app):
 
@@ -81,7 +81,7 @@ def plot_layout(app):
             dcc.Dropdown(id='choose-color', options=[
                 {'label': v.display_names[0], 'value': k} for k, v in
                 scalar_symbols.items()
-            ], value=choice(list(scalar_symbols.keys()))),
+            ], value=DEFAULT_COLOR,
             html.Label('Set range for color scale: '),
             dcc.RangeSlider(id='color-scale-range', step=0.01),
             html.Br()
