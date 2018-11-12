@@ -2,6 +2,7 @@ import unittest
 import json
 
 from propnet.web.app import app, symbol_layout, model_layout
+from propnet.web.utils import graph_conversion
 from propnet.core.graph import Graph
 
 routes = [
