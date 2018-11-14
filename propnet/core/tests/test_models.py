@@ -121,3 +121,20 @@ returns {'mu_e': 8994.92312225673}
                 exec(model.example_code)
             except Exception as e:
                 raise e
+
+    def test_model_returns_nan(self):
+        A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
+        B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
+        get_config = {
+            'name': 'equality',
+            # 'connections': [{'inputs': ['b'], 'outputs': ['a']}],
+            'equations': ['a = b'],
+            # 'unit_map': {'a': "dimensionless", 'a': "dimensionless"}
+            'symbol_property_map': {"a": A, "b": B}
+        }
+        model = EquationModel(**get_config)
+        out = model.evaluate({'b': Quantity(B, float('nan'))},
+                             allow_failure=True)
+
+        self.assertFalse(out['successful'])
+        self.assertEqual(out['message'], 'Evaluation returned invalid values (NaN)')

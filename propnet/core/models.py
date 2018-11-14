@@ -201,6 +201,7 @@ class Model(ABC):
             try:
                 quantity = Quantity(symbol, value, self.unit_map.get(symbol),
                                        provenance=provenance)
+
                 if quantity.symbol.category in ('property', 'condition'):
                     if quantity.symbol.dimension_as_string == 'scalar':
                         if quantity.is_pint:
