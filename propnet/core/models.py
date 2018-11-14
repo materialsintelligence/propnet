@@ -181,7 +181,6 @@ class Model(ABC):
             # Otherwise use values
             else:
                 symbol_value_dict[symbol] = quantity.value
-
         # Plug in and check constraints
         try:
             out = self.plug_in(symbol_value_dict)
@@ -194,13 +193,49 @@ class Model(ABC):
         if not self.check_constraints({**symbol_value_dict, **out}):
             return {"successful": False,
                     "message": "Constraints not satisfied"}
+        # CML New code
+#        for quantity in symbol_quantity_dict.values():
+#            symbol = quantity.symbol
+#            if symbol.category in ('property', 'condition'):
+#                contains_nans = False
+#                if symbol.dimension_as_string == 'scalar':
+#                    contains_nans = np.isnan(quantity.magnitude)
+#                else:
+#                    contains_nans = np.isnan(quantity.magnitude).any()
+
+#                if contains_nans:
+#                    return {"successful": False,
+#                        "message": "Evaluation returned invalid values (NaN)"}
+        # CML END New code
         provenance = ProvenanceElement(
             model=self.name, inputs=list(symbol_quantity_dict.values()))
         out = self.map_symbols_to_properties(out)
         for symbol, value in out.items():
             try:
-                out[symbol] = Quantity(symbol, value, self.unit_map.get(symbol),
+# CML OLD CODE
+#                out[symbol] = Quantity(symbol, value, self.unit_map.get(symbol),
+#                                       provenance=provenance)
+# CML END OLD CODE
+# CML NEW CODE
+                quantity = Quantity(symbol, value, self.unit_map.get(symbol),
                                        provenance=provenance)
+                if quantity.symbol.category in ('property', 'condition'):
+                    if quantity.symbol.dimension_as_string == 'scalar':
+                        if quantity.is_pint:
+                            contains_nans = np.isnan(quantity.magnitude)
+                        else:
+                            contains_nans = np.isnan(quantity.value)
+                    else:
+                        if quantity.is_pint:
+                            contains_nans = np.isnan(quantity.magnitude).any()
+                        else:
+                            contains_nans = np.isnan(quantity.value).any()
+
+                    if contains_nans:
+                        return {"successful": False,
+                                "message": "Evaluation returned invalid values (NaN)"}
+                out[symbol] = quantity
+# CML END NEW CODE
             except SymbolConstraintError as err:
                 if allow_failure:
                     errmsg = "{} symbol constraint failed: {}".format(self, err)
