@@ -210,6 +210,16 @@ class Quantity(MSONable):
         return False
 
     def contains_nan_value(self):
+        """
+        Determines if the value of the object contains a NaN value if the
+        object holds numerical data.
+
+        Returns:
+             (bool) true if the quantity is numerical and contains one
+             or more NaN values. false if the quantity is numerical and
+             does not contain any NaN values OR if the quantity does not
+             store numerical information
+        """
         # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be NaN, unless the
         # value is complex, which, per the constructor, is non-pint, but can be NaN.
         # Should we change constructor to assign complex/imaginary numbers as pint? Should we be filtering out
