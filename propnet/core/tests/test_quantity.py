@@ -103,3 +103,33 @@ class QuantityTest(unittest.TestCase):
         # evaluated = g.evaluate(mat)
         # out = list(evaluated['vickers_hardness'])[-1]
         # out.draw_provenance_graph("out.png", prog='dot')
+
+    def test_nan_checking(self):
+        A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
+        B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=[2, 2])
+        C = Symbol('c', ['C'], ['C'], units='dimensionless', shape=1)
+        D = Symbol('d', ['D'], ['D'], units='dimensionless', shape=[2, 2])
+
+        scalar_quantity = Quantity(A, float('nan'))
+        non_scalar_quantity = Quantity(B, [[1.0, float('nan')],
+                                           [float('nan'), 1.0]])
+        complex_scalar_quantity = Quantity(C, complex('nan+nanj'))
+        complex_non_scalar_quantity = Quantity(D, [[complex(1.0), complex('nanj')],
+                                                   [complex('nan'), complex(1.0)]])
+
+        self.assertTrue(scalar_quantity.contains_nan_value())
+        self.assertTrue(non_scalar_quantity.contains_nan_value())
+        self.assertTrue(complex_scalar_quantity.contains_nan_value())
+        self.assertTrue(complex_non_scalar_quantity.contains_nan_value())
+
+        scalar_quantity = Quantity(A, 1.0)
+        non_scalar_quantity = Quantity(B, [[1.0, 2.0],
+                                           [2.0, 1.0]])
+        complex_scalar_quantity = Quantity(C, complex('1+1j'))
+        complex_non_scalar_quantity = Quantity(D, [[complex(1.0), complex('5j')],
+                                                   [complex('5'), complex(1.0)]])
+
+        self.assertFalse(scalar_quantity.contains_nan_value())
+        self.assertFalse(non_scalar_quantity.contains_nan_value())
+        self.assertFalse(complex_scalar_quantity.contains_nan_value())
+        self.assertFalse(complex_non_scalar_quantity.contains_nan_value())

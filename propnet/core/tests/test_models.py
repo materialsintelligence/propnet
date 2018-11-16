@@ -123,6 +123,9 @@ returns {'mu_e': 8994.92312225673}
                 raise e
 
     def test_model_returns_nan(self):
+        # This tests model failure with scalar nan.
+        # Quantity class has other more thorough tests.
+
         A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
         get_config = {
@@ -135,6 +138,5 @@ returns {'mu_e': 8994.92312225673}
         model = EquationModel(**get_config)
         out = model.evaluate({'b': Quantity(B, float('nan'))},
                              allow_failure=True)
-
         self.assertFalse(out['successful'])
         self.assertEqual(out['message'], 'Evaluation returned invalid values (NaN)')

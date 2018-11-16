@@ -201,24 +201,6 @@ class Model(ABC):
             try:
                 quantity = Quantity(symbol, value, self.unit_map.get(symbol),
                                        provenance=provenance)
-
-                if quantity.symbol.category in ('property', 'condition'):
-                    if quantity.symbol.dimension_as_string == 'scalar':
-                        if quantity.is_pint:
-                            contains_nans = np.isnan(quantity.magnitude)
-                        else:
-                            contains_nans = np.isnan(quantity.value)
-                    else:
-                        if quantity.is_pint:
-                            contains_nans = np.isnan(quantity.magnitude).any()
-                        else:
-                            contains_nans = np.isnan(quantity.value).any()
-
-                    if contains_nans:
-                        return {"successful": False,
-                                "message": "Evaluation returned invalid values (NaN)"}
-                out[symbol] = quantity
-
             except SymbolConstraintError as err:
                 if allow_failure:
                     errmsg = "{} symbol constraint failed: {}".format(self, err)
@@ -226,6 +208,12 @@ class Model(ABC):
                             "message": errmsg}
                 else:
                     raise err
+
+            if quantity.contains_nan_value():
+                return {"successful": False,
+                        "message": "Evaluation returned invalid values (NaN)"}
+            out[symbol] = quantity
+
         out['successful'] = True
         return out
 

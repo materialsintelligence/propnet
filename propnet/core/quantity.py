@@ -209,6 +209,25 @@ class Quantity(MSONable):
                 return True
         return False
 
+    def contains_nan_value(self):
+        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be NaN, unless the
+        # value is complex, which, per the constructor, is non-pint, but can be NaN.
+        # Should we change constructor to assign complex/imaginary numbers as pint? Should we be filtering out
+        # complex values when we evaluate the models? They are filtered in EquationModel when more than one output
+        # is obtained (not sure how this works or why it was implemented)
+        if not self.is_pint:
+            if not isinstance(self.value, complex):
+                return False
+            else:
+                value_to_check = self.value
+        else:
+            value_to_check = self.magnitude
+
+        if self.symbol.dimension_as_string == 'scalar':
+            return np.isnan(value_to_check)
+        else:
+            return np.isnan(value_to_check).any()
+
     def __hash__(self):
         return hash(self.symbol.name)
 
