@@ -181,7 +181,6 @@ class Model(ABC):
             # Otherwise use values
             else:
                 symbol_value_dict[symbol] = quantity.value
-
         # Plug in and check constraints
         try:
             out = self.plug_in(symbol_value_dict)
@@ -194,12 +193,13 @@ class Model(ABC):
         if not self.check_constraints({**symbol_value_dict, **out}):
             return {"successful": False,
                     "message": "Constraints not satisfied"}
+
         provenance = ProvenanceElement(
             model=self.name, inputs=list(symbol_quantity_dict.values()))
         out = self.map_symbols_to_properties(out)
         for symbol, value in out.items():
             try:
-                out[symbol] = Quantity(symbol, value, self.unit_map.get(symbol),
+                quantity = Quantity(symbol, value, self.unit_map.get(symbol),
                                        provenance=provenance)
             except SymbolConstraintError as err:
                 if allow_failure:
@@ -208,6 +208,12 @@ class Model(ABC):
                             "message": errmsg}
                 else:
                     raise err
+
+            if quantity.contains_nan_value():
+                return {"successful": False,
+                        "message": "Evaluation returned invalid values (NaN)"}
+            out[symbol] = quantity
+
         out['successful'] = True
         return out
 
