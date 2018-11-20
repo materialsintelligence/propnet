@@ -71,14 +71,19 @@ class Quantity(MSONable):
         units = units or symbol_type.units
 
         # Invoke pint quantity if supplied or input is float/int
-        if isinstance(value, (float, int, list, np.ndarray)):
+
+        if isinstance(value, (np.floating, np.integer, np.complexfloating)):
+            self._value = ureg.Quantity(np.asscalar(value), units)
+        elif isinstance(value, (float, int, list, complex, np.ndarray)):
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
         else:
             self._value = value
 
-        if isinstance(uncertainty, (float, int, list, np.ndarray)):
+        if isinstance(uncertainty, (np.floating, np.integer, np.complexfloating)):
+            self._uncertainty = ureg.Quantity(np.asscalar(uncertainty), units)
+        elif isinstance(uncertainty, (float, int, list, complex, np.ndarray)):
             self._uncertainty = ureg.Quantity(value, units)
         elif isinstance(uncertainty, ureg.Quantity):
             self._uncertainty = uncertainty.to(units)
