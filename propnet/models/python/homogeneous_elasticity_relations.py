@@ -331,5 +331,8 @@ config = {
     },
     "description": DESCRIPTION,
     "references": ["url:https://en.wikipedia.org/wiki/Elastic_modulus"],
+    "implemented_by": [
+        "dmrdjenovich"
+    ],
     "plug_in": plug_in,
 }

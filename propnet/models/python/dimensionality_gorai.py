@@ -29,5 +29,8 @@ config = {
     ],
     "description": DESCRIPTION,
     "references": ["doi:10.1021/acs.nanolett.6b05229"],
+    "implemented_by": [
+        "mkhorton"
+    ],
     "plug_in": plug_in
 }

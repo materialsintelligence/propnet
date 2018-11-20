@@ -10,6 +10,8 @@ description: 'Schmid''''s Law states that the critically resolved shear stress i
 equations:
 - tau = m * sigma
 name: schmids_law
+implemented_by:
+- jpalakapilly
 references:
 - url:https://en.wikipedia.org/wiki/Schmid%27s_law
 solve_for_all_symbols: true

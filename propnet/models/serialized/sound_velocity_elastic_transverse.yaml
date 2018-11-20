@@ -10,6 +10,8 @@ description: 'The sound velocity from the elastic modulus is determined by
 equations:
 - v_t = (G/p)**(1/2)
 name: sound_velocity_elastic_transverse
+implemented_by:
+- dmrdjenovich
 references: []
 scrub_units:
   B: Pa

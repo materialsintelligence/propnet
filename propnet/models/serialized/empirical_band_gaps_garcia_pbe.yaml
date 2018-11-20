@@ -5,6 +5,8 @@ description: |
 equations:
     - E_g_expt = 1.358*E_g_pbe + 0.904
 name: empirical_band_gaps_garcia_pbe
+implemented_by:
+- mkhorton
 references: ["doi:10.1021/acs.jpcc.7b07421"]
 symbol_property_map:
   E_g_pbe: band_gap_pbe
