@@ -20,6 +20,8 @@ description: 'Relation from Yim, K. et al. Novel high-\u03BA dielectrics for nex
 equations:
 - c = epsilon**(1/2)*E_g
 name: dielectric_figure_of_merit_energy
+implemented_by:
+- dmrdjenovich
 references: []
 scrub_units: true
 symbol_property_map:

@@ -13,6 +13,8 @@ description: 'Transmittance T is the portion of the transmitted intencity of the
 equations:
 - 1 = A + T + R
 name: optical_transmittance
+implemented_by:
+- vtshitoyan
 references: []
 solve_for_all_symbols: true
 symbol_property_map:

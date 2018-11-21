@@ -5,6 +5,8 @@ description: |
 equations:
     - E_g_expt = 0.998*E_g_GW + 0.014
 name: empirical_band_gaps_garcia_gw
+implemented_by:
+- mkhorton
 references: ["doi:10.1021/acs.jpcc.7b07421"]
 symbol_property_map:
   E_g_GW: band_gap_gw

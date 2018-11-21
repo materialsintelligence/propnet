@@ -9,6 +9,8 @@ description: 'An empirical model relating a material''''s band gap to its
 equations:
 - n = (95/Eg)**(1/4)
 name: band_gap_refractive_index_moss
+implemented_by:
+- mkhorton
 references:
 - doi:10.1016/j.infrared.2006.04.001
 - doi:10.1002/pssb.2221310202

@@ -6,6 +6,8 @@ description: 'simple conversion formula for specific and molar mass
 equations:
 - c_v_specific = c_v_molar / molar_mass
 name: heat_capacity_conversion
+implemented_by:
+- jdagdelen
 references: []
 solve_for_all_symbols: true
 symbol_property_map:

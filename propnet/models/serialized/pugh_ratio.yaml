@@ -9,6 +9,8 @@ description: 'Model calculating the Pugh ratio (an indicator of ductility) from 
 equations:
 - k = B/G
 name: pugh_ratio
+implemented_by:
+- dmrdjenovich
 references: []
 symbol_property_map:
   B: bulk_modulus

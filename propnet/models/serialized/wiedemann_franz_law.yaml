@@ -34,6 +34,8 @@ description: 'The Wiedemann-Franz Law states that the ratio of the
 equations:
 - k = T * 2.45*10**-8 * o
 name: wiedemann_franz_law
+implemented_by:
+- jpalakapilly
 references:
 - url:http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/thercond.html#c2
 scrub_units: true

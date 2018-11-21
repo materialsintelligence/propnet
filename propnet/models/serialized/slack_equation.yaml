@@ -12,6 +12,8 @@ equations:
 - k = (2.43*10**-8/ (1 - 0.514 / y + 0.228 / y**2)) * mbar * t_d**3 * d / (y**2 *
   n**(2/3) * T)
 name: slack_equation
+implemented_by:
+- montoyjh
 references:
   - doi:10.1007/0-387-25100-6_2
   - doi:10.1002/adfm.201600718

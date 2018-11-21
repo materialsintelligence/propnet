@@ -5,6 +5,8 @@ description: |
 equations:
     - E_g = E_g_pbe
 name: empirical_band_gaps_metal_conversion
+implemented_by:
+- montoyjh
 references: []
 symbol_property_map:
   E_g_pbe: band_gap_pbe

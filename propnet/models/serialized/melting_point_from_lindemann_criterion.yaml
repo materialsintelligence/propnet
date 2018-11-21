@@ -6,6 +6,8 @@ equations:
 # Note that the Lindemann criterion is set to a default value of 0.15. Perhaps later can explore deriving it, if of interest.
 - T_m = 2 * pi * (mbar*1.66054e-27) * (0.15)**2 * (a*1e-10)**2 * T**2 * 1.38064852e-23 / ((6.62607004e-34)**2)
 name: melting_point_from_lindemann_criterion
+implemented_by:
+- clegaspi
 references:
   - doi:10.1063/1.2737054
   - doi:10.1103/PhysRevB.22.3790

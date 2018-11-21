@@ -9,6 +9,8 @@ description: 'Reflectance R at the vacuum/material interface using real and imag
 equations:
 - R = ((1-n)**2+k**2)/((1+n)**2+k**2)
 name: optical_reflectance
+implemented_by:
+- vtshitoyan
 references:
 - url:https://unlcms.unl.edu/cas/physics/tsymbal/teaching/SSP-927/Section%2013_Optical_Properties_of_Solids.pdf
 symbol_property_map:

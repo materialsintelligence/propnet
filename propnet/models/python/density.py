@@ -42,5 +42,8 @@ config = {
     },
     "description": DESCRIPTION,
     "references": [],
+    "implemented_by": [
+        "dmrdjenovich"
+    ],
     "plug_in": plug_in
 }

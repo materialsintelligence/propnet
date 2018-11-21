@@ -34,5 +34,8 @@ config = {
     },
     "description": DESCRIPTION,
     "references": ["doi:10.1016/j.commatsci.2012.10.028"],
+    "implemented_by": [
+        "mkhorton"
+    ],
     "plug_in": plug_in
 }
