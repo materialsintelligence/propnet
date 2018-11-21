@@ -79,7 +79,7 @@ class Quantity(MSONable):
             self._value = value
 
         if isinstance(uncertainty, (float, int, list, np.ndarray)):
-            self._uncertainty = ureg.Quantity(value, units)
+            self._uncertainty = ureg.Quantity(uncertainty, units)
         elif isinstance(uncertainty, ureg.Quantity):
             self._uncertainty = uncertainty.to(units)
         else:
