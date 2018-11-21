@@ -76,6 +76,8 @@ class Quantity(MSONable):
         if isinstance(value, (np.floating, np.integer, np.complexfloating)):
             self._value = ureg.Quantity(np.asscalar(value), units)
         elif isinstance(value, (float, int, list, complex, np.ndarray)):
+            # TODO: Need to see if ureg.Quantity changes lists to np data types
+            # If not, should we make them np data types? Make them NOT np?
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
