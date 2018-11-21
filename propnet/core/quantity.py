@@ -264,17 +264,49 @@ class Quantity(MSONable):
         # complex values when we evaluate the models? They are filtered in EquationModel when more than one output
         # is obtained (not sure how this works or why it was implemented)
         if not self.is_pint:
-            if not isinstance(self.value, complex):
-                return False
-            else:
-                value_to_check = self.value
-        else:
-            value_to_check = self.magnitude
+            return False
 
-        if self.symbol.dimension_as_string == 'scalar':
-            return np.isnan(value_to_check)
-        else:
-            return np.isnan(value_to_check).any()
+        return np.any(np.isnan(self.magnitude))
+
+    def is_complex_type(self):
+        """
+        Determines if the type of the variable holding the object's magnitude is complex, if the
+        object holds numerical data.
+
+        Returns:
+             (bool) true if the quantity is numerical and holds a complex scalar or array type as its value.
+             false if the quantity is numerical and holds only real values OR if the quantity does not
+             store numerical information
+        """
+        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be complex
+        if not self.is_pint:
+            return False
+
+        if isinstance(self.magnitude, np.ndarray):
+            return np.issubdtype(self.magnitude.dtype, np.complexfloating)
+
+        return isinstance(self.magnitude, complex)
+
+    def contains_imaginary_value(self):
+        """
+        Determines if the value of the object contains a non-zero imaginary
+        value if the object holds numerical data.
+
+        Note this function returns false if the values are of complex type,
+        but the imaginary portions are (approximately) zero. To assess the
+        type as complex, use is_complex_type().
+
+        Returns:
+             (bool) true if the quantity is numerical and contains one
+             or more non-zero imaginary values. false if the quantity is
+             numerical and all imaginary values are zero OR if the quantity does not
+             store numerical information.
+        """
+        if self.is_complex_type():
+            # Calling as static methods allows for evaluation of both scalars and arrays
+            return not np.all(np.isclose(np.imag(self.magnitude), 0))
+
+        return False
 
     def __hash__(self):
         return hash(self.symbol.name)

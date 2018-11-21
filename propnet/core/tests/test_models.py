@@ -141,3 +141,22 @@ returns {'mu_e': 8994.92312225673}
                              allow_failure=True)
         self.assertFalse(out['successful'])
         self.assertEqual(out['message'], 'Evaluation returned invalid values (NaN)')
+
+    def test_model_returns_complex(self):
+        # This tests model failure with scalar complex.
+        # Quantity class has other more thorough tests.
+
+        A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
+        B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
+        get_config = {
+            'name': 'equality',
+            # 'connections': [{'inputs': ['b'], 'outputs': ['a']}],
+            'equations': ['a = b'],
+            # 'unit_map': {'a': "dimensionless", 'a': "dimensionless"}
+            'symbol_property_map': {"a": A, "b": B}
+        }
+        model = EquationModel(**get_config)
+        out = model.evaluate({'b': Quantity(B, complex(1+1j))},
+                             allow_failure=True)
+        self.assertFalse(out['successful'])
+        self.assertEqual(out['message'], 'Evaluation returned invalid values (complex)')
