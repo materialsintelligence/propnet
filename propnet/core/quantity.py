@@ -86,7 +86,7 @@ class Quantity(MSONable):
         if isinstance(uncertainty, (np.floating, np.integer, np.complexfloating)):
             self._uncertainty = ureg.Quantity(np.asscalar(uncertainty), units)
         elif isinstance(uncertainty, (float, int, list, complex, np.ndarray)):
-            self._uncertainty = ureg.Quantity(value, units)
+            self._uncertainty = ureg.Quantity(uncertainty, units)
         elif isinstance(uncertainty, ureg.Quantity):
             self._uncertainty = uncertainty.to(units)
         else:

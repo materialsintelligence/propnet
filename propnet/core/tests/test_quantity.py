@@ -188,8 +188,8 @@ class QuantityTest(unittest.TestCase):
         q_float_uncertainty = Quantity(self.custom_symbol, 5.0, uncertainty=np.float64(1.0))
         q_complex_uncertainty = Quantity(self.custom_symbol, 5.0+1j, uncertainty=np.complex64(1.0 + 0.1j))
 
-        self.assertTrue(isinstance(q_int_uncertainty.uncertainty, int))
-        self.assertTrue(isinstance(q_float_uncertainty.uncertainty, float))
-        self.assertTrue(isinstance(q_complex_uncertainty.uncertainty, complex))
+        self.assertTrue(isinstance(q_int_uncertainty.uncertainty.magnitude, int))
+        self.assertTrue(isinstance(q_float_uncertainty.uncertainty.magnitude, float))
+        self.assertTrue(isinstance(q_complex_uncertainty.uncertainty.magnitude, complex))
 
 
