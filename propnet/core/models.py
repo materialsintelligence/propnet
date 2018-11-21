@@ -48,6 +48,8 @@ class Model(ABC):
             the model
         references ([str]): list of the informational links
             explaining / supporting the model
+        implemented_by ([str]): list of authors of the model by their
+            github usernames
         symbol_property_map ({str: str}): mapping of symbols enumerated
             in the plug-in method to canonical symbols, e. g.
             {"n": "index_of_refraction"} etc.
