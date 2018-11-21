@@ -72,7 +72,12 @@ class Quantity(MSONable):
         units = units or symbol_type.units
 
         # Invoke pint quantity if supplied or input is float/int
-        if isinstance(value, (float, int, list, np.ndarray)):
+
+        if isinstance(value, (np.floating, np.integer, np.complexfloating)):
+            self._value = ureg.Quantity(np.asscalar(value), units)
+        elif isinstance(value, (float, int, list, complex, np.ndarray)):
+            # TODO: Need to see if ureg.Quantity changes lists to np data types
+            # If not, should we make them np data types? Make them NOT np?
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
@@ -81,8 +86,10 @@ class Quantity(MSONable):
         else:
             self._value = value
 
-        if isinstance(uncertainty, (float, int, list, np.ndarray)):
-            self._uncertainty = ureg.Quantity(uncertainty, units)
+        if isinstance(uncertainty, (np.floating, np.integer, np.complexfloating)):
+            self._uncertainty = ureg.Quantity(np.asscalar(uncertainty), units)
+        elif isinstance(uncertainty, (float, int, list, complex, np.ndarray)):
+            self._uncertainty = ureg.Quantity(value, units)
         elif isinstance(uncertainty, ureg.Quantity):
             self._uncertainty = uncertainty.to(units)
         else:
@@ -258,11 +265,7 @@ class Quantity(MSONable):
              does not contain any NaN values OR if the quantity does not
              store numerical information
         """
-        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be NaN, unless the
-        # value is complex, which, per the constructor, is non-pint, but can be NaN.
-        # TODO: Should we change constructor to assign complex/imaginary numbers as pint? Should we be filtering out
-        # complex values when we evaluate the models? They are filtered in EquationModel when more than one output
-        # is obtained (not sure how this works or why it was implemented)
+        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be NaN
         if not self.is_pint:
             return False
 

@@ -174,4 +174,22 @@ class QuantityTest(unittest.TestCase):
         self.assertTrue(complex_non_scalar_appx_zero_imaginary.is_complex_type())
         self.assertFalse(complex_non_scalar_appx_zero_imaginary.contains_imaginary_value())
 
+    def test_numpy_scalar_conversion(self):
+        # From custom symbol
+        q_int = Quantity(self.custom_symbol, np.int64(5))
+        q_float = Quantity(self.custom_symbol, np.float64(5.0))
+        q_complex = Quantity(self.custom_symbol, np.complex64(5.0+1.j))
+
+        self.assertTrue(isinstance(q_int.magnitude, int))
+        self.assertTrue(isinstance(q_float.magnitude, float))
+        self.assertTrue(isinstance(q_complex.magnitude, complex))
+
+        q_int_uncertainty = Quantity(self.custom_symbol, 5, uncertainty=np.int64(1))
+        q_float_uncertainty = Quantity(self.custom_symbol, 5.0, uncertainty=np.float64(1.0))
+        q_complex_uncertainty = Quantity(self.custom_symbol, 5.0+1j, uncertainty=np.complex64(1.0 + 0.1j))
+
+        self.assertTrue(isinstance(q_int_uncertainty.uncertainty, int))
+        self.assertTrue(isinstance(q_float_uncertainty.uncertainty, float))
+        self.assertTrue(isinstance(q_complex_uncertainty.uncertainty, complex))
+
 
