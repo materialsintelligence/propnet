@@ -75,6 +75,8 @@ class Quantity(MSONable):
         if isinstance(value, (np.floating, np.integer, np.complexfloating)):
             self._value = ureg.Quantity(np.asscalar(value), units)
         elif isinstance(value, (float, int, list, complex, np.ndarray)):
+            # TODO: Need to see if ureg.Quantity changes lists to np data types
+            # If not, should we make them np data types? Make them NOT np?
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
@@ -225,11 +227,7 @@ class Quantity(MSONable):
              does not contain any NaN values OR if the quantity does not
              store numerical information
         """
-        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be NaN, unless the
-        # value is complex, which, per the constructor, is non-pint, but can be NaN.
-        # TODO: Should we change constructor to assign complex/imaginary numbers as pint? Should we be filtering out
-        # complex values when we evaluate the models? They are filtered in EquationModel when more than one output
-        # is obtained (not sure how this works or why it was implemented)
+        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be NaN
         if not self.is_pint:
             return False
 
