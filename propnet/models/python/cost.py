@@ -37,5 +37,8 @@ config = {
     },
     "description": DESCRIPTION,
     "references": [],
+    "implemented_by": [
+        "mkhorton"
+    ],
     "plug_in": plug_in
 }
