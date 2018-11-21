@@ -228,6 +228,11 @@ class Model(ABC):
                 return {"successful": False,
                         "message": "Evaluation returned invalid values (NaN)"}
             # TODO: Update when we figure out how we're going to handle complex quantities
+            if quantity.contains_imaginary_value():
+                return {"successful": False,
+                        "message": "Evaluation returned invalid values (complex)"}
+
+            # TODO: Update when we figure out how we're going to handle complex quantities
             # Model evaluation will fail if complex values are returned when no complex input was given
             # Can surely handle this more gracefully, or assume that the users will apply constraints
             if quantity.contains_imaginary_value() and not contains_complex_input:
