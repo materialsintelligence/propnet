@@ -133,3 +133,45 @@ class QuantityTest(unittest.TestCase):
         self.assertFalse(non_scalar_quantity.contains_nan_value())
         self.assertFalse(complex_scalar_quantity.contains_nan_value())
         self.assertFalse(complex_non_scalar_quantity.contains_nan_value())
+
+    def test_complex_and_imaginary_checking(self):
+        A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
+        B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=[2, 2])
+
+        real_float_scalar = Quantity(A, 1.0)
+        real_float_non_scalar = Quantity(B, [[1.0, 1.0],
+                                             [1.0, 1.0]])
+
+        complex_scalar = Quantity(A, complex(1+1j))
+        complex_non_scalar = Quantity(B, [[complex(1.0), complex(1.j)],
+                                          [complex(1.j), complex(1.0)]])
+
+        complex_scalar_zero_imaginary = Quantity(A, complex(1.0))
+        complex_non_scalar_zero_imaginary = Quantity(B, [[complex(1.0), complex(1.0)],
+                                                         [complex(1.0), complex(1.0)]])
+
+        complex_scalar_appx_zero_imaginary = Quantity(A, complex(1.0+1e-10j))
+        complex_non_scalar_appx_zero_imaginary = Quantity(B, [[complex(1.0), complex(1.0+1e-10j)],
+                                                              [complex(1.0+1e-10j), complex(1.0)]])
+
+        self.assertFalse(real_float_scalar.is_complex_type())
+        self.assertFalse(real_float_scalar.contains_imaginary_value())
+        self.assertFalse(real_float_non_scalar.is_complex_type())
+        self.assertFalse(real_float_non_scalar.contains_imaginary_value())
+
+        self.assertTrue(complex_scalar.is_complex_type())
+        self.assertTrue(complex_scalar.contains_imaginary_value())
+        self.assertTrue(complex_non_scalar.is_complex_type())
+        self.assertTrue(complex_non_scalar.contains_imaginary_value())
+
+        self.assertTrue(complex_scalar_zero_imaginary.is_complex_type())
+        self.assertFalse(complex_scalar_zero_imaginary.contains_imaginary_value())
+        self.assertTrue(complex_non_scalar_zero_imaginary.is_complex_type())
+        self.assertFalse(complex_non_scalar_zero_imaginary.contains_imaginary_value())
+
+        self.assertTrue(complex_scalar_appx_zero_imaginary.is_complex_type())
+        self.assertFalse(complex_scalar_appx_zero_imaginary.contains_imaginary_value())
+        self.assertTrue(complex_non_scalar_appx_zero_imaginary.is_complex_type())
+        self.assertFalse(complex_non_scalar_appx_zero_imaginary.contains_imaginary_value())
+
+
