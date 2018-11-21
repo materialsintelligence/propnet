@@ -201,10 +201,6 @@ class Model(ABC):
             model=self.name, inputs=list(symbol_quantity_dict.values()))
         out = self.map_symbols_to_properties(out)
         for symbol, value in out.items():
-            # TODO: Update when we figure out how we're going to handle complex quantities
-            if isinstance(value, complex):
-                return {"successful": False,
-                        "message": "Evaluation returned invalid values (complex)"}
             try:
                 quantity = Quantity(symbol, value, self.unit_map.get(symbol),
                                     provenance=provenance)
@@ -220,6 +216,11 @@ class Model(ABC):
             if quantity.contains_nan_value():
                 return {"successful": False,
                         "message": "Evaluation returned invalid values (NaN)"}
+            # TODO: Update when we figure out how we're going to handle complex quantities
+            if quantity.contains_imaginary_value():
+                return {"successful": False,
+                        "message": "Evaluation returned invalid values (complex)"}
+
             out[symbol] = quantity
 
         out['successful'] = True
