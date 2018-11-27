@@ -20,7 +20,7 @@ class MPRester(_MPRester):
     "diel.n": "refractive_index",
     "diel.poly_total": "relative_permittivity",
     #"diel.e_electronic": "null_symbol",
-    #"diel.e_total": "null_symbol",
+    "diel.e_total": "dielectric_tensor",
     #"diel.poly_electronic": "null_symbol",
     "diel.pot_ferroelectric": "potentially_ferroelectric",
     "pretty_formula": "formula",
