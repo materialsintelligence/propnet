@@ -9,6 +9,8 @@ description: 'An empirical model relating index of refraction to band gap
 equations:
 - Eg = 154 / n**4 + 0.365
 name: band_gap_refractive_index_reddy_ahammed
+implemented_by:
+- montoyjh
 references:
 - doi:10.1016/j.infrared.2006.04.001
 - doi:10.1002/pssb.2221310202

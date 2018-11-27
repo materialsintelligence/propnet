@@ -33,5 +33,8 @@ config = {
     ],
     "description": DESCRIPTION,
     "references": ["doi:10.1016/j.commatsci.2012.10.028"],
+    "implemented_by": [
+        "montoyjh"
+    ],
     "plug_in": plug_in
 }

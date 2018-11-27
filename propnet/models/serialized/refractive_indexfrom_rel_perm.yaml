@@ -20,6 +20,8 @@ description: 'The refractive index gives the factor by which the speed of light 
 equations:
 - n = sqrt(Ur*Er)
 name: refractive_indexfrom_rel_perm
+implemented_by:
+- jpalakapilly
 references:
 - url:https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability}
 solve_for_all_symbols: true

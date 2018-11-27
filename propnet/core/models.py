@@ -48,6 +48,8 @@ class Model(ABC):
             the model
         references ([str]): list of the informational links
             explaining / supporting the model
+        implemented_by ([str]): list of authors of the model by their
+            github usernames
         symbol_property_map ({str: str}): mapping of symbols enumerated
             in the plug-in method to canonical symbols, e. g.
             {"n": "index_of_refraction"} etc.
@@ -62,12 +64,13 @@ class Model(ABC):
             which to evaluate the model
     """
     def __init__(self, name, connections, constraints=None,
-                 description=None, categories=None, references=None,
+                 description=None, categories=None, references=None, implemented_by=None,
                  symbol_property_map=None, scrub_units=None, test_data=None):
         self.name = name
         self.connections = connections
         self.description = description
         self.categories = categories or []
+        self.implemented_by = implemented_by or []
         self.references = references_to_bib(references or [])
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
@@ -482,8 +485,8 @@ class EquationModel(Model, MSONable):
     """
     def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
-                 categories=None, references=None, scrub_units=None,
-                 solve_for_all_symbols=False, test_data=None):
+                 categories=None, references=None, implemented_by=None,
+                 scrub_units=None, solve_for_all_symbols=False, test_data=None):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -525,7 +528,8 @@ class EquationModel(Model, MSONable):
         self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, scrub_units,
+            categories, references, implemented_by,
+            symbol_property_map, scrub_units,
             test_data=test_data)
 
     def plug_in(self, symbol_value_dict):
@@ -586,11 +590,13 @@ class PyModel(Model):
     """
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_property_map=None, scrub_units=True, test_data=None):
+                 implemented_by=None, symbol_property_map=None,
+                 scrub_units=True, test_data=None):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, scrub_units,
+            categories, references, implemented_by,
+            symbol_property_map, scrub_units,
             test_data=test_data)
 
     def plug_in(self, symbol_value_dict):

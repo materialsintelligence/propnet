@@ -14,6 +14,8 @@ description: 'Proposed as an empirical model relating a material''''s band gap t
 equations:
 - n = (1 + (13.6 / (Eg + 3.47))**2)**0.5
 name: band_gap_refractive_index_herve_vandamme
+implemented_by:
+- montoyjh
 references:
 - doi:10.1016/j.infrared.2006.04.001
 - doi:10.1002/pssb.2221310202

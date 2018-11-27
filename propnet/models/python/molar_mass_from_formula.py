@@ -25,5 +25,8 @@ config = {
     ],
     "description": DESCRIPTION,
     "references": [],
+    "implemented_by": [
+        "montoyjh"
+    ],
     "plug_in": plug_in
 }

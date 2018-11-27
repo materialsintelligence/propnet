@@ -41,5 +41,8 @@ config = {
     },
     "description": DESCRIPTION,
     "references": ["doi:10.1021/cm400893e"],
+    "implemented_by": [
+        "mkhorton"
+    ],
     "plug_in": plug_in
 }
