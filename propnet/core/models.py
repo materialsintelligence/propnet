@@ -176,6 +176,7 @@ class Model(ABC):
         # TODO: maybe this only applies to pymodels or things with objects?
         # strip units from input and keep for reassignment
         symbol_value_dict = {}
+        contains_complex_input = False
         for symbol, quantity in symbol_quantity_dict.items():
             # If unit map convert and then scrub units
             if self.unit_map.get(symbol):
@@ -184,6 +185,9 @@ class Model(ABC):
             # Otherwise use values
             else:
                 symbol_value_dict[symbol] = quantity.value
+
+            if Quantity.is_complex_type(symbol_value_dict[symbol]):
+                contains_complex_input = True
         # Plug in and check constraints
         try:
             out = self.plug_in(symbol_value_dict)
@@ -217,7 +221,9 @@ class Model(ABC):
                 return {"successful": False,
                         "message": "Evaluation returned invalid values (NaN)"}
             # TODO: Update when we figure out how we're going to handle complex quantities
-            if quantity.contains_imaginary_value():
+            # Model evaluation will fail if complex values are returned when no complex input was given
+            # Can surely handle this more gracefully, or assume that the users will apply constraints
+            if quantity.contains_imaginary_value() and not contains_complex_input:
                 return {"successful": False,
                         "message": "Evaluation returned invalid values (complex)"}
 

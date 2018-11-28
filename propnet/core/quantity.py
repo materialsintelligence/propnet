@@ -75,8 +75,6 @@ class Quantity(MSONable):
         if isinstance(value, (np.floating, np.integer, np.complexfloating)):
             self._value = ureg.Quantity(np.asscalar(value), units)
         elif isinstance(value, (float, int, list, complex, np.ndarray)):
-            # TODO: Need to see if ureg.Quantity changes lists to np data types
-            # If not, should we make them np data types? Make them NOT np?
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
@@ -233,7 +231,7 @@ class Quantity(MSONable):
 
         return np.any(np.isnan(self.magnitude))
 
-    def is_complex_type(self):
+    def contains_complex_type(self):
         """
         Determines if the type of the variable holding the object's magnitude is complex, if the
         object holds numerical data.
@@ -247,10 +245,24 @@ class Quantity(MSONable):
         if not self.is_pint:
             return False
 
-        if isinstance(self.magnitude, np.ndarray):
-            return np.issubdtype(self.magnitude.dtype, np.complexfloating)
+        return self.is_complex_type(self.magnitude)
 
-        return isinstance(self.magnitude, complex)
+    @staticmethod
+    def is_complex_type(value):
+        """
+        Determines if the type of the argument is complex. If the argument is non-scalar, it determines
+        if the ndarray type contains complex data types.
+
+        Returns:
+             (bool) true if the argument holds a complex scalar or np.array.
+
+        """
+        if isinstance(value, np.ndarray):
+            return np.issubdtype(value.dtype, np.complexfloating)
+        elif isinstance(value, Quantity):
+            return value.contains_complex_type()
+
+        return isinstance(value, complex)
 
     def contains_imaginary_value(self):
         """
@@ -267,7 +279,7 @@ class Quantity(MSONable):
              numerical and all imaginary values are zero OR if the quantity does not
              store numerical information.
         """
-        if self.is_complex_type():
+        if self.contains_complex_type():
             # Calling as static methods allows for evaluation of both scalars and arrays
             return not np.all(np.isclose(np.imag(self.magnitude), 0))
 
