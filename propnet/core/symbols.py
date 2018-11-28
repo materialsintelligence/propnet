@@ -129,8 +129,6 @@ class Symbol(MSONable):
         if isinstance(self.shape, int):
             return 'scalar'
         elif isinstance(self.shape, list) and len(self.shape) == 1:
-            if self.shape[0] == 1:
-                return 'scalar'
             return '{} vector'.format(self.shape)
         elif isinstance(self.shape, list) and len(self.shape) == 2:
             return '{} matrix'.format(self.shape)
