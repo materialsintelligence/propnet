@@ -74,7 +74,6 @@ class Model(ABC):
         self.references = references_to_bib(references or [])
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
-        self.symbol_property_map = {}
         self.symbol_property_map = {k: k for k in self.all_properties}
         self.symbol_property_map.update(symbol_property_map or {})
 
@@ -127,7 +126,7 @@ class Model(ABC):
         Returns (list or dict):
             list of symbols or symbol-keyed dict
         """
-        rev_map = {v: k for k, v in self.symbol_property_map.items()}
+        rev_map = {v: k for k, v in getattr(self, "symbol_property_map", {}).items()}
         return remap(properties, rev_map)
 
     def map_symbols_to_properties(self, symbols):
@@ -142,7 +141,7 @@ class Model(ABC):
         Returns (list or dict):
             list of properties or property-keyed dict
         """
-        return remap(symbols, self.symbol_property_map)
+        return remap(symbols, getattr(self, "symbol_property_map", {}))
 
     def evaluate(self, symbol_quantity_dict, allow_failure=True):
         """
@@ -171,6 +170,10 @@ class Model(ABC):
         # Remap symbols and units if symbol map isn't none
         symbol_quantity_dict = self.map_properties_to_symbols(
             symbol_quantity_dict)
+
+        for (k, v) in symbol_quantity_dict.items():
+            replacing = self.symbol_property_map.get(k, k)
+            symbol_quantity_dict[k] = Quantity.to_quantity(replacing, v)
 
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
@@ -278,7 +281,7 @@ class Model(ABC):
     @property
     def all_properties(self):
         """
-        Returns (set): set of all output properties
+        Returns (set): set of all properties
         """
         return self.all_inputs.union(self.all_outputs)
 
@@ -537,7 +540,7 @@ class EquationModel(Model, MSONable):
                            for sym, solved in new.items()}
                 connection["_lambdas"] = lambdas
 
-        self.equations = equations
+        #self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,

@@ -1,7 +1,7 @@
 from monty.json import jsanitize, MontyDecoder
 from uncertainties import unumpy
 
-from maggma.builder import Builder
+from maggma.builders import Builder
 from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.entries.compatibility import MaterialsProjectCompatibility
 from propnet import logger
