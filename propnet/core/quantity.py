@@ -72,16 +72,22 @@ class Quantity(MSONable):
         units = units or symbol_type.units
 
         # Invoke pint quantity if supplied or input is float/int
-        if isinstance(value, (float, int, list, np.ndarray)):
+
+        if isinstance(value, (np.floating, np.integer, np.complexfloating)):
+            self._value = ureg.Quantity(np.asscalar(value), units)
+        elif isinstance(value, (float, int, list, complex, np.ndarray)):
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
         elif isinstance(value, Quantity):
+            # TODO: This situation needs a deep copy function
             self._value = value._value
         else:
             self._value = value
 
-        if isinstance(uncertainty, (float, int, list, np.ndarray)):
+        if isinstance(uncertainty, (np.floating, np.integer, np.complexfloating)):
+            self._uncertainty = ureg.Quantity(np.asscalar(uncertainty), units)
+        elif isinstance(uncertainty, (float, int, list, complex, np.ndarray)):
             self._uncertainty = ureg.Quantity(uncertainty, units)
         elif isinstance(uncertainty, ureg.Quantity):
             self._uncertainty = uncertainty.to(units)
@@ -258,23 +264,67 @@ class Quantity(MSONable):
              does not contain any NaN values OR if the quantity does not
              store numerical information
         """
-        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be NaN, unless the
-        # value is complex, which, per the constructor, is non-pint, but can be NaN.
-        # TODO: Should we change constructor to assign complex/imaginary numbers as pint? Should we be filtering out
-        # complex values when we evaluate the models? They are filtered in EquationModel when more than one output
-        # is obtained (not sure how this works or why it was implemented)
+        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be NaN
         if not self.is_pint:
-            if not isinstance(self.value, complex):
-                return False
-            else:
-                value_to_check = self.value
-        else:
-            value_to_check = self.magnitude
+            return False
 
-        if self.symbol.dimension_as_string == 'scalar':
-            return np.isnan(value_to_check)
-        else:
-            return np.isnan(value_to_check).any()
+        return np.any(np.isnan(self.magnitude))
+
+    def contains_complex_type(self):
+        """
+        Determines if the type of the variable holding the object's magnitude is complex, if the
+        object holds numerical data.
+
+        Returns:
+             (bool) true if the quantity is numerical and holds a complex scalar or array type as its value.
+             false if the quantity is numerical and holds only real values OR if the quantity does not
+             store numerical information
+        """
+        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be complex
+        if not self.is_pint:
+            return False
+
+        return self.is_complex_type(self.magnitude)
+
+    @staticmethod
+    def is_complex_type(value):
+        """
+        Determines if the type of the argument is complex. If the argument is non-scalar, it determines
+        if the ndarray type contains complex data types.
+
+        Returns:
+             (bool) true if the argument holds a complex scalar or np.array.
+
+        """
+        if isinstance(value, np.ndarray):
+            return np.issubdtype(value.dtype, np.complexfloating)
+        elif isinstance(value, Quantity):
+            return value.contains_complex_type()
+        elif isinstance(value, ureg.Quantity):
+            return Quantity.is_complex_type(value.magnitude)
+
+        return isinstance(value, complex)
+
+    def contains_imaginary_value(self):
+        """
+        Determines if the value of the object contains a non-zero imaginary
+        value if the object holds numerical data.
+
+        Note this function returns false if the values are of complex type,
+        but the imaginary portions are (approximately) zero. To assess the
+        type as complex, use is_complex_type().
+
+        Returns:
+             (bool) true if the quantity is numerical and contains one
+             or more non-zero imaginary values. false if the quantity is
+             numerical and all imaginary values are zero OR if the quantity does not
+             store numerical information.
+        """
+        if self.contains_complex_type():
+            # Calling as static methods allows for evaluation of both scalars and arrays
+            return not np.all(np.isclose(np.imag(self.magnitude), 0))
+
+        return False
 
     def __hash__(self):
         return hash(self.symbol.name)
