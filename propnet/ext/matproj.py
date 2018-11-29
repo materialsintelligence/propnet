@@ -45,8 +45,8 @@ class MPRester(_MPRester):
         #  TODO": "add property total_magnetization_per_unit_cell
 }
 
-    def __init__(self):
-        super(MPRester, self).__init__()
+    def __init__(self, api_key=None):
+        _MPRester.__init__(self, api_key)
 
     def get_mpid_from_formula(self, formula):
         """

@@ -9,6 +9,7 @@ from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_SYMBOLS, DEFAULT_SYMBOL_VALUES
 
 from propnet.core.exceptions import SymbolConstraintError
+from typing import Union
 
 
 def pint_only(f):
@@ -75,6 +76,8 @@ class Quantity(MSONable):
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
+        elif isinstance(value, Quantity):
+            self._value = value._value
         else:
             self._value = value
 
@@ -97,6 +100,41 @@ class Quantity(MSONable):
         self._symbol_type = symbol_type
         self._tags = tags
         self._provenance = provenance
+
+    @staticmethod
+    def to_quantity(symbol: Union[str, Symbol],
+                    to_coerce: Union[float, np.ndarray, ureg.Quantity, "Quantity"]) -> "Quantity":
+        """
+        Converts the argument into a Quantity object based on its type:
+        - float -> given default units (as a pint object) and wrapped in a Quantity object
+        - numpy.ndarray array -> given default units (pint) and wrapped in a Quantity object
+        - ureg.Quantity -> simply wrapped in a Quantity object
+        - Quantity -> immediately returned without modification
+        - Any other python object -> simply wrapped in a Quantity object
+
+        TODO: Have a python object convert into an ObjectQuantity object or similar.
+
+        Args:
+            to_coerce: item to be converted into a Quantity object
+        Returns:
+            (Quantity) item that has been converted into a Quantity object
+        """
+        # If a quantity is passed in, return the quantity.
+        if isinstance(to_coerce, Quantity):
+            return to_coerce
+
+        # Else
+        # Convert the symbol to a Symbol if necessary.
+        if isinstance(symbol, str):
+            symbol = DEFAULT_SYMBOLS.get(symbol)
+            if symbol is None:
+                raise Exception("Attempted to create a quantity for an unrecognized symbol: " + str(symbol))
+        # Return the correct Quantity - warn if units are assumed.
+        if isinstance(to_coerce, float) or isinstance(to_coerce, np.ndarray):
+            return Quantity(symbol, ureg.Quantity(to_coerce, symbol.units))
+
+        return Quantity(symbol, to_coerce)
+
 
     @property
     def is_pint(self):
