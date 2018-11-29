@@ -76,12 +76,11 @@ class Quantity(MSONable):
         if isinstance(value, (np.floating, np.integer, np.complexfloating)):
             self._value = ureg.Quantity(np.asscalar(value), units)
         elif isinstance(value, (float, int, list, complex, np.ndarray)):
-            # TODO: Need to see if ureg.Quantity changes lists to np data types
-            # If not, should we make them np data types? Make them NOT np?
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
         elif isinstance(value, Quantity):
+            # TODO: This situation needs a deep copy function
             self._value = value._value
         else:
             self._value = value
@@ -301,6 +300,8 @@ class Quantity(MSONable):
             return np.issubdtype(value.dtype, np.complexfloating)
         elif isinstance(value, Quantity):
             return value.contains_complex_type()
+        elif isinstance(value, ureg.Quantity):
+            return Quantity.is_complex_type(value.magnitude)
 
         return isinstance(value, complex)
 

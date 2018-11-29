@@ -109,6 +109,7 @@ class QuantityTest(unittest.TestCase):
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=[2, 2])
         C = Symbol('c', ['C'], ['C'], units='dimensionless', shape=1)
         D = Symbol('d', ['D'], ['D'], units='dimensionless', shape=[2, 2])
+        E = Symbol('e', ['E'], ['E'], category='object', shape=1)
 
         scalar_quantity = Quantity(A, float('nan'))
         non_scalar_quantity = Quantity(B, [[1.0, float('nan')],
@@ -134,9 +135,14 @@ class QuantityTest(unittest.TestCase):
         self.assertFalse(complex_scalar_quantity.contains_nan_value())
         self.assertFalse(complex_non_scalar_quantity.contains_nan_value())
 
+        non_numerical = Quantity(E, 'test')
+        self.assertFalse(non_numerical.contains_nan_value())
+
     def test_complex_and_imaginary_checking(self):
         A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=[2, 2])
+        # TODO: Revisit this when splitting quantity class into non-numerical and numerical
+        C = Symbol('c', ['C'], ['C'], category='object', shape=1)
 
         real_float_scalar = Quantity(A, 1.0)
         real_float_non_scalar = Quantity(B, [[1.0, 1.0],
@@ -154,25 +160,63 @@ class QuantityTest(unittest.TestCase):
         complex_non_scalar_appx_zero_imaginary = Quantity(B, [[complex(1.0), complex(1.0+1e-10j)],
                                                               [complex(1.0+1e-10j), complex(1.0)]])
 
-        self.assertFalse(real_float_scalar.is_complex_type())
+        non_numerical = Quantity(C, 'test')
+
+        # Test is_complex_type() with...
+        # ...Quantity objects
+        self.assertFalse(Quantity.is_complex_type(real_float_scalar))
+        self.assertFalse(Quantity.is_complex_type(real_float_non_scalar))
+        self.assertTrue(Quantity.is_complex_type(complex_scalar))
+        self.assertTrue(Quantity.is_complex_type(complex_non_scalar))
+        self.assertTrue(Quantity.is_complex_type(complex_scalar_zero_imaginary))
+        self.assertTrue(Quantity.is_complex_type(complex_non_scalar_zero_imaginary))
+        self.assertTrue(Quantity.is_complex_type(complex_scalar_appx_zero_imaginary))
+        self.assertTrue(Quantity.is_complex_type(complex_non_scalar_appx_zero_imaginary))
+        self.assertFalse(Quantity.is_complex_type(non_numerical))
+
+        # ...primitive types
+        self.assertFalse(Quantity.is_complex_type(1))
+        self.assertFalse(Quantity.is_complex_type(1.))
+        self.assertTrue(Quantity.is_complex_type(1j))
+        self.assertFalse(Quantity.is_complex_type('test'))
+
+        # ...np.array types
+        self.assertFalse(Quantity.is_complex_type(np.array([1])))
+        self.assertFalse(Quantity.is_complex_type(np.array([1.])))
+        self.assertTrue(Quantity.is_complex_type(np.array([1j])))
+        self.assertFalse(Quantity.is_complex_type(np.array(['test'])))
+
+        # ...ureg Quantity objects
+        self.assertFalse(Quantity.is_complex_type(ureg.Quantity(1)))
+        self.assertFalse(Quantity.is_complex_type(ureg.Quantity(1.)))
+        self.assertTrue(Quantity.is_complex_type(ureg.Quantity(1j)))
+        self.assertFalse(Quantity.is_complex_type(ureg.Quantity([1])))
+        self.assertFalse(Quantity.is_complex_type(ureg.Quantity([1.])))
+        self.assertTrue(Quantity.is_complex_type(ureg.Quantity([1j])))
+
+        # Check member functions
+        self.assertFalse(real_float_scalar.contains_complex_type())
         self.assertFalse(real_float_scalar.contains_imaginary_value())
-        self.assertFalse(real_float_non_scalar.is_complex_type())
+        self.assertFalse(real_float_non_scalar.contains_complex_type())
         self.assertFalse(real_float_non_scalar.contains_imaginary_value())
 
-        self.assertTrue(complex_scalar.is_complex_type())
+        self.assertTrue(complex_scalar.contains_complex_type())
         self.assertTrue(complex_scalar.contains_imaginary_value())
-        self.assertTrue(complex_non_scalar.is_complex_type())
+        self.assertTrue(complex_non_scalar.contains_complex_type())
         self.assertTrue(complex_non_scalar.contains_imaginary_value())
 
-        self.assertTrue(complex_scalar_zero_imaginary.is_complex_type())
+        self.assertTrue(complex_scalar_zero_imaginary.contains_complex_type())
         self.assertFalse(complex_scalar_zero_imaginary.contains_imaginary_value())
-        self.assertTrue(complex_non_scalar_zero_imaginary.is_complex_type())
+        self.assertTrue(complex_non_scalar_zero_imaginary.contains_complex_type())
         self.assertFalse(complex_non_scalar_zero_imaginary.contains_imaginary_value())
 
-        self.assertTrue(complex_scalar_appx_zero_imaginary.is_complex_type())
+        self.assertTrue(complex_scalar_appx_zero_imaginary.contains_complex_type())
         self.assertFalse(complex_scalar_appx_zero_imaginary.contains_imaginary_value())
-        self.assertTrue(complex_non_scalar_appx_zero_imaginary.is_complex_type())
+        self.assertTrue(complex_non_scalar_appx_zero_imaginary.contains_complex_type())
         self.assertFalse(complex_non_scalar_appx_zero_imaginary.contains_imaginary_value())
+
+        self.assertFalse(non_numerical.contains_complex_type())
+        self.assertFalse(non_numerical.contains_imaginary_value())
 
     def test_numpy_scalar_conversion(self):
         # From custom symbol

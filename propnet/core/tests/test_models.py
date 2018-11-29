@@ -1,6 +1,7 @@
 import unittest
 
 import math
+import numpy as np
 
 from propnet.models import DEFAULT_MODEL_NAMES, DEFAULT_MODEL_DICT, DEFAULT_MODELS
 from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
@@ -149,14 +150,19 @@ returns {'mu_e': 8994.92312225673}
         A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
         get_config = {
-            'name': 'equality',
+            'name': 'add_complex_value',
             # 'connections': [{'inputs': ['b'], 'outputs': ['a']}],
-            'equations': ['a = b'],
+            'equations': ['a = b + 1j'],
             # 'unit_map': {'a': "dimensionless", 'a': "dimensionless"}
             'symbol_property_map': {"a": A, "b": B}
         }
         model = EquationModel(**get_config)
-        out = model.evaluate({'b': Quantity(B, complex(1+1j))},
+        out = model.evaluate({'b': Quantity(B, 5)},
                              allow_failure=True)
         self.assertFalse(out['successful'])
         self.assertEqual(out['message'], 'Evaluation returned invalid values (complex)')
+
+        out = model.evaluate({'b': Quantity(B, 5j)},
+                             allow_failure=True)
+        self.assertTrue(out['successful'])
+        self.assertTrue(np.isclose(out['a'].magnitude, 6j))
