@@ -139,7 +139,7 @@ class Material(object):
         return aggregated
 
     def __str__(self):
-        QUANTITY_LENGTH_CAP = 35
+        QUANTITY_LENGTH_CAP = 50
         building = []
         building += ["Material: " + str(hex(id(self))), ""]
         for symbol in self._symbol_to_quantity.keys():
