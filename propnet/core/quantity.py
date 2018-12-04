@@ -106,6 +106,7 @@ class Quantity(MSONable):
         self._symbol_type = symbol_type
         self._tags = tags
         self._provenance = provenance
+        self._internal_id = -1
 
     @staticmethod
     def to_quantity(symbol: Union[str, Symbol],
@@ -353,7 +354,8 @@ class Quantity(MSONable):
         else:
             value = self.value
             units = None
-        return {"symbol_type": self._symbol_type.name,
+        return {"internal_id": self._internal_id,
+                "symbol_type": self._symbol_type.name,
                 "value": value,
                 "provenance": self._provenance,
                 "units": units.format_babel() if units else None,

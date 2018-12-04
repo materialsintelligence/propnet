@@ -28,7 +28,7 @@ class ProvenanceElement(MSONable):
 
     def __str__(self):
         pre = ",".join([
-            "<{}, {}, {}>".format(q._symbol_type.name, q.value, q._provenance)
+            "{}".format(q._internal_id)
             for q in self.inputs])
         return "{{{}: [{}]}}".format(self.model, pre)
 
