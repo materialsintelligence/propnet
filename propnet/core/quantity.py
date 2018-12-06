@@ -73,7 +73,7 @@ class Quantity(MSONable):
         # Set default units if not supplied
         units = units or symbol_type.units
 
-        self._internal_id = uuid.uuid4()
+        self._internal_id = uuid.uuid4().hex
         # Invoke pint quantity if supplied or input is float/int
 
         if isinstance(value, (np.floating, np.integer, np.complexfloating)):
@@ -351,7 +351,7 @@ class Quantity(MSONable):
         return bool(self.value)
 
     # TODO: lazily implemented, fix to be a bit more robust
-    def as_dict(self, include_internal_id=False):
+    def as_dict(self, for_storage=False, omit_value=False):
         if isinstance(self.value, ureg.Quantity):
             value = self.value.magnitude
             units = self.value.units
@@ -360,13 +360,20 @@ class Quantity(MSONable):
             units = None
 
         out = { "symbol_type": self._symbol_type.name,
-                "value": value,
-                "provenance": self._provenance,
-                "units": units.format_babel() if units else None,
-                "@module": "propnet.core.quantity",
-                "@class": "Quantity"}
-        if include_internal_id:
+                "@module": self.__class__.__module__,
+                "@class": self.__class__.__name__}
+        if for_storage:
             out["internal_id"] = self._internal_id
+            if self._provenance is not None:
+                out["provenance"] = self._provenance.as_dict(for_storage=True)
+            else:
+                out["provenance"] = None
+        else:
+            out["provenance"] = self._provenance
+
+        if not omit_value:
+            out["value"] = value
+            out["units"] = units.format_babel() if units else None
 
         return out
 
