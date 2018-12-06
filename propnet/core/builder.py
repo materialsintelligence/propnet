@@ -87,11 +87,9 @@ class PropnetBuilder(Builder):
             #       Can end up with initial quantities added as "new quantities"
             if len(all_qs) == 1 and list(all_qs)[0] in input_quantities:
                 continue
-            # Assign an id to each Quantity object.
-            for q in all_qs:
-                q._internal_id = count
-                count += 1
-            qs = [quantity.as_dict() for quantity in all_qs]
+            # Write out all quantities as dicts including the
+            # internal ID for provenance tracing
+            qs = [quantity.as_dict(include_internal_id=True) for quantity in all_qs]
             # THE listing of all Quantities of a given symbol.
             sub_doc = {"quantities": qs,
                        "mean": unumpy.nominal_values(quantity.value).tolist(),
