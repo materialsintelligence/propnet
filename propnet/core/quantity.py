@@ -11,6 +11,8 @@ from propnet.symbols import DEFAULT_SYMBOLS, DEFAULT_SYMBOL_VALUES
 from propnet.core.exceptions import SymbolConstraintError
 from typing import Union
 
+import uuid
+
 
 def pint_only(f):
     """
@@ -71,6 +73,7 @@ class Quantity(MSONable):
         # Set default units if not supplied
         units = units or symbol_type.units
 
+        self._internal_id = uuid.uuid4().hex
         # Invoke pint quantity if supplied or input is float/int
 
         if isinstance(value, (np.floating, np.integer, np.complexfloating)):
@@ -82,6 +85,7 @@ class Quantity(MSONable):
         elif isinstance(value, Quantity):
             # TODO: This situation needs a deep copy function
             self._value = value._value
+            self._internal_id = value._internal_id
         else:
             self._value = value
 
@@ -106,7 +110,7 @@ class Quantity(MSONable):
         self._symbol_type = symbol_type
         self._tags = tags
         self._provenance = provenance
-        self._internal_id = -1
+
 
     @staticmethod
     def to_quantity(symbol: Union[str, Symbol],
@@ -347,20 +351,31 @@ class Quantity(MSONable):
         return bool(self.value)
 
     # TODO: lazily implemented, fix to be a bit more robust
-    def as_dict(self):
+    def as_dict(self, for_storage=False, omit_value=False):
         if isinstance(self.value, ureg.Quantity):
             value = self.value.magnitude
             units = self.value.units
         else:
             value = self.value
             units = None
-        return {"internal_id": self._internal_id,
-                "symbol_type": self._symbol_type.name,
-                "value": value,
-                "provenance": self._provenance,
-                "units": units.format_babel() if units else None,
-                "@module": "propnet.core.quantity",
-                "@class": "Quantity"}
+
+        out = { "symbol_type": self._symbol_type.name,
+                "@module": self.__class__.__module__,
+                "@class": self.__class__.__name__}
+        if for_storage:
+            out["internal_id"] = self._internal_id
+            if self._provenance is not None:
+                out["provenance"] = self._provenance.as_dict(for_storage=True)
+            else:
+                out["provenance"] = None
+        else:
+            out["provenance"] = self._provenance
+
+        if not omit_value:
+            out["value"] = value
+            out["units"] = units.format_babel() if units else None
+
+        return out
 
     @classmethod
     def from_default(cls, symbol):

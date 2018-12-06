@@ -78,8 +78,8 @@ class PropnetBuilder(Builder):
         logger.info("Creating doc for %s", item['task_id'])
         # Gives the initial inputs that were used to derive properties of a
         # certain material.
-        doc = {"inputs": [quantity.as_dict() for quantity in input_quantities]}
-        count = 0
+        doc = {"inputs": [quantity.as_dict(for_storage=True)
+                          for quantity in input_quantities]}
         for symbol, quantity in new_material.get_aggregated_quantities().items():
             all_qs = new_material._symbol_to_quantity[symbol]
             # Only add new quantities
@@ -87,11 +87,9 @@ class PropnetBuilder(Builder):
             #       Can end up with initial quantities added as "new quantities"
             if len(all_qs) == 1 and list(all_qs)[0] in input_quantities:
                 continue
-            # Assign an id to each Quantity object.
-            for q in all_qs:
-                q._internal_id = count
-                count += 1
-            qs = [quantity.as_dict() for quantity in all_qs]
+            # Write out all quantities as dicts including the
+            # internal ID for provenance tracing
+            qs = [q.as_dict(for_storage=True) for q in all_qs]
             # THE listing of all Quantities of a given symbol.
             sub_doc = {"quantities": qs,
                        "mean": unumpy.nominal_values(quantity.value).tolist(),
@@ -100,6 +98,7 @@ class PropnetBuilder(Builder):
                        "title": quantity._symbol_type.display_names[0]}
             # Symbol Name -> Sub_Document, listing all Quantities of that type.
             doc[symbol.name] = sub_doc
+
         doc.update({"task_id": item["task_id"],
                     "pretty_formula": item["pretty_formula"]})
         return jsanitize(doc, strict=True)
