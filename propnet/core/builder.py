@@ -34,8 +34,11 @@ class PropnetBuilder(Builder):
         self.criteria = criteria
         self.materials_symbol_map = materials_symbol_map \
                                     or MPRester.mapping
-
-        self.source_name = source_name
+        if source_name == "":
+            # Because this builder is not fully general, will keep this here
+            self.source_name = "Materials Project"
+        else:
+            self.source_name = source_name
         super(PropnetBuilder, self).__init__(sources=[materials],
                                              targets=[propstore],
                                              **kwargs)
@@ -61,16 +64,22 @@ class PropnetBuilder(Builder):
         for mkey, property_name in self.materials_symbol_map.items():
             value = get(item, mkey)
             if value:
+                date_created = ""
+                if 'created_at' in item.keys():
+                    date_created = item['created_at']
+
                 provenance = ProvenanceElement(source={"source": self.source_name,
                                                        "source_key": item['task_id'],
-                                                       "date_created": item['created_at']})
+                                                       "date_created": date_created})
                 material.add_quantity(Quantity(property_name, value,
                                                provenance=provenance))
 
         # Add custom things, e. g. computed entry
         computed_entry = get_entry(item)
-        material.add_quantity(Quantity("computed_entry", computed_entry))
-        material.add_quantity(Quantity("external_identifier_mp", item['task_id']))
+        material.add_quantity(Quantity("computed_entry", computed_entry,
+                                       provenance=provenance))
+        material.add_quantity(Quantity("external_identifier_mp", item['task_id'],
+                                       provenance=provenance))
 
         input_quantities = material.get_quantities()
 

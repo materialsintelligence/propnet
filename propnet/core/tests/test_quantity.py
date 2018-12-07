@@ -11,6 +11,7 @@ from propnet.core.exceptions import SymbolConstraintError
 from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
+from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
 
 
@@ -236,4 +237,59 @@ class QuantityTest(unittest.TestCase):
         self.assertTrue(isinstance(q_float_uncertainty.uncertainty.magnitude, float))
         self.assertTrue(isinstance(q_complex_uncertainty.uncertainty.magnitude, complex))
 
+    def test_as_dict_from_dict(self):
+        q = Quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)
+        d = q.as_dict()
+        d_storage = q.as_dict(for_storage=True)
+        d_storage_omit = q.as_dict(for_storage=True, omit_value=True)
+        self.assertEqual(d, {"@module": "propnet.core.quantity",
+                             "@class": "Quantity",
+                             "value": 5,
+                             "units": "dimensionless",
+                             "provenance": None,
+                             "symbol_type": self.custom_symbol.name})
 
+        self.assertEqual(d_storage, {"@module": "propnet.core.quantity",
+                                     "@class": "Quantity",
+                                     "value": 5,
+                                     "units": "dimensionless",
+                                     "provenance": None,
+                                     "internal_id": q._internal_id,
+                                     "symbol_type": self.custom_symbol.name})
+
+        self.assertEqual(d_storage_omit, {"@module": "propnet.core.quantity",
+                                          "@class": "Quantity",
+                                          "value": None,
+                                          "units": None,
+                                          "provenance": None,
+                                          "internal_id": q._internal_id,
+                                          "symbol_type": self.custom_symbol.name})
+
+        q = Quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1, provenance=ProvenanceElement())
+        d = q.as_dict()
+        d_storage = q.as_dict(for_storage=True)
+        self.assertEqual(d, {"@module": "propnet.core.quantity",
+                             "@class": "Quantity",
+                             "value": 5,
+                             "units": "dimensionless",
+                             "provenance": q._provenance,
+                             "symbol_type": self.custom_symbol.name})
+
+        # Need more tests for provenance as_dict() method
+        self.assertEqual(d_storage, {"@module": "propnet.core.quantity",
+                                     "@class": "Quantity",
+                                     "value": 5,
+                                     "units": "dimensionless",
+                                     "provenance": q._provenance.as_dict(),
+                                     "internal_id": q._internal_id,
+                                     "symbol_type": self.custom_symbol.name})
+
+        self.assertIsInstance(d_storage['provenance'], dict)
+        #
+        # self.assertEqual(d_storage_omit, {"@module": "propnet.core.quantity",
+        #                                   "@class": "Quantity",
+        #                                   "value": None,
+        #                                   "units": None,
+        #                                   "provenance": None,
+        #                                   "internal_id": q._internal_id,
+        #                                   "symbol_type": self.custom_symbol.name})
