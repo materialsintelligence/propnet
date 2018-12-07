@@ -59,9 +59,9 @@ def graph_conversion(graph,
             # Get node, labels, name, and title
             node = aesthetics['node_aesthetics'][node_type].copy()
             if node.get("show_labels"):
-                node.update({"label": label,
-                             # "title": label,
-                             "shape": "box",
+                node.update({"label": "",
+                             "title": label,
+                             "shape": "circle",
                              "font": {"color": "#ffffff",
                                       "face": "Helvetica",
                                       "size": 20},
@@ -69,7 +69,7 @@ def graph_conversion(graph,
             # Pop labels if they exist
             else:
                 node.update({"size": 8.0,
-                             "shape": "diamond",
+                             "shape": "circle",
                              "label": "",
                              "title": ""})
 
