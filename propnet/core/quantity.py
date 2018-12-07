@@ -1,5 +1,6 @@
 import numpy as np
 from monty.json import MSONable
+from datetime import datetime
 
 import networkx as nx
 
@@ -48,7 +49,7 @@ class Quantity(MSONable):
     """
 
     def __init__(self, symbol_type, value, units=None, tags=None,
-                 provenance=None, uncertainty=None):
+                 provenance=None, uncertainty=None, **kwargs):
         """
         Parses inputs for constructing a Property object.
 
@@ -73,7 +74,13 @@ class Quantity(MSONable):
         # Set default units if not supplied
         units = units or symbol_type.units
 
-        self._internal_id = uuid.uuid4().hex
+        # Hid this keyword in kwargs so users don't see it
+        # in function code completion display
+        if 'internal_id' in kwargs.keys():
+            self._internal_id = kwargs['internal_id']
+        else:
+            self._internal_id = uuid.uuid4().hex
+
         # Invoke pint quantity if supplied or input is float/int
 
         if isinstance(value, (np.floating, np.integer, np.complexfloating)):
@@ -111,6 +118,18 @@ class Quantity(MSONable):
         self._tags = tags
         self._provenance = provenance
 
+        if self._provenance is not None:
+            if isinstance(self._provenance.source, dict):
+                if 'source_key' not in self._provenance.source.keys() or \
+                        self._provenance.source['source_key'] in (None, ""):
+                    self._provenance.source['source_key'] = self._internal_id
+                if 'date_created' not in self._provenance.source.keys() or \
+                        self._provenance.source['date_created'] in (None, ""):
+                    self._provenance.source['date_created'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            elif self._provenance.source is None:
+                self._provenance.source = {"source": "propnet",
+                                           "source_key": self._internal_id,
+                                           "date_created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
     @staticmethod
     def to_quantity(symbol: Union[str, Symbol],
@@ -374,6 +393,9 @@ class Quantity(MSONable):
         if not omit_value:
             out["value"] = value
             out["units"] = units.format_babel() if units else None
+        else:
+            out["value"] = None
+            out["units"] = None
 
         return out
 

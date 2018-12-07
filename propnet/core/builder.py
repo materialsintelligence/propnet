@@ -8,6 +8,7 @@ from propnet import logger
 from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
+from propnet.core.provenance import ProvenanceElement
 from propnet.models import DEFAULT_MODEL_DICT
 from propnet.ext.matproj import MPRester
 from pydash import get
@@ -17,8 +18,9 @@ class PropnetBuilder(Builder):
     """
     Basic builder for running propnet derivations on various properties
     """
+
     def __init__(self, materials, propstore, materials_symbol_map=None,
-                 criteria=None, **kwargs):
+                 criteria=None, source_name="", **kwargs):
         """
         Args:
             materials (Store): store of materials properties
@@ -32,6 +34,8 @@ class PropnetBuilder(Builder):
         self.criteria = criteria
         self.materials_symbol_map = materials_symbol_map \
                                     or MPRester.mapping
+
+        self.source_name = source_name
         super(PropnetBuilder, self).__init__(sources=[materials],
                                              targets=[propstore],
                                              **kwargs)
@@ -40,7 +44,7 @@ class PropnetBuilder(Builder):
         props = list(self.materials_symbol_map.keys())
         props += ["task_id", "pretty_formula", "run_type", "is_hubbard",
                   "pseudo_potential", "hubbards", "potcar_symbols", "oxide_type",
-                  "final_energy", "unit_cell_formula"]
+                  "final_energy", "unit_cell_formula", "created_at"]
         props = list(set(props))
         docs = self.materials.query(criteria=self.criteria, properties=props)
         self.total = docs.count()
@@ -57,7 +61,11 @@ class PropnetBuilder(Builder):
         for mkey, property_name in self.materials_symbol_map.items():
             value = get(item, mkey)
             if value:
-                material.add_quantity(Quantity(property_name, value))
+                provenance = ProvenanceElement(source={"source": self.source_name,
+                                                       "source_key": item['task_id'],
+                                                       "date_created": item['created_at']})
+                material.add_quantity(Quantity(property_name, value,
+                                               provenance=provenance))
 
         # Add custom things, e. g. computed entry
         computed_entry = get_entry(item)
@@ -104,6 +112,9 @@ class PropnetBuilder(Builder):
         return jsanitize(doc, strict=True)
 
     def update_targets(self, items):
+        if not isinstance(items, list):
+            raise TypeError("Expected list of items, "
+                            "instead received {}".format(type(items)))
         self.propstore.update(items)
 
 
