@@ -22,7 +22,10 @@ class ProvenanceElement(MSONable):
                 is attached to.
             source: static source, e. g. Materials Project
         """
-        self.model = getattr(model, 'name', model)
+        if isinstance(model, str):
+            self.model = model
+        else:
+            self.model = getattr(model, 'name', model)
         self.inputs = inputs
         self.source = source
 
@@ -45,6 +48,7 @@ class ProvenanceElement(MSONable):
             out["inputs"] = None
 
         return out
+
 
 class SymbolTree(object):
     """
