@@ -1,6 +1,7 @@
-import os
+import os, sys
 from monty.serialization import loadfn, dumpfn
 from habanero.cn import content_negotiation
+from propnet import logger
 
 _REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__),
                                      '../data/reference_cache.json')
@@ -48,3 +49,27 @@ def references_to_bib(refs):
     return parsed_refs
 
 
+class PrintToLogger:
+    """
+    This class provides a context manager to redirect stdout and stderr to the propnet
+    info logger. This way any print statements received from user-implemented functions
+    can be automatically logged instead of being printed to the screen.
+
+    Usage example:
+        my_method()     # Statement which will not suppress output
+
+        with PrintToLogger():
+            foo()  # Some statement(s) which may produce screen output to suppress
+
+        some_other_method()     # Statement which will not suppress output
+    """
+
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
+        sys.stdout = logger.info
+        sys.stderr = logger.info
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout = self._original_stdout
+        sys.stderr = self._original_stderr
