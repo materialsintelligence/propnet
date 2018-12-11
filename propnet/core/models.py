@@ -18,7 +18,7 @@ from sympy.parsing.sympy_parser import parse_expr
 
 from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import Quantity
-from propnet.core.utils import references_to_bib
+from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_UNITS
 
@@ -192,7 +192,8 @@ class Model(ABC):
         contains_complex_input = any(Quantity.is_complex_type(v) for v in symbol_value_dict.values())
         # Plug in and check constraints
         try:
-            out = self.plug_in(symbol_value_dict)
+            with PrintToLogger():
+                out = self.plug_in(symbol_value_dict)
         except Exception as err:
             if allow_failure:
                 return {"successful": False,
