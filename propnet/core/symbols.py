@@ -110,6 +110,9 @@ class Symbol(MSONable):
         self.comment = comment
         self.default_value = default_value
 
+        # TODO: This should explicity deal with only numerical symbols
+        #       because it uses sympy to evaluate them until we make
+        #       a class to evaluate them using either sympy or a custom func
         # Note that symbol constraints are not constraint objects
         # at the moment because using them would result in a circular
         # dependence, this might be resolved with some reorganization

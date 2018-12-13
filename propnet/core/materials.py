@@ -6,7 +6,7 @@ from collections import defaultdict
 from itertools import chain
 import warnings
 
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import Quantity, NumQuantity
 from propnet.core.symbols import Symbol
 
 from propnet.symbols import DEFAULT_SYMBOL_VALUES
@@ -135,7 +135,7 @@ class Material(object):
         aggregated = {}
         for symbol, quantities in self._symbol_to_quantity.items():
             if not symbol.category == 'object':
-                aggregated[symbol] = Quantity.from_weighted_mean(list(quantities))
+                aggregated[symbol] = NumQuantity.from_weighted_mean(list(quantities))
         return aggregated
 
     def __str__(self):

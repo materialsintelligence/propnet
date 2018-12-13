@@ -818,7 +818,7 @@ class Graph(object):
                         if not st:
                             raise ValueError(
                                 "Symbol type {} not found".format(symbol))
-                        q = Quantity(st, quantity)
+                        q = Quantity.factory(st, quantity)
                         to_return._symbol_to_quantity[st].add(q)
                         logger.debug("\t\t\tNew output: " + str(q))
 

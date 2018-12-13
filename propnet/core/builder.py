@@ -71,14 +71,14 @@ class PropnetBuilder(Builder):
                 provenance = ProvenanceElement(source={"source": self.source_name,
                                                        "source_key": item['task_id'],
                                                        "date_created": date_created})
-                material.add_quantity(Quantity(property_name, value,
+                material.add_quantity(Quantity.factory(property_name, value,
                                                provenance=provenance))
 
         # Add custom things, e. g. computed entry
         computed_entry = get_entry(item)
-        material.add_quantity(Quantity("computed_entry", computed_entry,
+        material.add_quantity(Quantity.factory("computed_entry", computed_entry,
                                        provenance=provenance))
-        material.add_quantity(Quantity("external_identifier_mp", item['task_id'],
+        material.add_quantity(Quantity.factory("external_identifier_mp", item['task_id'],
                                        provenance=provenance))
 
         input_quantities = material.get_quantities()
