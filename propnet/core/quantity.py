@@ -611,8 +611,9 @@ class NumQuantity(Quantity):
 class ObjQuantity(Quantity):
     def __init__(self, symbol_type, value, tags=None,
                  provenance=None):
-        super(ObjQuantity, self).__init__(super()._get_symbol_from_string(symbol_type),
-                                          value, tags=tags, provenance=provenance)
+        if isinstance(symbol_type, str):
+            symbol_type = super()._get_symbol_from_string(symbol_type)
+        super(ObjQuantity, self).__init__(symbol_type, value, tags=tags, provenance=provenance)
 
     @property
     def magnitude(self):

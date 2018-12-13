@@ -46,7 +46,7 @@ def get_weight(quantity, model_score_dict=None):
     Returns:
         calculated weight for input quantity
     """
-    if quantity.provenance is None:
+    if quantity.provenance is None or quantity.provenance.inputs is None:
         return 1
     if model_score_dict is None:
         return 1

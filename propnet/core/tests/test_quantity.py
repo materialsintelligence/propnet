@@ -8,7 +8,7 @@ import networkx as nx
 from pymatgen.util.testing import PymatgenTest
 from propnet.core.symbols import Symbol
 from propnet.core.exceptions import SymbolConstraintError
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import Quantity, NumQuantity, ObjQuantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 from propnet.core.provenance import ProvenanceElement
@@ -48,7 +48,7 @@ class QuantityTest(unittest.TestCase):
     def test_from_weighted_mean(self):
         qlist = [Quantity.factory(self.custom_symbol, val)
                  for val in np.arange(1, 2.01, 0.01)]
-        qagg = Quantity.from_weighted_mean(qlist)
+        qagg = NumQuantity.from_weighted_mean(qlist)
         self.assertAlmostEqual(qagg.magnitude, 1.5)
         self.assertAlmostEqual(qagg.uncertainty, 0.2915475947422652)
 
@@ -69,16 +69,14 @@ class QuantityTest(unittest.TestCase):
     def test_properties(self):
         # Test units, magnitude
         q = Quantity.factory("bulk_modulus", 100)
+        self.assertIsInstance(q, NumQuantity)
         self.assertEqual(q.units, "gigapascal")
         self.assertEqual(q.magnitude, 100)
 
         # Ensure non-pint values raise error with units, magnitude
         structure = PymatgenTest.get_structure('Si')
         q = Quantity.factory("structure", structure)
-        with self.assertRaises(ValueError):
-            print(q.units)
-        with self.assertRaises(ValueError):
-            print(q.magnitude)
+        self.assertIsInstance(q, ObjQuantity)
 
     def test_get_provenance_graph(self):
         g = Graph()
@@ -165,35 +163,35 @@ class QuantityTest(unittest.TestCase):
 
         # Test is_complex_type() with...
         # ...Quantity objects
-        self.assertFalse(Quantity.is_complex_type(real_float_scalar))
-        self.assertFalse(Quantity.is_complex_type(real_float_non_scalar))
-        self.assertTrue(Quantity.is_complex_type(complex_scalar))
-        self.assertTrue(Quantity.is_complex_type(complex_non_scalar))
-        self.assertTrue(Quantity.is_complex_type(complex_scalar_zero_imaginary))
-        self.assertTrue(Quantity.is_complex_type(complex_non_scalar_zero_imaginary))
-        self.assertTrue(Quantity.is_complex_type(complex_scalar_appx_zero_imaginary))
-        self.assertTrue(Quantity.is_complex_type(complex_non_scalar_appx_zero_imaginary))
-        self.assertFalse(Quantity.is_complex_type(non_numerical))
+        self.assertFalse(NumQuantity.is_complex_type(real_float_scalar))
+        self.assertFalse(NumQuantity.is_complex_type(real_float_non_scalar))
+        self.assertTrue(NumQuantity.is_complex_type(complex_scalar))
+        self.assertTrue(NumQuantity.is_complex_type(complex_non_scalar))
+        self.assertTrue(NumQuantity.is_complex_type(complex_scalar_zero_imaginary))
+        self.assertTrue(NumQuantity.is_complex_type(complex_non_scalar_zero_imaginary))
+        self.assertTrue(NumQuantity.is_complex_type(complex_scalar_appx_zero_imaginary))
+        self.assertTrue(NumQuantity.is_complex_type(complex_non_scalar_appx_zero_imaginary))
+        self.assertFalse(NumQuantity.is_complex_type(non_numerical))
 
         # ...primitive types
-        self.assertFalse(Quantity.is_complex_type(1))
-        self.assertFalse(Quantity.is_complex_type(1.))
-        self.assertTrue(Quantity.is_complex_type(1j))
-        self.assertFalse(Quantity.is_complex_type('test'))
+        self.assertFalse(NumQuantity.is_complex_type(1))
+        self.assertFalse(NumQuantity.is_complex_type(1.))
+        self.assertTrue(NumQuantity.is_complex_type(1j))
+        self.assertFalse(NumQuantity.is_complex_type('test'))
 
         # ...np.array types
-        self.assertFalse(Quantity.is_complex_type(np.array([1])))
-        self.assertFalse(Quantity.is_complex_type(np.array([1.])))
-        self.assertTrue(Quantity.is_complex_type(np.array([1j])))
-        self.assertFalse(Quantity.is_complex_type(np.array(['test'])))
+        self.assertFalse(NumQuantity.is_complex_type(np.array([1])))
+        self.assertFalse(NumQuantity.is_complex_type(np.array([1.])))
+        self.assertTrue(NumQuantity.is_complex_type(np.array([1j])))
+        self.assertFalse(NumQuantity.is_complex_type(np.array(['test'])))
 
         # ...ureg Quantity objects
-        self.assertFalse(Quantity.is_complex_type(ureg.Quantity(1)))
-        self.assertFalse(Quantity.is_complex_type(ureg.Quantity(1.)))
-        self.assertTrue(Quantity.is_complex_type(ureg.Quantity(1j)))
-        self.assertFalse(Quantity.is_complex_type(ureg.Quantity([1])))
-        self.assertFalse(Quantity.is_complex_type(ureg.Quantity([1.])))
-        self.assertTrue(Quantity.is_complex_type(ureg.Quantity([1j])))
+        self.assertFalse(NumQuantity.is_complex_type(ureg.Quantity(1)))
+        self.assertFalse(NumQuantity.is_complex_type(ureg.Quantity(1.)))
+        self.assertTrue(NumQuantity.is_complex_type(ureg.Quantity(1j)))
+        self.assertFalse(NumQuantity.is_complex_type(ureg.Quantity([1])))
+        self.assertFalse(NumQuantity.is_complex_type(ureg.Quantity([1.])))
+        self.assertTrue(NumQuantity.is_complex_type(ureg.Quantity([1j])))
 
         # Check member functions
         self.assertFalse(real_float_scalar.contains_complex_type())
