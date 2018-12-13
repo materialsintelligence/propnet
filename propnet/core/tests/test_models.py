@@ -89,8 +89,8 @@ class ModelTest(unittest.TestCase):
             'symbol_property_map': {"a": A, "l1": L, "l2": L}
         }
         model = EquationModel(**get_area_config)
-        out = model.evaluate({'l1': Quantity.factory(L, 1, 'meter'),
-                              'l2': Quantity.factory(L, 2)}, allow_failure=False)
+        out = model.evaluate({'l1': Quantity(L, 1, 'meter'),
+                              'l2': Quantity(L, 2)}, allow_failure=False)
 
         self.assertTrue(math.isclose(out['a'].magnitude, 200.0))
         self.assertTrue(out['a'].units == A.units)
@@ -138,7 +138,7 @@ returns {'mu_e': 8994.92312225673}
             'symbol_property_map': {"a": A, "b": B}
         }
         model = EquationModel(**get_config)
-        out = model.evaluate({'b': Quantity.factory(B, float('nan'))},
+        out = model.evaluate({'b': Quantity(B, float('nan'))},
                              allow_failure=True)
         self.assertFalse(out['successful'])
         self.assertEqual(out['message'], 'Evaluation returned invalid values (NaN)')
@@ -157,12 +157,12 @@ returns {'mu_e': 8994.92312225673}
             'symbol_property_map': {"a": A, "b": B}
         }
         model = EquationModel(**get_config)
-        out = model.evaluate({'b': Quantity.factory(B, 5)},
+        out = model.evaluate({'b': Quantity(B, 5)},
                              allow_failure=True)
         self.assertFalse(out['successful'])
         self.assertEqual(out['message'], 'Evaluation returned invalid values (complex)')
 
-        out = model.evaluate({'b': Quantity.factory(B, 5j)},
+        out = model.evaluate({'b': Quantity(B, 5j)},
                              allow_failure=True)
         self.assertTrue(out['successful'])
         self.assertTrue(np.isclose(out['a'].magnitude, 6j))

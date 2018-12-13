@@ -16,9 +16,11 @@ from typing import Union
 
 import uuid
 import copy
+import logging
 
+logger = logging.getLogger(__name__)
 
-class Quantity(ABC):
+class BaseQuantity(ABC):
     """
     Class storing the value of a property.
 
@@ -93,39 +95,32 @@ class Quantity(ABC):
             raise TypeError("Expected str, encountered {}".format(type(name)))
 
         if name not in DEFAULT_SYMBOLS.keys():
-            raise ValueError("Quantity type {} not recognized".format(name))
+            raise ValueError("Symbol type {} not recognized".format(name))
 
         return DEFAULT_SYMBOLS[name]
 
-    @staticmethod
-    def factory(symbol_type, value, *args, **kwargs):
-        # Because bool is a subtype of int, have to explicitly check for it
-        if NumQuantity.is_acceptable_type(value):
-            return NumQuantity(symbol_type, value, *args, **kwargs)
-
-        return ObjQuantity(symbol_type, value, *args, **kwargs)
-
+    # TODO: Do we need this method any more now that we have the factory?
     @staticmethod
     def to_quantity(symbol: Union[str, Symbol],
-                    to_coerce: Union[float, np.ndarray, ureg.Quantity, "Quantity"]) -> "Quantity":
+                    to_coerce: Union[float, np.ndarray, ureg.Quantity, "BaseQuantity"]) -> "BaseQuantity":
         """
-        Converts the argument into a Quantity object based on its type:
-        - float -> given default units (as a pint object) and wrapped in a Quantity object
-        - numpy.ndarray array -> given default units (pint) and wrapped in a Quantity object
-        - ureg.Quantity -> simply wrapped in a Quantity object
-        - Quantity -> immediately returned without modification
-        - Any other python object -> simply wrapped in a Quantity object
+        Converts the argument into the appropriate child object of a BaseQuantity object based on its type:
+        - float -> given default units (as a pint object) and wrapped in a BaseQuantity object
+        - numpy.ndarray array -> given default units (pint) and wrapped in a BaseQuantity object
+        - ureg.Quantity -> simply wrapped in a BaseQuantity object
+        - BaseQuantity -> immediately returned without modification
+        - Any other python object -> simply wrapped in a BaseQuantity object
 
         TODO: Have a python object convert into an ObjectQuantity object or similar.
 
         Args:
             symbol: a string or Symbol object representing the type of data stored
-            to_coerce: item to be converted into a Quantity object
+            to_coerce: item to be converted into a BaseQuantity object
         Returns:
-            (Quantity) item that has been converted into a Quantity object
+            (BaseQuantity) item that has been converted into a BaseQuantity object
         """
         # If a quantity is passed in, return the quantity.
-        if isinstance(to_coerce, Quantity):
+        if isinstance(to_coerce, BaseQuantity):
             return to_coerce
 
         # Else
@@ -134,8 +129,8 @@ class Quantity(ABC):
             symbol = DEFAULT_SYMBOLS.get(symbol)
             if symbol is None:
                 raise Exception("Attempted to create a quantity for an unrecognized symbol: " + str(symbol))
-        # Return the correct Quantity - warn if units are assumed.
-        return Quantity.factory(symbol, to_coerce)
+        # Return the correct BaseQuantity - warn if units are assumed.
+        return Quantity(symbol, to_coerce)
 
     @classmethod
     def from_default(cls, symbol):
@@ -147,13 +142,13 @@ class Quantity(ABC):
                 the symbol name
 
         Returns:
-            Quantity corresponding to default quantity from default
+            BaseQuantity corresponding to default quantity from default
         """
         val = DEFAULT_SYMBOL_VALUES.get(symbol)
         if val is None:
             raise ValueError("No default value for {}".format(symbol))
         prov = ProvenanceElement(model='default', inputs=[])
-        return cls.factory(symbol, val, provenance=prov)
+        return Quantity(symbol, val, provenance=prov)
 
     @abstractmethod
     def magnitude(self):
@@ -163,7 +158,7 @@ class Quantity(ABC):
     def symbol(self):
         """
         Returns:
-            (Symbol): Symbol of the Quantity
+            (Symbol): Symbol of the BaseQuantity
         """
         return self._symbol_type
 
@@ -171,7 +166,7 @@ class Quantity(ABC):
     def tags(self):
         """
         Returns:
-            (list<str>): tags of the Quantity
+            (list<str>): tags of the BaseQuantity
         """
         return self._tags
 
@@ -179,7 +174,7 @@ class Quantity(ABC):
     def provenance(self):
         """
         Returns:
-            (id): time of creation of the Quantity
+            (id): time of creation of the BaseQuantity
         """
         return self._provenance
 
@@ -187,7 +182,7 @@ class Quantity(ABC):
     def value(self):
         """
         Returns:
-            (id): value of the Quantity
+            (id): value of the BaseQuantity
         """
         return self._value
 
@@ -284,7 +279,7 @@ class Quantity(ABC):
         return hash(self.symbol.name)
 
     def __eq__(self, other):
-        if not isinstance(other, Quantity) \
+        if not isinstance(other, BaseQuantity) \
                 or self.symbol != other.symbol \
                 or self.symbol.category != other.symbol.category:
             return False
@@ -300,7 +295,7 @@ class Quantity(ABC):
         return bool(self.value)
 
 
-class NumQuantity(Quantity):
+class NumQuantity(BaseQuantity):
     _ACCEPTABLE_SCALAR_TYPES = (int, float, complex)
     _ACCEPTABLE_ARRAY_TYPES = (list, np.ndarray)
     _ACCEPTABLE_DTYPES = (np.integer, np.floating, np.complexfloating)
@@ -316,7 +311,7 @@ class NumQuantity(Quantity):
                  provenance=None, uncertainty=None):
 
         if isinstance(symbol_type, str):
-            symbol_type = Quantity._get_symbol_from_string(symbol_type)
+            symbol_type = BaseQuantity._get_symbol_from_string(symbol_type)
 
         # Set default units if not supplied
         units = units or symbol_type.units
@@ -425,7 +420,7 @@ class NumQuantity(Quantity):
         quantities
 
         Args:
-            quantities ([Quantity]): list of quantities
+            quantities ([BaseQuantity]): list of quantities
 
         Returns:
             weighted mean
@@ -434,6 +429,7 @@ class NumQuantity(Quantity):
         if not all(isinstance(q, cls) for q in quantities):
             # TODO: can't average ObjQuantities, highlights a weakness in
             # Quantity class that might be fixed by changing class design
+            # ^^^ Not sure how we can address this
             raise ValueError("Weighted mean cannot be applied to objects")
 
         input_symbol = quantities[0].symbol
@@ -579,7 +575,7 @@ class NumQuantity(Quantity):
         """
         if isinstance(value, np.ndarray):
             return np.issubdtype(value.dtype, np.complexfloating)
-        elif isinstance(value, Quantity):
+        elif isinstance(value, BaseQuantity):
             return value.contains_complex_type()
         elif isinstance(value, ureg.Quantity):
             return NumQuantity.is_complex_type(value.magnitude)
@@ -608,7 +604,7 @@ class NumQuantity(Quantity):
         return False
 
 
-class ObjQuantity(Quantity):
+class ObjQuantity(BaseQuantity):
     def __init__(self, symbol_type, value, tags=None,
                  provenance=None):
         if isinstance(symbol_type, str):
@@ -634,6 +630,43 @@ class ObjQuantity(Quantity):
         return False
 
 
+def Quantity(symbol_type, value, units=None, tags=None,
+             provenance=None, uncertainty=None):
+    """
+    Factory method for BaseQuantity class, provides more intuitive call
+    to create new BaseQuantity child objects and provide backwards
+    compatibility.
+
+    Args:
+        symbol_type: (str or Symbol) represents the type of data being stored
+        value: (id) data to be stored
+        units: (str, ureg.Unit) units of the data being stored. Must be None
+            for non-numerical values
+        tags: (list<str>) list of strings storing metadata from
+                Quantity evaluation.
+        provenance: (ProvenanceElement) provenance associated with the
+                object (e. g. inputs, model, see ProvenanceElement)
+        uncertainty: (id) uncertainty of the specified value
+
+    Returns: (NumQuantity or ObjQuantity) constructed object of appropriate
+        type based on value's type
+
+    """
+    if NumQuantity.is_acceptable_type(value):
+        return NumQuantity(symbol_type, value,
+                           units=units, tags=tags,
+                           provenance=provenance,
+                           uncertainty=uncertainty)
+
+    if units is not None:
+        logger.warning("Cannot assign units to value of type '{}'."
+                       "Ignoring units.".format(type(value)))
+
+    return ObjQuantity(symbol_type, value,
+                       tags=tags,
+                       provenance=provenance)
+
+
 class StorageQuantity(MSONable):
     def __init__(self, data_type=None, symbol_type=None,
                  internal_id=None, tags=None, provenance=None):
@@ -648,11 +681,11 @@ class StorageQuantity(MSONable):
     def from_quantity(cls, quantity_in):
         if isinstance(quantity_in, StorageQuantity):
             return copy.deepcopy(quantity_in)
-        elif issubclass(quantity_in, Quantity):
+        elif issubclass(quantity_in, BaseQuantity):
             data_type = type(quantity_in).__name__
         else:
             raise TypeError("Expected StorageQuantity or"
-                            "object that inherits Quantity, instead received {}"
+                            "object that inherits BaseQuantity, instead received {}"
                             .format(type(quantity_in)))
 
         return cls.__init__(data_type=data_type, symbol_type=quantity_in._symbol_type,
