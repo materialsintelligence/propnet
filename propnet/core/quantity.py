@@ -108,7 +108,7 @@ class BaseQuantity(ABC):
         - float -> given default units (as a pint object) and wrapped in a BaseQuantity object
         - numpy.ndarray array -> given default units (pint) and wrapped in a BaseQuantity object
         - ureg.Quantity -> simply wrapped in a BaseQuantity object
-        - BaseQuantity -> immediately returned without modification
+        - BaseQuantity -> immediately returned without modification (same object, not copied)
         - Any other python object -> simply wrapped in a BaseQuantity object
 
         TODO: Have a python object convert into an ObjectQuantity object or similar.
@@ -635,7 +635,8 @@ def Quantity(symbol_type, value, units=None, tags=None,
     """
     Factory method for BaseQuantity class, provides more intuitive call
     to create new BaseQuantity child objects and provide backwards
-    compatibility.
+    compatibility. If BaseQuantity is passed in as value, a new object
+    will be created. Use BaseQuantity.to_quantity() to return the same object.
 
     Args:
         symbol_type: (str or Symbol) represents the type of data being stored
@@ -652,6 +653,14 @@ def Quantity(symbol_type, value, units=None, tags=None,
         type based on value's type
 
     """
+    if isinstance(value, BaseQuantity):
+        if isinstance(value, NumQuantity):
+            units = units or value.units
+        tags = tags or value.tags
+        provenance = provenance or value.provenance
+        uncertainty = uncertainty or value.uncertainty
+        value = value.value
+
     if NumQuantity.is_acceptable_type(value):
         return NumQuantity(symbol_type, value,
                            units=units, tags=tags,
