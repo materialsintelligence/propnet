@@ -81,8 +81,8 @@ class GraphTest(unittest.TestCase):
         Returns:
             (Material) material with properties loaded.
         """
-        q1 = Quantity(c_symbols['A'], 19)
-        q2 = Quantity(c_symbols['A'], 23)
+        q1 = Quantity.factory(c_symbols['A'], 19)
+        q2 = Quantity.factory(c_symbols['A'], 23)
         m = Material()
         m.add_quantity(q1)
         m.add_quantity(q2)
@@ -187,22 +187,22 @@ class GraphTest(unittest.TestCase):
         material_derived = g.evaluate(material)
 
         expected_quantities = [
-            Quantity(symbols['A'], 19),
-            Quantity(symbols['A'], 23),
-            Quantity(symbols['B'], 38),
-            Quantity(symbols['B'], 46),
-            Quantity(symbols['C'], 57),
-            Quantity(symbols['C'], 69),
-            Quantity(symbols['G'], 95),
-            Quantity(symbols['G'], 115),
-            Quantity(symbols['F'], 266),
-            Quantity(symbols['F'], 322),
-            Quantity(symbols['D'], 23826),
-            Quantity(symbols['D'], 28842),
-            Quantity(symbols['D'], 34914),
-            Quantity(symbols['D'], 70395),
-            Quantity(symbols['D'], 85215),
-            Quantity(symbols['D'], 103155),
+            Quantity.factory(symbols['A'], 19),
+            Quantity.factory(symbols['A'], 23),
+            Quantity.factory(symbols['B'], 38),
+            Quantity.factory(symbols['B'], 46),
+            Quantity.factory(symbols['C'], 57),
+            Quantity.factory(symbols['C'], 69),
+            Quantity.factory(symbols['G'], 95),
+            Quantity.factory(symbols['G'], 115),
+            Quantity.factory(symbols['F'], 266),
+            Quantity.factory(symbols['F'], 322),
+            Quantity.factory(symbols['D'], 23826),
+            Quantity.factory(symbols['D'], 28842),
+            Quantity.factory(symbols['D'], 34914),
+            Quantity.factory(symbols['D'], 70395),
+            Quantity.factory(symbols['D'], 85215),
+            Quantity.factory(symbols['D'], 103155),
         ]
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
@@ -229,29 +229,29 @@ class GraphTest(unittest.TestCase):
 
         expected_quantities = [
             # Starting
-            Quantity(symbols['A'], 19),
-            Quantity(symbols['A'], 23),
+            Quantity.factory(symbols['A'], 19),
+            Quantity.factory(symbols['A'], 23),
 
             # Derives -1 (M1)
-            Quantity(symbols['B'], 38),
-            Quantity(symbols['B'], 46),
-            Quantity(symbols['C'], 57),
-            Quantity(symbols['C'], 69),
+            Quantity.factory(symbols['B'], 38),
+            Quantity.factory(symbols['B'], 46),
+            Quantity.factory(symbols['C'], 57),
+            Quantity.factory(symbols['C'], 69),
             # Derives -2 (M3, M1)
-            Quantity(symbols['F'], 266),
-            Quantity(symbols['F'], 322),
+            Quantity.factory(symbols['F'], 266),
+            Quantity.factory(symbols['F'], 322),
             # Derives -2 (M4, M1)
-            Quantity(symbols['D'], 23826),
-            Quantity(symbols['D'], 28842),
-            Quantity(symbols['D'], 34914),
+            Quantity.factory(symbols['D'], 23826),
+            Quantity.factory(symbols['D'], 28842),
+            Quantity.factory(symbols['D'], 34914),
 
             # Derives -1 (M2)
-            Quantity(symbols['G'], 95),
-            Quantity(symbols['G'], 115),
+            Quantity.factory(symbols['G'], 95),
+            Quantity.factory(symbols['G'], 115),
             # Derives -2 (M5, M1, M2)
-            Quantity(symbols['D'], 70395),
-            Quantity(symbols['D'], 85215),
-            Quantity(symbols['D'], 103155),
+            Quantity.factory(symbols['D'], 70395),
+            Quantity.factory(symbols['D'], 85215),
+            Quantity.factory(symbols['D'], 103155),
         ]
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
@@ -267,7 +267,7 @@ class GraphTest(unittest.TestCase):
 
     def test_derive_quantities(self):
         # Simple one quantity test
-        quantity = Quantity("band_gap", 3.2)
+        quantity = Quantity.factory("band_gap", 3.2)
         graph = Graph()
         new, qpool = graph.derive_quantities([quantity])
         new_mat = graph.evaluate(Material([quantity]))
@@ -290,19 +290,19 @@ class GraphTest(unittest.TestCase):
         material_derived = g.evaluate(material)
 
         expected_quantities = [
-            Quantity(symbols['A'], 19),
-            Quantity(symbols['A'], 23),
-            Quantity(symbols['B'], 38),
-            Quantity(symbols['B'], 46),
-            Quantity(symbols['C'], 57),
-            Quantity(symbols['C'], 69),
-            Quantity(symbols['G'], 95),
-            Quantity(symbols['G'], 115),
-            Quantity(symbols['F'], 266),
-            Quantity(symbols['F'], 322),
-            Quantity(symbols['D'], 70395),
-            Quantity(symbols['D'], 85215),
-            Quantity(symbols['D'], 103155)
+            Quantity.factory(symbols['A'], 19),
+            Quantity.factory(symbols['A'], 23),
+            Quantity.factory(symbols['B'], 38),
+            Quantity.factory(symbols['B'], 46),
+            Quantity.factory(symbols['C'], 57),
+            Quantity.factory(symbols['C'], 69),
+            Quantity.factory(symbols['G'], 95),
+            Quantity.factory(symbols['G'], 115),
+            Quantity.factory(symbols['F'], 266),
+            Quantity.factory(symbols['F'], 322),
+            Quantity.factory(symbols['D'], 70395),
+            Quantity.factory(symbols['D'], 85215),
+            Quantity.factory(symbols['D'], 103155)
         ]
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
@@ -331,19 +331,19 @@ class GraphTest(unittest.TestCase):
         material_derived = g.evaluate(material)
 
         expected_quantities = [
-            Quantity(symbols['A'], 19),
-            Quantity(symbols['A'], 23),
-            Quantity(symbols['B'], 38),
-            Quantity(symbols['B'], 46),
-            Quantity(symbols['C'], 57),
-            Quantity(symbols['C'], 69),
-            Quantity(symbols['G'], 95),
-            Quantity(symbols['G'], 115),
-            Quantity(symbols['F'], 266),
-            Quantity(symbols['F'], 322),
-            Quantity(symbols['D'], 70395),
-            Quantity(symbols['D'], 85215),
-            Quantity(symbols['D'], 103155),
+            Quantity.factory(symbols['A'], 19),
+            Quantity.factory(symbols['A'], 23),
+            Quantity.factory(symbols['B'], 38),
+            Quantity.factory(symbols['B'], 46),
+            Quantity.factory(symbols['C'], 57),
+            Quantity.factory(symbols['C'], 69),
+            Quantity.factory(symbols['G'], 95),
+            Quantity.factory(symbols['G'], 115),
+            Quantity.factory(symbols['F'], 266),
+            Quantity.factory(symbols['F'], 322),
+            Quantity.factory(symbols['D'], 70395),
+            Quantity.factory(symbols['D'], 85215),
+            Quantity.factory(symbols['D'], 103155),
         ]
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
@@ -370,23 +370,23 @@ class GraphTest(unittest.TestCase):
         # Setup
         propnet = Graph()
         mat1 = Material()
-        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permeability'], 1))
-        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permeability'], 2))
-        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permittivity'], 3))
-        mat1.add_quantity(Quantity(DEFAULT_SYMBOLS['relative_permittivity'], 5))
+        mat1.add_quantity(Quantity.factory(DEFAULT_SYMBOLS['relative_permeability'], 1))
+        mat1.add_quantity(Quantity.factory(DEFAULT_SYMBOLS['relative_permeability'], 2))
+        mat1.add_quantity(Quantity.factory(DEFAULT_SYMBOLS['relative_permittivity'], 3))
+        mat1.add_quantity(Quantity.factory(DEFAULT_SYMBOLS['relative_permittivity'], 5))
 
         mat1_derived = propnet.evaluate(mat1)
 
         # Expected outputs
         s_outputs = []
-        s_outputs.append(Quantity('relative_permeability', 1))
-        s_outputs.append(Quantity('relative_permeability', 2))
-        s_outputs.append(Quantity('relative_permittivity', 3))
-        s_outputs.append(Quantity('relative_permittivity', 5))
-        s_outputs.append(Quantity('refractive_index', 3 ** 0.5))
-        s_outputs.append(Quantity('refractive_index', 5 ** 0.5))
-        s_outputs.append(Quantity('refractive_index', 6 ** 0.5))
-        s_outputs.append(Quantity('refractive_index', 10 ** 0.5))
+        s_outputs.append(Quantity.factory('relative_permeability', 1))
+        s_outputs.append(Quantity.factory('relative_permeability', 2))
+        s_outputs.append(Quantity.factory('relative_permittivity', 3))
+        s_outputs.append(Quantity.factory('relative_permittivity', 5))
+        s_outputs.append(Quantity.factory('refractive_index', 3 ** 0.5))
+        s_outputs.append(Quantity.factory('refractive_index', 5 ** 0.5))
+        s_outputs.append(Quantity.factory('refractive_index', 6 ** 0.5))
+        s_outputs.append(Quantity.factory('refractive_index', 10 ** 0.5))
 
         st_outputs = []
         st_outputs.append(DEFAULT_SYMBOLS['relative_permeability'])
@@ -881,7 +881,7 @@ class GraphTest(unittest.TestCase):
         m1 = mpr.get_material_for_mpid("mp-13")
         # Temporary hack for problem with zero band-gap materials
         m1.remove_symbol("band_gap_pbe")
-        m1.add_quantity(Quantity("band_gap", 0.0))
+        m1.add_quantity(Quantity.factory("band_gap", 0.0))
         m2 = mpr.get_material_for_mpid("mp-24972")
         sm = CompositeMaterial([m1, m2])
 
@@ -905,19 +905,19 @@ class GraphTest(unittest.TestCase):
         material_derived = g.evaluate(material)
 
         expected_quantities = [
-            Quantity(symbols['A'], 19),
-            Quantity(symbols['A'], 23),
-            Quantity(symbols['B'], 38),
-            Quantity(symbols['B'], 46),
-            Quantity(symbols['C'], 57),
-            Quantity(symbols['C'], 69),
-            Quantity(symbols['G'], 95),
-            Quantity(symbols['G'], 115),
-            Quantity(symbols['F'], 266),
-            Quantity(symbols['F'], 322),
-            Quantity(symbols['D'], 70395),
-            Quantity(symbols['D'], 85215),
-            Quantity(symbols['D'], 103155)
+            Quantity.factory(symbols['A'], 19),
+            Quantity.factory(symbols['A'], 23),
+            Quantity.factory(symbols['B'], 38),
+            Quantity.factory(symbols['B'], 46),
+            Quantity.factory(symbols['C'], 57),
+            Quantity.factory(symbols['C'], 69),
+            Quantity.factory(symbols['G'], 95),
+            Quantity.factory(symbols['G'], 115),
+            Quantity.factory(symbols['F'], 266),
+            Quantity.factory(symbols['F'], 322),
+            Quantity.factory(symbols['D'], 70395),
+            Quantity.factory(symbols['D'], 85215),
+            Quantity.factory(symbols['D'], 103155)
         ]
 
         for q in material_derived._symbol_to_quantity[symbols['A']]:
