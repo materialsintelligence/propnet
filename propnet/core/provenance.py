@@ -10,7 +10,7 @@ class ProvenanceElement(MSONable):
     Tree-like data structure for representing provenance.
     """
 
-    __slots__ = ['m', 'inputs']
+    __slots__ = ['_model', '_inputs', '_source']
 
     def __init__(self, model=None, inputs=None, source=None):
         """
@@ -23,11 +23,43 @@ class ProvenanceElement(MSONable):
             source: static source, e. g. Materials Project
         """
         if isinstance(model, str):
-            self.model = model
+            self._model = model
         else:
-            self.model = getattr(model, 'name', model)
-        self.inputs = inputs
-        self.source = source
+            self._model = getattr(model, 'name', model)
+
+        if inputs is not None:
+            if not isinstance(inputs, list):
+                try:
+                    inputs = [x for x in inputs]
+                except TypeError:
+                    inputs = [inputs]
+
+        self._inputs = inputs
+        self._source = source
+
+    @property
+    def model(self):
+        return self._model
+
+    @model.setter
+    def model(self, rhv):
+        self._model = rhv
+
+    @property
+    def inputs(self):
+        return self._inputs
+
+    @inputs.setter
+    def inputs(self, rhv):
+        self._inputs = rhv
+
+    @property
+    def source(self):
+        return self._source
+
+    @source.setter
+    def source(self, rhv):
+        self._source = rhv
 
     def __str__(self):
         pre = ",".join([
@@ -35,19 +67,19 @@ class ProvenanceElement(MSONable):
             for q in self.inputs])
         return "{{{}: [{}]}}".format(self.model, pre)
 
-    def as_dict(self, for_storage=False):
-        out = {"@module": self.__class__.__module__,
-               "@class": self.__class__.__name__,
-               "model": self.model,
-               "source": self.source}
-
-        if self.inputs is not None:
-            out["inputs"] = [q.as_dict(for_storage=for_storage, omit_value=for_storage)
-                             for q in self.inputs]
-        else:
-            out["inputs"] = None
-
-        return out
+    # def as_dict(self, for_storage=False):
+    #     out = {"@module": self.__class__.__module__,
+    #            "@class": self.__class__.__name__,
+    #            "model": self.model,
+    #            "source": self.source}
+    #
+    #     if self.inputs is not None:
+    #         out["inputs"] = [q.as_dict(for_storage=for_storage, omit_value=for_storage)
+    #                          for q in self.inputs]
+    #     else:
+    #         out["inputs"] = None
+    #
+    #     return out
 
 
 class SymbolTree(object):

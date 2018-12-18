@@ -12,7 +12,7 @@ import numpy as np
 
 from scipy.optimize import minimize
 from propnet.models import DEFAULT_MODEL_NAMES
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import create_quantity
 
 
 def aggregate_quantities(quantities, model_score_dict=None):
@@ -32,7 +32,7 @@ def aggregate_quantities(quantities, model_score_dict=None):
     weights = [get_weight(q, model_score_dict) for q in quantities]
     result_value = sum(
         [w * q.value for w, q in zip(weights, quantities)]) / sum(weights)
-    return Quantity(symbol, result_value)
+    return create_quantity(symbol, result_value)
 
 
 def get_weight(quantity, model_score_dict=None):

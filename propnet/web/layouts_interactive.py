@@ -16,7 +16,7 @@ from collections import OrderedDict
 from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet import ureg, logger
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import create_quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 
@@ -174,8 +174,8 @@ def interactive_layout(app):
     def evaluate(input_rows, data, aggregate):
 
 
-        quantities = [Quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
-                               value=ureg.parse_expression(row['Editable Value']))
+        quantities = [create_quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
+                                      value=ureg.parse_expression(row['Editable Value']))
                       for idx, row in enumerate(input_rows) if row['Editable Value']]
 
         if data and len(data) > 0:

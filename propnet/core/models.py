@@ -17,7 +17,7 @@ from sympy.parsing.sympy_parser import parse_expr
 
 
 from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
-from propnet.core.quantity import Quantity, BaseQuantity, NumQuantity
+from propnet.core.quantity import create_quantity, BaseQuantity, NumQuantity
 from propnet.core.utils import references_to_bib
 from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_UNITS
@@ -210,8 +210,8 @@ class Model(ABC):
         out = self.map_symbols_to_properties(out)
         for symbol, value in out.items():
             try:
-                quantity = Quantity(symbol, value, self.unit_map.get(symbol),
-                                            provenance=provenance)
+                quantity = create_quantity(symbol, value, self.unit_map.get(symbol),
+                                           provenance=provenance)
             except SymbolConstraintError as err:
                 if allow_failure:
                     errmsg = "{} symbol constraint failed: {}".format(self, err)
@@ -309,7 +309,7 @@ class Model(ABC):
         Returns (bool): True if test succeeds
         """
         evaluate_inputs = self.map_symbols_to_properties(inputs)
-        evaluate_inputs = {s: Quantity(s, v, self.unit_map.get(s))
+        evaluate_inputs = {s: create_quantity(s, v, self.unit_map.get(s))
                            for s, v in evaluate_inputs.items()}
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
@@ -319,7 +319,7 @@ class Model(ABC):
         for k, known_output in outputs.items():
             symbol = self.symbol_property_map[k]
             units = self.unit_map.get(k)
-            known_quantity = Quantity(symbol, known_output, units)
+            known_quantity = create_quantity(symbol, known_output, units)
             evaluate_output = evaluate_outputs[k]
             if isinstance(known_quantity, NumQuantity) or isinstance(known_quantity.value, list):
                 if not np.allclose(known_quantity.value, evaluate_output.value):

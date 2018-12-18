@@ -1,7 +1,7 @@
 import unittest
 from propnet import ureg
 from propnet.core.materials import Material
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import create_quantity
 from propnet.core.graph import Graph
 from propnet.symbols import DEFAULT_SYMBOLS
 
@@ -9,12 +9,12 @@ class MaterialTest(unittest.TestCase):
 
     def setUp(self):
         # Create some test properties and a few base objects
-        self.q1 = Quantity(DEFAULT_SYMBOLS['bulk_modulus'],
-                           ureg.Quantity.from_tuple([200, [['gigapascals', 1]]]))
-        self.q2 = Quantity(DEFAULT_SYMBOLS['shear_modulus'],
-                           ureg.Quantity.from_tuple([100, [['gigapascals', 1]]]))
-        self.q3 = Quantity(DEFAULT_SYMBOLS['bulk_modulus'],
-                           ureg.Quantity.from_tuple([300, [['gigapascals', 1]]]))
+        self.q1 = create_quantity(DEFAULT_SYMBOLS['bulk_modulus'],
+                                  ureg.Quantity.from_tuple([200, [['gigapascals', 1]]]))
+        self.q2 = create_quantity(DEFAULT_SYMBOLS['shear_modulus'],
+                                  ureg.Quantity.from_tuple([100, [['gigapascals', 1]]]))
+        self.q3 = create_quantity(DEFAULT_SYMBOLS['bulk_modulus'],
+                                  ureg.Quantity.from_tuple([300, [['gigapascals', 1]]]))
         self.material = Material()
         self.graph = Graph()
 
@@ -86,6 +86,6 @@ class MaterialTest(unittest.TestCase):
     def test_add_default_quantities(self):
         material = Material(add_default_quantities=True)
         self.assertEqual(list(material['temperature'])[0],
-                         Quantity("temperature", 300))
+                         create_quantity("temperature", 300))
         self.assertEqual(list(material['relative_permeability'])[0],
-                         Quantity("relative_permeability", 1))
+                         create_quantity("relative_permeability", 1))

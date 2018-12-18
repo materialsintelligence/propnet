@@ -215,3 +215,8 @@ class Symbol(MSONable):
             data["object_type"] = self.object_type
 
         return safe_dump(data)
+
+    def as_dict(self):
+        d = super().as_dict()
+        if self.units:
+            d['units'] = d['units'].to_tuple()

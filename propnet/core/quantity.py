@@ -20,7 +20,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class BaseQuantity(ABC):
+
+class BaseQuantity(ABC, MSONable):
     """
     Class storing the value of a property.
 
@@ -51,7 +52,6 @@ class BaseQuantity(ABC):
                 of a SymbolType object identifies the type of data
                 stored in the property.
             value (id): value of the property.
-            units: (None): units associated with the quantity's value
             tags (list<str>): list of strings storing metadata from
                 Quantity evaluation.
             provenance (ProvenanceElement): provenance associated with the
@@ -130,7 +130,7 @@ class BaseQuantity(ABC):
             if symbol is None:
                 raise Exception("Attempted to create a quantity for an unrecognized symbol: " + str(symbol))
         # Return the correct BaseQuantity - warn if units are assumed.
-        return Quantity(symbol, to_coerce)
+        return create_quantity(symbol, to_coerce)
 
     @classmethod
     def from_default(cls, symbol):
@@ -148,7 +148,7 @@ class BaseQuantity(ABC):
         if val is None:
             raise ValueError("No default value for {}".format(symbol))
         prov = ProvenanceElement(model='default', inputs=[])
-        return Quantity(symbol, val, provenance=prov)
+        return create_quantity(symbol, val, provenance=prov)
 
     @abstractmethod
     def magnitude(self):
@@ -185,6 +185,14 @@ class BaseQuantity(ABC):
             (id): value of the BaseQuantity
         """
         return self._value
+
+    @abstractmethod
+    def units(self):
+        return
+
+    @abstractmethod
+    def uncertainty(self):
+        return
 
     @abstractmethod
     def pretty_string(self):
@@ -229,13 +237,12 @@ class BaseQuantity(ABC):
 
         Args:
             start (nxgraph): starting graph to build from
+            filter_long_labels (bool): true truncates long labels to just the symbol name
 
         Returns:
             (nxgraph): graph representation of provenance
         """
         graph = start or nx.MultiDiGraph()
-        # import nose; nose.tools.set_trace()
-        label = self.pretty_string()
         label = "{}: {}".format(self.symbol.name, self.pretty_string())
         if filter_long_labels and len(label) > 30:
             label = "{}".format(self.symbol.name)
@@ -257,7 +264,7 @@ class BaseQuantity(ABC):
 
         return graph
 
-    def draw_provenance_graph(self, filename, prog='dot',**kwargs):
+    def draw_provenance_graph(self, filename, prog='dot', **kwargs):
         nx_graph = self.get_provenance_graph()
         a_graph = nx.nx_agraph.to_agraph(nx_graph)
         a_graph.node_attr['style'] = 'filled'
@@ -299,10 +306,7 @@ class NumQuantity(BaseQuantity):
     _ACCEPTABLE_SCALAR_TYPES = (int, float, complex)
     _ACCEPTABLE_ARRAY_TYPES = (list, np.ndarray)
     _ACCEPTABLE_DTYPES = (np.integer, np.floating, np.complexfloating)
-    _ACCEPTABLE_TYPES = _ACCEPTABLE_SCALAR_TYPES + \
-                        _ACCEPTABLE_ARRAY_TYPES + \
-                        _ACCEPTABLE_DTYPES + \
-                        (ureg.Quantity,)
+    _ACCEPTABLE_TYPES = _ACCEPTABLE_ARRAY_TYPES + _ACCEPTABLE_SCALAR_TYPES + _ACCEPTABLE_DTYPES + (ureg.Quantity,)
     # This must be checked for explicitly because bool is a subtype of int
     # and isinstance(True/False, int) returns true
     _UNACCEPTABLE_TYPES = (bool,)
@@ -518,7 +522,8 @@ class NumQuantity(BaseQuantity):
             ureg_quantities_is_type = all(recursive_list_type_check([v.magnitude])
                                           for v in ureg_quantities)
 
-            return regular_data_is_type and nested_lists_is_type and np_arrays_is_type
+            return regular_data_is_type and nested_lists_is_type \
+                   and np_arrays_is_type and ureg_quantities_is_type
 
         return recursive_list_type_check([to_check])
 
@@ -615,6 +620,14 @@ class ObjQuantity(BaseQuantity):
     def magnitude(self):
         return self._value
 
+    @property
+    def units(self):
+        return None
+
+    @property
+    def uncertainty(self):
+        return None
+
     def pretty_string(self):
         return "{}".format(self.value)
 
@@ -630,8 +643,8 @@ class ObjQuantity(BaseQuantity):
         return False
 
 
-def Quantity(symbol_type, value, units=None, tags=None,
-             provenance=None, uncertainty=None):
+def create_quantity(symbol_type, value, units=None, tags=None,
+                    provenance=None, uncertainty=None):
     """
     Factory method for BaseQuantity class, provides more intuitive call
     to create new BaseQuantity child objects and provide backwards
@@ -674,41 +687,3 @@ def Quantity(symbol_type, value, units=None, tags=None,
     return ObjQuantity(symbol_type, value,
                        tags=tags,
                        provenance=provenance)
-
-
-class StorageQuantity(MSONable):
-    def __init__(self, data_type=None, symbol_type=None,
-                 internal_id=None, tags=None, provenance=None):
-
-        self._internal_id = internal_id
-        self._data_type = data_type
-        self._symbol_type = symbol_type
-        self._tags = tags
-        self._provenance = provenance
-
-    @classmethod
-    def from_quantity(cls, quantity_in):
-        if isinstance(quantity_in, StorageQuantity):
-            return copy.deepcopy(quantity_in)
-        elif issubclass(quantity_in, BaseQuantity):
-            data_type = type(quantity_in).__name__
-        else:
-            raise TypeError("Expected StorageQuantity or"
-                            "object that inherits BaseQuantity, instead received {}"
-                            .format(type(quantity_in)))
-
-        return cls.__init__(data_type=data_type, symbol_type=quantity_in._symbol_type,
-                            internal_id=quantity_in._internal_id, tags=quantity_in.tags,
-                            provenance=cls._convert_provenance_for_storage(quantity_in.provenance))
-
-    @staticmethod
-    def _convert_provenance_for_storage(provenance_in):
-        provenance_out = copy.deepcopy(provenance_in)
-        if provenance_in.inputs is not None:
-            provenance_out.inputs = [StorageQuantity.from_quantity(q)
-                                     for q in provenance_in.inputs]
-
-        return provenance_out
-
-    def to_quantity(self):
-        raise NotImplementedError('Still working on this feature!')
