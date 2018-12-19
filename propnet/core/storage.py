@@ -165,7 +165,7 @@ class StorageQuantity(MSONable):
                 "value": self._value,
                 "units": self._units.format_babel() if self._units else None,
                 "provenance": self._provenance,
-                "uncertainty": self._uncertainty.to_tuple()}
+                "uncertainty": self._uncertainty.to_tuple() if self._uncertainty else None}
 
 
 class ProvenanceStoreQuantity(StorageQuantity):

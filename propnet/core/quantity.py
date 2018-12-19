@@ -64,19 +64,6 @@ class BaseQuantity(ABC, MSONable):
         self._provenance = provenance
         self._internal_id = uuid.uuid4().hex
 
-        # TODO: Move this to Model.evaluate()
-        # if self._provenance is not None:
-        #     if isinstance(self._provenance.source, dict):
-        #         if 'source_key' not in self._provenance.source.keys() or \
-        #                 self._provenance.source['source_key'] in (None, ""):
-        #             self._provenance.source['source_key'] = self._internal_id
-        #         if 'date_created' not in self._provenance.source.keys() or \
-        #                 self._provenance.source['date_created'] in (None, ""):
-        #             self._provenance.source['date_created'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        #     elif self._provenance.source is None:
-        #         self._provenance.source = {"source": "propnet",
-        #                                    "source_key": self._internal_id,
-        #                                    "date_created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         if self._provenance is not None:
             if not isinstance(self._provenance.source, dict):
                 self._provenance.source = {"source": self._provenance.source}
@@ -84,6 +71,10 @@ class BaseQuantity(ABC, MSONable):
             if 'date_created' not in self._provenance.source.keys() or \
                     self._provenance.source['date_created'] in (None, ""):
                 self._provenance.source['date_created'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            if 'source_key' not in self._provenance.source.keys() or \
+                    self._provenance.source['source_key'] in (None, ""):
+                self._provenance.source['source_key'] = self._internal_id
         else:
             self._provenance = ProvenanceElement(source={"source": "",
                                                          "date_created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})

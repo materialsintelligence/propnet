@@ -207,12 +207,15 @@ class Model(ABC):
                     "message": "Constraints not satisfied"}
 
         provenance = ProvenanceElement(
-            model=self.name, inputs=list(symbol_quantity_dict.values()))
+            model=self.name, inputs=list(symbol_quantity_dict.values()),
+            source="propnet")
+
         out = self.map_symbols_to_properties(out)
         for symbol, value in out.items():
             try:
                 quantity = create_quantity(symbol, value, self.unit_map.get(symbol),
                                            provenance=provenance)
+
             except SymbolConstraintError as err:
                 if allow_failure:
                     errmsg = "{} symbol constraint failed: {}".format(self, err)

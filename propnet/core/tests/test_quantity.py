@@ -238,8 +238,7 @@ class QuantityTest(unittest.TestCase):
     def test_as_dict_from_dict(self):
         q = create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)
         d = q.as_dict()
-        d_storage = q.as_dict(for_storage=True)
-        d_storage_omit = q.as_dict(for_storage=True, omit_value=True)
+
         self.assertEqual(d, {"@module": "propnet.core.quantity",
                              "@class": "Quantity",
                              "value": 5,
@@ -247,47 +246,12 @@ class QuantityTest(unittest.TestCase):
                              "provenance": None,
                              "symbol_type": self.custom_symbol.name})
 
-        self.assertEqual(d_storage, {"@module": "propnet.core.quantity",
-                                     "@class": "Quantity",
-                                     "value": 5,
-                                     "units": "dimensionless",
-                                     "provenance": None,
-                                     "internal_id": q._internal_id,
-                                     "symbol_type": self.custom_symbol.name})
-
-        self.assertEqual(d_storage_omit, {"@module": "propnet.core.quantity",
-                                          "@class": "Quantity",
-                                          "value": None,
-                                          "units": None,
-                                          "provenance": None,
-                                          "internal_id": q._internal_id,
-                                          "symbol_type": self.custom_symbol.name})
-
         q = create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1, provenance=ProvenanceElement())
         d = q.as_dict()
-        d_storage = q.as_dict(for_storage=True)
+
         self.assertEqual(d, {"@module": "propnet.core.quantity",
                              "@class": "Quantity",
                              "value": 5,
                              "units": "dimensionless",
                              "provenance": q._provenance,
                              "symbol_type": self.custom_symbol.name})
-
-        # Need more tests for provenance as_dict() method
-        self.assertEqual(d_storage, {"@module": "propnet.core.quantity",
-                                     "@class": "Quantity",
-                                     "value": 5,
-                                     "units": "dimensionless",
-                                     "provenance": q._provenance.as_dict(),
-                                     "internal_id": q._internal_id,
-                                     "symbol_type": self.custom_symbol.name})
-
-        self.assertIsInstance(d_storage['provenance'], dict)
-        #
-        # self.assertEqual(d_storage_omit, {"@module": "propnet.core.quantity",
-        #                                   "@class": "Quantity",
-        #                                   "value": None,
-        #                                   "units": None,
-        #                                   "provenance": None,
-        #                                   "internal_id": q._internal_id,
-        #                                   "symbol_type": self.custom_symbol.name})

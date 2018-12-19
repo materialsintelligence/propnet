@@ -5,7 +5,8 @@ from maggma.builders import Builder
 from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.entries.compatibility import MaterialsProjectCompatibility
 from propnet import logger
-from propnet.core.quantity import create_quantity, StorageQuantity
+from propnet.core.quantity import create_quantity
+from propnet.core.storage import StorageQuantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 from propnet.core.provenance import ProvenanceElement
@@ -99,7 +100,7 @@ class PropnetBuilder(Builder):
         # Gives the initial inputs that were used to derive properties of a
         # certain material.
 
-        doc = {"inputs": [q for q in input_quantities]}
+        doc = {"inputs": [StorageQuantity.from_quantity(q) for q in input_quantities]}
         for symbol, quantity in new_material.get_aggregated_quantities().items():
             all_qs = new_material._symbol_to_quantity[symbol]
             # Only add new quantities
@@ -109,7 +110,7 @@ class PropnetBuilder(Builder):
                 continue
             # Write out all quantities as dicts including the
             # internal ID for provenance tracing
-            qs = [q for q in all_qs]
+            qs = [StorageQuantity.from_quantity(q).as_dict() for q in all_qs]
             # THE listing of all Quantities of a given symbol.
             sub_doc = {"quantities": qs,
                        "mean": unumpy.nominal_values(quantity.value).tolist(),
