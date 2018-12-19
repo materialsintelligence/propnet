@@ -1,5 +1,5 @@
 from monty.json import MSONable
-from propnet.core.quantity import BaseQuantity, create_quantity
+from propnet.core.quantity import BaseQuantity, QuantityFactory
 from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
 from propnet.symbols import DEFAULT_SYMBOLS, Symbol
@@ -143,10 +143,10 @@ class StorageQuantity(MSONable):
         else:
             uncertainty_in = self._uncertainty
 
-        out = create_quantity(symbol_type=self._symbol_type, value=self._value, units=self._units,
-                              tags=self._tags,
-                              provenance=provenance_in,
-                              uncertainty=uncertainty_in)
+        out = QuantityFactory.create_quantity(symbol_type=self._symbol_type, value=self._value, units=self._units,
+                                              tags=self._tags,
+                                              provenance=provenance_in,
+                                              uncertainty=uncertainty_in)
 
         out._internal_id = self._internal_id
         return out

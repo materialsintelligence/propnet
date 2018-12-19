@@ -5,7 +5,7 @@ from maggma.builders import Builder
 from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.entries.compatibility import MaterialsProjectCompatibility
 from propnet import logger
-from propnet.core.quantity import create_quantity
+from propnet.core.quantity import QuantityFactory
 from propnet.core.storage import StorageQuantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
@@ -75,15 +75,15 @@ class PropnetBuilder(Builder):
         for mkey, property_name in self.materials_symbol_map.items():
             value = get(item, mkey)
             if value:
-                material.add_quantity(create_quantity(property_name, value,
-                                                      provenance=provenance))
+                material.add_quantity(QuantityFactory.create_quantity(property_name, value,
+                                                                      provenance=provenance))
 
         # Add custom things, e. g. computed entry
         computed_entry = get_entry(item)
-        material.add_quantity(create_quantity("computed_entry", computed_entry,
-                                              provenance=provenance))
-        material.add_quantity(create_quantity("external_identifier_mp", item['task_id'],
-                                              provenance=provenance))
+        material.add_quantity(QuantityFactory.create_quantity("computed_entry", computed_entry,
+                                                              provenance=provenance))
+        material.add_quantity(QuantityFactory.create_quantity("external_identifier_mp", item['task_id'],
+                                                              provenance=provenance))
 
         input_quantities = material.get_quantities()
 

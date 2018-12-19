@@ -90,57 +90,6 @@ class BaseQuantity(ABC, MSONable):
 
         return DEFAULT_SYMBOLS[name]
 
-    # TODO: Do we need this method any more now that we have the factory?
-    @staticmethod
-    def to_quantity(symbol: Union[str, Symbol],
-                    to_coerce: Union[float, np.ndarray, ureg.Quantity, "BaseQuantity"]) -> "BaseQuantity":
-        """
-        Converts the argument into the appropriate child object of a BaseQuantity object based on its type:
-        - float -> given default units (as a pint object) and wrapped in a BaseQuantity object
-        - numpy.ndarray array -> given default units (pint) and wrapped in a BaseQuantity object
-        - ureg.Quantity -> simply wrapped in a BaseQuantity object
-        - BaseQuantity -> immediately returned without modification (same object, not copied)
-        - Any other python object -> simply wrapped in a BaseQuantity object
-
-        TODO: Have a python object convert into an ObjectQuantity object or similar.
-
-        Args:
-            symbol: a string or Symbol object representing the type of data stored
-            to_coerce: item to be converted into a BaseQuantity object
-        Returns:
-            (BaseQuantity) item that has been converted into a BaseQuantity object
-        """
-        # If a quantity is passed in, return the quantity.
-        if isinstance(to_coerce, BaseQuantity):
-            return to_coerce
-
-        # Else
-        # Convert the symbol to a Symbol if necessary.
-        if isinstance(symbol, str):
-            symbol = DEFAULT_SYMBOLS.get(symbol)
-            if symbol is None:
-                raise Exception("Attempted to create a quantity for an unrecognized symbol: " + str(symbol))
-        # Return the correct BaseQuantity - warn if units are assumed.
-        return create_quantity(symbol, to_coerce)
-
-    @classmethod
-    def from_default(cls, symbol):
-        """
-        Class method to invoke a default quantity from a symbol name
-
-        Args:
-            symbol (Symbol or str): symbol or string corresponding to
-                the symbol name
-
-        Returns:
-            BaseQuantity corresponding to default quantity from default
-        """
-        val = DEFAULT_SYMBOL_VALUES.get(symbol)
-        if val is None:
-            raise ValueError("No default value for {}".format(symbol))
-        prov = ProvenanceElement(model='default', inputs=[])
-        return create_quantity(symbol, val, provenance=prov)
-
     @abstractmethod
     def magnitude(self):
         return
@@ -634,47 +583,104 @@ class ObjQuantity(BaseQuantity):
         return False
 
 
-def create_quantity(symbol_type, value, units=None, tags=None,
-                    provenance=None, uncertainty=None):
-    """
-    Factory method for BaseQuantity class, provides more intuitive call
-    to create new BaseQuantity child objects and provide backwards
-    compatibility. If BaseQuantity is passed in as value, a new object
-    will be created. Use BaseQuantity.to_quantity() to return the same object.
+class QuantityFactory(object):
+    def __init__(self):
+        pass
 
-    Args:
-        symbol_type: (str or Symbol) represents the type of data being stored
-        value: (id) data to be stored
-        units: (str, ureg.Unit) units of the data being stored. Must be None
-            for non-numerical values
-        tags: (list<str>) list of strings storing metadata from
-                Quantity evaluation.
-        provenance: (ProvenanceElement) provenance associated with the
-                object (e. g. inputs, model, see ProvenanceElement)
-        uncertainty: (id) uncertainty of the specified value
+    @staticmethod
+    def create_quantity(symbol_type, value, units=None, tags=None,
+                        provenance=None, uncertainty=None):
+        """
+        Factory method for BaseQuantity class, provides more intuitive call
+        to create new BaseQuantity child objects and provide backwards
+        compatibility. If BaseQuantity is passed in as value, a new object
+        will be created. Use BaseQuantity.to_quantity() to return the same object.
 
-    Returns: (NumQuantity or ObjQuantity) constructed object of appropriate
-        type based on value's type
+        Args:
+            symbol_type: (str or Symbol) represents the type of data being stored
+            value: (id) data to be stored
+            units: (str, ureg.Unit) units of the data being stored. Must be None
+                for non-numerical values
+            tags: (list<str>) list of strings storing metadata from
+                    Quantity evaluation.
+            provenance: (ProvenanceElement) provenance associated with the
+                    object (e. g. inputs, model, see ProvenanceElement)
+            uncertainty: (id) uncertainty of the specified value
 
-    """
-    if isinstance(value, BaseQuantity):
-        if isinstance(value, NumQuantity):
-            units = units or value.units
-        tags = tags or value.tags
-        provenance = provenance or value.provenance
-        uncertainty = uncertainty or value.uncertainty
-        value = value.value
+        Returns: (NumQuantity or ObjQuantity) constructed object of appropriate
+            type based on value's type
 
-    if NumQuantity.is_acceptable_type(value):
-        return NumQuantity(symbol_type, value,
-                           units=units, tags=tags,
-                           provenance=provenance,
-                           uncertainty=uncertainty)
+        """
+        if isinstance(value, BaseQuantity):
+            if isinstance(value, NumQuantity):
+                units = units or value.units
+            tags = tags or value.tags
+            provenance = provenance or value.provenance
+            uncertainty = uncertainty or value.uncertainty
+            value = value.value
 
-    if units is not None:
-        logger.warning("Cannot assign units to value of type '{}'."
-                       "Ignoring units.".format(type(value)))
+        if NumQuantity.is_acceptable_type(value):
+            return NumQuantity(symbol_type, value,
+                               units=units, tags=tags,
+                               provenance=provenance,
+                               uncertainty=uncertainty)
 
-    return ObjQuantity(symbol_type, value,
-                       tags=tags,
-                       provenance=provenance)
+        if units is not None:
+            logger.warning("Cannot assign units to value of type '{}'."
+                           "Ignoring units.".format(type(value)))
+
+        if uncertainty is not None:
+            logger.warning("Cannot assign uncertainty to value of type '{}'."
+                           "Ignoring uncertainty.".format(type(value)))
+
+        return ObjQuantity(symbol_type, value,
+                           tags=tags,
+                           provenance=provenance)
+
+    @staticmethod
+    def from_default(symbol):
+        """
+        Method to invoke a default quantity from a symbol name
+
+        Args:
+            symbol (Symbol or str): symbol or string corresponding to
+                the symbol name
+
+        Returns:
+            BaseQuantity corresponding to default quantity from default
+        """
+        val = DEFAULT_SYMBOL_VALUES.get(symbol)
+        if val is None:
+            raise ValueError("No default value for {}".format(symbol))
+        prov = ProvenanceElement(model='default', inputs=[])
+        return QuantityFactory.create_quantity(symbol, val, provenance=prov)
+
+    @staticmethod
+    def to_quantity(symbol: Union[str, Symbol],
+                    to_coerce: Union[float, np.ndarray, ureg.Quantity, "BaseQuantity"]) -> "BaseQuantity":
+        """
+        Converts the argument into the appropriate child object of a BaseQuantity object based on its type:
+        - float -> given default units (as a pint object) and wrapped in a BaseQuantity object
+        - numpy.ndarray array -> given default units (pint) and wrapped in a BaseQuantity object
+        - ureg.Quantity -> simply wrapped in a BaseQuantity object
+        - BaseQuantity -> immediately returned without modification (same object, not copied)
+        - Any other python object -> simply wrapped in a ObjQuantity object
+
+        Args:
+            symbol: a string or Symbol object representing the type of data stored
+            to_coerce: item to be converted into a BaseQuantity object
+        Returns:
+            (BaseQuantity) item that has been converted into a BaseQuantity object
+        """
+        # If a quantity is passed in, return the quantity.
+        if isinstance(to_coerce, BaseQuantity):
+            return to_coerce
+
+        # Else
+        # Convert the symbol to a Symbol if necessary.
+        if isinstance(symbol, str):
+            symbol = DEFAULT_SYMBOLS.get(symbol)
+            if symbol is None:
+                raise Exception("Attempted to create a quantity for an unrecognized symbol: " + str(symbol))
+        # Return the correct BaseQuantity - warn if units are assumed.
+        return QuantityFactory.create_quantity(symbol, to_coerce)
