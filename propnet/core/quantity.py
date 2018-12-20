@@ -1,6 +1,7 @@
 import numpy as np
 from monty.json import MSONable
 from datetime import datetime
+import sys
 
 import networkx as nx
 
@@ -592,6 +593,36 @@ class ObjQuantity(BaseQuantity):
                  provenance=None):
         if isinstance(symbol_type, str):
             symbol_type = super()._get_symbol_from_string(symbol_type)
+
+        if not symbol_type.is_correct_object_type(value):
+            old_type = type(value)
+            target_module = symbol_type.object_module
+            target_class = symbol_type.object_class
+            if target_module in sys.modules and \
+                    hasattr(sys.modules[target_module], target_class):
+                try:
+                    cls_ = getattr(sys.modules[target_module], target_class)
+                    value = cls_(value)
+                except (TypeError, ValueError) as ex:
+                    raise TypeError("Mismatch in type of value ({}) and type specified "
+                                    "by object symbol ({}).\nTypecasting failed."
+                                    "".format(old_type, symbol_type.object_class))
+            else:
+                # Do not try to import the module for security reasons.
+                # We don't want malicious modules to be automatically imported.
+                raise NameError("Mismatch in type of value ({}) and type specified "
+                                "by object symbol ({}).\nCannot typecast because "
+                                "'{}' is not imported or does not exist."
+                                "".format(old_type,
+                                          symbol_type.object_class,
+                                          symbol_type.object_type))
+
+            logger.warning("WARNING: Mismatch in type of value ({}) "
+                           "and type specified by object symbol ({}). "
+                           "Value cast as '{}'.".format(old_type,
+                                                        symbol_type.object_type,
+                                                        symbol_type.object_class))
+
         super(ObjQuantity, self).__init__(symbol_type, value, tags=tags, provenance=provenance)
 
     @property
@@ -668,19 +699,40 @@ class QuantityFactory(object):
             uncertainty = uncertainty or value.uncertainty
             value = value.value
 
-        if NumQuantity.is_acceptable_type(value):
+        # TODO: This sort of thing probably indicates Symbol objects need to be split
+        #       into different categories, like Quantity has been
+        if isinstance(symbol_type, str):
+            symbol_type = BaseQuantity._get_symbol_from_string(symbol_type)
+            symbol_is_object = symbol_type.category == 'object'
+        elif isinstance(symbol_type, Symbol):
+            symbol_is_object = symbol_type.category == 'object'
+        else:
+            raise TypeError("Unrecognized type for symbol_type: {}"
+                            "".format(type(symbol_type)))
+
+        if not symbol_is_object and NumQuantity.is_acceptable_type(value):
             return NumQuantity(symbol_type, value,
                                units=units, tags=tags,
                                provenance=provenance,
                                uncertainty=uncertainty)
 
         if units is not None:
-            logger.warning("Cannot assign units to value of type '{}'."
-                           "Ignoring units.".format(type(value)))
+            if symbol_is_object:
+                logger.warning("Cannot assign units to object-type symbol '{}'."
+                               "Ignoring units.".format(symbol_type.name))
+            else:
+                # This may never run bc right now the only symbols that make object
+                # quantities are object symbols...
+                logger.warning("Cannot assign units to value of type '{}'."
+                               "Ignoring units.".format(type(value)))
 
         if uncertainty is not None:
-            logger.warning("Cannot assign uncertainty to value of type '{}'."
-                           "Ignoring uncertainty.".format(type(value)))
+            if symbol_is_object:
+                logger.warning("Cannot assign uncertainty to object-type symbol '{}'."
+                               "Ignoring units.".format(symbol_type.name))
+            else:
+                logger.warning("Cannot assign uncertainty to value of type '{}'."
+                               "Ignoring units.".format(type(value)))
 
         return ObjQuantity(symbol_type, value,
                            tags=tags,

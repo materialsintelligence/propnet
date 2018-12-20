@@ -26,12 +26,14 @@ class QuantityTest(unittest.TestCase):
         self.custom_object_symbol = Symbol("B", category='object')
 
     def test_quantity_construction(self):
-        # From custom symbol
+        # From custom numerical symbol
         q = QuantityFactory.create_quantity(self.custom_symbol, 5.0)
+        self.assertIsInstance(q, NumQuantity)
         self.assertEqual(q.value.magnitude, 5.0)
         self.assertIsInstance(q.value, ureg.Quantity)
-        # From canonical symbol
+        # From canonical numerical symbol
         q = QuantityFactory.create_quantity("bulk_modulus", 100)
+        self.assertIsInstance(q, NumQuantity)
         self.assertEqual(q.value.magnitude, 100)
         # From custom symbol with constraint
         with self.assertRaises(SymbolConstraintError):
@@ -40,11 +42,31 @@ class QuantityTest(unittest.TestCase):
         with self.assertRaises(SymbolConstraintError):
             QuantityFactory.create_quantity("bulk_modulus", -500)
 
+        # From custom object symbol
+        q = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
+        self.assertIsInstance(q, ObjQuantity)
+        self.assertIsInstance(q.value, str)
+        self.assertEqual(q.value, 'test')
+
+        # From canonical object symbol
+        q = QuantityFactory.create_quantity("is_metallic", False)
+        self.assertIsInstance(q, ObjQuantity)
+        self.assertIsInstance(q.value, bool)
+        self.assertEqual(q.value, False)
+
     def test_from_default(self):
         default = QuantityFactory.from_default('temperature')
-        self.assertEqual(default, QuantityFactory.create_quantity('temperature', 300))
+        new_q = QuantityFactory.create_quantity('temperature', 300)
+        # This test used to check for equality of the quantity objects,
+        # but bc new definition of equality checks provenance, equality
+        # between these objects fails (they originate from different models).
+        # Now checking explicitly for symbol and value equality.
+        self.assertEqual(default.symbol, new_q.symbol)
+        self.assertEqual(default.value, new_q.value)
         default = QuantityFactory.from_default('relative_permeability')
-        self.assertEqual(default, QuantityFactory.create_quantity("relative_permeability", 1))
+        new_q = QuantityFactory.create_quantity("relative_permeability", 1)
+        self.assertEqual(default.symbol, new_q.symbol)
+        self.assertEqual(default.value, new_q.value)
 
     def test_from_weighted_mean(self):
         qlist = [QuantityFactory.create_quantity(self.custom_symbol, val)
@@ -220,8 +242,8 @@ class QuantityTest(unittest.TestCase):
         self.assertFalse(non_numerical.contains_complex_type())
         self.assertFalse(non_numerical.contains_imaginary_value())
 
-    def test_numpy_scalar_conversion(self):
-        # From custom symbol
+    def test_value_coercion(self):
+        # Numerical value coercion
         q_int = QuantityFactory.create_quantity(self.custom_symbol, np.int64(5))
         q_float = QuantityFactory.create_quantity(self.custom_symbol, np.float64(5.0))
         q_complex = QuantityFactory.create_quantity(self.custom_symbol, np.complex64(5.0 + 1.j))
@@ -238,6 +260,36 @@ class QuantityTest(unittest.TestCase):
         self.assertTrue(isinstance(q_int_uncertainty.uncertainty.magnitude, int))
         self.assertTrue(isinstance(q_float_uncertainty.uncertainty.magnitude, float))
         self.assertTrue(isinstance(q_complex_uncertainty.uncertainty.magnitude, complex))
+
+        # Object value coercion for primitive type
+        q = QuantityFactory.create_quantity("is_metallic", 0)
+        self.assertIsInstance(q, ObjQuantity)
+        self.assertIsInstance(q.value, bool)
+        self.assertEqual(q.value, False)
+
+        # For custom class
+        # Test failure if module not imported
+        s = Symbol('A', category='object',
+                   object_type='propnet.core.tests.external_test_class.ACoercibleClass')
+        with self.assertRaises(NameError):
+            q = QuantityFactory.create_quantity(s, 55)
+
+        # Test coercion after module imported
+        from propnet.core.tests.external_test_class import ACoercibleClass, AnIncoercibleClass
+        q = QuantityFactory.create_quantity(s, 55)
+        self.assertIsInstance(q, ObjQuantity)
+        self.assertIsInstance(q.value, ACoercibleClass)
+
+        # Test coercion failure by failed typecasting
+        s = Symbol('A', category='object',
+                   object_type='propnet.core.tests.external_test_class.AnIncoercibleClass')
+        with self.assertRaises(TypeError):
+            q = QuantityFactory.create_quantity(s, 55)
+
+        # Test lack of coercion when no type specified
+        q = QuantityFactory.create_quantity(self.custom_object_symbol, AnIncoercibleClass(5, 6))
+        self.assertIsInstance(q, ObjQuantity)
+        self.assertIsInstance(q.value, AnIncoercibleClass)
 
     def test_as_dict_from_dict(self):
         q = QuantityFactory.create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)

@@ -89,6 +89,9 @@ class Symbol(MSONable):
                 raise TypeError(
                     "Shape provided for ({}) is invalid.".format(id))
 
+            if units is None:
+                units = 'dimensionless'
+
             logger.info("Units parsed from a string format automatically, "
                         "do these look correct? %s", units)
             if isinstance(units, six.string_types):
@@ -103,12 +106,24 @@ class Symbol(MSONable):
         self.name = name
         self.category = category
         self.units = units
-        self.object_type = object_type
         self.display_names = display_names
         self.display_symbols = display_symbols
+        self.object_type = object_type
+        self._object_class = None
+        self._object_module = None
         self.shape = shape
         self.comment = comment
         self.default_value = default_value
+
+        if object_type:
+            # Do not try to import the module for security reasons.
+            # We don't want malicious modules to be automatically imported.
+            modclass = object_type.rsplit('.', 1)
+            if len(modclass) == 1:
+                self._object_module = 'builtins'
+                self._object_class = modclass[0]
+            else:
+                self._object_module, self._object_class = modclass
 
         # TODO: This should explicity deal with only numerical symbols
         #       because it uses sympy to evaluate them until we make
@@ -121,6 +136,14 @@ class Symbol(MSONable):
             self.constraint = sp.lambdify(self.name, expr)
         else:
             self.constraint = None
+
+    @property
+    def object_class(self):
+        return self._object_class
+
+    @property
+    def object_module(self):
+        return self._object_module
 
     @property
     def dimension_as_string(self):
@@ -168,6 +191,17 @@ class Symbol(MSONable):
         except KeyError:
             logger.warning("Cannot find compatible units for %s", self.name)
             return []
+
+    def is_correct_object_type(self, obj):
+        if not self.object_module and not self.object_class:
+            # If no type was specified, just accept any object.
+            # Leave it up to the model evaluation procedures to type check
+            return True
+
+        modname = obj.__class__.__module__
+        clsname = obj.__class__.__name__
+
+        return self.object_module == modname and self.object_class == clsname
 
     def __hash__(self):
         return self.name.__hash__()
