@@ -220,3 +220,5 @@ class Symbol(MSONable):
         d = super().as_dict()
         if self.units:
             d['units'] = d['units'].to_tuple()
+
+        return d

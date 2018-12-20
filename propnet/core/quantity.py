@@ -76,7 +76,8 @@ class BaseQuantity(ABC, MSONable):
                     self._provenance.source['source_key'] in (None, ""):
                 self._provenance.source['source_key'] = self._internal_id
         else:
-            self._provenance = ProvenanceElement(source={"source": "",
+            self._provenance = ProvenanceElement(source={"source": None,
+                                                         "source_key": self._internal_id,
                                                          "date_created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
 
     @staticmethod
@@ -210,6 +211,17 @@ class BaseQuantity(ABC, MSONable):
         a_graph.node_attr['style'] = 'filled'
         a_graph.draw(filename, prog=prog, **kwargs)
 
+    def as_dict(self):
+        symbol = self._symbol_type
+        if symbol.name in DEFAULT_SYMBOLS.keys() and symbol == DEFAULT_SYMBOLS[symbol.name]:
+            symbol = self._symbol_type.name
+        else:
+            symbol = symbol.as_dict()
+
+        return {"symbol_type": symbol,
+                "provenance": self.provenance.as_dict() if self.provenance else None,
+                "tags": self.tags}
+
     @abstractmethod
     def contains_nan_value(self):
         return
@@ -225,13 +237,6 @@ class BaseQuantity(ABC, MSONable):
     def __hash__(self):
         return hash(self.symbol.name)
 
-    def __eq__(self, other):
-        if not isinstance(other, BaseQuantity) \
-                or self.symbol != other.symbol \
-                or self.symbol.category != other.symbol.category:
-            return False
-        return self.value == other.value
-
     def __str__(self):
         return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)
 
@@ -240,6 +245,11 @@ class BaseQuantity(ABC, MSONable):
 
     def __bool__(self):
         return bool(self.value)
+
+    def __eq__(self, other):
+        return self.symbol == other.symbol and \
+               self.tags == other.tags and \
+               self.provenance == other.provenance
 
 
 class NumQuantity(BaseQuantity):
@@ -258,6 +268,9 @@ class NumQuantity(BaseQuantity):
             symbol_type = BaseQuantity._get_symbol_from_string(symbol_type)
 
         # Set default units if not supplied
+        if not units:
+            logger.warning("WARNING: No units supplied, assuming default units from symbol.")
+
         units = units or symbol_type.units
 
         if isinstance(value, self._ACCEPTABLE_DTYPES):
@@ -309,13 +322,18 @@ class NumQuantity(BaseQuantity):
                 if np.issubdtype(uncertainty.dtype, self._ACCEPTABLE_DTYPES):
                     self._uncertainty = ureg.Quantity(uncertainty, units)
                 else:
-                    raise TypeError('Non-numerical type passed to NumQuantity: {}'.format(type(uncertainty)))
+                    raise TypeError('Non-numerical uncertainty type passed to NumQuantity: {}'.format(type(uncertainty)))
             elif isinstance(uncertainty, ureg.Quantity):
                 self._uncertainty = uncertainty.to(units)
             elif isinstance(uncertainty, NumQuantity):
                 self._uncertainty = uncertainty._value.to(units)
+            elif isinstance(uncertainty, tuple):
+                self._uncertainty = ureg.Quantity.from_tuple(uncertainty).to(units)
             else:
-                raise TypeError('Unknown type passed to NumQuantity: {}'.format(type(uncertainty)))
+                try:
+                    self._uncertainty = ureg.Quantity(uncertainty).to(units)
+                except Exception:
+                    raise ValueError('Cannot parse uncertainty passed to NumQuantity: {}'.format(uncertainty))
         else:
             self._uncertainty = None
 
@@ -331,14 +349,6 @@ class NumQuantity(BaseQuantity):
                     "NumQuantity with {} value does not satisfy {}".format(
                         value, symbol_type.constraint))
 
-    # Not sure if we need this...
-    # def __deepcopy__(self, memodict={}):
-    #     return NumQuantity(self._symbol_type, self.value,
-    #                        units=self.units, tags=self.tags,
-    #                        provenance=self.provenance,
-    #                        uncertainty=self._uncertainty)
-
-    # TODO: Check to see if this works the same way as it did in old implementation
     def to(self, units):
         """
         Method to convert quantities between units, a la pint
@@ -548,6 +558,34 @@ class NumQuantity(BaseQuantity):
 
         return False
 
+    def as_dict(self):
+        d = super().as_dict()
+
+        d.update({"@module": self.__class__.__module__,
+                  "@class": self.__class__.__name__,
+                  "value": self.magnitude,
+                  "units": self.units.format_babel(),
+                  "uncertainty": self.uncertainty.to_tuple() if self.uncertainty else None})
+
+        return d
+
+    def __eq__(self, other):
+        if not self.uncertainty and not other.uncertainty:
+            uncertainty_is_close = True
+        elif self.uncertainty and other.uncertainty:
+            uncertainty_is_close = np.isclose(self.uncertainty, other.uncertainty)
+        else:
+            return False
+
+        return \
+            super().__eq__(other) and \
+            uncertainty_is_close and \
+            np.isclose(self.value, other.value) and \
+            self.units == other.units
+
+    def __hash__(self):
+        return super().__hash__()
+
 
 class ObjQuantity(BaseQuantity):
     def __init__(self, symbol_type, value, tags=None,
@@ -582,10 +620,21 @@ class ObjQuantity(BaseQuantity):
     def contains_imaginary_value(self):
         return False
 
+    def as_dict(self):
+        d = super().as_dict()
+
+        d.update({"@module": self.__class__.__module__,
+                  "@class": self.__class__.__name__,
+                  "value": self.value})
+
+        return d
+
+    def __eq__(self, other):
+        return super().__eq__(other) and \
+               self.value == other.value
+
 
 class QuantityFactory(object):
-    def __init__(self):
-        pass
 
     @staticmethod
     def create_quantity(symbol_type, value, units=None, tags=None,
@@ -684,3 +733,14 @@ class QuantityFactory(object):
                 raise Exception("Attempted to create a quantity for an unrecognized symbol: " + str(symbol))
         # Return the correct BaseQuantity - warn if units are assumed.
         return QuantityFactory.create_quantity(symbol, to_coerce)
+
+    @staticmethod
+    def from_dict(d):
+        if d['@class'] == 'NumQuantity':
+            return NumQuantity.from_dict(d)
+        elif d['@class'] == 'ObjQuantity':
+            return ObjQuantity.from_dict(d)
+        else:
+            raise ValueError("Cannot build non-BaseQuantity objects!")
+
+

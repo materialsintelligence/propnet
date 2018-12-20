@@ -4,14 +4,15 @@ import os
 import numpy as np
 from monty import tempfile
 import networkx as nx
+import copy
 
 from pymatgen.util.testing import PymatgenTest
 from propnet.core.symbols import Symbol
+from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.core.exceptions import SymbolConstraintError
-from propnet.core.quantity import QuantityFactory, NumQuantity, ObjQuantity, BaseQuantity
+from propnet.core.quantity import QuantityFactory, NumQuantity, ObjQuantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
-from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,6 +23,7 @@ class QuantityTest(unittest.TestCase):
         self.custom_symbol = Symbol("A", units='dimensionless')
         self.constraint_symbol = Symbol("A", constraint="A > 0",
                                         units='dimensionless')
+        self.custom_object_symbol = Symbol("B", category='object')
 
     def test_quantity_construction(self):
         # From custom symbol
@@ -39,9 +41,9 @@ class QuantityTest(unittest.TestCase):
             QuantityFactory.create_quantity("bulk_modulus", -500)
 
     def test_from_default(self):
-        default = BaseQuantity.from_default('temperature')
+        default = QuantityFactory.from_default('temperature')
         self.assertEqual(default, QuantityFactory.create_quantity('temperature', 300))
-        default = BaseQuantity.from_default('relative_permeability')
+        default = QuantityFactory.from_default('relative_permeability')
         self.assertEqual(default, QuantityFactory.create_quantity("relative_permeability", 1))
 
     def test_from_weighted_mean(self):
@@ -241,20 +243,90 @@ class QuantityTest(unittest.TestCase):
         q = QuantityFactory.create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)
         d = q.as_dict()
 
-        self.assertEqual(d, {"@module": "propnet.core.quantity",
-                             "@class": "NumQuantity",
-                             "value": 5,
-                             "units": "dimensionless",
-                             "provenance": None,
-                             "symbol_type": self.custom_symbol.name})
+        self.assertDictEqual(d, {"@module": "propnet.core.quantity",
+                                 "@class": "NumQuantity",
+                                 "value": 5,
+                                 "units": "dimensionless",
+                                 "provenance": q.provenance.as_dict(),
+                                 "symbol_type": self.custom_symbol.as_dict(),
+                                 "tags": 'experimental',
+                                 "uncertainty": (1, ())
+                                 })
 
-        q = QuantityFactory.create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1,
-                                            provenance=ProvenanceElement())
+        q_from = QuantityFactory.from_dict(d)
+
+        self.assertIsInstance(q_from, NumQuantity)
+        self.assertEqual(q_from.symbol, q.symbol)
+        self.assertEqual(q_from.value, q.value)
+        self.assertEqual(q_from.units, q.units)
+        self.assertEqual(q_from.tags, q.tags)
+        self.assertEqual(q_from.uncertainty, q.uncertainty)
+        self.assertEqual(q_from.provenance, q.provenance)
+
+        q_from = NumQuantity.from_dict(d)
+
+        self.assertIsInstance(q_from, NumQuantity)
+        self.assertEqual(q_from.symbol, q.symbol)
+        self.assertEqual(q_from.value, q.value)
+        self.assertEqual(q_from.units, q.units)
+        self.assertEqual(q_from.tags, q.tags)
+        self.assertEqual(q_from.uncertainty, q.uncertainty)
+        self.assertEqual(q_from.provenance, q.provenance)
+
+        q = QuantityFactory.create_quantity(DEFAULT_SYMBOLS['debye_temperature'],
+                                            500, tags='experimental', uncertainty=10)
         d = q.as_dict()
 
-        self.assertEqual(d, {"@module": "propnet.core.quantity",
-                             "@class": "Quantity",
-                             "value": 5,
-                             "units": "dimensionless",
-                             "provenance": q._provenance,
-                             "symbol_type": self.custom_symbol.name})
+        self.assertDictEqual(d, {"@module": "propnet.core.quantity",
+                                 "@class": "NumQuantity",
+                                 "value": 500,
+                                 "units": "kelvin",
+                                 "provenance": q.provenance.as_dict(),
+                                 "symbol_type": "debye_temperature",
+                                 "tags": 'experimental',
+                                 "uncertainty": (10, (('kelvin', 1.0),))
+                                 })
+
+        q_from = QuantityFactory.from_dict(d)
+
+        self.assertIsInstance(q_from, NumQuantity)
+        self.assertEqual(q_from.symbol, q.symbol)
+        self.assertEqual(q_from.value, q.value)
+        self.assertEqual(q_from.units, q.units)
+        self.assertEqual(q_from.tags, q.tags)
+        self.assertEqual(q_from.uncertainty, q.uncertainty)
+        self.assertEqual(q_from.provenance, q.provenance)
+
+        q_from = NumQuantity.from_dict(d)
+
+        self.assertIsInstance(q_from, NumQuantity)
+        self.assertEqual(q_from.symbol, q.symbol)
+        self.assertEqual(q_from.value, q.value)
+        self.assertEqual(q_from.units, q.units)
+        self.assertEqual(q_from.tags, q.tags)
+        self.assertEqual(q_from.uncertainty, q.uncertainty)
+        self.assertEqual(q_from.provenance, q.provenance)
+
+    def test_equality(self):
+        q1 = QuantityFactory.create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)
+        q1_copy = copy.deepcopy(q1)
+        q2 = QuantityFactory.create_quantity(self.custom_symbol, 6, tags='experimental', uncertainty=2)
+
+        self.assertEqual(q1, q1_copy)
+        self.assertEqual(q1.symbol, q1_copy.symbol)
+        self.assertEqual(q1.value, q1_copy.value)
+        self.assertEqual(q1.units, q1_copy.units)
+        self.assertEqual(q1.tags, q1_copy.tags)
+        self.assertEqual(q1.uncertainty, q1_copy.uncertainty)
+        self.assertEqual(q1.provenance, q1_copy.provenance)
+
+        self.assertNotEqual(q1, q2)
+
+        fields = list(q1.__dict__.keys())
+
+        # This is to check to see if we modified the fields in the object, in case we need to add
+        # to our equality statement
+        self.assertListEqual(fields, ['_value', '_symbol_type',
+                                      '_tags', '_provenance',
+                                      '_internal_id', '_uncertainty'])
+

@@ -17,7 +17,7 @@ from sympy.parsing.sympy_parser import parse_expr
 
 
 from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
-from propnet.core.quantity import QuantityFactory, BaseQuantity, NumQuantity
+from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_UNITS
@@ -175,7 +175,7 @@ class Model(ABC):
             replacing = self.symbol_property_map.get(k, k)
             # to_quantity() returns original object if it's already a BaseQuantity
             # unlike Quantity() which will return a deep copy
-            symbol_quantity_dict[k] = BaseQuantity.to_quantity(replacing, v)
+            symbol_quantity_dict[k] = QuantityFactory.to_quantity(replacing, v)
 
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
