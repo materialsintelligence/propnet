@@ -4,6 +4,7 @@ from propnet.core.materials import Material
 from propnet.core.quantity import QuantityFactory
 from propnet.core.graph import Graph
 from propnet.symbols import DEFAULT_SYMBOLS
+from propnet.core.provenance import ProvenanceElement
 
 
 class MaterialTest(unittest.TestCase):
@@ -87,6 +88,8 @@ class MaterialTest(unittest.TestCase):
     def test_add_default_quantities(self):
         material = Material(add_default_quantities=True)
         self.assertEqual(list(material['temperature'])[0],
-                         QuantityFactory.create_quantity("temperature", 300))
+                         QuantityFactory.create_quantity("temperature", 300,
+                                                         provenance=ProvenanceElement(model='default')))
         self.assertEqual(list(material['relative_permeability'])[0],
-                         QuantityFactory.create_quantity("relative_permeability", 1))
+                         QuantityFactory.create_quantity("relative_permeability", 1,
+                         provenance=ProvenanceElement(model='default')))

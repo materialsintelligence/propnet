@@ -72,6 +72,16 @@ class Model(ABC):
         self.categories = categories or []
         self.implemented_by = implemented_by or []
         self.references = references_to_bib(references or [])
+
+        # Define constraints by constraint objects or invoke from strings
+        constraints = constraints or []
+        self.constraints = []
+        for constraint in constraints:
+            if isinstance(constraint, Constraint):
+                self.constraints.append(constraint)
+            else:
+                self.constraints.append(Constraint(constraint))
+
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
         self.symbol_property_map = {k: k for k in self.all_properties}
@@ -87,14 +97,7 @@ class Model(ABC):
         else:
             self.unit_map = {}
 
-        # Define constraints by constraint objects or invoke from strings
-        constraints = constraints or []
-        self.constraints = []
-        for constraint in constraints:
-            if isinstance(constraint, Constraint):
-                self.constraints.append(constraint)
-            else:
-                self.constraints.append(Constraint(constraint))
+
 
         self._test_data = test_data or self.load_test_data()
 
@@ -168,17 +171,24 @@ class Model(ABC):
             substitution succeeds
         """
         # Remap symbols and units if symbol map isn't none
+        input_symbol_quantity_dict = {k: v for k, v in symbol_quantity_dict.items()
+                                      if k in self.all_inputs}
+
         symbol_quantity_dict = self.map_properties_to_symbols(
             symbol_quantity_dict)
 
+        input_symbol_quantity_dict = self.map_properties_to_symbols(
+            input_symbol_quantity_dict)
+
         for (k, v) in symbol_quantity_dict.items():
-            replacing = self.symbol_property_map.get(k, k)
+            # replacing = self.symbol_property_map.get(k, k)
+            replacing = self.symbol_property_map.get(k)
             # to_quantity() returns original object if it's already a BaseQuantity
             # unlike Quantity() which will return a deep copy
             symbol_quantity_dict[k] = QuantityFactory.to_quantity(replacing, v)
 
         # TODO: Is it really necessary to strip these?
-        # TODO: maybe this only applies to pymodels or things with objects?
+        # TODO: maybe this only apself.nameplies to pymodels or things with objects?
         # strip units from input and keep for reassignment
         symbol_value_dict = {}
 
@@ -192,10 +202,12 @@ class Model(ABC):
                 symbol_value_dict[symbol] = quantity.value
 
         contains_complex_input = any(NumQuantity.is_complex_type(v) for v in symbol_value_dict.values())
+        input_symbol_value_dict = {k: symbol_value_dict[k] for k in input_symbol_quantity_dict}
+
         # Plug in and check constraints
         try:
             with PrintToLogger():
-                out = self.plug_in(symbol_value_dict)
+                out = self.plug_in(input_symbol_value_dict)
         except Exception as err:
             if allow_failure:
                 return {"successful": False,
@@ -207,7 +219,7 @@ class Model(ABC):
                     "message": "Constraints not satisfied"}
 
         provenance = ProvenanceElement(
-            model=self.name, inputs=list(symbol_quantity_dict.values()),
+            model=self.name, inputs=list(input_symbol_quantity_dict.values()),
             source="propnet")
 
         out = self.map_symbols_to_properties(out)
@@ -287,7 +299,7 @@ class Model(ABC):
         """
         Returns (set): set of all properties
         """
-        return self.all_inputs.union(self.all_outputs)
+        return self.all_inputs.union(self.all_outputs).union(getattr(self, 'constraint_properties', set()))
 
     @property
     def evaluation_list(self):

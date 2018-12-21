@@ -1,6 +1,6 @@
 import unittest
 from propnet.core.graph import Graph
-from propnet.core.provenance import SymbolPath
+from propnet.core.provenance import SymbolPath, ProvenanceElement
 from propnet.core.materials import Material
 from propnet.core.materials import CompositeMaterial
 from propnet.core.symbols import Symbol
@@ -21,6 +21,63 @@ EXPANSION_METHOD_MESSAGE = "Expansion methods (TreeBuilder, etc.) are undergoing
 
 
 class GraphTest(unittest.TestCase):
+    def setUp(self):
+        symbols = GraphTest.generate_canonical_symbols()
+
+        a = [QuantityFactory.create_quantity(symbols['A'], 19),
+             QuantityFactory.create_quantity(symbols['A'], 23)]
+        b = [QuantityFactory.create_quantity(symbols['B'], 38,
+                                             provenance=ProvenanceElement(model='model1',
+                                                                          inputs=[a[0]])),
+             QuantityFactory.create_quantity(symbols['B'], 46,
+                                             provenance=ProvenanceElement(model='model1',
+                                                                          inputs=[a[1]]))]
+        c = [QuantityFactory.create_quantity(symbols['C'], 57,
+                                             provenance=ProvenanceElement(model='model1',
+                                                                          inputs=[a[0]])),
+             QuantityFactory.create_quantity(symbols['C'], 69,
+                                             provenance=ProvenanceElement(model='model1',
+                                                                          inputs=[a[1]]))]
+        g = [QuantityFactory.create_quantity(symbols['G'], 95,
+                                             provenance=ProvenanceElement(model='model2',
+                                                                          inputs=[a[0]])),
+             QuantityFactory.create_quantity(symbols['G'], 115,
+                                             provenance=ProvenanceElement(model='model2',
+                                                                          inputs=[a[1]]))]
+        f = [QuantityFactory.create_quantity(symbols['F'], 266,
+                                             provenance=ProvenanceElement(model='model3',
+                                                                          inputs=[b[0]])),
+             QuantityFactory.create_quantity(symbols['F'], 322,
+                                             provenance=ProvenanceElement(model='model3',
+                                                                          inputs=[b[1]]))]
+        d_model4 = [QuantityFactory.create_quantity(symbols['D'], 23826,
+                                             provenance=ProvenanceElement(model='model4',
+                                                                          inputs=[b[0], c[0]])),
+             QuantityFactory.create_quantity(symbols['D'], 28842,
+                                             provenance=ProvenanceElement(model='model4',
+                                                                          inputs=[b[0], c[1]])),
+             QuantityFactory.create_quantity(symbols['D'], 28842,
+                                             provenance=ProvenanceElement(model='model4',
+                                                                          inputs=[b[1], c[0]])),
+             QuantityFactory.create_quantity(symbols['D'], 34914,
+                                             provenance=ProvenanceElement(model='model4',
+                                                                          inputs=[b[1], c[1]]))]
+
+        d_model5 = [QuantityFactory.create_quantity(symbols['D'], 70395,
+                                             provenance=ProvenanceElement(model='model5',
+                                                                          inputs=[c[0], g[0]])),
+             QuantityFactory.create_quantity(symbols['D'], 85215,
+                                             provenance=ProvenanceElement(model='model5',
+                                                                          inputs=[c[0], g[1]])),
+             QuantityFactory.create_quantity(symbols['D'], 85215,
+                                             provenance=ProvenanceElement(model='model5',
+                                                                          inputs=[c[1], g[0]])),
+             QuantityFactory.create_quantity(symbols['D'], 103155,
+                                             provenance=ProvenanceElement(model='model5',
+                                                                          inputs=[c[1], g[1]]))]
+        self.expected_quantities = a + b + c + d_model4 + d_model5 + f + g
+        self.expected_constrained_quantities = a + b + c + d_model5 + f + g
+
     @staticmethod
     def generate_canonical_symbols():
         """
@@ -186,24 +243,7 @@ class GraphTest(unittest.TestCase):
         g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
-        expected_quantities = [
-            QuantityFactory.create_quantity(symbols['A'], 19),
-            QuantityFactory.create_quantity(symbols['A'], 23),
-            QuantityFactory.create_quantity(symbols['B'], 38),
-            QuantityFactory.create_quantity(symbols['B'], 46),
-            QuantityFactory.create_quantity(symbols['C'], 57),
-            QuantityFactory.create_quantity(symbols['C'], 69),
-            QuantityFactory.create_quantity(symbols['G'], 95),
-            QuantityFactory.create_quantity(symbols['G'], 115),
-            QuantityFactory.create_quantity(symbols['F'], 266),
-            QuantityFactory.create_quantity(symbols['F'], 322),
-            QuantityFactory.create_quantity(symbols['D'], 23826),
-            QuantityFactory.create_quantity(symbols['D'], 28842),
-            QuantityFactory.create_quantity(symbols['D'], 34914),
-            QuantityFactory.create_quantity(symbols['D'], 70395),
-            QuantityFactory.create_quantity(symbols['D'], 85215),
-            QuantityFactory.create_quantity(symbols['D'], 103155),
-        ]
+        expected_quantities = self.expected_quantities
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
                         "evaluate() mutated the original material argument.")
@@ -227,32 +267,7 @@ class GraphTest(unittest.TestCase):
         g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
-        expected_quantities = [
-            # Starting
-            QuantityFactory.create_quantity(symbols['A'], 19),
-            QuantityFactory.create_quantity(symbols['A'], 23),
-
-            # Derives -1 (M1)
-            QuantityFactory.create_quantity(symbols['B'], 38),
-            QuantityFactory.create_quantity(symbols['B'], 46),
-            QuantityFactory.create_quantity(symbols['C'], 57),
-            QuantityFactory.create_quantity(symbols['C'], 69),
-            # Derives -2 (M3, M1)
-            QuantityFactory.create_quantity(symbols['F'], 266),
-            QuantityFactory.create_quantity(symbols['F'], 322),
-            # Derives -2 (M4, M1)
-            QuantityFactory.create_quantity(symbols['D'], 23826),
-            QuantityFactory.create_quantity(symbols['D'], 28842),
-            QuantityFactory.create_quantity(symbols['D'], 34914),
-
-            # Derives -1 (M2)
-            QuantityFactory.create_quantity(symbols['G'], 95),
-            QuantityFactory.create_quantity(symbols['G'], 115),
-            # Derives -2 (M5, M1, M2)
-            QuantityFactory.create_quantity(symbols['D'], 70395),
-            QuantityFactory.create_quantity(symbols['D'], 85215),
-            QuantityFactory.create_quantity(symbols['D'], 103155),
-        ]
+        expected_quantities = self.expected_quantities
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
                         "evaluate() mutated the original material argument.")
@@ -289,21 +304,7 @@ class GraphTest(unittest.TestCase):
         g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
-        expected_quantities = [
-            QuantityFactory.create_quantity(symbols['A'], 19),
-            QuantityFactory.create_quantity(symbols['A'], 23),
-            QuantityFactory.create_quantity(symbols['B'], 38),
-            QuantityFactory.create_quantity(symbols['B'], 46),
-            QuantityFactory.create_quantity(symbols['C'], 57),
-            QuantityFactory.create_quantity(symbols['C'], 69),
-            QuantityFactory.create_quantity(symbols['G'], 95),
-            QuantityFactory.create_quantity(symbols['G'], 115),
-            QuantityFactory.create_quantity(symbols['F'], 266),
-            QuantityFactory.create_quantity(symbols['F'], 322),
-            QuantityFactory.create_quantity(symbols['D'], 70395),
-            QuantityFactory.create_quantity(symbols['D'], 85215),
-            QuantityFactory.create_quantity(symbols['D'], 103155)
-        ]
+        expected_quantities = self.expected_constrained_quantities
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
                         "evaluate() mutated the original material argument.")
@@ -330,21 +331,7 @@ class GraphTest(unittest.TestCase):
         g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
-        expected_quantities = [
-            QuantityFactory.create_quantity(symbols['A'], 19),
-            QuantityFactory.create_quantity(symbols['A'], 23),
-            QuantityFactory.create_quantity(symbols['B'], 38),
-            QuantityFactory.create_quantity(symbols['B'], 46),
-            QuantityFactory.create_quantity(symbols['C'], 57),
-            QuantityFactory.create_quantity(symbols['C'], 69),
-            QuantityFactory.create_quantity(symbols['G'], 95),
-            QuantityFactory.create_quantity(symbols['G'], 115),
-            QuantityFactory.create_quantity(symbols['F'], 266),
-            QuantityFactory.create_quantity(symbols['F'], 322),
-            QuantityFactory.create_quantity(symbols['D'], 70395),
-            QuantityFactory.create_quantity(symbols['D'], 85215),
-            QuantityFactory.create_quantity(symbols['D'], 103155),
-        ]
+        expected_quantities = self.expected_constrained_quantities
 
         self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
                         "evaluate() mutated the original material argument.")
@@ -370,28 +357,38 @@ class GraphTest(unittest.TestCase):
         # Setup
         propnet = Graph()
         mat1 = Material()
-        mat1.add_quantity(QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permeability'], 1))
-        mat1.add_quantity(QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permeability'], 2))
-        mat1.add_quantity(QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permittivity'], 3))
-        mat1.add_quantity(QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permittivity'], 5))
+        permeability = [QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permeability'], 1),
+                        QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permeability'], 2)]
+        permittivity = [QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permittivity'], 3),
+                        QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permittivity'], 5)]
+
+        for q in permeability + permittivity:
+            mat1.add_quantity(q)
 
         mat1_derived = propnet.evaluate(mat1)
 
         # Expected outputs
-        s_outputs = []
-        s_outputs.append(QuantityFactory.create_quantity('relative_permeability', 1))
-        s_outputs.append(QuantityFactory.create_quantity('relative_permeability', 2))
-        s_outputs.append(QuantityFactory.create_quantity('relative_permittivity', 3))
-        s_outputs.append(QuantityFactory.create_quantity('relative_permittivity', 5))
-        s_outputs.append(QuantityFactory.create_quantity('refractive_index', 3 ** 0.5))
-        s_outputs.append(QuantityFactory.create_quantity('refractive_index', 5 ** 0.5))
-        s_outputs.append(QuantityFactory.create_quantity('refractive_index', 6 ** 0.5))
-        s_outputs.append(QuantityFactory.create_quantity('refractive_index', 10 ** 0.5))
+        s_outputs = permeability + permittivity + [
+            QuantityFactory.create_quantity('refractive_index', 3 ** 0.5,
+                                            provenance=ProvenanceElement(model="refractive_indexfrom_rel_perm",
+                                                                         inputs=[permeability[0],
+                                                                                 permittivity[0]])),
+            QuantityFactory.create_quantity('refractive_index', 5 ** 0.5,
+                                            provenance=ProvenanceElement(model="refractive_indexfrom_rel_perm",
+                                                                         inputs=[permeability[0],
+                                                                                 permittivity[1]])),
+            QuantityFactory.create_quantity('refractive_index', 6 ** 0.5,
+                                            provenance=ProvenanceElement(model="refractive_indexfrom_rel_perm",
+                                                                         inputs=[permeability[1],
+                                                                                 permittivity[0]])),
+            QuantityFactory.create_quantity('refractive_index', 10 ** 0.5,
+                                            provenance=ProvenanceElement(model="refractive_indexfrom_rel_perm",
+                                                                         inputs=[permeability[1],
+                                                                                 permittivity[1]]))]
 
-        st_outputs = []
-        st_outputs.append(DEFAULT_SYMBOLS['relative_permeability'])
-        st_outputs.append(DEFAULT_SYMBOLS['relative_permittivity'])
-        st_outputs.append(DEFAULT_SYMBOLS['refractive_index'])
+        st_outputs = [DEFAULT_SYMBOLS['relative_permeability'],
+                      DEFAULT_SYMBOLS['relative_permittivity'],
+                      DEFAULT_SYMBOLS['refractive_index']]
 
         # Test
         for q_expected in s_outputs:
@@ -904,21 +901,7 @@ class GraphTest(unittest.TestCase):
         g = Graph(symbol_types=symbols, models=models, composite_models=dict())
         material_derived = g.evaluate(material)
 
-        expected_quantities = [
-            QuantityFactory.create_quantity(symbols['A'], 19),
-            QuantityFactory.create_quantity(symbols['A'], 23),
-            QuantityFactory.create_quantity(symbols['B'], 38),
-            QuantityFactory.create_quantity(symbols['B'], 46),
-            QuantityFactory.create_quantity(symbols['C'], 57),
-            QuantityFactory.create_quantity(symbols['C'], 69),
-            QuantityFactory.create_quantity(symbols['G'], 95),
-            QuantityFactory.create_quantity(symbols['G'], 115),
-            QuantityFactory.create_quantity(symbols['F'], 266),
-            QuantityFactory.create_quantity(symbols['F'], 322),
-            QuantityFactory.create_quantity(symbols['D'], 70395),
-            QuantityFactory.create_quantity(symbols['D'], 85215),
-            QuantityFactory.create_quantity(symbols['D'], 103155)
-        ]
+        expected_quantities = self.expected_constrained_quantities
 
         for q in material_derived._symbol_to_quantity[symbols['A']]:
             self.assertTrue(q._provenance.inputs is None)
@@ -961,5 +944,5 @@ class GraphTest(unittest.TestCase):
                                 "provenance improperly calculated")
                 self.assertTrue(expected_quantities[4] in q._provenance.inputs,
                                 "provenance improperly calculated")
-                self.assertTrue(expected_quantities[6] in q._provenance.inputs,
+                self.assertTrue(expected_quantities[12] in q._provenance.inputs,
                                 "provenance improperly calculated")

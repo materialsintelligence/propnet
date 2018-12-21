@@ -664,6 +664,9 @@ class ObjQuantity(BaseQuantity):
         return super().__eq__(other) and \
                self.value == other.value
 
+    def __hash__(self):
+        return super().__hash__()
+
 
 class QuantityFactory(object):
 
@@ -753,7 +756,7 @@ class QuantityFactory(object):
         val = DEFAULT_SYMBOL_VALUES.get(symbol)
         if val is None:
             raise ValueError("No default value for {}".format(symbol))
-        prov = ProvenanceElement(model='default', inputs=[])
+        prov = ProvenanceElement(model='default')
         return QuantityFactory.create_quantity(symbol, val, provenance=prov)
 
     @staticmethod
