@@ -297,8 +297,8 @@ class GraphTest(unittest.TestCase):
                                constraints=["G==0"])
 
         symbols = GraphTest.generate_canonical_symbols()
-        models = GraphTest.generate_canonical_models()
-        models['model4'] = model4
+        models = GraphTest.generate_canonical_models(constrain_model_4=True)
+        # models['model4'] = model4
         del models['model6']
         material = GraphTest.generate_canonical_material(symbols)
         g = Graph(symbol_types=symbols, models=models, composite_models=dict())
@@ -431,6 +431,7 @@ class GraphTest(unittest.TestCase):
         for i in range(0, len(ts)):
             self.assertTrue(ts[i] == ans[i],
                             "Symbol Expansion failed: test - " + str(i))\
+
 
     def test_symbol_expansion_cyclic(self):
         """

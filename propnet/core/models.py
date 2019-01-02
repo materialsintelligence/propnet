@@ -20,7 +20,7 @@ from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
-from propnet.symbols import DEFAULT_UNITS
+from propnet.symbols import DEFAULT_UNITS, Symbol
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ class Model(ABC):
         """
         return remap(symbols, getattr(self, "symbol_property_map", {}))
 
-    def evaluate(self, symbol_quantity_dict, allow_failure=True):
+    def evaluate(self, symbol_quantity_dict_in, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
         if the corresponding input symbol_values represents a valid
@@ -171,14 +171,13 @@ class Model(ABC):
             substitution succeeds
         """
         # Remap symbols and units if symbol map isn't none
-        input_symbol_quantity_dict = {k: v for k, v in symbol_quantity_dict.items()
-                                      if k in self.all_inputs}
 
         symbol_quantity_dict = self.map_properties_to_symbols(
-            symbol_quantity_dict)
+            symbol_quantity_dict_in)
 
-        input_symbol_quantity_dict = self.map_properties_to_symbols(
-            input_symbol_quantity_dict)
+        input_symbol_quantity_dict = {k: v for k, v in symbol_quantity_dict.items()
+                                      if not (k in self.constraint_symbols
+                                              and k not in self.all_input_symbols)}
 
         for (k, v) in symbol_quantity_dict.items():
             # replacing = self.symbol_property_map.get(k, k)
@@ -188,7 +187,7 @@ class Model(ABC):
             symbol_quantity_dict[k] = QuantityFactory.to_quantity(replacing, v)
 
         # TODO: Is it really necessary to strip these?
-        # TODO: maybe this only apself.nameplies to pymodels or things with objects?
+        # TODO: maybe this only applies to pymodels or things with objects?
         # strip units from input and keep for reassignment
         symbol_value_dict = {}
 
@@ -202,7 +201,7 @@ class Model(ABC):
                 symbol_value_dict[symbol] = quantity.value
 
         contains_complex_input = any(NumQuantity.is_complex_type(v) for v in symbol_value_dict.values())
-        input_symbol_value_dict = {k: symbol_value_dict[k] for k in input_symbol_quantity_dict}
+        input_symbol_value_dict = {k: symbol_value_dict[k] for k in input_symbol_quantity_dict.keys()}
 
         # Plug in and check constraints
         try:
@@ -302,6 +301,44 @@ class Model(ABC):
         return self.all_inputs.union(self.all_outputs).union(getattr(self, 'constraint_properties', set()))
 
     @property
+    def input_symbol_sets(self):
+        """
+        Returns (set): set of input property sets
+        """
+        return [set(d['inputs'])
+                for d in self.connections]
+
+    @property
+    def output_symbol_sets(self):
+        """
+        Returns (set): set of output property sets
+        """
+        return [set(d['outputs'])
+                for d in self.connections]
+
+    @property
+    def all_input_symbols(self):
+        """
+        Returns (set): set of all input properties
+        """
+        return set(chain.from_iterable(self.input_symbol_sets))
+
+    @property
+    def all_output_symbols(self):
+        """
+        Returns (set): set of all output properties
+        """
+        return set(chain.from_iterable(self.output_symbol_sets))
+
+    @property
+    def all_symbols(self):
+        """
+        Returns (set): set of all properties
+        """
+        return self.all_input_symbols.union(self.all_output_symbols,
+                                            getattr(self, 'constraint_symbols', set()))
+
+    @property
     def evaluation_list(self):
         """
         Gets everything one needs to call the evaluate method, which
@@ -337,15 +374,17 @@ class Model(ABC):
             units = self.unit_map.get(k)
             known_quantity = QuantityFactory.create_quantity(symbol, known_output, units)
             evaluate_output = evaluate_outputs[k]
-            if isinstance(known_quantity, NumQuantity) or isinstance(known_quantity.value, list):
+            # if isinstance(known_quantity, NumQuantity) or isinstance(known_quantity.value, list):
+            if isinstance(known_quantity, NumQuantity):
                 if not np.allclose(known_quantity.value, evaluate_output.value):
                     errmsg = errmsg.format("evaluate", k, evaluate_output,
                                            k, known_quantity)
                     raise ModelEvaluationError(errmsg)
-            elif known_quantity != evaluate_output:
-                errmsg = errmsg.format("evaluate", k, evaluate_output,
-                                       k, known_quantity)
-                raise ModelEvaluationError(errmsg)
+            else:
+                if known_quantity.value != evaluate_output.value:
+                    errmsg = errmsg.format("evaluate", k, evaluate_output,
+                                           k, known_quantity)
+                    raise ModelEvaluationError(errmsg)
 
         return True
 
@@ -366,7 +405,16 @@ class Model(ABC):
         Returns (set): set of constraint input properties
         """
         # Constraints are defined only in terms of symbols
-        all_syms = [self.map_symbols_to_properties(c.all_inputs)
+
+        return set(self.map_symbols_to_properties(self.constraint_symbols))
+
+    @property
+    def constraint_symbols(self):
+        """
+        Returns (set): set of symbols which are constrained
+        """
+        # Constraints are defined only in terms of symbols
+        all_syms = [c.all_inputs
                     for c in self.constraints]
         return set(chain.from_iterable(all_syms))
 

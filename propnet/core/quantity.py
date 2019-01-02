@@ -270,7 +270,7 @@ class NumQuantity(BaseQuantity):
 
         # Set default units if not supplied
         if not units:
-            logger.warning("WARNING: No units supplied, assuming default units from symbol.")
+            logger.warning("No units supplied, assuming default units from symbol.")
 
         units = units or symbol_type.units
 
