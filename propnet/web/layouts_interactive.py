@@ -173,9 +173,8 @@ def interactive_layout(app):
     )
     def evaluate(input_rows, data, aggregate):
 
-
         quantities = [QuantityFactory.create_quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
-                                      value=ureg.parse_expression(row['Editable Value']))
+                                                      value=ureg.parse_expression(row['Editable Value']))
                       for idx, row in enumerate(input_rows) if row['Editable Value']]
 
         if data and len(data) > 0:

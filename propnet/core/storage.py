@@ -115,6 +115,23 @@ class StorageQuantity(MSONable):
                             "Instead received {}".format(type(rhv)))
         self._provenance = rhv
 
+    # The following property methods are needed for __eq__()
+    @property
+    def symbol(self):
+        return self._symbol_type
+
+    @property
+    def tags(self):
+        return self._tags
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def units(self):
+        return self._units
+
     @classmethod
     def from_quantity(cls, quantity_in):
         if isinstance(quantity_in, StorageQuantity):
@@ -166,6 +183,14 @@ class StorageQuantity(MSONable):
                 "units": self._units.format_babel() if self._units else None,
                 "provenance": self._provenance,
                 "uncertainty": self._uncertainty.to_tuple() if self._uncertainty else None}
+
+    # TODO: Delete this and find some other way to compare equality for tests
+    def __eq__(self, other):
+        if isinstance(other, StorageQuantity):
+            return self.symbol == other.symbol and \
+                   self.tags == other.tags and \
+                   self.provenance == other.provenance and \
+                   self._internal_id == other._internal_id
 
 
 class ProvenanceStoreQuantity(StorageQuantity):
