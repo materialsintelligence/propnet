@@ -69,7 +69,11 @@ class Model(ABC):
         self.name = name
         self.connections = connections
         self.description = description
+        if isinstance(categories, str):
+            categories = [categories]
         self.categories = categories or []
+        if isinstance(implemented_by, str):
+            implemented_by = [implemented_by]
         self.implemented_by = implemented_by or []
         self.references = references_to_bib(references or [])
 
