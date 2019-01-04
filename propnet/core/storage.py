@@ -5,6 +5,7 @@ from propnet import ureg
 from propnet.symbols import DEFAULT_SYMBOLS, Symbol
 import copy
 import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class ProvenanceStore(ProvenanceElement):
                             "Instead received {}".format(type(rhv)))
 
         if not all(isinstance(q, (StorageQuantity, BaseQuantity)) for q in rhv):
-            invalid_types = [type(q) for q in rhv if not isinstance(q, BaseQuantity)]
+            invalid_types = [type(q) for q in rhv if not isinstance(q, (StorageQuantity, BaseQuantity))]
             raise TypeError("Invalid object type(s) provided: {}".format(invalid_types))
 
         self._inputs = [ProvenanceStoreQuantity.from_quantity(q)
@@ -168,6 +169,18 @@ class StorageQuantity(MSONable):
         out._internal_id = self._internal_id
         return out
 
+    def __hash__(self):
+        return hash(self._internal_id)
+
+    def __str__(self):
+        return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __bool__(self):
+        return bool(self.value)
+
     def as_dict(self):
         symbol = self._symbol_type
         if symbol.name in DEFAULT_SYMBOLS.keys() and symbol == DEFAULT_SYMBOLS[symbol.name]:
@@ -186,11 +199,10 @@ class StorageQuantity(MSONable):
 
     # TODO: Delete this and find some other way to compare equality for tests
     def __eq__(self, other):
-        if isinstance(other, StorageQuantity):
-            return self.symbol == other.symbol and \
-                   self.tags == other.tags and \
-                   self.provenance == other.provenance and \
-                   self._internal_id == other._internal_id
+        if isinstance(other, (StorageQuantity, BaseQuantity)):
+            return self._internal_id == other._internal_id
+        else:
+            raise TypeError("Cannot compare type '{}' to '{}'".format(type(self), type(other)))
 
 
 class ProvenanceStoreQuantity(StorageQuantity):
@@ -285,3 +297,6 @@ class ProvenanceStoreQuantity(StorageQuantity):
                 logger.warning("Initializing quantity with no value.")
 
         return super().to_quantity(lookup=lookup)
+
+    def __hash__(self):
+        return super().__hash__()

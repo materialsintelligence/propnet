@@ -69,7 +69,14 @@ class ProvenanceElement(MSONable):
 
     def __eq__(self, other):
         # Ignoring metadata in source. May need to revisit?
-        return self.inputs == other.inputs and self.model == other.model
+        return self.model == other.model and \
+               set(self.inputs or []) == set(other.inputs or [])
+
+    def __hash__(self):
+        hash_value = hash(self.model or 0)
+        for v in self.inputs or []:
+            hash_value = hash_value ^ hash(v)
+        return hash_value
 
 
 class SymbolTree(object):

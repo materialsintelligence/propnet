@@ -92,29 +92,18 @@ class StorageTest(unittest.TestCase):
         }
 
     def test_storage_quantity_from_quantity(self):
-        def rec_type_check(quantity_in):
-            self.assertIsInstance(quantity_in.provenance, ProvenanceStore)
-            for v in quantity_in.provenance.inputs or []:
-                self.assertIsInstance(v, ProvenanceStoreQuantity)
-                rec_type_check(v)
-
         quantities = self.expected_quantities
         d = quantities[10]
 
         storage_quantity = StorageQuantity.from_quantity(d)
         self.assertIsInstance(storage_quantity, StorageQuantity)
         # This checks value equality
-        self.assertEqual(storage_quantity, d)
-        # This checks the type conversion
-        rec_type_check(storage_quantity)
+        self.assertTrue(np.isclose(storage_quantity.value, d.value))
+        self.assertListEqual(storage_quantity.tags, d.tags)
+
+        self.rec_provenance_tree_check(storage_quantity.provenance, d.provenance)
 
     def test_from_provenance_element(self):
-        def rec_type_check(provenance_in):
-            self.assertIsInstance(provenance_in, ProvenanceStore)
-            for v in provenance_in.inputs or []:
-                self.assertIsInstance(v, ProvenanceStoreQuantity)
-                rec_type_check(v.provenance)
-
         quantities = self.expected_quantities
         # a = quantities[0]
         # b = quantities[2]
@@ -122,10 +111,21 @@ class StorageTest(unittest.TestCase):
         d = quantities[10]
 
         storage_provenance = ProvenanceStore.from_provenance_element(d.provenance)
-        # This checks value equality
-        self.assertEqual(storage_provenance, d.provenance)
-        # This checks the type conversion
-        rec_type_check(storage_provenance)
+
+        self.rec_provenance_tree_check(storage_provenance, d.provenance)
 
     def test_provenance_storage_quantity_from_quantity(self):
         pass
+
+    def rec_provenance_tree_check(self, q_storage, q_original):
+        self.assertIsInstance(q_storage, ProvenanceStore)
+        self.assertEqual(q_storage.model, q_original.model)
+        for v in q_storage.inputs or []:
+            self.assertIsInstance(v, ProvenanceStoreQuantity)
+            v_orig = [x for x in q_original.inputs
+                      if x._internal_id == v._internal_id]
+            self.assertEqual(len(v_orig), 1)
+            v_orig = v_orig[0]
+            self.assertTrue(np.isclose(v.value, v_orig.value))
+            self.assertListEqual(v.tags, v_orig.tags)
+            self.rec_provenance_tree_check(v.provenance, v_orig.provenance)

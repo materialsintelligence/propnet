@@ -301,7 +301,7 @@ class QuantityTest(unittest.TestCase):
                                  "units": "dimensionless",
                                  "provenance": q.provenance.as_dict(),
                                  "symbol_type": self.custom_symbol.as_dict(),
-                                 "tags": 'experimental',
+                                 "tags": ['experimental'],
                                  "uncertainty": (1, ())
                                  })
 
@@ -335,7 +335,7 @@ class QuantityTest(unittest.TestCase):
                                  "units": "kelvin",
                                  "provenance": q.provenance.as_dict(),
                                  "symbol_type": "debye_temperature",
-                                 "tags": 'experimental',
+                                 "tags": ['experimental'],
                                  "uncertainty": (10, (('kelvin', 1.0),))
                                  })
 

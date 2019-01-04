@@ -8,6 +8,7 @@ import networkx as nx
 from abc import ABC, abstractmethod
 
 from propnet import ureg
+from pint import DimensionalityError
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_SYMBOLS, DEFAULT_SYMBOL_VALUES
@@ -61,7 +62,11 @@ class BaseQuantity(ABC, MSONable):
 
         self._value = value
         self._symbol_type = symbol_type
-        self._tags = tags
+        self._tags = []
+        if tags:
+            if isinstance(tags, str):
+                tags = [tags]
+            self._tags.extend(tags)
         self._provenance = provenance
         self._internal_id = uuid.uuid4().hex
 
@@ -236,7 +241,10 @@ class BaseQuantity(ABC, MSONable):
         return
 
     def __hash__(self):
-        return hash(self.symbol.name)
+        hash_value = hash(self.symbol.name) ^ hash(self.provenance)
+        for tag in self.tags:
+            hash_value = hash_value ^ hash(tag)
+        return hash_value
 
     def __str__(self):
         return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)
@@ -571,6 +579,8 @@ class NumQuantity(BaseQuantity):
         return d
 
     def __eq__(self, other):
+        if not isinstance(other, NumQuantity):
+            return False
         if not self.uncertainty and not other.uncertainty:
             uncertainty_is_close = True
         elif self.uncertainty and other.uncertainty:
@@ -578,11 +588,17 @@ class NumQuantity(BaseQuantity):
         else:
             return False
 
+        try:
+            value_is_close = np.allclose(self.magnitude, other.value.to(self.units).magnitude)
+        except DimensionalityError:
+            return False
+        except Exception as ex:
+            raise ex
+
         return \
             super().__eq__(other) and \
             uncertainty_is_close and \
-            np.isclose(self.value, other.value) and \
-            self.units == other.units
+            value_is_close
 
     def __hash__(self):
         return super().__hash__()
@@ -661,8 +677,10 @@ class ObjQuantity(BaseQuantity):
         return d
 
     def __eq__(self, other):
-        return super().__eq__(other) and \
-               self.value == other.value
+        if not isinstance(other, ObjQuantity):
+            return False
+
+        return super().__eq__(other) and self.value == other.value
 
     def __hash__(self):
         return super().__hash__()
