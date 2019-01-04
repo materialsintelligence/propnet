@@ -32,6 +32,7 @@ class ModelTest(unittest.TestCase):
             self.assertIsNotNone(model.description)
             self.assertIsNotNone(model.symbol_property_map)
             self.assertIsNotNone(model.implemented_by)
+            self.assertNotEqual(model.implemented_by, [])
             self.assertTrue(isinstance(model.symbol_property_map, dict))
             self.assertTrue(len(model.symbol_property_map.keys()) > 0)
             for key in model.symbol_property_map.keys():
