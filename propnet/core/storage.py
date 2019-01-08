@@ -5,7 +5,6 @@ from propnet import ureg
 from propnet.symbols import DEFAULT_SYMBOLS, Symbol
 import copy
 import logging
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +62,16 @@ class ProvenanceStore(ProvenanceElement):
                                  inputs=inputs,
                                  source=self.source)
 
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.model == other.model and \
+                   set(self.inputs or []) == set(other.inputs or [])
+        elif type(other) is ProvenanceElement:
+            return self.model == other.model and \
+                   set(self.inputs or []) == set(self.from_provenance_element(other).inputs or [])
+        else:
+            return NotImplemented
+
 
 class StorageQuantity(MSONable):
     def __init__(self, data_type=None, symbol_type=None,
@@ -91,12 +100,15 @@ class StorageQuantity(MSONable):
 
     @uncertainty.setter
     def uncertainty(self, rhv):
-        if isinstance(rhv, BaseQuantity):
-            self._uncertainty = StorageQuantity.from_quantity(rhv)
-        elif isinstance(rhv, (StorageQuantity, ureg.Quantity)) or rhv is None:
-            self._uncertainty = rhv
+        if isinstance(rhv, (BaseQuantity, StorageQuantity)):
+            if rhv.uncertainty:
+                self._uncertainty = rhv.value.to(self.units)
+        elif isinstance(rhv, ureg.Quantity):
+            self._uncertainty = rhv.to(self.units)
         elif isinstance(rhv, list):
             self._uncertainty = ureg.Quantity.from_tuple(rhv)
+        elif not rhv:
+            self._uncertainty = None
         else:
             raise TypeError("Expected BaseQuantity, StorageQuantity, pint Quantity, or tuple. "
                             "Instead received {}".format(type(rhv)))
@@ -173,7 +185,7 @@ class StorageQuantity(MSONable):
         return hash(self._internal_id)
 
     def __str__(self):
-        return "<{}, {}, {}>".format(self.symbol.name, self.value, self.tags)
+        return "<{}, {} {}, {}>".format(self.symbol.name, self.value, self.units, self.tags)
 
     def __repr__(self):
         return self.__str__()
@@ -185,24 +197,28 @@ class StorageQuantity(MSONable):
         symbol = self._symbol_type
         if symbol.name in DEFAULT_SYMBOLS.keys() and symbol == DEFAULT_SYMBOLS[symbol.name]:
             symbol = self._symbol_type.name
-        else:
-            symbol = symbol.as_dict()
 
         return {"@module": self.__class__.__module__,
                 "@class": self.__class__.__name__,
                 "internal_id": self._internal_id,
+                "data_type": self._data_type,
                 "symbol_type": symbol,
                 "value": self._value,
                 "units": self._units.format_babel() if self._units else None,
                 "provenance": self._provenance,
+                "tags": self.tags,
                 "uncertainty": self._uncertainty.to_tuple() if self._uncertainty else None}
 
-    # TODO: Delete this and find some other way to compare equality for tests
+    @staticmethod
+    def reconstruct_quantity(d, lookup):
+        return StorageQuantity.from_dict(d).to_quantity(lookup)
+
     def __eq__(self, other):
         if isinstance(other, (StorageQuantity, BaseQuantity)):
-            return self._internal_id == other._internal_id
+            return self._internal_id == other._internal_id and \
+                   self.provenance == other.provenance
         else:
-            raise TypeError("Cannot compare type '{}' to '{}'".format(type(self), type(other)))
+            return NotImplemented
 
 
 class ProvenanceStoreQuantity(StorageQuantity):

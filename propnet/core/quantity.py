@@ -580,25 +580,34 @@ class NumQuantity(BaseQuantity):
 
     def __eq__(self, other):
         if not isinstance(other, NumQuantity):
-            return False
+            return NotImplemented
         if not self.uncertainty and not other.uncertainty:
             uncertainty_is_close = True
         elif self.uncertainty and other.uncertainty:
-            uncertainty_is_close = np.isclose(self.uncertainty, other.uncertainty)
+            uncertainty_is_close = self._values_are_close(self.uncertainty,
+                                                          other.uncertainty)
         else:
             return False
 
-        try:
-            value_is_close = np.allclose(self.magnitude, other.value.to(self.units).magnitude)
-        except DimensionalityError:
-            return False
-        except Exception as ex:
-            raise ex
+        value_is_close = self._values_are_close(self.value, other.value)
 
         return \
             super().__eq__(other) and \
             uncertainty_is_close and \
             value_is_close
+
+    @staticmethod
+    def _values_are_close(lhs, rhs):
+        if not (isinstance(lhs, ureg.Quantity) and isinstance(rhs, ureg.Quantity)):
+            raise TypeError("This method requires two pint Quantity objects")
+        try:
+            is_close = np.allclose(lhs.magnitude,
+                                   rhs.to(lhs.units).magnitude)
+        except DimensionalityError:
+            return False
+        except Exception as ex:
+            raise ex
+        return is_close
 
     def __hash__(self):
         return super().__hash__()

@@ -68,6 +68,8 @@ class ProvenanceElement(MSONable):
         return "{{{}: [{}]}}".format(self.model, pre)
 
     def __eq__(self, other):
+        if type(other) is not type(self):
+            return NotImplemented
         # Ignoring metadata in source. May need to revisit?
         return self.model == other.model and \
                set(self.inputs or []) == set(other.inputs or [])
