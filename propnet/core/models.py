@@ -226,9 +226,10 @@ class Model(ABC):
             source="propnet")
 
         out = self.map_symbols_to_properties(out)
+        unit_map = self.map_symbols_to_properties(self.unit_map)
         for symbol, value in out.items():
             try:
-                quantity = QuantityFactory.create_quantity(symbol, value, self.unit_map.get(symbol),
+                quantity = QuantityFactory.create_quantity(symbol, value, unit_map.get(symbol),
                                                            provenance=provenance)
 
             except SymbolConstraintError as err:
