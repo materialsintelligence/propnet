@@ -10,6 +10,7 @@ from propnet import logger, ureg
 from sympy.parsing.sympy_parser import parse_expr
 import sympy as sp
 
+
 # TODO: This could be split into separate classes
 #       or a base class + subclasses for symbols with
 #       units vs those without
@@ -77,6 +78,10 @@ class Symbol(MSONable):
         if not display_names:
             display_names = [name]
 
+        self.object_type = None
+        self._object_class = None
+        self._object_module = None
+
         if category in ('property', 'condition'):
 
             if object_type is not None:
@@ -103,36 +108,35 @@ class Symbol(MSONable):
                 raise ValueError("Cannot define units for generic objects.")
             units = None # ureg.parse_expression("")  # dimensionless
 
+            if object_type:
+                if isinstance(object_type, type):
+                    self._object_module = object_type.__module__
+                    self._object_class = object_type.__name__
+                    if self._object_module == 'builtins':
+                        self.object_type = self._object_class
+                    else:
+                        self.object_type = ".".join([self._object_module,
+                                                     self._object_class])
+                else:
+                    # Do not try to import the module for security reasons.
+                    # We don't want malicious modules to be automatically imported.
+                    modclass = object_type.rsplit('.', 1)
+                    if len(modclass) == 1:
+                        self._object_module = 'builtins'
+                        self._object_class = modclass[0]
+                    else:
+                        self._object_module, self._object_class = modclass
+
         self.name = name
         self.category = category
         self.units = units
         self.display_names = display_names
         self.display_symbols = display_symbols
-        self.object_type = object_type
-        self._object_class = None
-        self._object_module = None
         self.shape = shape
         self.comment = comment
         self.default_value = default_value
 
-        if object_type:
-            if isinstance(object_type, type):
-                self._object_module = object_type.__module__
-                self._object_class = object_type.__name__
-                if self._object_module == 'builtins':
-                    self.object_type = self._object_class
-                else:
-                    self.object_type = ".".join([self._object_module,
-                                                 self._object_class])
-            else:
-                # Do not try to import the module for security reasons.
-                # We don't want malicious modules to be automatically imported.
-                modclass = object_type.rsplit('.', 1)
-                if len(modclass) == 1:
-                    self._object_module = 'builtins'
-                    self._object_class = modclass[0]
-                else:
-                    self._object_module, self._object_class = modclass
+
 
         # TODO: This should explicity deal with only numerical symbols
         #       because it uses sympy to evaluate them until we make
@@ -202,15 +206,18 @@ class Symbol(MSONable):
             return []
 
     def is_correct_object_type(self, obj):
-        if not self.object_module and not self.object_class:
-            # If no type was specified, just accept any object.
-            # Leave it up to the model evaluation procedures to type check
-            return True
+        if self.category == 'object':
+            if not self.object_module and not self.object_class:
+                # If no type was specified, just accept any object.
+                # Leave it up to the model evaluation procedures to type check
+                return True
 
-        modname = obj.__class__.__module__
-        clsname = obj.__class__.__name__
+            modname = obj.__class__.__module__
+            clsname = obj.__class__.__name__
 
-        return self.object_module == modname and self.object_class == clsname
+            return self.object_module == modname and self.object_class == clsname
+        else:
+            raise AttributeError("Object type not defined for symbol of category '{}'".format(self.category))
 
     def __hash__(self):
         return self.name.__hash__()
