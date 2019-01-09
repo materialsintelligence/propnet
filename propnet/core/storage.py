@@ -96,16 +96,16 @@ class StorageQuantity(MSONable):
 
     @property
     def uncertainty(self):
-        return self._uncertainty
+        # Returns copy so the class member remains immutable
+        return copy.deepcopy(self._uncertainty)
 
     @uncertainty.setter
     def uncertainty(self, rhv):
         if isinstance(rhv, (BaseQuantity, StorageQuantity)):
-            if rhv.uncertainty:
-                self._uncertainty = rhv.value.to(self.units)
+            self._uncertainty = rhv.value.to(self.units)
         elif isinstance(rhv, ureg.Quantity):
             self._uncertainty = rhv.to(self.units)
-        elif isinstance(rhv, list):
+        elif isinstance(rhv, (list, tuple)):
             self._uncertainty = ureg.Quantity.from_tuple(rhv)
         elif not rhv:
             self._uncertainty = None
@@ -139,7 +139,12 @@ class StorageQuantity(MSONable):
 
     @property
     def value(self):
-        return self._value
+        # Return copy so class member remains immutable
+        return copy.deepcopy(self._value)
+
+    @property
+    def magnitude(self):
+        return self.value
 
     @property
     def units(self):

@@ -131,7 +131,16 @@ class BaseQuantity(ABC, MSONable):
         Returns:
             (id): value of the BaseQuantity
         """
-        return self._value
+        # This returns a deep copy of the object holding the value
+        # in case it is a class instance and the user manipulates
+        # the object. This is particularly problematic if a user
+        # calls np.isclose(x.value, y.value) and x and/or y contain
+        # pint Quantities. pint automatically converts the magnitudes
+        # into ndarrays, even for scalars, which breaks the careful
+        # type controlling we do for NumQuantity.
+        # If this is problematic for large ndarrays, for example, then
+        # we can revisit this decision to copy.
+        return copy.deepcopy(self._value)
 
     @abstractmethod
     def units(self):
@@ -440,7 +449,8 @@ class NumQuantity(BaseQuantity):
 
     @property
     def uncertainty(self):
-        return self._uncertainty
+        # See note on BaseQuantity.value about why this is a deep copy
+        return copy.deepcopy(self._uncertainty)
 
     @staticmethod
     def is_acceptable_type(to_check):

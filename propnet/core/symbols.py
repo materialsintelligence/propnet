@@ -116,14 +116,23 @@ class Symbol(MSONable):
         self.default_value = default_value
 
         if object_type:
-            # Do not try to import the module for security reasons.
-            # We don't want malicious modules to be automatically imported.
-            modclass = object_type.rsplit('.', 1)
-            if len(modclass) == 1:
-                self._object_module = 'builtins'
-                self._object_class = modclass[0]
+            if isinstance(object_type, type):
+                self._object_module = object_type.__module__
+                self._object_class = object_type.__name__
+                if self._object_module == 'builtins':
+                    self.object_type = self._object_class
+                else:
+                    self.object_type = ".".join([self._object_module,
+                                                 self._object_class])
             else:
-                self._object_module, self._object_class = modclass
+                # Do not try to import the module for security reasons.
+                # We don't want malicious modules to be automatically imported.
+                modclass = object_type.rsplit('.', 1)
+                if len(modclass) == 1:
+                    self._object_module = 'builtins'
+                    self._object_class = modclass[0]
+                else:
+                    self._object_module, self._object_class = modclass
 
         # TODO: This should explicity deal with only numerical symbols
         #       because it uses sympy to evaluate them until we make
