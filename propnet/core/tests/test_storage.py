@@ -12,6 +12,7 @@ from propnet import ureg
 
 from monty.json import jsanitize, MontyDecoder
 import copy
+from itertools import chain
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,10 +35,15 @@ class StorageTest(unittest.TestCase):
                 'comment': None,
                 'category': 'property',
                 'constraint': None,
-                'default_value': None} for k in ['A', 'B']
+                'default_value': None} for k in ['A', 'B', 'C']
         }
+        self.custom_syms_as_dicts['C'].update(
+            {"units": None,
+             "shape": None,
+             "object_type": "str",
+             "category": "object"})
 
-        self.custom_symbols_json = self.custom_syms_as_dicts
+        self.custom_symbols_json = copy.deepcopy(self.custom_syms_as_dicts)
         for k in ['A', 'B']:
             self.custom_symbols_json[k]['units'] = [1, []]
 
@@ -84,6 +90,7 @@ class StorageTest(unittest.TestCase):
                          'provenance': p}],
              'source': q.provenance.source} for q, p in zip(b, provenances_json['A'])]
 
+
         self.sq_custom_sym_json = copy.deepcopy(self.sq_custom_sym_as_dicts)
         for sym in ['A', 'B']:
             for q, p in zip(self.sq_custom_sym_json[sym], provenances_json[sym]):
@@ -124,14 +131,15 @@ class StorageTest(unittest.TestCase):
         self.sq_canonical_sym_values = {"band_gaps": [3.3, 2.1],
                                         "refractive_indices": [2.316340583741216, 2.593439239956374]}
 
-        provenances_json = {
-            "band_gaps": [{'@module': 'propnet.core.storage',
-                           '@class': 'ProvenanceStore',
-                           'model': None,
-                           'inputs': None,
-                           'source': bg.provenance.source}
-                          for bg in band_gaps]
-        }
+        provenances_json['band_gaps'] = [
+            {'@module': 'propnet.core.storage',
+             '@class': 'ProvenanceStore',
+             'model': None,
+             'inputs': None,
+             'source': bg.provenance.source}
+            for bg in band_gaps
+        ]
+
         provenances_json['refractive_indices'] = [{
             '@module': 'propnet.core.storage',
             '@class': 'ProvenanceStore',
@@ -143,9 +151,10 @@ class StorageTest(unittest.TestCase):
                         'internal_id': bg._internal_id,
                         'tags': [],
                         'provenance': pj}],
-            'source': ri.provenance.source} for bg, pj, ri in zip(band_gaps,
-                                                                  provenances_json['band_gaps'],
-                                                                  refractive_indices)
+            'source': ri.provenance.source}
+            for bg, pj, ri in zip(band_gaps,
+                                  provenances_json['band_gaps'],
+                                  refractive_indices)
         ]
 
         self.sq_canonical_sym_json_no_value = copy.deepcopy(self.sq_canonical_sym_as_dicts_no_value)
@@ -155,8 +164,59 @@ class StorageTest(unittest.TestCase):
                 q['provenance'] = p
 
         self.quantity_with_uncertainty = NumQuantity.from_weighted_mean(b)
+        self.sq_with_uncertainty_as_dict_no_numbers = {
+            '@module': 'propnet.core.storage',
+            '@class': 'StorageQuantity',
+            'internal_id': self.quantity_with_uncertainty._internal_id,
+            'data_type': 'NumQuantity',
+            'symbol_type': symbols['B'],
+            'units': 'dimensionless',
+            'provenance': ProvenanceStore.from_provenance_element(
+                self.quantity_with_uncertainty.provenance),
+            'tags': []}
+
+        provenances_json = {
+            '@module': 'propnet.core.storage',
+            '@class': 'ProvenanceStore',
+            'model': 'aggregation',
+            'inputs': [
+                {'@module': 'propnet.core.storage',
+                 '@class': 'ProvenanceStoreQuantity',
+                 'data_type': 'NumQuantity',
+                 'symbol_type': self.custom_symbols_json['B'],
+                 'internal_id': b['internal_id'],
+                 'tags': [],
+                 'provenance': b['provenance']}
+                for b in self.sq_custom_sym_json['B']],
+            'source': self.quantity_with_uncertainty.provenance.source
+        }
+
+        self.sq_with_uncertainty_json_no_numbers = copy.deepcopy(self.sq_with_uncertainty_as_dict_no_numbers)
+        self.sq_with_uncertainty_json_no_numbers.update({"symbol_type": self.custom_symbols_json['B'],
+                                                         "provenance": provenances_json})
+        self.sq_with_uncertainty_numbers = {"value": 42.0,
+                                            "uncertainty": (4.0, ())}
+
         obj_symbol = symbols['C']
         self.object_quantity = QuantityFactory.create_quantity(obj_symbol, "Test string")
+        self.sq_object_as_dict = copy.deepcopy(self.sq_custom_sym_as_dicts['A'][0])
+        self.sq_object_as_dict.update({
+            "data_type": "ObjQuantity",
+            "symbol_type": symbols['C'],
+            "internal_id": self.object_quantity._internal_id,
+            "value": "Test string",
+            "units": None,
+            "provenance": ProvenanceStore.from_provenance_element(self.object_quantity.provenance)
+        })
+        self.sq_object_json = copy.deepcopy(self.sq_object_as_dict)
+        self.sq_object_json.update(
+            {"symbol_type": self.custom_syms_as_dicts['C'],
+             "provenance": {'@module': 'propnet.core.storage',
+                            '@class': 'ProvenanceStore',
+                            'model': None,
+                            'inputs': None,
+                            'source': self.object_quantity.provenance.source}}
+        )
 
         # This setting allows dict differences to be shown in full
         self.maxDiff = None
@@ -177,108 +237,61 @@ class StorageTest(unittest.TestCase):
             'C': c
         }
 
-    def test_internal_dicts(self):
-        for sym, q in self.quantities_custom_symbol.items():
-            for i in range(2):
-                compare_dict = StorageQuantity.from_quantity(q[i]).as_dict()
-                self.assertDictEqual(compare_dict, self.sq_custom_sym_as_dicts[sym][i])
-                compare_dict = jsanitize(StorageQuantity.from_quantity(q[i]), strict=True)
-                self.assertDictEqual(compare_dict, self.sq_custom_sym_json[sym][i])
+    def test_default_instantiation(self):
+        provenance_store = ProvenanceStore()
+        self.assertIsNone(provenance_store.inputs)
+        self.assertIsNone(provenance_store.model)
+        self.assertIsNone(provenance_store.source)
 
-        for sym, q in self.quantities_canonical_symbol.items():
-            for i in range(2):
-                compare_dict = {k: v for k, v in
-                                StorageQuantity.from_quantity(q[i]).as_dict().items()
-                                if k != "value"}
-                self.assertDictEqual(compare_dict, self.sq_canonical_sym_as_dicts_no_value[sym][i])
-                compare_dict = {k: v for k, v in
-                                jsanitize(StorageQuantity.from_quantity(q[i]), strict=True).items()
-                                if k != "value"}
-                self.assertDictEqual(compare_dict, self.sq_canonical_sym_json_no_value[sym][i])
+        provenance_store_quantity = ProvenanceStoreQuantity()
+        self.assertIsNone(provenance_store_quantity._data_type)
+        self.assertIsNone(provenance_store_quantity.value)
+        self.assertIsNone(provenance_store_quantity._internal_id)
+        self.assertIsNone(provenance_store_quantity.provenance)
+        self.assertIsNone(provenance_store_quantity.symbol)
+        self.assertIsNone(provenance_store_quantity.tags)
+        self.assertIsNone(provenance_store_quantity.uncertainty)
+        self.assertIsNone(provenance_store_quantity.units)
+        self.assertFalse(provenance_store_quantity.is_from_dict())
+        self.assertFalse(provenance_store_quantity.is_value_retrieved())
 
-    @unittest.skip
-    def test_storage_quantity_from_quantity(self):
-        quantities = self.quantities_custom_symbol
-        q = quantities[10]
+        storage_quantity = StorageQuantity()
+        self.assertIsNone(storage_quantity._data_type)
+        self.assertIsNone(storage_quantity.value)
+        self.assertIsNone(storage_quantity._internal_id)
+        self.assertIsNone(storage_quantity.provenance)
+        self.assertIsNone(storage_quantity.symbol)
+        self.assertIsNone(storage_quantity.tags)
+        self.assertIsNone(storage_quantity.uncertainty)
+        self.assertIsNone(storage_quantity.units)
 
-        storage_quantity = StorageQuantity.from_quantity(q)
+    def test_provenance_store_from_provenance_element(self):
+        for q in chain.from_iterable(self.quantities_custom_symbol.values()):
+            storage_provenance = ProvenanceStore.from_provenance_element(q.provenance)
+            # This checks __eq__() for provenance, and that __eq__() commutes
+            self.assertEqual(storage_provenance, q.provenance)
+            self.assertEqual(q.provenance, storage_provenance)
 
-        self.assertIsInstance(storage_quantity, StorageQuantity)
-        self.assertEqual(storage_quantity._data_type, "NumQuantity")
-        # This checks value equality
-        self.assertEqual(storage_quantity.symbol, q.symbol)
-        self.assertIsInstance(storage_quantity.value, int)
-        self.assertTrue(storage_quantity.value, q.magnitude)
-        self.assertListEqual(storage_quantity.tags, q.tags)
-        # This checks __eq__() and that __eq__() commutes
-        self.assertEqual(storage_quantity, q)
-        self.assertEqual(q, storage_quantity)
-        # This checks types and values explicitly in provenance to make sure everything was built correctly.
-        # It is more robust than __eq__()
-        self.rec_provenance_tree_check(storage_quantity.provenance, q.provenance)
+            self.rec_provenance_tree_check(storage_provenance, q.provenance)
 
-        q = self.quantity_with_uncertainty
-        storage_quantity_with_uncertainty = StorageQuantity.from_quantity(q)
-
-        self.assertIsInstance(storage_quantity_with_uncertainty, StorageQuantity)
-        self.assertEqual(storage_quantity_with_uncertainty._data_type, "NumQuantity")
-        self.assertEqual(storage_quantity_with_uncertainty.symbol, q.symbol)
-        self.assertIsInstance(storage_quantity_with_uncertainty.value, float)
-        self.assertTrue(np.isclose(storage_quantity_with_uncertainty.value, q.value))
-        self.assertListEqual(storage_quantity_with_uncertainty.tags, q.tags)
-        self.assertIsNotNone(storage_quantity_with_uncertainty.uncertainty)
-        self.assertIsInstance(storage_quantity_with_uncertainty.uncertainty, ureg.Quantity)
-        self.assertEqual(storage_quantity_with_uncertainty, q)
-
-        # Test ObjQuantity coercion
-        q = self.object_quantity
-        storage_quantity_object = StorageQuantity.from_quantity(q)
-
-        self.assertIsInstance(storage_quantity_object, StorageQuantity)
-        self.assertEqual(storage_quantity_object._data_type, "ObjQuantity")
-        self.assertIsInstance(storage_quantity_object.value, str)
-        self.assertEqual(storage_quantity_object.value, q.value)
-        self.assertEqual(storage_quantity_object.symbol, q.symbol)
-        self.assertListEqual(storage_quantity_object.tags, q.tags)
-        self.assertIsNone(storage_quantity_object.units)
-        self.assertEqual(storage_quantity_object, q)
-
-    @unittest.skip
-    def test_from_provenance_element(self):
-        quantities = self.quantities_custom_symbol
-        # a = quantities[0]
-        # b = quantities[2]
-        # c = quantities[4]
-        q = quantities[10]
-
-        storage_provenance = ProvenanceStore.from_provenance_element(q.provenance)
-        # This checks __eq__() for provenance, and that __eq__() commutes
-        self.assertEqual(storage_provenance, q.provenance)
-        self.assertEqual(q.provenance, storage_provenance)
-
-        self.rec_provenance_tree_check(storage_provenance, q.provenance)
-
-    @unittest.skip
     def test_provenance_storage_quantity_from_quantity(self):
-        quantities = self.quantities_custom_symbol
-        d = quantities[10]
+        for q in chain.from_iterable(self.quantities_custom_symbol.values()):
+            storage_quantity = ProvenanceStoreQuantity.from_quantity(q)
 
-        storage_quantity = ProvenanceStoreQuantity.from_quantity(d)
-
-        self.assertIsInstance(storage_quantity, ProvenanceStoreQuantity)
-        self.assertEqual(storage_quantity._data_type, "NumQuantity")
-        # This checks value equality
-        self.assertEqual(storage_quantity.symbol, d.symbol)
-        self.assertTrue(np.isclose(storage_quantity.value, d.value))
-        self.assertListEqual(storage_quantity.tags, d.tags)
-        self.assertFalse(storage_quantity.is_from_dict())
-        self.assertTrue(storage_quantity.is_value_retrieved())
-        # This checks __eq__() and that __eq__() commutes
-        self.assertEqual(storage_quantity, d)
-        self.assertEqual(d, storage_quantity)
-        # This checks types and values explicitly in provenance to make sure everything was built correctly.
-        # It is more robust than __eq__()
-        self.rec_provenance_tree_check(storage_quantity.provenance, d.provenance)
+            self.assertIsInstance(storage_quantity, ProvenanceStoreQuantity)
+            self.assertEqual(storage_quantity._data_type, "NumQuantity")
+            # This checks value equality
+            self.assertEqual(storage_quantity.symbol, q.symbol)
+            self.assertTrue(np.isclose(storage_quantity.value, q.value))
+            self.assertListEqual(storage_quantity.tags, q.tags)
+            self.assertFalse(storage_quantity.is_from_dict())
+            self.assertTrue(storage_quantity.is_value_retrieved())
+            # This checks __eq__() and that __eq__() commutes
+            self.assertEqual(storage_quantity, q)
+            self.assertEqual(q, storage_quantity)
+            # This checks types and values explicitly in provenance to make sure everything was built correctly.
+            # It is more robust than __eq__()
+            self.rec_provenance_tree_check(storage_quantity.provenance, q.provenance)
 
         q = self.quantity_with_uncertainty
         storage_quantity_with_uncertainty = ProvenanceStoreQuantity.from_quantity(q)
@@ -308,253 +321,222 @@ class StorageTest(unittest.TestCase):
         self.assertIsNone(storage_quantity_object.units)
         self.assertEqual(storage_quantity_object, q)
 
-    @unittest.skip
-    def test_as_dict_from_dict_from_json(self):
+    def test_storage_quantity_from_quantity(self):
+        for q in chain.from_iterable(self.quantities_custom_symbol.values()):
+            storage_quantity = StorageQuantity.from_quantity(q)
+
+            self.assertIsInstance(storage_quantity, StorageQuantity)
+            self.assertEqual(storage_quantity._data_type, "NumQuantity")
+            # This checks value equality
+            self.assertEqual(storage_quantity.symbol, q.symbol)
+            self.assertIsInstance(storage_quantity.value, int)
+            self.assertTrue(storage_quantity.value, q.magnitude)
+            self.assertListEqual(storage_quantity.tags, q.tags)
+            # This checks __eq__() and that __eq__() commutes
+            self.assertEqual(storage_quantity, q)
+            self.assertEqual(q, storage_quantity)
+            # This checks types and values explicitly in provenance to make sure everything was built correctly.
+            # It is more robust than __eq__()
+            self.rec_provenance_tree_check(storage_quantity.provenance, q.provenance)
+
+        q = self.quantity_with_uncertainty
+        storage_quantity_with_uncertainty = StorageQuantity.from_quantity(q)
+
+        self.assertIsInstance(storage_quantity_with_uncertainty, StorageQuantity)
+        self.assertEqual(storage_quantity_with_uncertainty._data_type, "NumQuantity")
+        self.assertEqual(storage_quantity_with_uncertainty.symbol, q.symbol)
+        self.assertIsInstance(storage_quantity_with_uncertainty.value, float)
+        self.assertTrue(np.isclose(storage_quantity_with_uncertainty.value, q.value))
+        self.assertListEqual(storage_quantity_with_uncertainty.tags, q.tags)
+        self.assertIsNotNone(storage_quantity_with_uncertainty.uncertainty)
+        self.assertIsInstance(storage_quantity_with_uncertainty.uncertainty, ureg.Quantity)
+        self.assertEqual(storage_quantity_with_uncertainty, q)
+
+        # Test ObjQuantity coercion
+        q = self.object_quantity
+        storage_quantity_object = StorageQuantity.from_quantity(q)
+
+        self.assertIsInstance(storage_quantity_object, StorageQuantity)
+        self.assertEqual(storage_quantity_object._data_type, "ObjQuantity")
+        self.assertIsInstance(storage_quantity_object.value, str)
+        self.assertEqual(storage_quantity_object.value, q.value)
+        self.assertEqual(storage_quantity_object.symbol, q.symbol)
+        self.assertListEqual(storage_quantity_object.tags, q.tags)
+        self.assertIsNone(storage_quantity_object.units)
+        self.assertEqual(storage_quantity_object, q)
+
+    def test_as_dict_as_json(self):
+        # Check symbols to be sure they are still ok
+        for name, sym in self.generate_symbols().items():
+            compare_dict = sym.as_dict()
+            self.assertDictEqual(compare_dict, self.custom_syms_as_dicts[name])
+            compare_dict = jsanitize(sym, strict=True)
+            self.assertDictEqual(compare_dict, self.custom_symbols_json[name])
+
+        # Quantities with custom symbols
+        for sym, q in self.quantities_custom_symbol.items():
+            for qq, expected_dict, expected_json in zip(q,
+                                                        self.sq_custom_sym_as_dicts[sym],
+                                                        self.sq_custom_sym_json[sym]):
+                sq = StorageQuantity.from_quantity(qq)
+                compare_dict = sq.as_dict()
+                self.assertDictEqual(compare_dict, expected_dict)
+                compare_dict = jsanitize(sq, strict=True)
+                self.assertDictEqual(compare_dict, expected_json)
+
+        # Quantities with canonical symbols directly calculated from a real model
+        for sym, q in self.quantities_canonical_symbol.items():
+            for qq, expected_dict, expected_json in zip(q,
+                                                        self.sq_canonical_sym_as_dicts_no_value[sym],
+                                                        self.sq_canonical_sym_json_no_value[sym]):
+                sq = StorageQuantity.from_quantity(qq)
+                compare_dict = sq.as_dict()
+                self.assertTrue(np.isclose(qq.magnitude, compare_dict['value']))
+                compare_dict.pop('value')
+                self.assertDictEqual(compare_dict, expected_dict)
+                compare_dict = jsanitize(sq, strict=True)
+                self.assertTrue(np.isclose(qq.magnitude, compare_dict['value']))
+                compare_dict.pop('value')
+                self.assertDictEqual(compare_dict, expected_json)
+
+        # Quantity with uncertainty (calculated from mean), using custom symbols
+        sq = StorageQuantity.from_quantity(self.quantity_with_uncertainty)
+        compare_dict = sq.as_dict()
+        self.assertTrue(np.isclose(self.quantity_with_uncertainty.magnitude, compare_dict['value']))
+        uncertainty_value, uncertainty_units = compare_dict['uncertainty']
+        self.assertTrue(np.isclose(self.quantity_with_uncertainty.uncertainty.magnitude,
+                                   uncertainty_value))
+        self.assertEqual(uncertainty_units, ())
+        compare_dict.pop('value')
+        compare_dict.pop('uncertainty')
+        self.assertDictEqual(self.sq_with_uncertainty_as_dict_no_numbers, compare_dict)
+
+        compare_dict = jsanitize(sq, strict=True)
+        self.assertTrue(np.isclose(self.quantity_with_uncertainty.magnitude, compare_dict['value']))
+        uncertainty_value, uncertainty_units = compare_dict['uncertainty']
+        self.assertTrue(np.isclose(self.quantity_with_uncertainty.uncertainty.magnitude,
+                                   uncertainty_value))
+        self.assertEqual(uncertainty_units, [])
+        compare_dict.pop('value')
+        compare_dict.pop('uncertainty')
+        self.assertDictEqual(self.sq_with_uncertainty_json_no_numbers, compare_dict)
+
+        # Quantity that is an object, using a custom symbol
+        sq = StorageQuantity.from_quantity(self.object_quantity)
+        compare_dict = sq.as_dict()
+        self.assertDictEqual(self.sq_object_as_dict, compare_dict)
+        compare_dict = jsanitize(sq, strict=True)
+        self.assertDictEqual(self.sq_object_json, compare_dict)
+
+    def test_from_dict_from_json(self):
         # Test with non-canonical symbol
-        quantities = self.quantities_custom_symbol
-        original_quantity = quantities[2]
-        q = StorageQuantity.from_quantity(original_quantity)
-        d = q.as_dict()
-        expected_dict = {"@module": "propnet.core.storage",
-                         "@class": "StorageQuantity",
-                         "internal_id": q._internal_id,
-                         "data_type": "NumQuantity",
-                         "symbol_type": q.symbol,
-                         "value": 38,
-                         "units": "dimensionless",
-                         "provenance": q.provenance,
-                         "tags": [],
-                         "uncertainty": None}
-        self.assertIsInstance(d['symbol_type'], Symbol)
-        self.assertDictEqual(d, expected_dict)
+        for original_quantity in chain.from_iterable(self.quantities_custom_symbol.values()):
+            q = StorageQuantity.from_quantity(original_quantity)
+            d = q.as_dict()
+            q_from_dict = StorageQuantity.from_dict(d)
+            self.assertIsInstance(q_from_dict, StorageQuantity)
+            self.assertEqual(q_from_dict._data_type, "NumQuantity")
+            self.assertEqual(q_from_dict.symbol, q.symbol)
+            self.assertTrue(np.isclose(q_from_dict.value, q.magnitude))
+            self.assertEqual(q_from_dict.units, q.units.format_babel())
+            self.assertListEqual(q_from_dict.tags, q.tags)
+            self.assertEqual(q_from_dict, q)
+            self.rec_provenance_tree_check(q_from_dict.provenance, original_quantity.provenance)
 
-        q_from_dict = StorageQuantity.from_dict(d)
-        self.assertIsInstance(q_from_dict, StorageQuantity)
-        self.assertEqual(q_from_dict._data_type, "NumQuantity")
-        self.assertEqual(q_from_dict.symbol, q.symbol)
-        self.assertTrue(np.isclose(q_from_dict.value, q.magnitude))
-        self.assertListEqual(q_from_dict.tags, q.tags)
-        self.assertEqual(q_from_dict, q)
-        self.rec_provenance_tree_check(q_from_dict.provenance, original_quantity.provenance)
-
-        json_dict = jsanitize(q, strict=True)
-        expected_json_dict = {"@module": "propnet.core.storage",
-                              "@class": "StorageQuantity",
-                              "internal_id": q._internal_id,
-                              "data_type": "NumQuantity",
-                              "symbol_type": {"@module": "propnet.core.symbols",
-                                              "@class": "Symbol",
-                                              "name": "B",
-                                              "display_names": ["B"],
-                                              "display_symbols": ["B"],
-                                              "units": [1, []],
-                                              "shape": [1],
-                                              "object_type": None,
-                                              "comment": None,
-                                              "category": "property",
-                                              "constraint": None,
-                                              "default_value": None},
-                              "value": 38,
-                              "units": "dimensionless",
-                              "provenance": {"@module": "propnet.core.storage",
-                                             "@class": "ProvenanceStore",
-                                             "model": "model1",
-                                             "source": q.provenance.source,
-                                             "inputs": [{'@module': 'propnet.core.storage',
-                                                         '@class': 'ProvenanceStoreQuantity',
-                                                         'data_type': 'NumQuantity',
-                                                         'symbol_type': {'@module': 'propnet.core.symbols',
-                                                                         '@class': 'Symbol',
-                                                                         'name': 'A',
-                                                                         'display_names': ['A'],
-                                                                         'display_symbols': ['A'],
-                                                                         'units': [1, []],
-                                                                         'shape': [1],
-                                                                         'object_type': None,
-                                                                         'comment': None,
-                                                                         'category': 'property',
-                                                                         'constraint': None,
-                                                                         'default_value': None},
-                                                         'internal_id': q.provenance.inputs[0]._internal_id,
-                                                         'tags': [],
-                                                         'provenance': {'@module': 'propnet.core.storage',
-                                                                        '@class': 'ProvenanceStore',
-                                                                        'model': None,
-                                                                        'inputs': None,
-                                                                        'source': q.provenance.inputs[
-                                                                            0].provenance.source}}]},
-                              "tags": [],
-                              "uncertainty": None}
-        self.assertDictEqual(json_dict, expected_json_dict)
-
-        q_from_json_dict = MontyDecoder().process_decoded(json_dict)
-        self.assertIsInstance(q_from_json_dict, StorageQuantity)
-        self.assertEqual(q_from_json_dict._data_type, "NumQuantity")
-        self.assertEqual(q_from_json_dict.symbol, q.symbol)
-        self.assertTrue(np.isclose(q_from_json_dict.value, q.magnitude))
-        self.assertListEqual(q_from_json_dict.tags, q.tags)
-        self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)
-        self.assertEqual(q_from_json_dict, q)
-        self.rec_provenance_tree_check(q_from_json_dict.provenance, original_quantity.provenance,
-                                       check_from_dict=True)
+            json_dict = jsanitize(q, strict=True)
+            q_from_json_dict = MontyDecoder().process_decoded(json_dict)
+            self.assertIsInstance(q_from_json_dict, StorageQuantity)
+            self.assertEqual(q_from_json_dict._data_type, "NumQuantity")
+            self.assertEqual(q_from_json_dict.symbol, q.symbol)
+            self.assertTrue(np.isclose(q_from_json_dict.value, q.magnitude))
+            self.assertEqual(q_from_json_dict.units, q.units.format_babel())
+            self.assertListEqual(q_from_json_dict.tags, q.tags)
+            self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)
+            self.assertEqual(q_from_json_dict, q)
+            self.rec_provenance_tree_check(q_from_json_dict.provenance, original_quantity.provenance,
+                                           check_from_dict=True)
 
         # Test with canonical symbol
-        original_quantity = self.quantities_canonical_symbol[2]
+        for original_quantity in chain.from_iterable(self.quantities_canonical_symbol.values()):
+            q = StorageQuantity.from_quantity(original_quantity)
+            d = q.as_dict()
+            q_from_dict = StorageQuantity.from_dict(d)
+            self.assertIsInstance(q_from_dict, StorageQuantity)
+            self.assertEqual(q_from_dict._data_type, "NumQuantity")
+            self.assertEqual(q_from_dict.symbol, q.symbol)
+            self.assertTrue(np.isclose(q_from_dict.value, q.magnitude))
+            self.assertEqual(q_from_dict.units, q.units.format_babel())
+            self.assertListEqual(q_from_dict.tags, q.tags)
+            self.assertEqual(q_from_dict, q)
+            self.rec_provenance_tree_check(q_from_dict.provenance, original_quantity.provenance)
+
+            json_dict = jsanitize(q, strict=True)
+            q_from_json_dict = MontyDecoder().process_decoded(json_dict)
+            self.assertIsInstance(q_from_json_dict, StorageQuantity)
+            self.assertEqual(q_from_json_dict._data_type, "NumQuantity")
+            self.assertEqual(q_from_json_dict.symbol, q.symbol)
+            self.assertTrue(np.isclose(q_from_json_dict.magnitude, q.magnitude))
+            self.assertEqual(q_from_json_dict.units, q.units.format_babel())
+            self.assertListEqual(q_from_json_dict.tags, q.tags)
+            self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)
+            self.assertEqual(q_from_json_dict, q)
+            self.rec_provenance_tree_check(q_from_json_dict.provenance, original_quantity.provenance,
+                                           check_from_dict=True)
+
+        # Test with quantity with uncertainty, custom symbol
+        original_quantity = self.quantity_with_uncertainty
         q = StorageQuantity.from_quantity(original_quantity)
         d = q.as_dict()
-        expected_dict = {"@module": "propnet.core.storage",
-                         "@class": "StorageQuantity",
-                         "internal_id": q._internal_id,
-                         "data_type": "NumQuantity",
-                         "symbol_type": "refractive_index",
-                         "value": 1.3,
-                         "units": "dimensionless",
-                         "provenance": q.provenance,
-                         "tags": [],
-                         "uncertainty": None}
-
-        self.assertIsInstance(d['symbol_type'], str)
-        self.assertDictEqual(d, expected_dict)
-
         q_from_dict = StorageQuantity.from_dict(d)
         self.assertIsInstance(q_from_dict, StorageQuantity)
         self.assertEqual(q_from_dict._data_type, "NumQuantity")
         self.assertEqual(q_from_dict.symbol, q.symbol)
         self.assertTrue(np.isclose(q_from_dict.value, q.magnitude))
+        self.assertEqual(q_from_dict.units, q.units.format_babel())
+        self.assertTrue(np.isclose(q_from_dict.uncertainty, q.uncertainty))
         self.assertListEqual(q_from_dict.tags, q.tags)
         self.assertEqual(q_from_dict, q)
         self.rec_provenance_tree_check(q_from_dict.provenance, original_quantity.provenance)
 
         json_dict = jsanitize(q, strict=True)
-
-        canonical_expected_json_dict = expected_json_dict
-        canonical_expected_json_dict.update({"symbol_type": "refractive_index",
-                                             "value": 1.3,
-                                             "units": "dimensionless",
-                                             "internal_id": q._internal_id})
-        canonical_expected_json_dict['provenance'].update({"model": "modelA",
-                                                           "source": q.provenance.source})
-        canonical_expected_json_dict['provenance']['inputs'][0].update({"symbol_type": "band_gap",
-                                                                        "internal_id": q.provenance.inputs[
-                                                                            0]._internal_id})
-        canonical_expected_json_dict['provenance']['inputs'][0]['provenance']['source'] = q.provenance.inputs[
-            0].provenance.source
-
-        self.assertDictEqual(json_dict, canonical_expected_json_dict)
-
         q_from_json_dict = MontyDecoder().process_decoded(json_dict)
         self.assertIsInstance(q_from_json_dict, StorageQuantity)
         self.assertEqual(q_from_json_dict._data_type, "NumQuantity")
         self.assertEqual(q_from_json_dict.symbol, q.symbol)
         self.assertTrue(np.isclose(q_from_json_dict.magnitude, q.magnitude))
+        self.assertEqual(q_from_json_dict.units, q.units.format_babel())
+        self.assertTrue(np.isclose(q_from_json_dict.uncertainty, q.uncertainty))
         self.assertListEqual(q_from_json_dict.tags, q.tags)
         self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)
         self.assertEqual(q_from_json_dict, q)
         self.rec_provenance_tree_check(q_from_json_dict.provenance, original_quantity.provenance,
                                        check_from_dict=True)
 
-        # Test with symbol with uncertainty
-        original_quantity = self.quantity_with_uncertainty
+        # Test with object quantity
+        original_quantity = self.object_quantity
         q = StorageQuantity.from_quantity(original_quantity)
         d = q.as_dict()
-        expected_dict = {"@module": "propnet.core.storage",
-                         "@class": "StorageQuantity",
-                         "internal_id": q._internal_id,
-                         "data_type": "NumQuantity",
-                         "symbol_type": q.symbol,
-                         "units": "dimensionless",
-                         "provenance": q.provenance,
-                         "tags": []}
-        self.assertIsInstance(d['symbol_type'], Symbol)
-        self.assertTrue(np.isclose(d['value'], 42.0))
-        self.assertTrue(np.isclose(d['uncertainty'][0], 4.0))
-        self.assertEqual(d['uncertainty'][1], ())
-        value = d.pop('value')
-        uncertainty = d.pop('uncertainty')
-        self.assertDictEqual(d, expected_dict)
-        d['value'] = value
-        d['uncertainty'] = uncertainty
-
         q_from_dict = StorageQuantity.from_dict(d)
         self.assertIsInstance(q_from_dict, StorageQuantity)
-        self.assertEqual(q_from_dict._data_type, "NumQuantity")
+        self.assertEqual(q_from_dict._data_type, "ObjQuantity")
         self.assertEqual(q_from_dict.symbol, q.symbol)
-        self.assertTrue(np.isclose(q_from_dict.value, q.magnitude))
-        self.assertTrue(np.isclose(q_from_dict.uncertainty.magnitude,
-                                   q.uncertainty.magnitude))
-        np.isclose(q_from_dict.uncertainty, q.uncertainty)
-        self.assertEqual(q_from_dict.uncertainty.units,
-                         q.uncertainty.units)
+        self.assertEqual(q_from_dict.value, q.value)
         self.assertListEqual(q_from_dict.tags, q.tags)
         self.assertEqual(q_from_dict, q)
         self.rec_provenance_tree_check(q_from_dict.provenance, original_quantity.provenance)
 
         json_dict = jsanitize(q, strict=True)
-
-        self.assertTrue(np.isclose(json_dict['value'], 42.0))
-        self.assertTrue(np.isclose(json_dict['uncertainty'][0], 4.0))
-        self.assertEqual(json_dict['uncertainty'][1], [])
-        value = json_dict.pop('value')
-        uncertainty = json_dict.pop('uncertainty')
-        uncertainty_expected_json_dict = expected_json_dict
-        uncertainty_expected_json_dict['internal_id'] = q._internal_id
-        uncertainty_expected_json_dict['provenance'].update({"model": "aggregation",
-                                                             "source": q.provenance.source})
-        uncertainty_expected_json_dict['provenance']['inputs'] = [
-            {'@module': 'propnet.core.storage',
-             '@class': 'ProvenanceStoreQuantity',
-             'data_type': 'NumQuantity',
-             'symbol_type': uncertainty_expected_json_dict['symbol'],
-             'internal_id': q.provenance.inputs[0]._internal_id,
-             'tags': [],
-             'provenance': {'@module': 'propnet.core.storage', '@class': 'ProvenanceStore', 'model': 'model1',
-                            'inputs': [
-                                {'@module': 'propnet.core.storage', '@class': 'ProvenanceStoreQuantity',
-                                 'data_type': 'NumQuantity',
-                                 'symbol_type': {'@module': 'propnet.core.symbols', '@class': 'Symbol', 'name': 'A',
-                                                 'display_names': ['A'], 'display_symbols': ['A'], 'units': [1, []],
-                                                 'shape': [1],
-                                                 'object_type': None, 'comment': None, 'category': 'property',
-                                                 'constraint': None,
-                                                 'default_value': None},
-                                 'internal_id': 'c4f2349738bf45e0bbcc4e169e5958aa', 'tags': [],
-                                 'provenance': {'@module': 'propnet.core.storage', '@class': 'ProvenanceStore',
-                                                'model': None,
-                                                'inputs': None,
-                                                'source': {'source': None,
-                                                           'source_key': 'c4f2349738bf45e0bbcc4e169e5958aa',
-                                                           'date_created': '2019-01-08 12:19:47'}}}],
-                            'source': {'source': None, 'date_created': '2019-01-08 12:19:47',
-                                       'source_key': '3ab8d320a80a4a709ef408e44ca28a2e'}}},
-            {'@module': 'propnet.core.storage', '@class': 'ProvenanceStoreQuantity', 'data_type': 'NumQuantity',
-             'symbol_type': {'@module': 'propnet.core.symbols', '@class': 'Symbol', 'name': 'B', 'display_names': ['B'],
-                             'display_symbols': ['B'], 'units': [1, []], 'shape': [1], 'object_type': None,
-                             'comment': None, 'category': 'property', 'constraint': None, 'default_value': None},
-             'internal_id': 'dadb18e94336472497dcb12e9e00d616', 'tags': [],
-             'provenance': {'@module': 'propnet.core.storage', '@class': 'ProvenanceStore', 'model': 'model1',
-                            'inputs': [
-                                {'@module': 'propnet.core.storage', '@class': 'ProvenanceStoreQuantity',
-                                 'data_type': 'NumQuantity',
-                                 'symbol_type': {'@module': 'propnet.core.symbols', '@class': 'Symbol', 'name': 'A',
-                                                 'display_names': ['A'], 'display_symbols': ['A'], 'units': [1, []],
-                                                 'shape': [1],
-                                                 'object_type': None, 'comment': None, 'category': 'property',
-                                                 'constraint': None,
-                                                 'default_value': None},
-                                 'internal_id': 'c894fcedb48e4eee87e26bb75b5d02f8', 'tags': [],
-                                 'provenance': {'@module': 'propnet.core.storage', '@class': 'ProvenanceStore',
-                                                'model': None,
-                                                'inputs': None,
-                                                'source': {'source': None,
-                                                           'source_key': 'c894fcedb48e4eee87e26bb75b5d02f8',
-                                                           'date_created': '2019-01-08 12:19:47'}}}],
-                            'source': {'source': None, 'date_created': '2019-01-08 12:19:47',
-                                       'source_key': 'dadb18e94336472497dcb12e9e00d616'}}}]
+        q_from_json_dict = MontyDecoder().process_decoded(json_dict)
+        self.assertIsInstance(q_from_json_dict, StorageQuantity)
+        self.assertEqual(q_from_json_dict._data_type, "ObjQuantity")
+        self.assertEqual(q_from_json_dict.symbol, q.symbol)
+        self.assertEqual(q_from_json_dict.value, q.value)
+        self.assertListEqual(q_from_json_dict.tags, q.tags)
+        self.assertEqual(q_from_json_dict, q)
+        self.rec_provenance_tree_check(q_from_json_dict.provenance, original_quantity.provenance,
+                                       check_from_dict=True)
 
     def test_value_lookup(self):
-        pass
-
-    def test_default_instantiation(self):
         pass
 
     def rec_provenance_tree_check(self, q_storage, q_original, check_from_dict=False):
