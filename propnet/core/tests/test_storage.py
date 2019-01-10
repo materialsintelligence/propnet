@@ -5,7 +5,7 @@ import numpy as np
 
 from propnet.core.storage import StorageQuantity, ProvenanceStore, ProvenanceStoreQuantity
 from propnet.core.symbols import Symbol
-from propnet.core.quantity import QuantityFactory, NumQuantity
+from propnet.core.quantity import QuantityFactory, NumQuantity, BaseQuantity
 from propnet.core.provenance import ProvenanceElement
 from propnet.models import DEFAULT_MODEL_DICT
 from propnet import ureg
@@ -89,7 +89,6 @@ class StorageTest(unittest.TestCase):
                          'tags': [],
                          'provenance': p}],
              'source': q.provenance.source} for q, p in zip(b, provenances_json['A'])]
-
 
         self.sq_custom_sym_json = copy.deepcopy(self.sq_custom_sym_as_dicts)
         for sym in ['A', 'B']:
@@ -301,8 +300,8 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(storage_quantity_with_uncertainty.symbol, q.symbol)
         self.assertTrue(np.isclose(storage_quantity_with_uncertainty.value, q.value))
         self.assertListEqual(storage_quantity_with_uncertainty.tags, q.tags)
-        self.assertFalse(storage_quantity.is_from_dict())
-        self.assertTrue(storage_quantity.is_value_retrieved())
+        self.assertFalse(storage_quantity_with_uncertainty.is_from_dict())
+        self.assertTrue(storage_quantity_with_uncertainty.is_value_retrieved())
         self.assertIsNotNone(storage_quantity_with_uncertainty.uncertainty)
         self.assertIsInstance(storage_quantity_with_uncertainty.uncertainty, ureg.Quantity)
         self.assertEqual(storage_quantity_with_uncertainty, q)
@@ -316,8 +315,8 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(storage_quantity_object.value, q.value)
         self.assertEqual(storage_quantity_object.symbol, q.symbol)
         self.assertListEqual(storage_quantity_object.tags, q.tags)
-        self.assertFalse(storage_quantity.is_from_dict())
-        self.assertTrue(storage_quantity.is_value_retrieved())
+        self.assertFalse(storage_quantity_object.is_from_dict())
+        self.assertTrue(storage_quantity_object.is_value_retrieved())
         self.assertIsNone(storage_quantity_object.units)
         self.assertEqual(storage_quantity_object, q)
 
@@ -537,7 +536,87 @@ class StorageTest(unittest.TestCase):
                                        check_from_dict=True)
 
     def test_value_lookup(self):
-        pass
+        def rec_verify_lookup(p_lookup, p_original):
+            self.assertIsInstance(p_lookup, ProvenanceElement)
+            for v in p_lookup.inputs or []:
+                self.assertIsInstance(v, BaseQuantity)
+                v_orig = [x for x in p_original.inputs
+                          if x._internal_id == v._internal_id]
+                self.assertEqual(len(v_orig), 1)
+                v_orig = v_orig[0]
+                self.assertIsNotNone(v.value)
+                if isinstance(v, NumQuantity):
+                    self.assertTrue(np.isclose(v.value, v_orig.value))
+                    if v_orig.uncertainty:
+                        self.assertTrue(np.isclose(v.uncertainty, v_orig.uncertainty))
+                else:
+                    self.assertEqual(v.value, v_orig.value)
+                rec_verify_lookup(v.provenance, v_orig.provenance)
+
+        lookup_dict = self.get_lookup_dict()
+        lookup_fun = self.lookup_fun
+
+        quantities = list(chain.from_iterable(self.quantities_custom_symbol.values())) + \
+                     list(chain.from_iterable(self.quantities_canonical_symbol.values())) + \
+                     [self.quantity_with_uncertainty, self.object_quantity]
+        for q in quantities:
+            json_dict = jsanitize(StorageQuantity.from_quantity(q), strict=True)
+            sq_json = MontyDecoder().process_decoded(json_dict)
+            if sq_json.provenance.inputs:
+                for v in sq_json.provenance.inputs:
+                    self.assertIsNone(v.value)
+            q_json_dict = sq_json.to_quantity(lookup=lookup_dict)
+            q_json_fun = sq_json.to_quantity(lookup=lookup_fun)
+            for q_json in (q_json_dict, q_json_fun):
+                self.assertIsInstance(q_json, type(q))
+                if isinstance(q_json, NumQuantity):
+                    self.assertTrue(np.isclose(q_json.value, q.value))
+                    if q.uncertainty:
+                        self.assertTrue(np.isclose(q_json.uncertainty, q.uncertainty))
+                else:
+                    self.assertEqual(q_json.value, q.value)
+                rec_verify_lookup(q_json.provenance, q.provenance)
+
+            if q.provenance.inputs:
+                with self.assertRaises(ValueError):
+                    q_json = sq_json.to_quantity(lookup=self.lookup_fun_missing_value)
+
+                with self.assertRaises(TypeError):
+                    q_json = sq_json.to_quantity(lookup=self.lookup_fun_incorrect_type)
+
+                key = q.provenance.inputs[0]._internal_id
+                key_lookup = lookup_dict.pop(key)
+                with self.assertRaises(ValueError):
+                    q_json = sq_json.to_quantity(lookup=lookup_dict)
+                with self.assertRaises(ValueError):
+                    q_json = sq_json.to_quantity(lookup=self.lookup_fun_key_not_found)
+                lookup_dict[key] = key_lookup
+
+    def lookup_fun(self, key):
+        return self.get_lookup_dict().get(key)
+
+    def lookup_fun_missing_value(self, key):
+        d = self.lookup_fun(key)
+        d.pop('value') if d else None
+        return d
+
+    def lookup_fun_incorrect_type(self, key):
+        return key
+
+    def lookup_fun_key_not_found(self, key):
+        # Lookup function expects None when key is not found
+        return None
+
+    def get_lookup_dict(self):
+        lookup_dict = {}
+        quantities = list(chain.from_iterable(self.quantities_custom_symbol.values())) + \
+                     list(chain.from_iterable(self.quantities_canonical_symbol.values())) + \
+                     [self.quantity_with_uncertainty, self.object_quantity]
+        for q in quantities:
+            lookup_dict[q._internal_id] = {"value": q.value,
+                                           "units": q.units,
+                                           "uncertainty": q.uncertainty}
+        return lookup_dict
 
     def rec_provenance_tree_check(self, q_storage, q_original, check_from_dict=False):
         self.assertIsInstance(q_storage, ProvenanceStore)
@@ -553,7 +632,9 @@ class StorageTest(unittest.TestCase):
                 self.assertFalse(v.is_value_retrieved())
             elif NumQuantity.is_acceptable_type(v.value):
                 self.assertTrue(np.isclose(v.value, v_orig.value))
+                self.assertTrue(v.is_value_retrieved())
             else:
                 self.assertEqual(v.value, v_orig.value)
+                self.assertTrue(v.is_value_retrieved())
             self.assertListEqual(v.tags, v_orig.tags)
             self.rec_provenance_tree_check(v.provenance, v_orig.provenance, check_from_dict)

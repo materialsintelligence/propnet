@@ -303,29 +303,8 @@ class NumQuantity(BaseQuantity):
                 value_in = ureg.Quantity(value, units)
             else:
                 raise TypeError('Non-numerical numpy array passed to constructor: {}'.format(type(value)))
-
-        # elif isinstance(value, NumQuantity):
-        #     # We can't return a new object from __init__, so we're just going to
-        #     # copy the attributes needed to the new object
-        #     if symbol_type.name is not value._symbol_type.name:
-        #         raise ValueError("Passed symbol_type '{}' does not match symbol_type of "
-        #                          "passed value NumQuantity '{}'".format(self._symbol_type.name,
-        #                                                                 value._symbol_type.name))
-        #
-        #     try:
-        #         value_in = ureg.Quantity(value.magnitude, value.units)
-        #         value_in = value_in.to(units)
-        #     except Exception as ex:
-        #         if type(ex).__name__ is "DimensionalityError":
-        #             raise ValueError("Specified units {} incompatible"
-        #                              "with symbol_type {}".format(units, symbol_type.name))
-        #         else:
-        #             raise ex
-        #
-        #     tags = tags or value._tags
-        #     provenance = provenance or value._provenance
         else:
-            raise TypeError('Cannot parse type passed to NumQuantity: {}'.format(type(value)))
+            raise TypeError('Cannot parse type passed to constructor: {}'.format(type(value)))
 
         super(NumQuantity, self).__init__(symbol_type, value_in,
                                           tags=tags, provenance=provenance)
@@ -340,7 +319,7 @@ class NumQuantity(BaseQuantity):
                 if np.issubdtype(uncertainty.dtype, self._ACCEPTABLE_DTYPES):
                     self._uncertainty = ureg.Quantity(uncertainty, units)
                 else:
-                    raise TypeError('Non-numerical uncertainty type passed to NumQuantity: {}'.format(type(uncertainty)))
+                    raise TypeError('Non-numerical uncertainty type passed to constructor: {}'.format(type(uncertainty)))
             elif isinstance(uncertainty, ureg.Quantity):
                 self._uncertainty = uncertainty.to(units)
             elif isinstance(uncertainty, NumQuantity):
@@ -351,7 +330,7 @@ class NumQuantity(BaseQuantity):
                 try:
                     self._uncertainty = ureg.Quantity(uncertainty).to(units)
                 except Exception:
-                    raise ValueError('Cannot parse uncertainty passed to NumQuantity: {}'.format(uncertainty))
+                    raise ValueError('Cannot parse uncertainty passed to constructor: {}'.format(uncertainty))
         else:
             self._uncertainty = None
 
@@ -736,6 +715,7 @@ class QuantityFactory(object):
             type based on value's type
 
         """
+
         if isinstance(value, BaseQuantity):
             if isinstance(value, NumQuantity):
                 units = units or value.units
@@ -755,11 +735,14 @@ class QuantityFactory(object):
             raise TypeError("Unrecognized type for symbol_type: {}"
                             "".format(type(symbol_type)))
 
-        if not symbol_is_object and NumQuantity.is_acceptable_type(value):
-            return NumQuantity(symbol_type, value,
-                               units=units, tags=tags,
-                               provenance=provenance,
-                               uncertainty=uncertainty)
+        if not symbol_is_object:
+            if value is None:
+                raise ValueError("Cannot initialize a NumQuantity with a value of None.")
+            elif NumQuantity.is_acceptable_type(value):
+                return NumQuantity(symbol_type, value,
+                                   units=units, tags=tags,
+                                   provenance=provenance,
+                                   uncertainty=uncertainty)
 
         if units is not None:
             if symbol_is_object:

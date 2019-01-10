@@ -173,15 +173,10 @@ class StorageQuantity(MSONable):
         else:
             provenance_in = None
 
-        if isinstance(self.uncertainty, BaseQuantity):
-            uncertainty_in = self._uncertainty.to_quantity(lookup=lookup)
-        else:
-            uncertainty_in = self._uncertainty
-
         out = QuantityFactory.create_quantity(symbol_type=self._symbol_type, value=self._value, units=self._units,
                                               tags=self._tags,
                                               provenance=provenance_in,
-                                              uncertainty=uncertainty_in)
+                                              uncertainty=self._uncertainty)
 
         out._internal_id = self._internal_id
         return out
@@ -305,19 +300,22 @@ class ProvenanceStoreQuantity(StorageQuantity):
         return True
 
     def to_quantity(self, lookup=None):
+        copy_of_self = copy.deepcopy(self)
         if lookup:
-            self.lookup_value(lookup)
+            copy_of_self.lookup_value(lookup)
 
-        if not self.is_value_retrieved():
-            if self.is_from_dict():
-                logger.warning("No value has been looked up successfully for this quantity. "
-                               "Run lookup_value() first or make sure the specified lookup "
-                               "function or dict contains the internal ID of this quantity: {}"
-                               "".format(self._internal_id))
+        if not copy_of_self.is_value_retrieved():
+            if copy_of_self.is_from_dict():
+                raise ValueError("No value has been looked up successfully for this quantity. "
+                                 "Run lookup_value() first or make sure the specified lookup "
+                                 "function or dict contains the internal ID of this quantity: {}"
+                                 "".format(copy_of_self._internal_id))
             else:
-                logger.warning("Initializing quantity with no value.")
+                raise ValueError("Cannot create new BaseQuantity with no value. Property 'value' has no value, "
+                                 "possibly because it was never looked up. Use lookup_value() or initialize an "
+                                 "object with a value.")
 
-        return super().to_quantity(lookup=lookup)
+        return super(ProvenanceStoreQuantity, copy_of_self).to_quantity(lookup=lookup)
 
     def __hash__(self):
         return super().__hash__()
