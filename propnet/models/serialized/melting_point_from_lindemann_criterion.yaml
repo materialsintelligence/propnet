@@ -1,0 +1,31 @@
+categories:
+- thermal
+description: 'Predicts bulk melting point of crystalline materials using the Lindemann criterion. If the temperature is sufficiently high that the amplitude of the thermal vibrations is above some threshold, that the solid would begin to melt. This threshold is related to the Lindemann index/constant for the material, which can vary between 0.05 and 0.2, depending on a number of factors including crystal structure and external pressure. Here, the model uses an approximate value of 0.15 for Lindemann''s criterion.
+  '
+equations:
+# Note that the Lindemann criterion is set to a default value of 0.15. Perhaps later can explore deriving it, if of interest.
+- T_m = 2 * pi * (mbar*1.66054e-27) * (0.15)**2 * (a*1e-10)**2 * T**2 * 1.38064852e-23 / ((6.62607004e-34)**2)
+name: melting_point_from_lindemann_criterion
+implemented_by:
+- clegaspi
+references:
+  - doi:10.1063/1.2737054
+  - doi:10.1103/PhysRevB.22.3790
+  - url:https://en.m.wikipedia.org/wiki/Melting_point
+scrub_units:
+  T: kelvin
+  mbar: amu / atom
+  a: angstrom
+  T_m: kelvin
+symbol_property_map:
+  T: debye_temperature
+  mbar: mass_per_atom
+  a: interatomic_spacing
+  T_m: melting_point
+test_data:
+- inputs:
+    T: 774.85
+    mbar: 3.97
+    a: 2.04
+  outputs:
+    T_m: 732.2661043

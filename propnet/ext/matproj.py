@@ -1,5 +1,6 @@
 from propnet.core.materials import Material
 from propnet.core.quantity import Quantity
+from propnet.core.provenance import ProvenanceElement
 
 from pymatgen import MPRester as _MPRester
 
@@ -19,7 +20,7 @@ class MPRester(_MPRester):
     "diel.n": "refractive_index",
     "diel.poly_total": "relative_permittivity",
     #"diel.e_electronic": "null_symbol",
-    #"diel.e_total": "null_symbol",
+    "diel.e_total": "dielectric_tensor",
     #"diel.poly_electronic": "null_symbol",
     "diel.pot_ferroelectric": "potentially_ferroelectric",
     "pretty_formula": "formula",
@@ -44,8 +45,8 @@ class MPRester(_MPRester):
         #  TODO": "add property total_magnetization_per_unit_cell
 }
 
-    def __init__(self):
-        super(MPRester, self).__init__()
+    def __init__(self, api_key=None):
+        _MPRester.__init__(self, api_key)
 
     def get_mpid_from_formula(self, formula):
         """
@@ -133,7 +134,9 @@ class MPRester(_MPRester):
         for material_properties in materials_properties:
             material = Material()
             for property_name, property_value in material_properties.items():
-                quantity = Quantity(self.mapping[property_name], property_value)
+                provenance = ProvenanceElement(source='Materials Project')
+                quantity = Quantity(self.mapping[property_name], property_value,
+                                    provenance=provenance)
                 material.add_quantity(quantity)
             materials.append(material)
 

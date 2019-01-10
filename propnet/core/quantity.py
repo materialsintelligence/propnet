@@ -1,5 +1,8 @@
 import numpy as np
 from monty.json import MSONable
+from datetime import datetime
+
+import networkx as nx
 
 from propnet import ureg
 from propnet.core.symbols import Symbol
@@ -7,6 +10,9 @@ from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_SYMBOLS, DEFAULT_SYMBOL_VALUES
 
 from propnet.core.exceptions import SymbolConstraintError
+from typing import Union
+
+import uuid
 
 
 def pint_only(f):
@@ -43,12 +49,12 @@ class Quantity(MSONable):
     """
 
     def __init__(self, symbol_type, value, units=None, tags=None,
-                 provenance=None, uncertainty=None):
+                 provenance=None, uncertainty=None, **kwargs):
         """
         Parses inputs for constructing a Property object.
 
         Args:
-            symbol_type (Symbol): pointer to an existing Symbol
+            symbol_type (Symbol or str): pointer to an existing Symbol
                 object in default_symbols or string giving the name
                 of a SymbolType object identifies the type of data
                 stored in the property.
@@ -68,16 +74,32 @@ class Quantity(MSONable):
         # Set default units if not supplied
         units = units or symbol_type.units
 
+        # Hid this keyword in kwargs so users don't see it
+        # in function code completion display
+        if 'internal_id' in kwargs.keys():
+            self._internal_id = kwargs['internal_id']
+        else:
+            self._internal_id = uuid.uuid4().hex
+
         # Invoke pint quantity if supplied or input is float/int
-        if isinstance(value, (float, int, list, np.ndarray)):
+
+        if isinstance(value, (np.floating, np.integer, np.complexfloating)):
+            self._value = ureg.Quantity(np.asscalar(value), units)
+        elif isinstance(value, (float, int, list, complex, np.ndarray)):
             self._value = ureg.Quantity(value, units)
         elif isinstance(value, ureg.Quantity):
             self._value = value.to(units)
+        elif isinstance(value, Quantity):
+            # TODO: This situation needs a deep copy function
+            self._value = value._value
+            self._internal_id = value._internal_id
         else:
             self._value = value
 
-        if isinstance(uncertainty, (float, int, list, np.ndarray)):
-            self._uncertainty = ureg.Quantity(value, units)
+        if isinstance(uncertainty, (np.floating, np.integer, np.complexfloating)):
+            self._uncertainty = ureg.Quantity(np.asscalar(uncertainty), units)
+        elif isinstance(uncertainty, (float, int, list, complex, np.ndarray)):
+            self._uncertainty = ureg.Quantity(uncertainty, units)
         elif isinstance(uncertainty, ureg.Quantity):
             self._uncertainty = uncertainty.to(units)
         else:
@@ -96,14 +118,63 @@ class Quantity(MSONable):
         self._tags = tags
         self._provenance = provenance
 
+        if self._provenance is not None:
+            if isinstance(self._provenance.source, dict):
+                if 'source_key' not in self._provenance.source.keys() or \
+                        self._provenance.source['source_key'] in (None, ""):
+                    self._provenance.source['source_key'] = self._internal_id
+                if 'date_created' not in self._provenance.source.keys() or \
+                        self._provenance.source['date_created'] in (None, ""):
+                    self._provenance.source['date_created'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            elif self._provenance.source is None:
+                self._provenance.source = {"source": "propnet",
+                                           "source_key": self._internal_id,
+                                           "date_created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+    @staticmethod
+    def to_quantity(symbol: Union[str, Symbol],
+                    to_coerce: Union[float, np.ndarray, ureg.Quantity, "Quantity"]) -> "Quantity":
+        """
+        Converts the argument into a Quantity object based on its type:
+        - float -> given default units (as a pint object) and wrapped in a Quantity object
+        - numpy.ndarray array -> given default units (pint) and wrapped in a Quantity object
+        - ureg.Quantity -> simply wrapped in a Quantity object
+        - Quantity -> immediately returned without modification
+        - Any other python object -> simply wrapped in a Quantity object
+
+        TODO: Have a python object convert into an ObjectQuantity object or similar.
+
+        Args:
+            to_coerce: item to be converted into a Quantity object
+        Returns:
+            (Quantity) item that has been converted into a Quantity object
+        """
+        # If a quantity is passed in, return the quantity.
+        if isinstance(to_coerce, Quantity):
+            return to_coerce
+
+        # Else
+        # Convert the symbol to a Symbol if necessary.
+        if isinstance(symbol, str):
+            symbol = DEFAULT_SYMBOLS.get(symbol)
+            if symbol is None:
+                raise Exception("Attempted to create a quantity for an unrecognized symbol: " + str(symbol))
+        # Return the correct Quantity - warn if units are assumed.
+        if isinstance(to_coerce, float) or isinstance(to_coerce, np.ndarray):
+            return Quantity(symbol, ureg.Quantity(to_coerce, symbol.units))
+
+        return Quantity(symbol, to_coerce)
+
+
     @property
     def is_pint(self):
         return isinstance(self._value, ureg.Quantity)
 
     def pretty_string(self, sigfigs=4):
+        # TODO: maybe support a rounding kwarg?
         if self.is_pint:
             if isinstance(self.magnitude, (float, int)):
-                out = "{0:.4g}".format(self.magnitude)
+                out = "{1:.{0}g}".format(sigfigs, self.magnitude)
                 if self.uncertainty:
                     out += "\u00B1{0:.4g}".format(self.uncertainty.magnitude)
             else:
@@ -200,10 +271,83 @@ class Quantity(MSONable):
         if model_hash in visited:
             return True
         visited.add(model_hash)
-        for input in self.provenance.inputs:
+        for p_input in self.provenance.inputs or []:
             this_visited = visited.copy()
-            if input.is_cyclic(this_visited):
+            if p_input.is_cyclic(this_visited):
                 return True
+        return False
+
+    def contains_nan_value(self):
+        """
+        Determines if the value of the object contains a NaN value if the
+        object holds numerical data.
+
+        Returns:
+             (bool) true if the quantity is numerical and contains one
+             or more NaN values. false if the quantity is numerical and
+             does not contain any NaN values OR if the quantity does not
+             store numerical information
+        """
+        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be NaN
+        if not self.is_pint:
+            return False
+
+        return np.any(np.isnan(self.magnitude))
+
+    def contains_complex_type(self):
+        """
+        Determines if the type of the variable holding the object's magnitude is complex, if the
+        object holds numerical data.
+
+        Returns:
+             (bool) true if the quantity is numerical and holds a complex scalar or array type as its value.
+             false if the quantity is numerical and holds only real values OR if the quantity does not
+             store numerical information
+        """
+        # Assumes all non-pint Quantity objects have non-numerical values, and therefore cannot be complex
+        if not self.is_pint:
+            return False
+
+        return self.is_complex_type(self.magnitude)
+
+    @staticmethod
+    def is_complex_type(value):
+        """
+        Determines if the type of the argument is complex. If the argument is non-scalar, it determines
+        if the ndarray type contains complex data types.
+
+        Returns:
+             (bool) true if the argument holds a complex scalar or np.array.
+
+        """
+        if isinstance(value, np.ndarray):
+            return np.issubdtype(value.dtype, np.complexfloating)
+        elif isinstance(value, Quantity):
+            return value.contains_complex_type()
+        elif isinstance(value, ureg.Quantity):
+            return Quantity.is_complex_type(value.magnitude)
+
+        return isinstance(value, complex)
+
+    def contains_imaginary_value(self):
+        """
+        Determines if the value of the object contains a non-zero imaginary
+        value if the object holds numerical data.
+
+        Note this function returns false if the values are of complex type,
+        but the imaginary portions are (approximately) zero. To assess the
+        type as complex, use is_complex_type().
+
+        Returns:
+             (bool) true if the quantity is numerical and contains one
+             or more non-zero imaginary values. false if the quantity is
+             numerical and all imaginary values are zero OR if the quantity does not
+             store numerical information.
+        """
+        if self.contains_complex_type():
+            # Calling as static methods allows for evaluation of both scalars and arrays
+            return not np.all(np.isclose(np.imag(self.magnitude), 0))
+
         return False
 
     def __hash__(self):
@@ -226,19 +370,34 @@ class Quantity(MSONable):
         return bool(self.value)
 
     # TODO: lazily implemented, fix to be a bit more robust
-    def as_dict(self):
+    def as_dict(self, for_storage=False, omit_value=False):
         if isinstance(self.value, ureg.Quantity):
             value = self.value.magnitude
             units = self.value.units
         else:
             value = self.value
             units = None
-        return {"symbol_type": self._symbol_type.name,
-                "value": value,
-                "provenance": self._provenance,
-                "units": units.format_babel() if units else None,
-                "@module": "propnet.core.quantity",
-                "@class": "Quantity"}
+
+        out = { "symbol_type": self._symbol_type.name,
+                "@module": self.__class__.__module__,
+                "@class": self.__class__.__name__}
+        if for_storage:
+            out["internal_id"] = self._internal_id
+            if self._provenance is not None:
+                out["provenance"] = self._provenance.as_dict(for_storage=True)
+            else:
+                out["provenance"] = None
+        else:
+            out["provenance"] = self._provenance
+
+        if not omit_value:
+            out["value"] = value
+            out["units"] = units.format_babel() if units else None
+        else:
+            out["value"] = None
+            out["units"] = None
+
+        return out
 
     @classmethod
     def from_default(cls, symbol):
@@ -309,3 +468,42 @@ class Quantity(MSONable):
         return cls(symbol_type=input_symbol, value=new_value,
                    tags=list(new_tags), provenance=new_provenance,
                    uncertainty=std_dev)
+
+    def get_provenance_graph(self, start=None, filter_long_labels=True):
+        """
+        Gets an nxgraph object corresponding to the provenance graph
+
+        Args:
+            start (nxgraph): starting graph to build from
+
+        Returns:
+            (nxgraph): graph representation of provenance
+        """
+        graph = start or nx.MultiDiGraph()
+        # import nose; nose.tools.set_trace()
+        label = self.pretty_string()
+        label = "{}: {}".format(self.symbol.name, self.pretty_string())
+        if filter_long_labels and len(label) > 30:
+            label = "{}".format(self.symbol.name)
+        graph.add_node(
+            self, fillcolor="#43A1F8", fontcolor='white', label=label)
+        model = getattr(self.provenance, 'model', None)
+        source = getattr(self.provenance, 'source', None)
+        if model is not None:
+            model = "Model: {}".format(model)
+            graph.add_node(model, label=model, fillcolor='orange',
+                           fontcolor='white', shape='rectangle')
+            graph.add_edge(model, self)
+            for model_input in self.provenance.inputs:
+                graph = model_input.get_provenance_graph(start=graph)
+                graph.add_edge(model_input, model)
+        elif source is not None:
+            graph.add_edge(source, self)
+
+        return graph
+
+    def draw_provenance_graph(self, filename, prog='dot',**kwargs):
+        nx_graph = self.get_provenance_graph()
+        a_graph = nx.nx_agraph.to_agraph(nx_graph)
+        a_graph.node_attr['style'] = 'filled'
+        a_graph.draw(filename, prog=prog, **kwargs)

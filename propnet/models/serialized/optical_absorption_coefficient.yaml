@@ -14,6 +14,8 @@ description: 'Absorption coefficient characterizes the decay of intensity as lig
 equations:
 - alpha = (4*pi*k / l)
 name: optical_absorption_coefficient
+implemented_by:
+- vtshitoyan
 references:
 - url:https://en.wikipedia.org/wiki/Refractive_index#Complex_refractive_index
 - url:https://unlcms.unl.edu/cas/physics/tsymbal/teaching/SSP-927/Section%2013_Optical_Properties_of_Solids.pdf
@@ -24,7 +26,7 @@ symbol_property_map:
   l: wavelength
 test_data:
 - inputs:
-    k: 3e-06
+    k: 3.0e-06
     l: 596
   outputs:
     alpha: 0.63254

@@ -9,6 +9,8 @@ description: 'Model calculating the Vicker''''s Hardness from bulk and shear mod
 equations:
 - H = 2*(G/k**2)**0.585 - 3
 name: vickers_hardness_chen
+implemented_by:
+- dmrdjenovich
 references: []
 scrub_units: true
 symbol_property_map:

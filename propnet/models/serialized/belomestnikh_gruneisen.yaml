@@ -9,6 +9,8 @@ description: "An expression for the Gruneisen constants of solids is obtained\ni
 equations:
 - gamma_d = 1.5 * ((3*(v_l / v_t)**2 - 4) / ((v_l / v_t)**2 + 2))
 name: belomestnikh_gruneisen
+implemented_by:
+- montoyjh
 references:
 - url:https://link.springer.com/article/10.1134/1.1666949
 symbol_property_map:

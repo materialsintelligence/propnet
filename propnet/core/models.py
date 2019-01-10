@@ -18,7 +18,7 @@ from sympy.parsing.sympy_parser import parse_expr
 
 from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import Quantity
-from propnet.core.utils import references_to_bib
+from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
 from propnet.symbols import DEFAULT_UNITS
 
@@ -48,6 +48,8 @@ class Model(ABC):
             the model
         references ([str]): list of the informational links
             explaining / supporting the model
+        implemented_by ([str]): list of authors of the model by their
+            github usernames
         symbol_property_map ({str: str}): mapping of symbols enumerated
             in the plug-in method to canonical symbols, e. g.
             {"n": "index_of_refraction"} etc.
@@ -62,16 +64,16 @@ class Model(ABC):
             which to evaluate the model
     """
     def __init__(self, name, connections, constraints=None,
-                 description=None, categories=None, references=None,
+                 description=None, categories=None, references=None, implemented_by=None,
                  symbol_property_map=None, scrub_units=None, test_data=None):
         self.name = name
         self.connections = connections
         self.description = description
         self.categories = categories or []
+        self.implemented_by = implemented_by or []
         self.references = references_to_bib(references or [])
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
-        self.symbol_property_map = {}
         self.symbol_property_map = {k: k for k in self.all_properties}
         self.symbol_property_map.update(symbol_property_map or {})
 
@@ -124,7 +126,7 @@ class Model(ABC):
         Returns (list or dict):
             list of symbols or symbol-keyed dict
         """
-        rev_map = {v: k for k, v in self.symbol_property_map.items()}
+        rev_map = {v: k for k, v in getattr(self, "symbol_property_map", {}).items()}
         return remap(properties, rev_map)
 
     def map_symbols_to_properties(self, symbols):
@@ -139,7 +141,7 @@ class Model(ABC):
         Returns (list or dict):
             list of properties or property-keyed dict
         """
-        return remap(symbols, self.symbol_property_map)
+        return remap(symbols, getattr(self, "symbol_property_map", {}))
 
     def evaluate(self, symbol_quantity_dict, allow_failure=True):
         """
@@ -169,10 +171,15 @@ class Model(ABC):
         symbol_quantity_dict = self.map_properties_to_symbols(
             symbol_quantity_dict)
 
+        for (k, v) in symbol_quantity_dict.items():
+            replacing = self.symbol_property_map.get(k, k)
+            symbol_quantity_dict[k] = Quantity.to_quantity(replacing, v)
+
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
         # strip units from input and keep for reassignment
         symbol_value_dict = {}
+
         for symbol, quantity in symbol_quantity_dict.items():
             # If unit map convert and then scrub units
             if self.unit_map.get(symbol):
@@ -182,9 +189,11 @@ class Model(ABC):
             else:
                 symbol_value_dict[symbol] = quantity.value
 
+        contains_complex_input = any(Quantity.is_complex_type(v) for v in symbol_value_dict.values())
         # Plug in and check constraints
         try:
-            out = self.plug_in(symbol_value_dict)
+            with PrintToLogger():
+                out = self.plug_in(symbol_value_dict)
         except Exception as err:
             if allow_failure:
                 return {"successful": False,
@@ -194,13 +203,14 @@ class Model(ABC):
         if not self.check_constraints({**symbol_value_dict, **out}):
             return {"successful": False,
                     "message": "Constraints not satisfied"}
+
         provenance = ProvenanceElement(
             model=self.name, inputs=list(symbol_quantity_dict.values()))
         out = self.map_symbols_to_properties(out)
         for symbol, value in out.items():
             try:
-                out[symbol] = Quantity(symbol, value, self.unit_map.get(symbol),
-                                       provenance=provenance)
+                quantity = Quantity(symbol, value, self.unit_map.get(symbol),
+                                    provenance=provenance)
             except SymbolConstraintError as err:
                 if allow_failure:
                     errmsg = "{} symbol constraint failed: {}".format(self, err)
@@ -208,6 +218,19 @@ class Model(ABC):
                             "message": errmsg}
                 else:
                     raise err
+
+            if quantity.contains_nan_value():
+                return {"successful": False,
+                        "message": "Evaluation returned invalid values (NaN)"}
+            # TODO: Update when we figure out how we're going to handle complex quantities
+            # Model evaluation will fail if complex values are returned when no complex input was given
+            # Can surely handle this more gracefully, or assume that the users will apply constraints
+            if quantity.contains_imaginary_value() and not contains_complex_input:
+                return {"successful": False,
+                        "message": "Evaluation returned invalid values (complex)"}
+
+            out[symbol] = quantity
+
         out['successful'] = True
         return out
 
@@ -257,7 +280,7 @@ class Model(ABC):
     @property
     def all_properties(self):
         """
-        Returns (set): set of all output properties
+        Returns (set): set of all properties
         """
         return self.all_inputs.union(self.all_outputs)
 
@@ -476,8 +499,8 @@ class EquationModel(Model, MSONable):
     """
     def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
-                 categories=None, references=None, scrub_units=None,
-                 solve_for_all_symbols=False, test_data=None):
+                 categories=None, references=None, implemented_by=None,
+                 scrub_units=None, solve_for_all_symbols=False, test_data=None):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -516,10 +539,11 @@ class EquationModel(Model, MSONable):
                            for sym, solved in new.items()}
                 connection["_lambdas"] = lambdas
 
-        self.equations = equations
+        #self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, scrub_units,
+            categories, references, implemented_by,
+            symbol_property_map, scrub_units,
             test_data=test_data)
 
     def plug_in(self, symbol_value_dict):
@@ -580,11 +604,13 @@ class PyModel(Model):
     """
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
-                 symbol_property_map=None, scrub_units=True, test_data=None):
+                 implemented_by=None, symbol_property_map=None,
+                 scrub_units=True, test_data=None):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
-            categories, references, symbol_property_map, scrub_units,
+            categories, references, implemented_by,
+            symbol_property_map, scrub_units,
             test_data=test_data)
 
     def plug_in(self, symbol_value_dict):

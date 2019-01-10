@@ -17,6 +17,8 @@ description: 'The electron mobility is difficult to model purely from first prin
 equations:
 - mu_e = 1E9 * 1E4 * 1.2E-14 * K**1 * m_e**-1.5
 name: semi_empirical_mobility
+implemented_by:
+- lweston
 references:
 - doi:10.1039/C4EE03157A
 scrub_units: true

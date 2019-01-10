@@ -15,6 +15,8 @@ equations:
 - n = sqrt((sqrt(e1**2+e2**2)+e1)/2)
 - k = sqrt((sqrt(e1**2+e2**2)-e1)/2)
 name: complex_refr_from_complex_perm
+implemented_by:
+- vtshitoyan
 references:
 - url:https://en.wikipedia.org/wiki/Refractive_index#Complex_refractive_index
 symbol_property_map:

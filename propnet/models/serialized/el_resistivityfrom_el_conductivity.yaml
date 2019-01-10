@@ -8,6 +8,8 @@ description: 'The electrical resistivity and conductivity are related by a simpl
 equations:
 - sigma = 1/rho
 name: el_resistivityfrom_el_conductivity
+implemented_by:
+- lweston
 references:
 - url:https://en.wikipedia.org/wiki/Electrical_resistivity_and_conductivity
 solve_for_all_symbols: true

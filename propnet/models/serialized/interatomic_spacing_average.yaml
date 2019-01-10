@@ -8,6 +8,8 @@ description: 'Simple approximation for interatomic spacing as cube root of volum
 equations:
 - d = (p)**(-1/3)
 name: interatomic_spacing_average
+implemented_by:
+- montoyjh
 references: null
 symbol_property_map:
   d: interatomic_spacing

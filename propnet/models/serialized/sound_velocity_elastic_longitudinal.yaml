@@ -10,6 +10,8 @@ description: 'The sound velocity from the elastic modulus is determined by
 equations:
 - v_l = ((B+4/3*G)/p)**(1/2)
 name: sound_velocity_elastic_longitudinal
+implemented_by:
+- dmrdjenovich
 references: []
 scrub_units:
   B: Pa

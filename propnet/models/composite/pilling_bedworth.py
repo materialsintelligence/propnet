@@ -52,6 +52,9 @@ config = {
     ],
     "description": DESCRIPTION,
     "references": ["doi:10.1016/S0257-8972(02)00593-5"],
+    "implemented_by": [
+        "dmrdjenovich"
+    ],
     "plug_in": plug_in,
     "filter": filter,
     "pre_filter": pre_filter
