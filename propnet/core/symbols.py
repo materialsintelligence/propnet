@@ -112,11 +112,6 @@ class Symbol(MSONable):
                 if isinstance(object_type, type):
                     self._object_module = object_type.__module__
                     self._object_class = object_type.__name__
-                    if self._object_module == 'builtins':
-                        self.object_type = self._object_class
-                    else:
-                        self.object_type = ".".join([self._object_module,
-                                                     self._object_class])
                 else:
                     # Do not try to import the module for security reasons.
                     # We don't want malicious modules to be automatically imported.
@@ -126,6 +121,12 @@ class Symbol(MSONable):
                         self._object_class = modclass[0]
                     else:
                         self._object_module, self._object_class = modclass
+
+                if self._object_module == 'builtins':
+                    self.object_type = self._object_class
+                else:
+                    self.object_type = ".".join([self._object_module,
+                                                 self._object_class])
 
         self.name = name
         self.category = category

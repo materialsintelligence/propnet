@@ -640,23 +640,28 @@ class ObjQuantity(BaseQuantity):
                     value = cls_(value)
                 except (TypeError, ValueError) as ex:
                     raise TypeError("Mismatch in type of value ({}) and type specified "
-                                    "by object symbol ({}).\nTypecasting failed."
-                                    "".format(old_type, symbol_type.object_class))
+                                    "by '{}' object symbol ({}).\nTypecasting failed."
+                                    "".format(old_type.__name__,
+                                              symbol_type.name,
+                                              symbol_type.object_class,
+                                              symbol_type.object_type))
             else:
                 # Do not try to import the module for security reasons.
                 # We don't want malicious modules to be automatically imported.
                 raise NameError("Mismatch in type of value ({}) and type specified "
-                                "by object symbol ({}).\nCannot typecast because "
+                                "by '{}' object symbol ({}).\nCannot typecast because "
                                 "'{}' is not imported or does not exist."
-                                "".format(old_type,
+                                "".format(old_type.__name__,
+                                          symbol_type.nane,
                                           symbol_type.object_class,
                                           symbol_type.object_type))
 
             logger.warning("WARNING: Mismatch in type of value ({}) "
-                           "and type specified by object symbol ({}). "
-                           "Value cast as '{}'.".format(old_type,
-                                                        symbol_type.object_type,
-                                                        symbol_type.object_class))
+                           "and type specified by '{}' object symbol ({}). "
+                           "Value cast as '{}'.".format(old_type.__name__,
+                                                        symbol_type.name,
+                                                        symbol_type.object_class,
+                                                        symbol_type.object_type))
 
         super(ObjQuantity, self).__init__(symbol_type, value, tags=tags, provenance=provenance)
 
