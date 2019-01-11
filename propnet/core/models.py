@@ -15,7 +15,6 @@ import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
-
 from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
@@ -238,12 +237,12 @@ class Model(ABC):
             source="propnet")
 
         out = self.map_symbols_to_properties(out)
-        unit_map = self.map_symbols_to_properties(self.unit_map)
+        unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
         for symbol, value in out.items():
             try:
-                quantity = QuantityFactory.create_quantity(symbol, value, unit_map.get(symbol),
-                                                           provenance=provenance)
-
+                quantity = QuantityFactory.create_quantity(
+                    symbol, value, unit_map_as_properties.get(symbol),
+                    provenance=provenance)
             except SymbolConstraintError as err:
                 if allow_failure:
                     errmsg = "{} symbol constraint failed: {}".format(self, err)
@@ -395,7 +394,7 @@ class Model(ABC):
             known_quantity = QuantityFactory.create_quantity(symbol, known_output, units)
             evaluate_output = evaluate_outputs[k]
             if isinstance(known_quantity, NumQuantity):
-                if not np.allclose(known_quantity.value, evaluate_output.value):
+                if not np.allclose(known_quantity.value, evaluate_output.value, atol=0.0):
                     errmsg = errmsg.format("evaluate", k, evaluate_output,
                                            k, known_quantity)
                     raise ModelEvaluationError(errmsg)
