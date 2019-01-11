@@ -1,7 +1,7 @@
 name: electromechanical_coupling
-units: coulomb / meter**2
+units: dimensionless
 display_names: ['Electromechanical Coupling Factor']
-display_symbols: ['k_{ij}']
-shape: [3, 6]
-comment: 'Change in electric displacement field with respect to applied stress under constant applied electric field'
+display_symbols: ['k']
+shape: 1
+comment: 'The efficiency of coupling electrical energy to acoustic energy in a piezoeletric material'
 category: property
