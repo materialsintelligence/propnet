@@ -121,7 +121,7 @@ returns {'mu_e': 8994.92312225673}
             try:
                 exec(model.example_code)
             except Exception as e:
-                raise e
+                self.fail('Failed to execute model {}: {}'.format(name, e))
 
     def test_model_returns_nan(self):
         # This tests model failure with scalar nan.
