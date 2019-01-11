@@ -13,6 +13,7 @@ implemented_by:
 - vtshitoyan
 references:
 - url:https://en.wikipedia.org/wiki/Electron_mobility
+solve_for_all_symbols: true
 scrub_units:
   mu_e: m**2 / volt / second
   mu_h: m**2 / volt / second
@@ -40,3 +41,10 @@ test_data:
     n: 8.5e28
   outputs:
     sigma: 59649035.56260001
+- inputs:
+    mu_e: 43.8
+    mu_h: 0
+    p: 0
+    sigma: 59649035.56260001
+  outputs:
+    n: 8.5e28

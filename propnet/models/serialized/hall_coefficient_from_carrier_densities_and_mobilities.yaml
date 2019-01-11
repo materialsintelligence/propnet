@@ -13,6 +13,7 @@ implemented_by:
 - vtshitoyan
 references:
 - '@article{kasap2001hall,title={Hall effect in semiconductors},author={Kasap, Safa}}'
+solve_for_all_symbols: true
 scrub_units:
   mu_e: m**2 / volt / second
   mu_h: m**2 / volt / second
@@ -40,3 +41,10 @@ test_data:
     n: 8.5e28
   outputs:
     R_H: -7.342951916470319e-11
+- inputs:
+    mu_e: 1400
+    n: 1.5e16
+    p: 0.2e16
+    R_H: -377.3327436778806
+  outputs:
+    mu_h: 0.045
