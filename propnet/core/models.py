@@ -312,8 +312,10 @@ class Model(ABC):
 
         Returns (bool): True if test succeeds
         """
-        evaluate_inputs = {s: Quantity(s, v, self.unit_map.get(s))
-                           for s, v in inputs.items()}
+        evaluate_inputs = self.map_symbols_to_properties(inputs)
+        unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
+        evaluate_inputs = {s: Quantity(s, v, unit_map_as_properties.get(s))
+                           for s, v in evaluate_inputs.items()}
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
         errmsg = "{} model test failed on ".format(self.name) + "{}\n"
