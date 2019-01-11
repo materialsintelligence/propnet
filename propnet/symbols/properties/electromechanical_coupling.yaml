@@ -1,0 +1,7 @@
+name: electromechanical_coupling
+units: coulomb / meter**2
+display_names: ['Electromechanical Coupling Factor']
+display_symbols: ['k_{ij}']
+shape: [3, 6]
+comment: 'Change in electric displacement field with respect to applied stress under constant applied electric field'
+category: property
