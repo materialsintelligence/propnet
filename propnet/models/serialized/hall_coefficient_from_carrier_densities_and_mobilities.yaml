@@ -28,21 +28,21 @@ symbol_property_map:
   R_H: hall_coefficient
 test_data:
 - inputs:
-    mu_e: 1400
-    mu_h: 450
+    mu_e: 0.1400
+    mu_h: 0.0450
     p: 0.2e16
     n: 1.5e16
   outputs:
     R_H: -377.3327436778806
 - inputs:
-    mu_e: 43.8
+    mu_e: 0.00438
     mu_h: 0
     p: 0
     n: 8.5e28
   outputs:
     R_H: -7.342951916470319e-11
 - inputs:
-    mu_e: 1400
+    mu_e: 0.1400
     n: 1.5e16
     p: 0.2e16
     R_H: -377.3327436778806

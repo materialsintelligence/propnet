@@ -23,7 +23,7 @@ symbol_property_map:
   v_t: sound_velocity_transverse
 test_data:
 - inputs:
-    G: 73.44285714285714
-    p: 8.027685486298079
+    G: 7.344285714285714e10
+    p: 8.027685486298079e3
   outputs:
     v_t: 3024.6812029245752

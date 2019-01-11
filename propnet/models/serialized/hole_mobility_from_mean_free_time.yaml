@@ -1,0 +1,30 @@
+categories:
+- electrical
+description: 'Relationship between hole mobility, mean free time and effective mass (Drude).'
+equations:
+- mu_h = tau_h * 1.60217662e-19 / ( m_h * 9.10938356e-31)
+name: hole_mobility_from_mean_free_time
+implemented_by:
+- vtshitoyan
+references:
+- url:https://en.wikipedia.org/wiki/Drude_model
+solve_for_all_symbols: true
+scrub_units:
+  mu_h: m**2 / volt / s
+  m_h: dimensionless
+  tau_h: s
+symbol_property_map:
+  mu_h: hole_mobility
+  m_h: hole_effective_mass
+  tau_h: hole_mean_free_time
+test_data:
+- inputs:
+    tau_h: 3.2e-14
+    m_h: 1.3
+  outputs:
+    mu_h: 0.004329403132858855
+- inputs:
+    mu_h: 0.00438
+    m_h: 1.3
+  outputs:
+    tau_h: 3.237397758971165e-14
