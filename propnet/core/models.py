@@ -96,7 +96,9 @@ class Model(ABC):
             else:
                 self.constraints.append(Constraint(constraint))
 
-        self._test_data = test_data or self.load_test_data()
+        # Ensures our test data is symbol-keyed
+        self._test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
+                           for data in test_data or self.load_test_data()]
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -307,9 +309,8 @@ class Model(ABC):
 
         Returns (bool): True if test succeeds
         """
-        evaluate_inputs = self.map_symbols_to_properties(inputs)
         evaluate_inputs = {s: Quantity(s, v, self.unit_map.get(s))
-                           for s, v in evaluate_inputs.items()}
+                           for s, v in inputs.items()}
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
         errmsg = "{} model test failed on ".format(self.name) + "{}\n"
