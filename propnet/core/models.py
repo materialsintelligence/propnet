@@ -101,7 +101,21 @@ class Model(ABC):
         else:
             self.unit_map = {}
 
-        self._test_data = test_data or self.load_test_data()
+        # Define constraints by constraint objects or invoke from strings
+        constraints = constraints or []
+        self.constraints = []
+        for constraint in constraints:
+            if isinstance(constraint, Constraint):
+                self.constraints.append(constraint)
+            else:
+                self.constraints.append(Constraint(constraint))
+
+        # Ensures our test data is symbol-keyed
+        test_data = test_data or self.load_test_data()
+        if test_data:
+            test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
+                         for data in test_data]
+        self._test_data = test_data
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -365,8 +379,11 @@ class Model(ABC):
         Returns (bool): True if test succeeds
         """
         evaluate_inputs = self.map_symbols_to_properties(inputs)
-        evaluate_inputs = {s: QuantityFactory.create_quantity(s, v, self.unit_map.get(s))
-                           for s, v in evaluate_inputs.items()}
+        unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
+        evaluate_inputs = {
+            s: QuantityFactory.create_quantity(s, v,
+                                               unit_map_as_properties.get(s))
+            for s, v in evaluate_inputs.items()}
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
         errmsg = "{} model test failed on ".format(self.name) + "{}\n"
