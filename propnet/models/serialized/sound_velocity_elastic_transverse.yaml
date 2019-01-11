@@ -14,10 +14,9 @@ implemented_by:
 - dmrdjenovich
 references: []
 scrub_units:
-  B: Pa
   G: Pa
   p: kg / m^3
-  v_l: m / s
+  v_t: m / s
 symbol_property_map:
   G: shear_modulus
   p: density

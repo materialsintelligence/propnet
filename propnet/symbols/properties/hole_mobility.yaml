@@ -1,0 +1,7 @@
+name: hole_mobility
+units: cm**2 / volt / second
+display_names: ['Hole mobility']
+display_symbols: ['\mu_h']
+shape: 1
+comment: ''
+category: property
