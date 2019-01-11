@@ -1,36 +1,35 @@
+import numpy as np
+
+
 def plug_in(symbol_values):
-    c = symbol_values['C']
-    return {'B': 1/9*(c[0][0] + c[1][1] + c[2][2]) +
-                 2/9*(c[0][1] + c[1][2] + c[0][2])}
+    diel = symbol_values['diel']
+    return {'eps_r': np.average(np.diag(diel))}
 
-
-DESCRIPTION = """
-Calculating relative permittivity and optical index from dielectric tensor
-"""
 
 config = {
-    "name": "relative_permittivity",
-    "connections": [
-        {
-            "inputs": [
-                "C"
-            ],
-            "outputs": [
-                "B"
-            ]
-        }
-    ],
-    "categories": [
-        "mechanical"
-    ],
+    "name":
+    "relative_permittivity",
+    "connections": [{
+        "inputs": ["diel"],
+        "outputs": ["eps_r"]
+    }],
+    "categories": ["mechanical"],
     "symbol_property_map": {
-        "C": "elastic_tensor_voigt",
-        "B": "bulk_modulus"
+        "diel": "dielectric_tensor",
+        "eps_r": "relative_permittivity"
     },
-    "description": DESCRIPTION,
+    "description":
+    "Calculating relative permittivity from dielectric tensor",
     "references": [],
-    "implemented_by": [
-        "dmrdjenovich"
-    ],
-    "plug_in": plug_in
+    "implemented_by": ["shyamd"],
+    "plug_in":
+    plug_in,
+    "test_data": [{
+        "inputs": {
+            "diel": [[18.65, 0.00, 0.00], [-0.00, 18.65, 0.00], [-0.00, 0.00, 7.88]]
+        },
+        "outputs": {
+            "eps_r": 15.06
+        }
+    }]
 }
