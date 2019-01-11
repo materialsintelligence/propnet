@@ -631,7 +631,7 @@ class ObjQuantity(BaseQuantity):
                                 "by '{}' object symbol ({}).\nCannot typecast because "
                                 "'{}' is not imported or does not exist."
                                 "".format(old_type.__name__,
-                                          symbol_type.nane,
+                                          symbol_type.name,
                                           symbol_type.object_class,
                                           symbol_type.object_type))
 

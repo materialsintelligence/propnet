@@ -101,8 +101,6 @@ class Model(ABC):
         else:
             self.unit_map = {}
 
-
-
         self._test_data = test_data or self.load_test_data()
 
     @abstractmethod
@@ -379,7 +377,6 @@ class Model(ABC):
             units = self.unit_map.get(k)
             known_quantity = QuantityFactory.create_quantity(symbol, known_output, units)
             evaluate_output = evaluate_outputs[k]
-            # if isinstance(known_quantity, NumQuantity) or isinstance(known_quantity.value, list):
             if isinstance(known_quantity, NumQuantity):
                 if not np.allclose(known_quantity.value, evaluate_output.value):
                     errmsg = errmsg.format("evaluate", k, evaluate_output,
