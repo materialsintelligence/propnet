@@ -1,0 +1,42 @@
+categories:
+- electrical
+description: 'Electrical conductivity for the general case of having both electrons and
+
+  holes as charge carriers.
+
+  '
+
+equations:
+- sigma = 1.60217662e-19 * (p * mu_h + n * mu_e)
+name: electrical_conductivity_from_carrier_densities_and_mobilities
+implemented_by:
+- vtshitoyan
+references:
+- url:https://en.wikipedia.org/wiki/Electron_mobility
+scrub_units:
+  mu_e: m**2 / volt / second
+  mu_h: m**2 / volt / second
+  p: 1 / m**3
+  n: 1 / m**3
+  sigma: 1 / ohm / meter
+symbol_property_map:
+  mu_e: electron_mobility
+  mu_h: hole_mobility
+  p: hole_concentration
+  n: electron_concentration
+  sigma: electrical_conductivity
+test_data:
+- inputs:
+    mu_e: 1400
+    mu_h: 450
+    p: 0.2e16
+    n: 1.5e16
+  outputs:
+    sigma: 0.00035087667978000005
+- inputs:
+    mu_e: 43.8
+    mu_h: 0
+    p: 0
+    n: 8.5e28
+  outputs:
+    sigma: 59649035.56260001
