@@ -97,8 +97,11 @@ class Model(ABC):
                 self.constraints.append(Constraint(constraint))
 
         # Ensures our test data is symbol-keyed
-        self._test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
-                           for data in test_data or self.load_test_data()]
+        test_data = test_data or self.load_test_data()
+        if test_data:
+            test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
+                         for data in test_data]
+        self._test_data = test_data
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
