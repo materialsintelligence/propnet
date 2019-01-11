@@ -11,6 +11,7 @@ from propnet.core.exceptions import SymbolConstraintError
 from propnet.core.quantity import Quantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
+from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
 
 
@@ -109,6 +110,7 @@ class QuantityTest(unittest.TestCase):
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=[2, 2])
         C = Symbol('c', ['C'], ['C'], units='dimensionless', shape=1)
         D = Symbol('d', ['D'], ['D'], units='dimensionless', shape=[2, 2])
+        E = Symbol('e', ['E'], ['E'], category='object', shape=1)
 
         scalar_quantity = Quantity(A, float('nan'))
         non_scalar_quantity = Quantity(B, [[1.0, float('nan')],
@@ -133,3 +135,161 @@ class QuantityTest(unittest.TestCase):
         self.assertFalse(non_scalar_quantity.contains_nan_value())
         self.assertFalse(complex_scalar_quantity.contains_nan_value())
         self.assertFalse(complex_non_scalar_quantity.contains_nan_value())
+
+        non_numerical = Quantity(E, 'test')
+        self.assertFalse(non_numerical.contains_nan_value())
+
+    def test_complex_and_imaginary_checking(self):
+        A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
+        B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=[2, 2])
+        # TODO: Revisit this when splitting quantity class into non-numerical and numerical
+        C = Symbol('c', ['C'], ['C'], category='object', shape=1)
+
+        real_float_scalar = Quantity(A, 1.0)
+        real_float_non_scalar = Quantity(B, [[1.0, 1.0],
+                                             [1.0, 1.0]])
+
+        complex_scalar = Quantity(A, complex(1+1j))
+        complex_non_scalar = Quantity(B, [[complex(1.0), complex(1.j)],
+                                          [complex(1.j), complex(1.0)]])
+
+        complex_scalar_zero_imaginary = Quantity(A, complex(1.0))
+        complex_non_scalar_zero_imaginary = Quantity(B, [[complex(1.0), complex(1.0)],
+                                                         [complex(1.0), complex(1.0)]])
+
+        complex_scalar_appx_zero_imaginary = Quantity(A, complex(1.0+1e-10j))
+        complex_non_scalar_appx_zero_imaginary = Quantity(B, [[complex(1.0), complex(1.0+1e-10j)],
+                                                              [complex(1.0+1e-10j), complex(1.0)]])
+
+        non_numerical = Quantity(C, 'test')
+
+        # Test is_complex_type() with...
+        # ...Quantity objects
+        self.assertFalse(Quantity.is_complex_type(real_float_scalar))
+        self.assertFalse(Quantity.is_complex_type(real_float_non_scalar))
+        self.assertTrue(Quantity.is_complex_type(complex_scalar))
+        self.assertTrue(Quantity.is_complex_type(complex_non_scalar))
+        self.assertTrue(Quantity.is_complex_type(complex_scalar_zero_imaginary))
+        self.assertTrue(Quantity.is_complex_type(complex_non_scalar_zero_imaginary))
+        self.assertTrue(Quantity.is_complex_type(complex_scalar_appx_zero_imaginary))
+        self.assertTrue(Quantity.is_complex_type(complex_non_scalar_appx_zero_imaginary))
+        self.assertFalse(Quantity.is_complex_type(non_numerical))
+
+        # ...primitive types
+        self.assertFalse(Quantity.is_complex_type(1))
+        self.assertFalse(Quantity.is_complex_type(1.))
+        self.assertTrue(Quantity.is_complex_type(1j))
+        self.assertFalse(Quantity.is_complex_type('test'))
+
+        # ...np.array types
+        self.assertFalse(Quantity.is_complex_type(np.array([1])))
+        self.assertFalse(Quantity.is_complex_type(np.array([1.])))
+        self.assertTrue(Quantity.is_complex_type(np.array([1j])))
+        self.assertFalse(Quantity.is_complex_type(np.array(['test'])))
+
+        # ...ureg Quantity objects
+        self.assertFalse(Quantity.is_complex_type(ureg.Quantity(1)))
+        self.assertFalse(Quantity.is_complex_type(ureg.Quantity(1.)))
+        self.assertTrue(Quantity.is_complex_type(ureg.Quantity(1j)))
+        self.assertFalse(Quantity.is_complex_type(ureg.Quantity([1])))
+        self.assertFalse(Quantity.is_complex_type(ureg.Quantity([1.])))
+        self.assertTrue(Quantity.is_complex_type(ureg.Quantity([1j])))
+
+        # Check member functions
+        self.assertFalse(real_float_scalar.contains_complex_type())
+        self.assertFalse(real_float_scalar.contains_imaginary_value())
+        self.assertFalse(real_float_non_scalar.contains_complex_type())
+        self.assertFalse(real_float_non_scalar.contains_imaginary_value())
+
+        self.assertTrue(complex_scalar.contains_complex_type())
+        self.assertTrue(complex_scalar.contains_imaginary_value())
+        self.assertTrue(complex_non_scalar.contains_complex_type())
+        self.assertTrue(complex_non_scalar.contains_imaginary_value())
+
+        self.assertTrue(complex_scalar_zero_imaginary.contains_complex_type())
+        self.assertFalse(complex_scalar_zero_imaginary.contains_imaginary_value())
+        self.assertTrue(complex_non_scalar_zero_imaginary.contains_complex_type())
+        self.assertFalse(complex_non_scalar_zero_imaginary.contains_imaginary_value())
+
+        self.assertTrue(complex_scalar_appx_zero_imaginary.contains_complex_type())
+        self.assertFalse(complex_scalar_appx_zero_imaginary.contains_imaginary_value())
+        self.assertTrue(complex_non_scalar_appx_zero_imaginary.contains_complex_type())
+        self.assertFalse(complex_non_scalar_appx_zero_imaginary.contains_imaginary_value())
+
+        self.assertFalse(non_numerical.contains_complex_type())
+        self.assertFalse(non_numerical.contains_imaginary_value())
+
+    def test_numpy_scalar_conversion(self):
+        # From custom symbol
+        q_int = Quantity(self.custom_symbol, np.int64(5))
+        q_float = Quantity(self.custom_symbol, np.float64(5.0))
+        q_complex = Quantity(self.custom_symbol, np.complex64(5.0+1.j))
+
+        self.assertTrue(isinstance(q_int.magnitude, int))
+        self.assertTrue(isinstance(q_float.magnitude, float))
+        self.assertTrue(isinstance(q_complex.magnitude, complex))
+
+        q_int_uncertainty = Quantity(self.custom_symbol, 5, uncertainty=np.int64(1))
+        q_float_uncertainty = Quantity(self.custom_symbol, 5.0, uncertainty=np.float64(1.0))
+        q_complex_uncertainty = Quantity(self.custom_symbol, 5.0+1j, uncertainty=np.complex64(1.0 + 0.1j))
+
+        self.assertTrue(isinstance(q_int_uncertainty.uncertainty.magnitude, int))
+        self.assertTrue(isinstance(q_float_uncertainty.uncertainty.magnitude, float))
+        self.assertTrue(isinstance(q_complex_uncertainty.uncertainty.magnitude, complex))
+
+    def test_as_dict_from_dict(self):
+        q = Quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)
+        d = q.as_dict()
+        d_storage = q.as_dict(for_storage=True)
+        d_storage_omit = q.as_dict(for_storage=True, omit_value=True)
+        self.assertEqual(d, {"@module": "propnet.core.quantity",
+                             "@class": "Quantity",
+                             "value": 5,
+                             "units": "dimensionless",
+                             "provenance": None,
+                             "symbol_type": self.custom_symbol.name})
+
+        self.assertEqual(d_storage, {"@module": "propnet.core.quantity",
+                                     "@class": "Quantity",
+                                     "value": 5,
+                                     "units": "dimensionless",
+                                     "provenance": None,
+                                     "internal_id": q._internal_id,
+                                     "symbol_type": self.custom_symbol.name})
+
+        self.assertEqual(d_storage_omit, {"@module": "propnet.core.quantity",
+                                          "@class": "Quantity",
+                                          "value": None,
+                                          "units": None,
+                                          "provenance": None,
+                                          "internal_id": q._internal_id,
+                                          "symbol_type": self.custom_symbol.name})
+
+        q = Quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1, provenance=ProvenanceElement())
+        d = q.as_dict()
+        d_storage = q.as_dict(for_storage=True)
+        self.assertEqual(d, {"@module": "propnet.core.quantity",
+                             "@class": "Quantity",
+                             "value": 5,
+                             "units": "dimensionless",
+                             "provenance": q._provenance,
+                             "symbol_type": self.custom_symbol.name})
+
+        # Need more tests for provenance as_dict() method
+        self.assertEqual(d_storage, {"@module": "propnet.core.quantity",
+                                     "@class": "Quantity",
+                                     "value": 5,
+                                     "units": "dimensionless",
+                                     "provenance": q._provenance.as_dict(),
+                                     "internal_id": q._internal_id,
+                                     "symbol_type": self.custom_symbol.name})
+
+        self.assertIsInstance(d_storage['provenance'], dict)
+        #
+        # self.assertEqual(d_storage_omit, {"@module": "propnet.core.quantity",
+        #                                   "@class": "Quantity",
+        #                                   "value": None,
+        #                                   "units": None,
+        #                                   "provenance": None,
+        #                                   "internal_id": q._internal_id,
+        #                                   "symbol_type": self.custom_symbol.name})

@@ -22,7 +22,10 @@ class ProvenanceElement(MSONable):
                 is attached to.
             source: static source, e. g. Materials Project
         """
-        self.model = getattr(model, 'name', model)
+        if isinstance(model, str):
+            self.model = model
+        else:
+            self.model = getattr(model, 'name', model)
         self.inputs = inputs
         self.source = source
 
@@ -31,6 +34,20 @@ class ProvenanceElement(MSONable):
             "<{}, {}, {}>".format(q._symbol_type.name, q.value, q._provenance)
             for q in self.inputs])
         return "{{{}: [{}]}}".format(self.model, pre)
+
+    def as_dict(self, for_storage=False):
+        out = {"@module": self.__class__.__module__,
+               "@class": self.__class__.__name__,
+               "model": self.model,
+               "source": self.source}
+
+        if self.inputs is not None:
+            out["inputs"] = [q.as_dict(for_storage=for_storage, omit_value=for_storage)
+                             for q in self.inputs]
+        else:
+            out["inputs"] = None
+
+        return out
 
 
 class SymbolTree(object):

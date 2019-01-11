@@ -37,6 +37,34 @@ class BuilderTest(unittest.TestCase):
         self.assertIsNotNone(processed)
         # Ensure vickers hardness gets populated
         self.assertIn("vickers_hardness", processed)
+        if 'created_at' in item.keys():
+            date_value = item['created_at']
+        else:
+            date_value = ""
+
+        # Check that provenance values propagate correctly
+        current_quantity = processed['vickers_hardness']['quantities'][0]
+        at_deepest_level = False
+        while not at_deepest_level:
+            current_provenance = current_quantity['provenance']
+            if current_provenance['inputs'] is not None:
+                self.assertEqual(current_provenance['source']['source'],
+                                 "propnet")
+                self.assertEqual(current_provenance['source']['source_key'],
+                                 current_quantity['internal_id'])
+                self.assertNotIn(current_provenance['source']['date_created'],
+                                 ("", None))
+                current_quantity = current_provenance['inputs'][0]
+            else:
+                self.assertEqual(current_provenance['source']['source'],
+                                 "Materials Project")
+                self.assertEqual(current_provenance['source']['source_key'],
+                                 item['task_id'])
+                self.assertEqual(current_provenance['source']['date_created'],
+                                 date_value)
+                at_deepest_level = True
+
+
 
     # @unittest.skipIf(not os.path.isfile("runner.json"), "No runner file")
     # def test_runner_pipeline(self):

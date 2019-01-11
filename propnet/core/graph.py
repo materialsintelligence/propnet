@@ -12,12 +12,14 @@ import networkx as nx
 
 from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
-from propnet.core.models import CompositeModel
+from propnet.core.models import Model, CompositeModel
 from propnet.core.quantity import Quantity
 from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.models import DEFAULT_MODEL_DICT
 from propnet.symbols import Symbol, DEFAULT_SYMBOLS
+
+from typing import Set, Dict, Union
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +65,10 @@ class Graph(object):
 
     """
 
-    def __init__(self, models=None, composite_models=None, symbol_types=None):
+    def __init__(self,
+                 models: Dict[str, Model]=None,
+                 composite_models: Dict[str, CompositeModel]=None,
+                 symbol_types: Dict[str, Symbol]=None) -> None:
         """
         Creates a Graph instance
         """
@@ -77,7 +82,7 @@ class Graph(object):
         self._composite_models = dict()
         self._input_to_model = defaultdict(set)
         self._output_to_model = defaultdict(set)
-        self._timings = None
+        self._timings = None                        # type:Dict[,]
 
         if symbol_types:
             self.update_symbol_types(symbol_types)
@@ -231,7 +236,7 @@ class Graph(object):
                 if model in s:
                     s.remove(model)
 
-    def get_models(self):
+    def get_models(self) -> Dict[str, Model]:
         """
         Getter method, returns a set of all model objects present
         on the graph.
@@ -239,9 +244,9 @@ class Graph(object):
         Returns ({Model}):
             set of models in the graph
         """
-        to_return = set()
+        to_return = dict()
         for model in self._models.values():
-            to_return.add(model)
+            to_return[model.name] = model
         return to_return
 
     def update_composite_models(self, super_models):

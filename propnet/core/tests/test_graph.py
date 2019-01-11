@@ -97,7 +97,7 @@ class GraphTest(unittest.TestCase):
         g = Graph(models=models, symbol_types=symbols, composite_models=dict())
         st_c = {x for x in symbols.values()}
         st_g = g.get_symbol_types()
-        m_c = {x for x in models.values()}
+        m_c = {x.name: x for x in models.values()}
         m_g = g.get_models()
         self.assertTrue(st_c == st_g,
                         'Canonical constructed graph does not have the right Symbol objects.')
@@ -129,7 +129,7 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models()
         g = Graph(models=models, symbol_types=symbols, composite_models=dict())
         g.remove_models({models['model6'].name: models['model6']})
-        self.assertTrue(models['model6'] not in g.get_models(),
+        self.assertTrue(models['model6'] not in g.get_models().values(),
                         "Model was unsuccessfully removed from the graph.")
         for s in g._input_to_model.values():
             self.assertTrue(models['model6'] not in s,
@@ -140,10 +140,10 @@ class GraphTest(unittest.TestCase):
         m6 = models['model6']
         del models['model6']
         for m in models.values():
-            self.assertTrue(m in g.get_models(),
+            self.assertTrue(m in g.get_models().values(),
                             "Too many models were removed.")
         g.update_models({'Model6': m6})
-        self.assertTrue(m6 in g.get_models(),
+        self.assertTrue(m6 in g.get_models().values(),
                         "Model was unsuccessfully added to the graph.")
         self.assertTrue(m6 in g._input_to_model[symbols['D']],
                         "Model was unsuccessfully added to the graph.")
@@ -166,9 +166,9 @@ class GraphTest(unittest.TestCase):
                         "Symbol was not properly removed.")
         self.assertTrue(symbols['F'] not in g._output_to_model.keys(),
                         "Symbol was not properly removed.")
-        self.assertTrue(models['model3'] not in g.get_models(),
+        self.assertTrue(models['model3'] not in g.get_models().values(),
                         "Removing symbol did not remove a model using that symbol.")
-        self.assertTrue(models['model6'] not in g.get_models(),
+        self.assertTrue(models['model6'] not in g.get_models().values(),
                         "Removing symbol did not remove a model using that symbol.")
         g.update_symbol_types({'F': symbols['F']})
         self.assertTrue(symbols['F'] in g.get_symbol_types(),
