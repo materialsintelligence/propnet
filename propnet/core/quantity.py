@@ -249,6 +249,10 @@ class BaseQuantity(ABC, MSONable):
     def contains_imaginary_value(self):
         return
 
+    @abstractmethod
+    def has_eq_value_to(self, rhs):
+        return
+
     def __hash__(self):
         hash_value = hash(self.symbol.name) ^ hash(self.provenance)
         for tag in self.tags:
@@ -573,25 +577,34 @@ class NumQuantity(BaseQuantity):
         if not self.uncertainty and not other.uncertainty:
             uncertainty_is_close = True
         elif self.uncertainty and other.uncertainty:
-            uncertainty_is_close = self._values_are_close(self.uncertainty,
-                                                          other.uncertainty)
+            uncertainty_is_close = self.values_are_close(self.uncertainty,
+                                                         other.uncertainty)
         else:
             return False
 
-        value_is_close = self._values_are_close(self.value, other.value)
+        value_is_close = self.values_are_close(self.value, other.value)
 
         return \
             super().__eq__(other) and \
             uncertainty_is_close and \
             value_is_close
 
+    def has_eq_value_to(self, rhs):
+        if not isinstance(rhs, type(self)):
+            raise TypeError("This method requires two {} objects".format(type(self).__name__))
+        return self.values_are_close(self.value, rhs.value)
+
     @staticmethod
-    def _values_are_close(lhs, rhs):
+    def values_are_close(lhs, rhs):
         if not (isinstance(lhs, ureg.Quantity) and isinstance(rhs, ureg.Quantity)):
             raise TypeError("This method requires two pint Quantity objects")
+        if not isinstance(lhs.magnitude, np.ndarray):
+            lhs_convert = lhs.to_compact()
+        else:
+            lhs_convert = copy.deepcopy(lhs)
         try:
-            is_close = np.allclose(lhs.magnitude,
-                                   rhs.to(lhs.units).magnitude)
+            rhs_convert = rhs.to(lhs_convert.units)
+            is_close = np.allclose(lhs_convert, rhs_convert)
         except DimensionalityError:
             return False
         except Exception as ex:
@@ -617,13 +630,12 @@ class ObjQuantity(BaseQuantity):
                 try:
                     cls_ = getattr(sys.modules[target_module], target_class)
                     value = cls_(value)
-                except (TypeError, ValueError) as ex:
+                except (TypeError, ValueError):
                     raise TypeError("Mismatch in type of value ({}) and type specified "
                                     "by '{}' object symbol ({}).\nTypecasting failed."
                                     "".format(old_type.__name__,
                                               symbol_type.name,
-                                              symbol_type.object_class,
-                                              symbol_type.object_type))
+                                              symbol_type.object_class))
             else:
                 # Do not try to import the module for security reasons.
                 # We don't want malicious modules to be automatically imported.
@@ -669,6 +681,11 @@ class ObjQuantity(BaseQuantity):
 
     def contains_imaginary_value(self):
         return False
+
+    def has_eq_value_to(self, rhs):
+        if not isinstance(rhs, type(self)):
+            raise TypeError("This method requires two {} objects".format(type(self).__name__))
+        return self.value == rhs.value
 
     def as_dict(self):
         d = super().as_dict()

@@ -393,16 +393,10 @@ class Model(ABC):
             units = self.unit_map.get(k)
             known_quantity = QuantityFactory.create_quantity(symbol, known_output, units)
             evaluate_output = evaluate_outputs[k]
-            if isinstance(known_quantity, NumQuantity):
-                if not np.allclose(known_quantity.value, evaluate_output.value, atol=0.0):
-                    errmsg = errmsg.format("evaluate", k, evaluate_output,
-                                           k, known_quantity)
-                    raise ModelEvaluationError(errmsg)
-            else:
-                if known_quantity.value != evaluate_output.value:
-                    errmsg = errmsg.format("evaluate", k, evaluate_output,
-                                           k, known_quantity)
-                    raise ModelEvaluationError(errmsg)
+            if not known_quantity.has_eq_value_to(evaluate_output):
+                errmsg = errmsg.format("evaluate", k, evaluate_output,
+                                       k, known_quantity)
+                raise ModelEvaluationError(errmsg)
 
         return True
 
