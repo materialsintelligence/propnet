@@ -66,7 +66,7 @@ class ProvenanceStore(ProvenanceElement):
         if type(other) is type(self):
             return self.model == other.model and \
                    set(self.inputs or []) == set(other.inputs or [])
-        elif type(other) is ProvenanceElement:
+        elif isinstance(other, ProvenanceElement) and issubclass(type(self), ProvenanceElement):
             return self.model == other.model and \
                    set(self.inputs or []) == set(self.from_provenance_element(other).inputs or [])
         else:

@@ -19,7 +19,7 @@ from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
-from propnet.symbols import DEFAULT_UNITS, Symbol
+from propnet.symbols import DEFAULT_UNITS
 
 logger = logging.getLogger(__name__)
 

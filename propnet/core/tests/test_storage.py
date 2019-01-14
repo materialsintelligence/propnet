@@ -597,21 +597,25 @@ class StorageTest(unittest.TestCase):
 
     def lookup_fun_missing_value(self, key):
         d = self.lookup_fun(key)
-        d.pop('value') if d else None
+        if d:
+            del d['value']
         return d
 
+    @staticmethod
     def lookup_fun_incorrect_type(self, key):
         return key
 
+    @staticmethod
     def lookup_fun_key_not_found(self, key):
         # Lookup function expects None when key is not found
         return None
 
     def get_lookup_dict(self):
         lookup_dict = {}
-        quantities = list(chain.from_iterable(self.quantities_custom_symbol.values())) + \
-                     list(chain.from_iterable(self.quantities_canonical_symbol.values())) + \
-                     [self.quantity_with_uncertainty, self.object_quantity]
+        quantities = \
+            list(chain.from_iterable(self.quantities_custom_symbol.values())) + \
+            list(chain.from_iterable(self.quantities_canonical_symbol.values())) + \
+            [self.quantity_with_uncertainty, self.object_quantity]
         for q in quantities:
             lookup_dict[q._internal_id] = {"value": q.value,
                                            "units": q.units,

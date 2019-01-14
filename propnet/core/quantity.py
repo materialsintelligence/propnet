@@ -151,7 +151,7 @@ class BaseQuantity(ABC, MSONable):
         return
 
     @abstractmethod
-    def pretty_string(self):
+    def pretty_string(self, **kwargs):
         return
 
     def is_cyclic(self, visited=None):

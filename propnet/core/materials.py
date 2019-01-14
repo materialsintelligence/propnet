@@ -6,7 +6,7 @@ from collections import defaultdict
 from itertools import chain
 import warnings
 
-from propnet.core.quantity import QuantityFactory, NumQuantity, BaseQuantity
+from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.symbols import Symbol
 
 from propnet.symbols import DEFAULT_SYMBOL_VALUES

@@ -386,9 +386,9 @@ class GraphTest(unittest.TestCase):
                                                                          inputs=[permeability[1],
                                                                                  permittivity[1]]))]
 
-        st_outputs = [DEFAULT_SYMBOLS['relative_permeability'],
-                      DEFAULT_SYMBOLS['relative_permittivity'],
-                      DEFAULT_SYMBOLS['refractive_index']]
+        # st_outputs = [DEFAULT_SYMBOLS['relative_permeability'],
+        #               DEFAULT_SYMBOLS['relative_permittivity'],
+        #               DEFAULT_SYMBOLS['refractive_index']]
 
         # Test
         for q_expected in s_outputs:
