@@ -25,8 +25,8 @@ symbol_property_map:
   v_l: sound_velocity_longitudinal
 test_data:
 - inputs:
-    B: 182.33333333333337
-    G: 73.44285714285714
-    p: 8.027685486298079
+    B: 1.8233333333333337e11
+    G: 7.344285714285714e10
+    p: 8.027685486298079e3
   outputs:
     v_l: 5908.5806864576425
