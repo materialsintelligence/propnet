@@ -602,11 +602,11 @@ class StorageTest(unittest.TestCase):
         return d
 
     @staticmethod
-    def lookup_fun_incorrect_type(self, key):
+    def lookup_fun_incorrect_type(key):
         return key
 
     @staticmethod
-    def lookup_fun_key_not_found(self, key):
+    def lookup_fun_key_not_found(key):
         # Lookup function expects None when key is not found
         return None
 
