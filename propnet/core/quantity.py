@@ -323,7 +323,8 @@ class NumQuantity(BaseQuantity):
                 if np.issubdtype(uncertainty.dtype, self._ACCEPTABLE_DTYPES):
                     self._uncertainty = ureg.Quantity(uncertainty, units)
                 else:
-                    raise TypeError('Non-numerical uncertainty type passed to constructor: {}'.format(type(uncertainty)))
+                    raise TypeError('Non-numerical uncertainty type passed to constructor: {}'.
+                                    format(type(uncertainty)))
             elif isinstance(uncertainty, ureg.Quantity):
                 self._uncertainty = uncertainty.to(units)
             elif isinstance(uncertainty, NumQuantity):
