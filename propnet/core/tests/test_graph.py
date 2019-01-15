@@ -293,12 +293,9 @@ class GraphTest(unittest.TestCase):
         constraints.  The canonical graph and the canonical material are
         used for this test.
         """
-        model4 = EquationModel(name="model4", equations=["D=B*C*11"],
-                               constraints=["G==0"])
 
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models(constrain_model_4=True)
-        # models['model4'] = model4
         del models['model6']
         material = GraphTest.generate_canonical_material(symbols)
         g = Graph(symbol_types=symbols, models=models, composite_models=dict())
