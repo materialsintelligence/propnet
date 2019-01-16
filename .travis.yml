@@ -1,28 +1,27 @@
 language: python
 services: mongodb
 python:
-  - "3.6"
+- '3.6'
 install:
-  - sudo apt-get update
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
-
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy
-  - source activate test-environment
-  - pip install -r requirements.txt
-  - conda install pygraphviz
-  - pip install nose
-  - pip install coverage
-  - pip install python-coveralls
+- sudo apt-get update
+- wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+- bash miniconda.sh -b -p $HOME/miniconda
+- export PATH="$HOME/miniconda/bin:$PATH"
+- hash -r
+- conda config --set always_yes yes --set changeps1 no
+- conda update -q conda
+- conda info -a
+- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy
+- source activate test-environment
+- pip install -r requirements.txt
+- conda install pygraphviz
+- pip install nose
+- pip install coverage
+- pip install python-coveralls
 script:
-  - nosetests --with-coverage --cover-package=propnet
+- nosetests --with-coverage --cover-package=propnet
 after_success:
-  - coveralls
+- coveralls
+env:
+  matrix:
+    secure: jCobaLkRup4TWu6k7QXu5cvVKzyU9hiFxXS0Sd/1+Cd0p0O5NzK9KxX7q3GcUJDLk+3qqiJl45ipqxi3DM8A/uWb1Ouu4tyCgRMgqe9MEFJ70g9/fdOlQQKoVqsVncOb155jyhY96ZC32Q3q+FPC+Ya9ZB77dOMakzYx1e+MiLTixL0f4ccuKHp9SnI58LTymTnPmEf0U+hZjuiWXdZmqd6JpZ8Gp1AhNCYi7Vg/oGmjqq0DrKsrKvRg0ikKq7SN6CnxHQUv6N+H6VSo9lvaHyyfl74qJJZevEqUykk8S2F8xyhAJHpVKALcDmrFFWvRJ3s2ar479d0/K5yr8BsBdim4/AB91wE8s07kWmJZdNyWgJLP0mUDpyfu1qPvyeXaAl4BbxAG6oLqHsBkWulL/jMTnzJrpz7s3dnoBn2Y1u3GMWTQg5yVKNBsL4dYqCz9v4MLYqUiXta9X46a0MGZBf81C+6ClV/FxCAhlTHxaoXoS8h+JfZevCJkRaGLGkMVS7xXGyoh7A6oz+zSiva94wA8s93QrKfHMQuM+K3GkABwkHf9IVF3mMXXWD1hPaELL5RpTizEIER8nkmnXlMdKEqAlFlWJ9kdcgGeqGEf1ZAWVSja+jUARIW3UFMqEhoK3a5EaBdKpMgRMbQRmegxd1Ki8rYZqnWlv8etHIprIqI=
