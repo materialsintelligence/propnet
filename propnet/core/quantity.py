@@ -87,7 +87,7 @@ class BaseQuantity(ABC, MSONable):
                                                          "date_created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
 
     @staticmethod
-    def _get_symbol_from_string(name):
+    def get_symbol_from_string(name):
         # Invoke default symbol if symbol is a string
         if not isinstance(name, str):
             raise TypeError("Expected str, encountered {}".format(type(name)))
@@ -287,7 +287,7 @@ class NumQuantity(BaseQuantity):
                  provenance=None, uncertainty=None):
 
         if isinstance(symbol_type, str):
-            symbol_type = BaseQuantity._get_symbol_from_string(symbol_type)
+            symbol_type = BaseQuantity.get_symbol_from_string(symbol_type)
 
         # Set default units if not supplied
         if not units:
@@ -302,11 +302,14 @@ class NumQuantity(BaseQuantity):
         elif isinstance(value, self._ACCEPTABLE_TYPES) and not \
                 isinstance(value, self._UNACCEPTABLE_TYPES):
             value_in = ureg.Quantity(value, units)
+            if isinstance(value_in.magnitude, np.ndarray) and \
+                    not self._is_acceptable_dtype(value_in.magnitude.dtype):
+                raise TypeError('Non-numerical array passed to constructor: {}'.format(value_in.dtype))
         elif isinstance(value, np.ndarray):
-            if np.issubdtype(value.dtype, self._ACCEPTABLE_DTYPES):
+            if self._is_acceptable_dtype(value.dtype):
                 value_in = ureg.Quantity(value, units)
             else:
-                raise TypeError('Non-numerical numpy array passed to constructor: {}'.format(type(value)))
+                raise TypeError('Non-numerical numpy array passed to constructor: {}'.format(value.dtype))
         else:
             raise TypeError('Cannot parse type passed to constructor: {}'.format(type(value)))
 
@@ -319,8 +322,11 @@ class NumQuantity(BaseQuantity):
             elif isinstance(uncertainty, (float, int, list, complex)) and not \
                     isinstance(uncertainty, self._UNACCEPTABLE_TYPES):
                 self._uncertainty = ureg.Quantity(uncertainty, units)
+                if isinstance(self._uncertainty.magnitude, np.ndarray) and \
+                        not self._is_acceptable_dtype(self._uncertainty.magnitude.dtype):
+                    raise TypeError('Non-numerical array passed to constructor: {}'.format(self._uncertainty.dtype))
             elif isinstance(uncertainty, np.ndarray):
-                if np.issubdtype(uncertainty.dtype, self._ACCEPTABLE_DTYPES):
+                if self._is_acceptable_dtype(uncertainty.dtype):
                     self._uncertainty = ureg.Quantity(uncertainty, units)
                 else:
                     raise TypeError('Non-numerical uncertainty type passed to constructor: {}'.
@@ -350,6 +356,10 @@ class NumQuantity(BaseQuantity):
                 raise SymbolConstraintError(
                     "NumQuantity with {} value does not satisfy {}".format(
                         value, symbol_type.constraint))
+
+    @staticmethod
+    def _is_acceptable_dtype(this_dtype):
+        return any(np.issubdtype(this_dtype, dt) for dt in NumQuantity._ACCEPTABLE_DTYPES)
 
     def to(self, units):
         """
@@ -449,9 +459,6 @@ class NumQuantity(BaseQuantity):
 
         """
         def recursive_list_type_check(l):
-            if not hasattr(l, '__iter__'):
-                raise TypeError("Type '{}' is not a list or is not iterable".format(type(l)))
-
             # Acceptable data types
             acceptable_dtypes = NumQuantity._ACCEPTABLE_DTYPES
             # acceptable_types = NumQuantity._ACCEPTABLE_TYPES + tuple([NumQuantity])   # Do we want to support copy?
@@ -608,8 +615,6 @@ class NumQuantity(BaseQuantity):
             is_close = np.allclose(lhs_convert, rhs_convert)
         except DimensionalityError:
             return False
-        except Exception as ex:
-            raise ex
         return is_close
 
     def __hash__(self):
@@ -620,7 +625,7 @@ class ObjQuantity(BaseQuantity):
     def __init__(self, symbol_type, value, tags=None,
                  provenance=None):
         if isinstance(symbol_type, str):
-            symbol_type = super()._get_symbol_from_string(symbol_type)
+            symbol_type = super().get_symbol_from_string(symbol_type)
 
         if not symbol_type.is_correct_object_type(value):
             old_type = type(value)
@@ -744,14 +749,11 @@ class QuantityFactory(object):
 
         # TODO: This sort of thing probably indicates Symbol objects need to be split
         #       into different categories, like Quantity has been
-        if isinstance(symbol_type, str):
-            symbol_type = BaseQuantity._get_symbol_from_string(symbol_type)
-            symbol_is_object = symbol_type.category == 'object'
-        elif isinstance(symbol_type, Symbol):
-            symbol_is_object = symbol_type.category == 'object'
-        else:
-            raise TypeError("Unrecognized type for symbol_type: {}"
-                            "".format(type(symbol_type)))
+
+        if not isinstance(symbol_type, Symbol):
+            symbol_type = BaseQuantity.get_symbol_from_string(symbol_type)
+
+        symbol_is_object = symbol_type.category == 'object'
 
         if not symbol_is_object:
             if value is None:
