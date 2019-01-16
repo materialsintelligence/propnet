@@ -6,8 +6,11 @@ from propnet.core.materials import CompositeMaterial
 from propnet.core.symbols import Symbol
 from propnet.core.models import EquationModel
 from propnet.core.quantity import Quantity
+from propnet.ext.matproj import MPRester
+
+import os
 import json
-from monty.json import MontyDecoder
+from monty.json import MontyDecoder, jsanitize
 
 from propnet.symbols import DEFAULT_SYMBOLS
 
@@ -19,6 +22,8 @@ NO_EXPANSION_METHODS = True
 EXPANSION_METHOD_MESSAGE = "Expansion methods (TreeBuilder, etc.) are undergoing" \
                            "revision and tests are offline until complete"
 # TODO: There's a lot of code duplication here that could be added to setUp
+
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class GraphTest(unittest.TestCase):
@@ -880,9 +885,8 @@ class GraphTest(unittest.TestCase):
         """
         mp_data = {}
         for mpid in ('mp-13', 'mp-24972'):
-            with open("{}.json".format(mpid), 'r') as f:
+            with open(os.path.join(TEST_DIR, "{}.json".format(mpid)), 'r') as f:
                 data = json.load(f)
-            data = json.loads(data)
             material = Material()
             for d in data:
                 q = MontyDecoder().process_decoded(d)
@@ -974,3 +978,14 @@ class GraphTest(unittest.TestCase):
                                 "provenance improperly calculated")
                 self.assertTrue(expected_quantities[6] in q._provenance.inputs,
                                 "provenance improperly calculated")
+
+    @unittest.skip("Skipping creating composite data files")
+    def test_generate_composite_data_files(self):
+        mpr = MPRester()
+        mpids = ['mp-13', 'mp-24972']
+        materials = mpr.get_materials_for_mpids(mpids)
+        for m in materials:
+            mpid = [q.value for q in m.get_quantities() if q.symbol == "external_identifier_mp"][0]
+            with open(os.path.join(TEST_DIR, '{}.json'.format(mpid)), 'w') as f:
+                qs = jsanitize(m.get_quantities(), strict=True)
+                f.write(json.dumps(qs))
