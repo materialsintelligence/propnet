@@ -19,9 +19,9 @@ symbol_property_map:
     l: phonon_mean_free_path
 test_data:
 - inputs:
-    A_0: 2.19
-    a: 4.0
-    y: 1.19
+    A_0: 2.31
+    a: 0.98e-04
+    y: 1.55
     T: 273
   outputs:
-    l: 2845.8612
+    l: 55.70466399959487
