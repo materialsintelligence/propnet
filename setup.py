@@ -33,5 +33,6 @@ setup(
                       "Flask-Caching==1.3.3",
                       "uncertainties==3.0.2",
                       "maggma>=0.6.5",
-                      "gbml>=1.1.0"]
+                      "gbml>=1.1.0",
+					  "chronic>=0.3.4"]
 )
