@@ -6,7 +6,8 @@ from propnet.core.materials import CompositeMaterial
 from propnet.core.symbols import Symbol
 from propnet.core.models import EquationModel
 from propnet.core.quantity import Quantity
-from propnet.ext.matproj import MPRester
+import json
+from monty.json import MontyDecoder
 
 from propnet.symbols import DEFAULT_SYMBOLS
 
@@ -877,12 +878,22 @@ class GraphTest(unittest.TestCase):
         """
         Tests the graph's composite material evaluation.
         """
-        mpr = MPRester()
-        m1 = mpr.get_material_for_mpid("mp-13")
+        mp_data = {}
+        for mpid in ('mp-13', 'mp-24972'):
+            with open("{}.json".format(mpid), 'r') as f:
+                data = json.load(f)
+            data = json.loads(data)
+            material = Material()
+            for d in data:
+                q = MontyDecoder().process_decoded(d)
+                material.add_quantity(q)
+            mp_data[mpid] = material
+
+        m1 = mp_data["mp-13"]
         # Temporary hack for problem with zero band-gap materials
         m1.remove_symbol("band_gap_pbe")
         m1.add_quantity(Quantity("band_gap", 0.0))
-        m2 = mpr.get_material_for_mpid("mp-24972")
+        m2 = mp_data["mp-24972"]
         sm = CompositeMaterial([m1, m2])
 
         g = Graph()
