@@ -16,6 +16,7 @@ symbol_property_map:
     a: thermal_expansion_coefficient
     y: gruneisen_parameter
     T: temperature
+    l: phonon_mean_free_path
 test_data:
 - inputs:
     A_0: 2.19

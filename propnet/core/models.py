@@ -15,7 +15,6 @@ import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
-
 from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import Quantity
 from propnet.core.utils import references_to_bib, PrintToLogger
@@ -96,7 +95,12 @@ class Model(ABC):
             else:
                 self.constraints.append(Constraint(constraint))
 
-        self._test_data = test_data or self.load_test_data()
+        # Ensures our test data is symbol-keyed
+        test_data = test_data or self.load_test_data()
+        if test_data:
+            test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
+                         for data in test_data]
+        self._test_data = test_data
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -207,9 +211,10 @@ class Model(ABC):
         provenance = ProvenanceElement(
             model=self.name, inputs=list(symbol_quantity_dict.values()))
         out = self.map_symbols_to_properties(out)
+        unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
         for symbol, value in out.items():
             try:
-                quantity = Quantity(symbol, value, self.unit_map.get(symbol),
+                quantity = Quantity(symbol, value, unit_map_as_properties.get(symbol),
                                     provenance=provenance)
             except SymbolConstraintError as err:
                 if allow_failure:
@@ -308,7 +313,8 @@ class Model(ABC):
         Returns (bool): True if test succeeds
         """
         evaluate_inputs = self.map_symbols_to_properties(inputs)
-        evaluate_inputs = {s: Quantity(s, v, self.unit_map.get(s))
+        unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
+        evaluate_inputs = {s: Quantity(s, v, unit_map_as_properties.get(s))
                            for s, v in evaluate_inputs.items()}
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
@@ -321,7 +327,7 @@ class Model(ABC):
             known_quantity = Quantity(symbol, known_output, units)
             evaluate_output = evaluate_outputs[k]
             if known_quantity.is_pint or isinstance(known_quantity.value, list):
-                if not np.allclose(known_quantity.value, evaluate_output.value):
+                if not np.allclose(known_quantity.value, evaluate_output.value, atol=0.0):
                     errmsg = errmsg.format("evaluate", k, evaluate_output,
                                            k, known_quantity)
                     raise ModelEvaluationError(errmsg)
