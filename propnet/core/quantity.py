@@ -487,8 +487,12 @@ class NumQuantity(BaseQuantity):
 
         return recursive_list_type_check([to_check])
 
-    def pretty_string(self, sigfigs=4):
+    def pretty_string(self, **kwargs):
         # TODO: maybe support a rounding kwarg?
+        if 'sigfigs' in kwargs.keys():
+            sigfigs = kwargs['sigfigs']
+        else:
+            sigfigs = 4
         if isinstance(self.magnitude, self._ACCEPTABLE_SCALAR_TYPES):
             out = "{1:.{0}g}".format(sigfigs, self.magnitude)
             if self.uncertainty:
@@ -674,7 +678,7 @@ class ObjQuantity(BaseQuantity):
     def uncertainty(self):
         return None
 
-    def pretty_string(self):
+    def pretty_string(self, **kwargs):
         return "{}".format(self.value)
 
     # TODO: Determine whether it's necessary to define these for ObjQuantity
