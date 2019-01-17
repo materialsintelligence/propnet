@@ -198,7 +198,7 @@ def interactive_layout(app):
 
         output_rows = [{
             'Property': quantity.symbol.display_names[0],
-            'Value': quantity.pretty_string(3)
+            'Value': quantity.pretty_string(sigfigs=3)
         } for quantity in output_quantities]
 
         output_table = dt.DataTable(id='output-table',
