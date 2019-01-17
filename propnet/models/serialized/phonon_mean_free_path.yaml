@@ -1,0 +1,27 @@
+categories:
+- elastic
+- thermal
+constraints: null
+description: 'An expression for the phonon mean free path in a solid from lattice constant, coefficient of thermal expansion, gruneisen parameter, and temperature.'
+equations:
+- l = A_0 / (a * y * T)
+name: phonon_mean_free_path
+implemented_by:
+- jdagdelen
+references:
+- url:https://link.aps.org/doi/10.1103/PhysRev.98.1751
+solve_for_all_symbols: true
+symbol_property_map:
+    A_0: interatomic_spacing
+    a: thermal_expansion_coefficient
+    y: gruneisen_parameter
+    T: temperature
+    l: phonon_mean_free_path
+test_data:
+- inputs:
+    A_0: 2.31
+    a: 0.98e-04
+    y: 1.55
+    T: 273
+  outputs:
+    l: 55.70466399959487

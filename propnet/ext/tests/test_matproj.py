@@ -3,6 +3,10 @@ import unittest
 from propnet.core.graph import Graph
 from propnet.ext.matproj import MPRester
 
+mpr = MPRester()
+
+
+@unittest.skipIf(mpr.api_key == "", "No API key provided. Skipping MPRester tests.")
 class MPResterTest(unittest.TestCase):
     def setUp(self):
         mpid = 'mp-1153'

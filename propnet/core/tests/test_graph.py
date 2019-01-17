@@ -8,6 +8,10 @@ from propnet.core.models import EquationModel
 from propnet.core.quantity import QuantityFactory
 from propnet.ext.matproj import MPRester
 
+import os
+import json
+from monty.json import MontyDecoder, jsanitize
+
 from propnet.symbols import DEFAULT_SYMBOLS
 
 # TODO: I think the expansion/tree traversal methods are very cool
@@ -18,6 +22,8 @@ NO_EXPANSION_METHODS = True
 EXPANSION_METHOD_MESSAGE = "Expansion methods (TreeBuilder, etc.) are undergoing" \
                            "revision and tests are offline until complete"
 # TODO: There's a lot of code duplication here that could be added to setUp
+
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class GraphTest(unittest.TestCase):
@@ -872,12 +878,21 @@ class GraphTest(unittest.TestCase):
         """
         Tests the graph's composite material evaluation.
         """
-        mpr = MPRester()
-        m1 = mpr.get_material_for_mpid("mp-13")
+        mp_data = {}
+        for mpid in ('mp-13', 'mp-24972'):
+            with open(os.path.join(TEST_DIR, "{}.json".format(mpid)), 'r') as f:
+                data = json.load(f)
+            material = Material()
+            for d in data:
+                q = MontyDecoder().process_decoded(d)
+                material.add_quantity(q)
+            mp_data[mpid] = material
+
+        m1 = mp_data["mp-13"]
         # Temporary hack for problem with zero band-gap materials
         m1.remove_symbol("band_gap_pbe")
         m1.add_quantity(QuantityFactory.create_quantity("band_gap", 0.0))
-        m2 = mpr.get_material_for_mpid("mp-24972")
+        m2 = mp_data["mp-24972"]
         sm = CompositeMaterial([m1, m2])
 
         g = Graph()
@@ -944,3 +959,14 @@ class GraphTest(unittest.TestCase):
                                 "provenance improperly calculated")
                 self.assertTrue(expected_quantities[12] in q._provenance.inputs,
                                 "provenance improperly calculated")
+
+    @unittest.skip("Skipping creating composite data files")
+    def test_generate_composite_data_files(self):
+        mpr = MPRester()
+        mpids = ['mp-13', 'mp-24972']
+        materials = mpr.get_materials_for_mpids(mpids)
+        for m in materials:
+            mpid = [q.value for q in m.get_quantities() if q.symbol == "external_identifier_mp"][0]
+            with open(os.path.join(TEST_DIR, '{}.json'.format(mpid)), 'w') as f:
+                qs = jsanitize(m.get_quantities(), strict=True)
+                f.write(json.dumps(qs))

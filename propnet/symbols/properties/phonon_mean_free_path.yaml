@@ -1,0 +1,7 @@
+name: phonon_mean_free_path
+units: angstrom
+display_names: ['Phonon Mean Free Path']
+display_symbols: ['l']
+shape: 1
+comment: 'Mean free path for lattice vibrations (phonons) in the classical temperature regime as described in 10.1103/PhysRev.98.1751'
+category: property
