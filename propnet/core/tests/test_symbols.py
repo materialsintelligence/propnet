@@ -40,7 +40,8 @@ class SymbolTest(unittest.TestCase):
             self.assertTrue(st.display_symbols is not None and isinstance(st.display_symbols, list) and
                             len(st.display_symbols) != 0, st.name)
             self.assertTrue(st.comment is not None and isinstance(st.comment, str))
-            self.assertIsNotNone(st.units)
+            if st.category != 'object':
+                self.assertIsNotNone(st.units)
 
     def test_all_properties(self):
         self.assertEqual(str(DEFAULT_SYMBOLS['density'].units),
