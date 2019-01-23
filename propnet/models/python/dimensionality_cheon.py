@@ -1,10 +1,10 @@
-from pymatgen.analysis.find_dimension import find_dimension
+from pymatgen.analysis.dimensionality import get_dimensionality_cheon
 
 
 def plug_in(symbol_values):
     structure = symbol_values['structure']
     return {
-        'dimensionality': find_dimension(structure),
+        'dimensionality': get_dimensionality_cheon(structure),
     }
 
 DESCRIPTION = """
