@@ -590,11 +590,13 @@ class NumQuantity(BaseQuantity):
             uncertainty_is_close = True
         elif self.uncertainty and other.uncertainty:
             uncertainty_is_close = self.values_are_close(self.uncertainty,
-                                                         other.uncertainty)
+                                                         other.uncertainty,
+                                                         units_for_comparison=self.uncertainty.units)
         else:
             return False
 
-        value_is_close = self.values_are_close(self.value, other.value)
+        value_is_close = self.values_are_close(self.value, other.value,
+                                               units_for_comparison=self.symbol.units)
 
         return \
             super().__eq__(other) and \
@@ -604,22 +606,37 @@ class NumQuantity(BaseQuantity):
     def has_eq_value_to(self, rhs):
         if not isinstance(rhs, type(self)):
             raise TypeError("This method requires two {} objects".format(type(self).__name__))
-        return self.values_are_close(self.value, rhs.value)
+        return self.values_are_close(self.value, rhs.value,
+                                     units_for_comparison=self.symbol.units)
 
     @staticmethod
-    def values_are_close(lhs, rhs):
+    def values_are_close(lhs, rhs, units_for_comparison=None):
         if not (isinstance(lhs, ureg.Quantity) and isinstance(rhs, ureg.Quantity)):
             raise TypeError("This method requires two pint Quantity objects")
-        if not isinstance(lhs.magnitude, np.ndarray):
-            lhs_convert = lhs.to_compact()
-        else:
-            lhs_convert = copy.deepcopy(lhs)
+        if not units_for_comparison:
+            if not isinstance(lhs.magnitude, np.ndarray):
+                if lhs.magnitude == 0 and rhs.magnitude == 0:
+                    return True
+                elif lhs.magnitude == 0:
+                    # Compare using the units of whatever the zero value is
+                    units_for_comparison = lhs.units
+                elif rhs.magnitude == 0:
+                    units_for_comparison = rhs.units
+                else:
+                    lhs_compact_units = lhs.to_compact().units
+                    rhs_compact_units = rhs.to_compact().units
+                    if 1 * lhs_compact_units < 1 * rhs_compact_units:
+                        units_for_comparison = lhs_compact_units
+                    else:
+                        units_for_comparison = rhs_compact_units
+            else:
+                units_for_comparison = lhs.units
         try:
-            rhs_convert = rhs.to(lhs_convert.units)
-            is_close = np.allclose(lhs_convert, rhs_convert)
+            lhs_convert = lhs.to(units_for_comparison)
+            rhs_convert = rhs.to(units_for_comparison)
         except DimensionalityError:
             return False
-        return is_close
+        return np.allclose(lhs_convert, rhs_convert)
 
     def __hash__(self):
         return super().__hash__()
