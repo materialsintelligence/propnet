@@ -697,3 +697,28 @@ class QuantityTest(unittest.TestCase):
                                       '_tags', '_provenance',
                                       '_internal_id', '_uncertainty'])
 
+    def test_hash(self):
+        q = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless')
+        q_duplicate = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless')
+        q_copy = copy.deepcopy(q)
+        q_diff_value_same_provenance = QuantityFactory.create_quantity(self.custom_symbol, 2, 'dimensionless')
+        q_tags = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless',
+                                                 tags='experimental')
+        q_provenance = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless',
+                                                       provenance=ProvenanceElement(
+                                                           model='my_model',
+                                                           inputs=[q, q_tags]
+                                                       ))
+
+        s = {q, q_duplicate}
+        self.assertTrue(len(s), 1)
+        s.add(q_copy)
+        self.assertTrue(len(s), 1)
+        s.add(q_diff_value_same_provenance)
+        self.assertTrue(hash(q) == hash(q_diff_value_same_provenance))
+        self.assertTrue(len(s), 2)
+        s.add(q_tags)
+        self.assertTrue(len(s), 3)
+        s.add(q_provenance)
+        self.assertTrue(len(s), 4)
+
