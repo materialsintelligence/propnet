@@ -689,6 +689,20 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_ev_small_number_1, q_ev_small_number_2)
         self.assertEqual(q_ev_small_number_2, q_ev_small_number_1)
 
+        # Test with objects (much simpler...)
+        q = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
+        q_duplicate = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
+        q_copy = copy.deepcopy(q)
+        q_tags = QuantityFactory.create_quantity(self.custom_object_symbol, 'test', tags='custom')
+        q_provenance = QuantityFactory.create_quantity(self.custom_object_symbol, 'test',
+                                                       tags='custom',
+                                                       provenance=ProvenanceElement(model='my_model',
+                                                                                    inputs=[q]))
+        self.assertEqual(q, q_duplicate)
+        self.assertEqual(q, q_copy)
+        self.assertNotEqual(q, q_tags)
+        self.assertNotEqual(q, q_provenance)
+
         fields = list(q1.__dict__.keys())
 
         # This is to check to see if we modified the fields in the object, in case we need to add
@@ -740,6 +754,6 @@ class QuantityTest(unittest.TestCase):
         self.assertFalse(q)
 
     def test_str_and_repr(self):
-        q = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless')
-        self.assertEqual(str(q), "<A, 1, dimensionless>")
-        self.assertEqual(repr(q), "<A, 1, dimensionless>")
+        q = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless', tags='custom')
+        self.assertEqual(str(q), "<A, 1 dimensionless, ['custom']>")
+        self.assertEqual(repr(q), "<A, 1 dimensionless, ['custom']>")
