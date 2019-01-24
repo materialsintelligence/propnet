@@ -216,6 +216,14 @@ class QuantityTest(unittest.TestCase):
         self.assertFalse(q_middle_layer.is_cyclic())
         self.assertTrue(q_highest_layer.is_cyclic())
 
+        # A quantity should never not have a provenance assigned,
+        # but that could be changed in the future or someone could
+        # override it like below.
+        q_no_provenance = QuantityFactory.create_quantity(self.custom_symbol, 1)
+        q_no_provenance._provenance = None
+
+        self.assertFalse(q_no_provenance.is_cyclic())
+
     def test_pretty_string(self):
         quantity = QuantityFactory.create_quantity('bulk_modulus', 100)
         self.assertEqual(quantity.pretty_string(sigfigs=3), "100 GPa")
