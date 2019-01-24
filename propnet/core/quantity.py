@@ -99,7 +99,7 @@ class BaseQuantity(ABC, MSONable):
 
     @abstractmethod
     def magnitude(self):
-        return
+        pass
 
     @property
     def symbol(self):
@@ -144,15 +144,15 @@ class BaseQuantity(ABC, MSONable):
 
     @abstractmethod
     def units(self):
-        return
+        pass
 
     @abstractmethod
     def uncertainty(self):
-        return
+        pass
 
     @abstractmethod
     def pretty_string(self, **kwargs):
-        return
+        pass
 
     def is_cyclic(self, visited=None):
         """
@@ -239,19 +239,19 @@ class BaseQuantity(ABC, MSONable):
 
     @abstractmethod
     def contains_nan_value(self):
-        return
+        pass
 
     @abstractmethod
     def contains_complex_type(self):
-        return
+        pass
 
     @abstractmethod
     def contains_imaginary_value(self):
-        return
+        pass
 
     @abstractmethod
     def has_eq_value_to(self, rhs):
-        return
+        pass
 
     def __hash__(self):
         hash_value = hash(self.symbol.name) ^ hash(self.provenance)
