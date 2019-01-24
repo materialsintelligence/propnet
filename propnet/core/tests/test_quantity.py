@@ -65,6 +65,19 @@ class QuantityTest(unittest.TestCase):
         self.assertIsInstance(q.value.magnitude, np.ndarray)
         self.assertEqual(q.value.units.format_babel(), 'dimensionless')
 
+        # Reject non-numerical np arrays for NumQuantity
+        value_string_list_array = [['this', 'is'],
+                                   ['a', 'test']]
+        value_string_np_array = np.array(value_string_list_array)
+        with self.assertRaises(TypeError):
+            q = NumQuantity(self.custom_symbol, value_string_list_array)
+        with self.assertRaises(TypeError):
+            q = NumQuantity(self.custom_symbol, value_string_np_array)
+
+        # Reject non-numerical quantities for non-object symbols
+        with self.assertRaises(TypeError):
+            q = QuantityFactory.create_quantity(self.custom_symbol, value_string_list_array)
+
         # From custom numerical symbol with uncertainty
         q = QuantityFactory.create_quantity(self.custom_symbol, 5.0, uncertainty=0.1)
         self.assertIsInstance(q, NumQuantity)
@@ -231,6 +244,12 @@ class QuantityTest(unittest.TestCase):
         quantity = QuantityFactory.create_quantity('bulk_modulus', 100,
                                                    uncertainty=1.23456)
         self.assertEqual(quantity.pretty_string(sigfigs=3), "100\u00B11.235 GPa")
+
+        quantity = QuantityFactory.create_quantity(self.custom_symbol, [1, 2, 3], 'dimensionless')
+        self.assertEqual(quantity.pretty_string(), '[1 2 3]')
+
+        quantity = QuantityFactory.create_quantity(self.custom_symbol, [1, 2, 3], 'atoms')
+        self.assertEqual(quantity.pretty_string(), '[1 2 3] atom')
 
     def test_to(self):
         quantity = QuantityFactory.create_quantity('band_gap', 3.0, 'eV')

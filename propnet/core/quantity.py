@@ -299,19 +299,10 @@ class NumQuantity(BaseQuantity):
             value_in = ureg.Quantity(np.asscalar(value), units)
         elif isinstance(value, ureg.Quantity):
             value_in = value.to(units)
-        elif isinstance(value, self._ACCEPTABLE_TYPES) and not \
-                isinstance(value, self._UNACCEPTABLE_TYPES):
+        elif self.is_acceptable_type(value):
             value_in = ureg.Quantity(value, units)
-            if isinstance(value_in.magnitude, np.ndarray) and \
-                    not self._is_acceptable_dtype(value_in.magnitude.dtype):
-                raise TypeError('Non-numerical array passed to constructor: {}'.format(value_in.dtype))
-        elif isinstance(value, np.ndarray):
-            if self._is_acceptable_dtype(value.dtype):
-                value_in = ureg.Quantity(value, units)
-            else:
-                raise TypeError('Non-numerical numpy array passed to constructor: {}'.format(value.dtype))
         else:
-            raise TypeError('Cannot parse type passed to constructor: {}'.format(type(value)))
+            raise TypeError('Invalid type passed to constructor: {}'.format(type(value)))
 
         super(NumQuantity, self).__init__(symbol_type, value_in,
                                           tags=tags, provenance=provenance)
@@ -319,29 +310,16 @@ class NumQuantity(BaseQuantity):
         if uncertainty is not None:
             if isinstance(uncertainty, self._ACCEPTABLE_DTYPES):
                 self._uncertainty = ureg.Quantity(np.asscalar(uncertainty), units)
-            elif isinstance(uncertainty, (float, int, list, complex)) and not \
-                    isinstance(uncertainty, self._UNACCEPTABLE_TYPES):
-                self._uncertainty = ureg.Quantity(uncertainty, units)
-                if isinstance(self._uncertainty.magnitude, np.ndarray) and \
-                        not self._is_acceptable_dtype(self._uncertainty.magnitude.dtype):
-                    raise TypeError('Non-numerical array passed to constructor: {}'.format(self._uncertainty.dtype))
-            elif isinstance(uncertainty, np.ndarray):
-                if self._is_acceptable_dtype(uncertainty.dtype):
-                    self._uncertainty = ureg.Quantity(uncertainty, units)
-                else:
-                    raise TypeError('Non-numerical uncertainty type passed to constructor: {}'.
-                                    format(type(uncertainty)))
             elif isinstance(uncertainty, ureg.Quantity):
                 self._uncertainty = uncertainty.to(units)
             elif isinstance(uncertainty, NumQuantity):
                 self._uncertainty = uncertainty._value.to(units)
             elif isinstance(uncertainty, tuple):
                 self._uncertainty = ureg.Quantity.from_tuple(uncertainty).to(units)
+            elif self.is_acceptable_type(uncertainty):
+                self._uncertainty = ureg.Quantity(uncertainty, units)
             else:
-                try:
-                    self._uncertainty = ureg.Quantity(uncertainty).to(units)
-                except Exception:
-                    raise ValueError('Cannot parse uncertainty passed to constructor: {}'.format(uncertainty))
+                raise ValueError('Cannot parse uncertainty passed to constructor: {}'.format(uncertainty))
         else:
             self._uncertainty = None
 
@@ -459,24 +437,17 @@ class NumQuantity(BaseQuantity):
 
         """
         def recursive_list_type_check(l):
-            # Acceptable data types
-            acceptable_dtypes = NumQuantity._ACCEPTABLE_DTYPES
-            # acceptable_types = NumQuantity._ACCEPTABLE_TYPES + tuple([NumQuantity])   # Do we want to support copy?
-            acceptable_types = NumQuantity._ACCEPTABLE_TYPES
-            unacceptable_types = NumQuantity._UNACCEPTABLE_TYPES
-
             nested_lists = [v for v in l if isinstance(v, list)]
             np_arrays = [v for v in l if isinstance(v, np.ndarray)]
             ureg_quantities = [v for v in l if isinstance(v, ureg.Quantity)]
             regular_data = [v for v in l if not isinstance(v, (list, np.ndarray))]
 
-            regular_data_is_type = all([isinstance(v, acceptable_types) and not
-                                        isinstance(v, unacceptable_types)
+            regular_data_is_type = all([isinstance(v, NumQuantity._ACCEPTABLE_TYPES) and not
+                                        isinstance(v, NumQuantity._UNACCEPTABLE_TYPES)
                                         for v in regular_data])
             # If nested_lists is empty, all() returns true automatically
             nested_lists_is_type = all(recursive_list_type_check(v) for v in nested_lists)
-            # issubdtype() accepting tuples as second arg is deprecated, using list comp instead
-            np_arrays_is_type = all(any(np.issubdtype(v.dtype, dt) for dt in acceptable_dtypes)
+            np_arrays_is_type = all(NumQuantity._is_acceptable_dtype(v.dtype)
                                     for v in np_arrays)
 
             ureg_quantities_is_type = all(recursive_list_type_check([v.magnitude])
@@ -500,8 +471,9 @@ class NumQuantity(BaseQuantity):
         else:
             out = "{}".format(self.magnitude)
 
-        # The format str is specific to pint units. ~ invokes abbreviations, P is "pretty" format
-        out += " {:~P}".format(self.units)
+        if self.units and str(self.units) != 'dimensionless':
+            # The format str is specific to pint units. ~ invokes abbreviations, P is "pretty" format
+            out += " {:~P}".format(self.units)
 
         return out
 
@@ -789,6 +761,9 @@ class QuantityFactory(object):
                                    units=units, tags=tags,
                                    provenance=provenance,
                                    uncertainty=uncertainty)
+            else:
+                raise TypeError("Cannot initialize a {}-type symbol with a non-numerical"
+                                " value type.".format(symbol_type.category))
 
         if units is not None:
             if symbol_is_object:
