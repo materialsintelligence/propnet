@@ -520,6 +520,7 @@ class QuantityTest(unittest.TestCase):
             self.custom_symbol, 5, tags='experimental', uncertainty=1,
             provenance=ProvenanceElement(model='my_model', inputs=[q2]))
 
+        # Tests using __eq__() method
         self.assertEqual(q1, q1_copy)
         self.assertEqual(q1.symbol, q1_copy.symbol)
         self.assertEqual(q1.value, q1_copy.value)
@@ -528,62 +529,151 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q1.uncertainty, q1_copy.uncertainty)
         self.assertEqual(q1.provenance, q1_copy.provenance)
 
+        # Negative __eq__() tests
         self.assertNotEqual(q1, q2)
         self.assertNotEqual(q2, q3)
         self.assertNotEqual(q1, q1_different_provenance)
 
+        # Tests using has_eq_value_to() which ignores provenance
+        # and only looks at the value and units
         self.assertTrue(q1.has_eq_value_to(q1_copy))
+        self.assertTrue(q1.has_eq_value_to(q1_different_provenance))
         self.assertTrue(q1.has_eq_value_to(q4))
         self.assertFalse(q1.has_eq_value_to(q2))
         self.assertTrue(q2.has_eq_value_to(q3))
         with self.assertRaises(TypeError):
             q1.has_eq_value_to(5)
 
+        # Quantity creation to test value equality in different units using values_close_in_units().
+        # eV are small energy units and joule are large energy units.
+        # In principle, comparing units in eV vs. joules vs. attempting to discover the appropriate
+        # unit may yield different results. This is an attempt to robustly equate values which are floats.
+
         q_ev = QuantityFactory.create_quantity('band_gap', 1, units='eV')
+        # Should be equal to q_ev within tolerance
         q_ev_slightly_bigger = QuantityFactory.create_quantity('band_gap', 1 + 1e-8, units='eV')
+        # Should not be equal to q_ev within tolerance
         q_ev_too_big = QuantityFactory.create_quantity('band_gap', 1 + 1e-4, units='eV')
 
+        self.assertTrue(NumQuantity.values_close_in_units(q_ev.value, q_ev_slightly_bigger.value))
+        self.assertFalse(NumQuantity.values_close_in_units(q_ev.value, q_ev_too_big.value))
+
         q_ev_zero = QuantityFactory.create_quantity('band_gap', 0, units='eV')
+        q_joule_zero = q_ev_zero.to('joule')
+        q_nev_zero = q_ev_zero.to('nanoelectron_volt')
+        # When compared to 0 eV in eV, this should be considered close to zero.
+        # When compared to 0 neV in neV, will not be close to zero
         q_ev_close_to_zero = QuantityFactory.create_quantity('band_gap', 1e-8, units='eV')
+        # When compared to 0 J in J, this should be considered close to zero, but not when compared in eV
         q_ev_close_to_zero_in_joules = QuantityFactory.create_quantity('band_gap', 0.1, units='eV')
 
+        # Compares in eV implicitly (from unit of quantity that is 0)
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_zero.value, q_ev_close_to_zero.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_close_to_zero.value, q_ev_zero.value))
+        # Compares in joules implicitly (from unit of quantity that is 0)
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_close_to_zero.value, q_joule_zero.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_joule_zero.value, q_ev_close_to_zero.value))
+        # Compares in neV implicitly (from unit of quantity that is 0)
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_nev_zero.value, q_ev_close_to_zero.value))
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_ev_close_to_zero.value, q_nev_zero.value))
+
+        # Compares in joules explicitly
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_close_to_zero_in_joules.value, q_ev_zero.value,
+            units_for_comparison='joule'))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_zero.value, q_ev_close_to_zero_in_joules.value,
+            units_for_comparison='joule'))
+        # Compares in eV explicitly
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_ev_close_to_zero_in_joules.value, q_ev_zero.value,
+            units_for_comparison='eV'))
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_ev_zero.value, q_ev_close_to_zero_in_joules.value,
+            units_for_comparison='eV'))
+
+        # Compares in eV implicitly (from unit of quantity that is 0)
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_ev_close_to_zero_in_joules.value, q_ev_zero.value))
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_ev_zero.value, q_ev_close_to_zero_in_joules.value))
+        # Compares in joules implicitly (from unit of quantity that is 0)
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_close_to_zero_in_joules.value, q_joule_zero.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_joule_zero.value, q_ev_close_to_zero_in_joules.value))
+
+        # These two numbers are small in eV and should both be considered close to zero when evaluated in eV.
+        # If units for comparison are not specified, these values should be compared explicitly and not be close
+        # in value (would be evaluated in femto-eV)
         q_ev_small_number_1 = QuantityFactory.create_quantity('band_gap', 1e-12, units='eV')
         q_ev_small_number_2 = QuantityFactory.create_quantity('band_gap', 1e-15, units='eV')
 
-        q_hartree = q_ev.to('hartree')  # Comparable magnitude to eV
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_ev_small_number_1.value, q_ev_small_number_2.value))
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_ev_small_number_2.value, q_ev_small_number_1.value))
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_ev_small_number_1.value, q_ev_small_number_2.value,
+            units_for_comparison='femtoelectron_volt'))
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_ev_small_number_2.value, q_ev_small_number_1.value,
+            units_for_comparison='femtoelectron_volt'))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_small_number_1.value, q_ev_small_number_2.value,
+            units_for_comparison='eV'))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_small_number_2.value, q_ev_small_number_1.value,
+            units_for_comparison='eV'))
 
+        # Compare values with unit with comparable magnitude (hartree and eV are both molecular in magnitude)
+        q_hartree = q_ev.to('hartree')
+        self.assertTrue(NumQuantity.values_close_in_units(q_ev.value, q_hartree.value))
+        self.assertTrue(NumQuantity.values_close_in_units(q_hartree.value, q_ev.value))
+
+        # Convert above values to joules to try the same comparisons
         q_joule = q_ev.to('joule')
         q_joule_slightly_bigger = q_ev_slightly_bigger.to('joule')
         q_joule_too_big = q_ev_too_big.to('joule')
-        q_joule_zero = q_ev_zero.to('joule')
         q_joule_close_to_zero = q_ev_close_to_zero.to('joule')
         q_joule_close_to_zero_in_joules = q_ev_close_to_zero_in_joules.to('joule')
 
-        self.assertTrue(NumQuantity.values_are_close(q_ev.value, q_hartree.value))
-        self.assertTrue(NumQuantity.values_are_close(q_ev.value, q_ev_slightly_bigger.value))
-        self.assertFalse(NumQuantity.values_are_close(q_ev.value, q_ev_too_big.value))
-        self.assertTrue(NumQuantity.values_are_close(q_ev_zero.value, q_ev_close_to_zero.value))
+        # If values are same, but in different units, coerce to units that make value between 1 and 1000
+        # and choose unit that is smaller between the two
+        # Evaluates in zeptojoules
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev.value, q_joule.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_joule.value, q_ev.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_joule.value, q_joule_slightly_bigger.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_joule_slightly_bigger.value, q_joule.value))
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_joule.value, q_joule_too_big.value))
+        self.assertFalse(NumQuantity.values_close_in_units(
+            q_joule_too_big.value, q_joule.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_joule_zero.value, q_joule_close_to_zero.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_joule_close_to_zero.value, q_joule_zero.value))
 
-        self.assertTrue(NumQuantity.values_are_close(q_ev_close_to_zero_in_joules.value,
-                                                     q_ev_zero.value,
-                                                     units_for_comparison='joule'))
-        self.assertFalse(NumQuantity.values_are_close(q_ev_close_to_zero_in_joules.value,
-                                                      q_ev_zero.value,
-                                                      units_for_comparison='eV'))
-        self.assertFalse(NumQuantity.values_are_close(q_ev_close_to_zero_in_joules.value,
-                                                      q_ev_zero.value))
-        self.assertTrue(NumQuantity.values_are_close(q_ev_close_to_zero_in_joules.value,
-                                                     q_joule_zero.value))
-        # Units for comparison defaults to eV based on symbol unit
+        # Test units for comparison defaults to eV based on symbol unit
         self.assertEqual(q_ev_zero.symbol.units.units.format_babel(), 'electron_volt')
         self.assertEqual(q_ev_close_to_zero, q_ev_zero)
+        self.assertEqual(q_ev_zero, q_ev_close_to_zero)
         self.assertEqual(q_joule_close_to_zero, q_joule_zero)
+        self.assertEqual(q_joule_zero, q_joule_close_to_zero)
         self.assertNotEqual(q_joule_close_to_zero_in_joules, q_joule_zero)
-
-        self.assertTrue(NumQuantity.values_are_close(q_ev.value, q_joule.value))
-        self.assertTrue(NumQuantity.values_are_close(q_joule.value, q_joule_slightly_bigger.value))
-        self.assertFalse(NumQuantity.values_are_close(q_joule.value, q_joule_too_big.value))
-        self.assertTrue(NumQuantity.values_are_close(q_joule_zero.value, q_joule_close_to_zero.value))
+        self.assertNotEqual(q_joule_zero, q_joule_close_to_zero_in_joules)
+        self.assertEqual(q_ev_small_number_1, q_ev_small_number_2)
+        self.assertEqual(q_ev_small_number_2, q_ev_small_number_1)
 
         fields = list(q1.__dict__.keys())
 

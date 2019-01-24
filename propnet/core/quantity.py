@@ -589,14 +589,14 @@ class NumQuantity(BaseQuantity):
         if not self.uncertainty and not other.uncertainty:
             uncertainty_is_close = True
         elif self.uncertainty and other.uncertainty:
-            uncertainty_is_close = self.values_are_close(self.uncertainty,
-                                                         other.uncertainty,
-                                                         units_for_comparison=self.uncertainty.units)
+            uncertainty_is_close = self.values_close_in_units(self.uncertainty,
+                                                              other.uncertainty,
+                                                              units_for_comparison=self.uncertainty.units)
         else:
             return False
 
-        value_is_close = self.values_are_close(self.value, other.value,
-                                               units_for_comparison=self.symbol.units)
+        value_is_close = self.values_close_in_units(self.value, other.value,
+                                                    units_for_comparison=self.symbol.units)
 
         return \
             super().__eq__(other) and \
@@ -606,11 +606,11 @@ class NumQuantity(BaseQuantity):
     def has_eq_value_to(self, rhs):
         if not isinstance(rhs, type(self)):
             raise TypeError("This method requires two {} objects".format(type(self).__name__))
-        return self.values_are_close(self.value, rhs.value,
-                                     units_for_comparison=self.symbol.units)
+        return self.values_close_in_units(self.value, rhs.value,
+                                          units_for_comparison=self.symbol.units)
 
     @staticmethod
-    def values_are_close(lhs, rhs, units_for_comparison=None):
+    def values_close_in_units(lhs, rhs, units_for_comparison=None):
         if not (isinstance(lhs, ureg.Quantity) and isinstance(rhs, ureg.Quantity)):
             raise TypeError("This method requires two pint Quantity objects")
         if not units_for_comparison:
@@ -623,8 +623,13 @@ class NumQuantity(BaseQuantity):
                 elif rhs.magnitude == 0:
                     units_for_comparison = rhs.units
                 else:
-                    lhs_compact_units = lhs.to_compact().units
-                    rhs_compact_units = rhs.to_compact().units
+                    # Select smallest unit that brings values close to 1
+                    # Add a +1 buffer so that instead of 999.99999... micrograms
+                    # we get 1 milligram instead.
+                    lhs_compact = lhs.to_compact()
+                    lhs_compact_units = (lhs_compact + 1 * lhs_compact.units).to_compact().units
+                    rhs_compact = rhs.to_compact()
+                    rhs_compact_units = (rhs_compact + 1 * rhs_compact.units).to_compact().units
                     if 1 * lhs_compact_units < 1 * rhs_compact_units:
                         units_for_comparison = lhs_compact_units
                     else:
