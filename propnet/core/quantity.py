@@ -215,7 +215,7 @@ class BaseQuantity(ABC, MSONable):
                 graph = model_input.get_provenance_graph(start=graph)
                 graph.add_edge(model_input, model)
         elif source is not None:
-            source = "Source: {}".format(source)
+            source = "Source: {}".format(source['source'])
             graph.add_edge(source, self)
 
         return graph

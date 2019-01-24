@@ -275,6 +275,12 @@ class QuantityTest(unittest.TestCase):
         shortest_lengths = nx.shortest_path_length(pgraph, qs[0])
         self.assertEqual(shortest_lengths[end], 4)
 
+        # Test truncation of long labels
+        out = list(evaluated['sound_velocity_longitudinal'])[0]
+        pgraph = out.get_provenance_graph()
+        node_label = nx.get_node_attributes(pgraph, 'label')[out]
+        self.assertEqual(node_label, 'sound_velocity_longitudinal')
+
         # This test is useful if one wants to actually make a plot, leaving
         # it in for now
         # from propnet.ext.matproj import MPRester
