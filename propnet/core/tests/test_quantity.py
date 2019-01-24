@@ -715,6 +715,7 @@ class QuantityTest(unittest.TestCase):
         s.add(q_copy)
         self.assertTrue(len(s), 1)
         s.add(q_diff_value_same_provenance)
+        # hash() is same but __eq__() is different
         self.assertTrue(hash(q) == hash(q_diff_value_same_provenance))
         self.assertTrue(len(s), 2)
         s.add(q_tags)
@@ -722,3 +723,23 @@ class QuantityTest(unittest.TestCase):
         s.add(q_provenance)
         self.assertTrue(len(s), 4)
 
+    def test_bool(self):
+        # Currently one cannot assign None to the value of a quantity, but that
+        # may change in the future.
+        # TODO: Consider whether we need to be able to assign None to values
+        q = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless')
+        self.assertTrue(q)
+        q._value = None
+        self.assertFalse(q)
+
+        q = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
+        self.assertTrue(q)
+        q._value = None
+        self.assertFalse(q)
+        q._value = ''
+        self.assertFalse(q)
+
+    def test_str_and_repr(self):
+        q = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless')
+        self.assertEqual(str(q), "<A, 1, dimensionless>")
+        self.assertEqual(repr(q), "<A, 1, dimensionless>")
