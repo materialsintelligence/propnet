@@ -98,6 +98,7 @@ class BaseQuantity(ABC, MSONable):
         return DEFAULT_SYMBOLS[name]
 
     @abstractmethod
+    @property
     def magnitude(self):
         pass
 
@@ -143,10 +144,12 @@ class BaseQuantity(ABC, MSONable):
         return copy.deepcopy(self._value)
 
     @abstractmethod
+    @property
     def units(self):
         pass
 
     @abstractmethod
+    @property
     def uncertainty(self):
         pass
 
