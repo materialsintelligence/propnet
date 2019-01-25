@@ -568,7 +568,7 @@ class QuantityTest(unittest.TestCase):
 
         q_from = ObjQuantity.from_dict(d)
 
-        self.assertIsInstance(q_from, NumQuantity)
+        self.assertIsInstance(q_from, ObjQuantity)
         self.assertEqual(q_from.symbol, q.symbol)
         self.assertEqual(q_from.value, q.value)
         self.assertEqual(q_from.tags, q.tags)
