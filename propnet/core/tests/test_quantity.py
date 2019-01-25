@@ -5,6 +5,7 @@ import numpy as np
 from monty import tempfile
 import networkx as nx
 import copy
+import logging
 
 from pymatgen.util.testing import PymatgenTest
 from propnet.core.symbols import Symbol
@@ -15,6 +16,7 @@ from propnet.core.materials import Material
 from propnet.core.graph import Graph
 from propnet import ureg
 from propnet.core.provenance import ProvenanceElement
+from propnet.core.utils import LogSniffer
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -182,6 +184,34 @@ class QuantityTest(unittest.TestCase):
         # Reject non-numerical quantities for non-object symbols
         with self.assertRaises(TypeError):
             q = QuantityFactory.create_quantity(self.custom_symbol, value_string_list_array)
+
+        # Ensure warning is issued when assigning units or uncertainty to object-type symbol
+
+        # Get logger where output is expected
+        logger = logging.getLogger(QuantityFactory.__module__)
+
+        # Test for warning with units
+        with LogSniffer(logger) as ls:
+            q = QuantityFactory.create_quantity(
+                self.custom_object_symbol, 'test', units='dimensionless')
+
+            log_output = ls.get_output(replace_newline='')
+            expected_log_output = \
+                "Cannot assign units to object-type symbol '{}'. " \
+                "Ignoring units.".format(self.custom_object_symbol.name)
+
+            self.assertEqual(log_output, expected_log_output)
+
+        # Test for warning with uncertainty
+        with LogSniffer(logger) as ls:
+            q = QuantityFactory.create_quantity(self.custom_object_symbol, 'test', uncertainty='very uncertain')
+
+            log_output = ls.get_output(replace_newline='')
+            expected_log_output = \
+                "Cannot assign uncertainty to object-type symbol '{}'. " \
+                "Ignoring uncertainty.".format(self.custom_object_symbol.name)
+
+            self.assertEqual(log_output, expected_log_output)
 
     def test_from_default(self):
         default = QuantityFactory.from_default('temperature')

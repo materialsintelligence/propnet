@@ -1,4 +1,5 @@
-import os, sys
+import os, sys, logging
+from io import StringIO
 from monty.serialization import loadfn, dumpfn
 from habanero.cn import content_negotiation
 from propnet import print_logger, print_stream
@@ -90,3 +91,117 @@ class PrintToLogger:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout = self._original_stdout
 
+
+class LogSniffer:
+    """
+    This class provides a context manager or explicit object to capture output written
+    to an existing logging.Logger and write it to a string. Purpose is for debugging
+    and verifying warning output in tests.
+
+    Output is only available while within the established context by using get_output()
+    or before the LogSniffer object is stopped with stop().
+
+    Usage example:
+        # Get logger whose messages you want to capture
+        logger = logging.getLogger('my_logger_name')
+
+        # Context manager usage
+        with LogSniffer(logger) as ls:
+            foo()  # Some statement(s) which write to the logger
+            output = ls.get_output(replace_newline='') # Gets logger output and replaces newline characters
+            expected_output = "Expected output"
+            self.assertEqual(output, expected_output)
+
+        # Explicit object usage
+        ls = LogSniffer(logger)
+        ls.start()      # Start capturing logger output
+        foo()           # Statements which output to logger
+        output = ls.stop()  # Get output and stop sniffer
+        expected_output = "Expected output\n"
+        self.assertEqual(output, expected_output)
+
+    """
+    def __init__(self, logger):
+        if not isinstance(logger, logging.Logger):
+            raise ValueError("Need valid logger for sniffing")
+        self._logger = logger
+        self._sniffer = None
+        self._sniffer_handler = None
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+    def __del__(self):
+        self.stop()
+
+    def start(self):
+        """
+        Starts recording messages passed to the logger. If already started, does nothing.
+
+        """
+        if not self.is_started():
+            self._sniffer = StringIO()
+            self._sniffer_handler = logging.StreamHandler(stream=self._sniffer)
+            self._sniffer_handler.setLevel(logging.INFO)
+            self._logger.addHandler(self._sniffer_handler)
+
+    def is_started(self):
+        """
+        Checks if the sniffer is actively sniffing.
+
+        Returns: (bool) true if the sniffer is active, false otherwise
+
+        """
+        return self._sniffer is not None
+
+    def stop(self, **kwargs):
+        """
+        Stops recording messages passed to the logger, removes the sniffer,
+        and returns the captured output. Returns None if sniffer is inactive.
+
+        Keyword Args:
+            replace_newline: a string with which to replace newline characters.
+                default: '\n' (no replacement)
+        Returns: (str) the output captured by the sniffer
+            or None if sniffer is inactive
+
+        """
+        if self.is_started():
+            output = self.get_output(**kwargs)
+            self._logger.removeHandler(self._sniffer_handler)
+            self._sniffer_handler = None
+            self._sniffer.close()
+            self._sniffer = None
+        else:
+            output = None
+        return output
+
+    def get_output(self, replace_newline='\n'):
+        """
+        Returns the output captured by the sniffer so far. Returns None if
+        sniffer is not started.
+
+        Keyword Args:
+            replace_newline: a string with which to replace newline characters.
+                default: '\n' (no replacement)
+        Returns: (str) the output captured by the sniffer,
+            or None if sniffer is inactive
+
+        """
+        if self.is_started():
+            return self._sniffer.getvalue().replace('\n', replace_newline)
+
+        return None
+
+    def clear(self):
+        """
+        Clears the captured output while keeping the sniffer active.
+
+        """
+        if self.is_started():
+            self._sniffer.truncate(0)
+            self._sniffer.seek(0)

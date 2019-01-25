@@ -774,22 +774,12 @@ class QuantityFactory(object):
                                 " value type.".format(symbol_type.category))
 
         if units is not None:
-            if symbol_is_object:
-                logger.warning("Cannot assign units to object-type symbol '{}'."
-                               "Ignoring units.".format(symbol_type.name))
-            else:
-                # This may never run bc right now the only symbols that make object
-                # quantities are object symbols...
-                logger.warning("Cannot assign units to value of type '{}'."
-                               "Ignoring units.".format(type(value)))
+            logger.warning("Cannot assign units to object-type symbol '{}'. "
+                           "Ignoring units.".format(symbol_type.name))
 
         if uncertainty is not None:
-            if symbol_is_object:
-                logger.warning("Cannot assign uncertainty to object-type symbol '{}'."
-                               "Ignoring units.".format(symbol_type.name))
-            else:
-                logger.warning("Cannot assign uncertainty to value of type '{}'."
-                               "Ignoring units.".format(type(value)))
+            logger.warning("Cannot assign uncertainty to object-type symbol '{}'. "
+                           "Ignoring uncertainty.".format(symbol_type.name))
 
         return ObjQuantity(symbol_type, value,
                            tags=tags,
