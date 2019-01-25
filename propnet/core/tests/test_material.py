@@ -89,3 +89,6 @@ class MaterialTest(unittest.TestCase):
                          Quantity("temperature", 300))
         self.assertEqual(list(material['relative_permeability'])[0],
                          Quantity("relative_permeability", 1))
+
+if __name__ == "__main__":
+    unittest.main()

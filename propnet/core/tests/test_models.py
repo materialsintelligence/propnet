@@ -166,3 +166,6 @@ returns {'mu_e': 8994.92312225673}
                              allow_failure=True)
         self.assertTrue(out['successful'])
         self.assertTrue(np.isclose(out['a'].magnitude, 6j))
+
+if __name__ == "__main__":
+    unittest.main()

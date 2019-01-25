@@ -989,3 +989,7 @@ class GraphTest(unittest.TestCase):
             with open(os.path.join(TEST_DIR, '{}.json'.format(mpid)), 'w') as f:
                 qs = jsanitize(m.get_quantities(), strict=True)
                 f.write(json.dumps(qs))
+
+if __name__ == "__main__":
+    unittest.main()
+

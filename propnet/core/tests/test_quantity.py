@@ -293,3 +293,6 @@ class QuantityTest(unittest.TestCase):
         #                                   "provenance": None,
         #                                   "internal_id": q._internal_id,
         #                                   "symbol_type": self.custom_symbol.name})
+
+if __name__ == "__main__":
+    unittest.main()

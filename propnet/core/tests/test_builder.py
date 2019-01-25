@@ -88,3 +88,6 @@ class BuilderTest(unittest.TestCase):
                                                "e_above_hull": 0})
         builder.connect()
         dumpfn(list(builder.get_items()), "test_materials.json")
+
+if __name__ == "__main__":
+    unittest.main()
