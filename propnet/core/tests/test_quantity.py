@@ -25,6 +25,7 @@ class QuantityTest(unittest.TestCase):
         self.constraint_symbol = Symbol("A", constraint="A > 0",
                                         units='dimensionless')
         self.custom_object_symbol = Symbol("B", category='object')
+        self.maxDiff = None
 
     def test_quantity_construction(self):
         # From custom numerical symbol
@@ -64,19 +65,6 @@ class QuantityTest(unittest.TestCase):
         self.assertTrue(np.allclose(q.value.magnitude, value_list_array))
         self.assertIsInstance(q.value.magnitude, np.ndarray)
         self.assertEqual(q.value.units.format_babel(), 'dimensionless')
-
-        # Reject non-numerical np arrays for NumQuantity
-        value_string_list_array = [['this', 'is'],
-                                   ['a', 'test']]
-        value_string_np_array = np.array(value_string_list_array)
-        with self.assertRaises(TypeError):
-            q = NumQuantity(self.custom_symbol, value_string_list_array)
-        with self.assertRaises(TypeError):
-            q = NumQuantity(self.custom_symbol, value_string_np_array)
-
-        # Reject non-numerical quantities for non-object symbols
-        with self.assertRaises(TypeError):
-            q = QuantityFactory.create_quantity(self.custom_symbol, value_string_list_array)
 
         # From custom numerical symbol with uncertainty
         q = QuantityFactory.create_quantity(self.custom_symbol, 5.0, uncertainty=0.1)
@@ -152,10 +140,12 @@ class QuantityTest(unittest.TestCase):
         self.assertIsInstance(u.value, ureg.Quantity)
         self.assertAlmostEqual(u.value.magnitude, 0.1)
         self.assertEqual(u.value.units.format_babel(), 'meter')
-
         with self.assertRaises(ValueError):
             q = QuantityFactory.create_quantity(value_symbol, 126.1, uncertainty=u)
 
+        # Test uncertainty with bad type for uncertainty
+        with self.assertRaises(TypeError):
+            q = QuantityFactory.create_quantity(value_symbol, 126.1, uncertainty='test')
 
         # From custom object symbol
         q = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
@@ -181,9 +171,17 @@ class QuantityTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             value = 'test_string'
             q = NumQuantity(self.custom_symbol, value)
+        value_string_list_array = [['this', 'is'],
+                                   ['a', 'test']]
+        value_string_np_array = np.array(value_string_list_array)
         with self.assertRaises(TypeError):
-            value = np.array(['test', 'string', 'list'])
-            q = NumQuantity(self.custom_symbol, value)
+            q = NumQuantity(self.custom_symbol, value_string_list_array)
+        with self.assertRaises(TypeError):
+            q = NumQuantity(self.custom_symbol, value_string_np_array)
+
+        # Reject non-numerical quantities for non-object symbols
+        with self.assertRaises(TypeError):
+            q = QuantityFactory.create_quantity(self.custom_symbol, value_string_list_array)
 
     def test_from_default(self):
         default = QuantityFactory.from_default('temperature')
@@ -250,6 +248,12 @@ class QuantityTest(unittest.TestCase):
 
         quantity = QuantityFactory.create_quantity(self.custom_symbol, [1, 2, 3], 'atoms')
         self.assertEqual(quantity.pretty_string(), '[1 2 3] atom')
+
+        quantity = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
+        self.assertEqual(quantity.pretty_string(), 'test')
+
+        quantity = QuantityFactory.create_quantity(self.custom_object_symbol, {'a': True})
+        self.assertEqual(quantity.pretty_string(), "{'a': True}")
 
     def test_to(self):
         quantity = QuantityFactory.create_quantity('band_gap', 3.0, 'eV')
@@ -542,6 +546,62 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.uncertainty, q.uncertainty)
         self.assertEqual(q_from.provenance, q.provenance)
 
+        # Test ObjQuantity
+        q = QuantityFactory.create_quantity(self.custom_object_symbol, 'test', tags='test_tag')
+        d = q.as_dict()
+
+        self.assertDictEqual(d, {"@module": "propnet.core.quantity",
+                                 "@class": "ObjQuantity",
+                                 "value": 'test',
+                                 "provenance": q.provenance.as_dict(),
+                                 "symbol_type": self.custom_object_symbol.as_dict(),
+                                 "tags": ['test_tag']
+                                 })
+
+        q_from = QuantityFactory.from_dict(d)
+
+        self.assertIsInstance(q_from, ObjQuantity)
+        self.assertEqual(q_from.symbol, q.symbol)
+        self.assertEqual(q_from.value, q.value)
+        self.assertEqual(q_from.tags, q.tags)
+        self.assertEqual(q_from.provenance, q.provenance)
+
+        q_from = ObjQuantity.from_dict(d)
+
+        self.assertIsInstance(q_from, NumQuantity)
+        self.assertEqual(q_from.symbol, q.symbol)
+        self.assertEqual(q_from.value, q.value)
+        self.assertEqual(q_from.tags, q.tags)
+        self.assertEqual(q_from.provenance, q.provenance)
+
+        q = QuantityFactory.create_quantity(DEFAULT_SYMBOLS['is_metallic'],
+                                            False, tags='dft')
+        d = q.as_dict()
+
+        self.assertDictEqual(d, {"@module": "propnet.core.quantity",
+                                 "@class": "ObjQuantity",
+                                 "value": False,
+                                 "provenance": q.provenance.as_dict(),
+                                 "symbol_type": "is_metallic",
+                                 "tags": ['dft']
+                                 })
+
+        q_from = QuantityFactory.from_dict(d)
+
+        self.assertIsInstance(q_from, ObjQuantity)
+        self.assertEqual(q_from.symbol, q.symbol)
+        self.assertEqual(q_from.value, q.value)
+        self.assertEqual(q_from.tags, q.tags)
+        self.assertEqual(q_from.provenance, q.provenance)
+
+        q_from = ObjQuantity.from_dict(d)
+
+        self.assertIsInstance(q_from, ObjQuantity)
+        self.assertEqual(q_from.symbol, q.symbol)
+        self.assertEqual(q_from.value, q.value)
+        self.assertEqual(q_from.tags, q.tags)
+        self.assertEqual(q_from.provenance, q.provenance)
+
     def test_equality(self):
         q1 = QuantityFactory.create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)
         q1_copy = copy.deepcopy(q1)
@@ -582,16 +642,20 @@ class QuantityTest(unittest.TestCase):
         # In principle, comparing units in eV vs. joules vs. attempting to discover the appropriate
         # unit may yield different results. This is an attempt to robustly equate values which are floats.
 
-        q_ev = QuantityFactory.create_quantity('band_gap', 1, units='eV')
+        q_ev = QuantityFactory.create_quantity('band_gap', 1.0, units='eV')
         # Should be equal to q_ev within tolerance
-        q_ev_slightly_bigger = QuantityFactory.create_quantity('band_gap', 1 + 1e-8, units='eV')
+        q_ev_slightly_bigger = QuantityFactory.create_quantity('band_gap', 1. + 1e-8, units='eV')
         # Should not be equal to q_ev within tolerance
-        q_ev_too_big = QuantityFactory.create_quantity('band_gap', 1 + 1e-4, units='eV')
+        q_ev_too_big = QuantityFactory.create_quantity('band_gap', 1. + 1e-4, units='eV')
+
+        # Function requires pint quantities as inputs
+        with self.assertRaises(TypeError):
+            result = NumQuantity.values_close_in_units(q_ev, q_ev_slightly_bigger)
 
         self.assertTrue(NumQuantity.values_close_in_units(q_ev.value, q_ev_slightly_bigger.value))
         self.assertFalse(NumQuantity.values_close_in_units(q_ev.value, q_ev_too_big.value))
 
-        q_ev_zero = QuantityFactory.create_quantity('band_gap', 0, units='eV')
+        q_ev_zero = QuantityFactory.create_quantity('band_gap', 0., units='eV')
         q_joule_zero = q_ev_zero.to('joule')
         q_nev_zero = q_ev_zero.to('nanoelectron_volt')
         # When compared to 0 eV in eV, this should be considered close to zero.
@@ -599,6 +663,15 @@ class QuantityTest(unittest.TestCase):
         q_ev_close_to_zero = QuantityFactory.create_quantity('band_gap', 1e-8, units='eV')
         # When compared to 0 J in J, this should be considered close to zero, but not when compared in eV
         q_ev_close_to_zero_in_joules = QuantityFactory.create_quantity('band_gap', 0.1, units='eV')
+
+        # Does not do unit comparison because they should both have value == zero is True
+        # This assumes there were no floating point rounding errors
+        self.assertEqual(q_ev_zero.magnitude, 0)
+        self.assertEqual(q_joule_zero.magnitude, 0)
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_zero.value, q_joule_zero.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_joule_zero.value, q_ev_zero.value))
 
         # Compares in eV implicitly (from unit of quantity that is 0)
         self.assertTrue(NumQuantity.values_close_in_units(
@@ -708,6 +781,18 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_ev_small_number_1, q_ev_small_number_2)
         self.assertEqual(q_ev_small_number_2, q_ev_small_number_1)
 
+        # Test with ndarrays
+        array_sym = Symbol("M", units='eV', shape=[4])
+        q_ev_array = QuantityFactory.create_quantity(
+            array_sym, [1., 2., 3., 1e-8], units='eV')
+        q_joule_array = q_ev_array.to('joule')
+
+        self.assertEqual(q_ev_array, q_joule_array)
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_ev_array.value, q_joule_array.value))
+        self.assertTrue(NumQuantity.values_close_in_units(
+            q_joule_array.value, q_ev_array.value))
+
         # Test with objects (much simpler...)
         q = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
         q_duplicate = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
@@ -721,6 +806,10 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q, q_copy)
         self.assertNotEqual(q, q_tags)
         self.assertNotEqual(q, q_provenance)
+
+        # Cannot compare ObjQuantity to NumQuantity
+        with self.assertRaises(TypeError):
+            result = q.has_eq_value_to(q_ev)
 
         fields = list(q1.__dict__.keys())
 

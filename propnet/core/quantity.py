@@ -97,8 +97,8 @@ class BaseQuantity(ABC, MSONable):
 
         return DEFAULT_SYMBOLS[name]
 
-    @abstractmethod
     @property
+    @abstractmethod
     def magnitude(self):
         pass
 
@@ -143,13 +143,13 @@ class BaseQuantity(ABC, MSONable):
         # we can revisit this decision to copy.
         return copy.deepcopy(self._value)
 
-    @abstractmethod
     @property
+    @abstractmethod
     def units(self):
         pass
 
-    @abstractmethod
     @property
+    @abstractmethod
     def uncertainty(self):
         pass
 
@@ -288,7 +288,7 @@ class NumQuantity(BaseQuantity):
 
     def __init__(self, symbol_type, value, units=None, tags=None,
                  provenance=None, uncertainty=None):
-
+        # TODO: Test value on the shape dictated by symbol
         if isinstance(symbol_type, str):
             symbol_type = BaseQuantity.get_symbol_from_string(symbol_type)
 
@@ -305,7 +305,8 @@ class NumQuantity(BaseQuantity):
         elif self.is_acceptable_type(value):
             value_in = ureg.Quantity(value, units)
         else:
-            raise TypeError('Invalid type passed to constructor: {}'.format(type(value)))
+            raise TypeError('Invalid type passed to constructor for value:'
+                            ' {}'.format(type(value)))
 
         super(NumQuantity, self).__init__(symbol_type, value_in,
                                           tags=tags, provenance=provenance)
@@ -322,7 +323,8 @@ class NumQuantity(BaseQuantity):
             elif self.is_acceptable_type(uncertainty):
                 self._uncertainty = ureg.Quantity(uncertainty, units)
             else:
-                raise ValueError('Cannot parse uncertainty passed to constructor: {}'.format(uncertainty))
+                raise TypeError('Invalid type passed to constructor for uncertainty:'
+                                ' {}'.format(type(uncertainty)))
         else:
             self._uncertainty = None
 
@@ -548,7 +550,7 @@ class NumQuantity(BaseQuantity):
         return False
 
     def as_dict(self):
-        d = super().as_dict()
+        d = super(NumQuantity, self).as_dict()
 
         d.update({"@module": self.__class__.__module__,
                   "@class": self.__class__.__name__,
@@ -610,7 +612,10 @@ class NumQuantity(BaseQuantity):
                     else:
                         units_for_comparison = rhs_compact_units
             else:
-                units_for_comparison = lhs.units
+                if 1 * lhs.units < 1 * rhs.units:
+                    units_for_comparison = lhs.units
+                else:
+                    units_for_comparison = rhs.units
         try:
             lhs_convert = lhs.to(units_for_comparison)
             rhs_convert = rhs.to(units_for_comparison)
@@ -830,11 +835,6 @@ class QuantityFactory(object):
             return to_coerce
 
         # Else
-        # Convert the symbol to a Symbol if necessary.
-        if isinstance(symbol, str):
-            symbol = DEFAULT_SYMBOLS.get(symbol)
-            if symbol is None:
-                raise Exception("Attempted to create a quantity for an unrecognized symbol: " + str(symbol))
         # Return the correct BaseQuantity - warn if units are assumed.
         return QuantityFactory.create_quantity(symbol, to_coerce)
 
