@@ -9,41 +9,40 @@ from pymatgen import MPRester as _MPRester
 # TODO: do we really need the duplicate methods for lists/single material?
 # TODO: a more or less universal query scheme
 class MPRester(_MPRester):
-
     mapping = {
-    "material_id": "external_identifier_mp",
-    "band_gap.search_gap.band_gap": "band_gap_pbe",
-    #"band_structure": "null_symbol",
-    #"band_structure_uniform": "null_symbol",
-    "computed_entry": "computed_entry",
-    #"dos": "null_symbol",
-    "diel.n": "refractive_index",
-    "diel.poly_total": "relative_permittivity",
-    #"diel.e_electronic": "null_symbol",
-    "diel.e_total": "dielectric_tensor",
-    #"diel.poly_electronic": "null_symbol",
-    "diel.pot_ferroelectric": "potentially_ferroelectric",
-    "pretty_formula": "formula",
-    "e_above_hull": "energy_above_hull",
-    "elasticity.elastic_tensor": "elastic_tensor_voigt",
-    # "elasticity.G_Reuss": "shear_modulus",
-    # "elasticity.G_VRH": "shear_modulus",
-    # "elasticity.G_Voigt": "shear_modulus",
-    # "elasticity.K_Reuss": "bulk_modulus",
-    # "elasticity.K_VRH": "bulk_modulus",
-    # "elasticity.K_Voigt": "bulk_modulus",
-    # "elasticity.elastic_anisotropy": "elastic_anisotropy",
-    # "elasticity.poisson_ratio": "poisson_ratio",
-    "formation_energy_per_atom": "formation_energy_per_atom",
-    "magnetic_type": "magnetic_order",
-    "oxide_type": "oxide_type",
-    "piezo.piezoelectric_tensor": "piezoelectric_tensor",
-    #"piezo.v_max": "null_symbol", # TODO": "add property
-    #"piezo.eij_max": "null_symbol", # TODO": "add property
-    "structure": "structure",
-    #"total_magnetization": "null_symbol",
+        "material_id": "external_identifier_mp",
+        "band_gap.search_gap.band_gap": "band_gap_pbe",
+        # "band_structure": "null_symbol",
+        # "band_structure_uniform": "null_symbol",
+        "computed_entry": "computed_entry",
+        # "dos": "null_symbol",
+        "diel.n": "refractive_index",
+        "diel.poly_total": "relative_permittivity",
+        # "diel.e_electronic": "null_symbol",
+        "diel.e_total": "dielectric_tensor",
+        # "diel.poly_electronic": "null_symbol",
+        "diel.pot_ferroelectric": "potentially_ferroelectric",
+        "pretty_formula": "formula",
+        "e_above_hull": "energy_above_hull",
+        "elasticity.elastic_tensor": "elastic_tensor_voigt",
+        # "elasticity.G_Reuss": "shear_modulus",
+        # "elasticity.G_VRH": "shear_modulus",
+        # "elasticity.G_Voigt": "shear_modulus",
+        # "elasticity.K_Reuss": "bulk_modulus",
+        # "elasticity.K_VRH": "bulk_modulus",
+        # "elasticity.K_Voigt": "bulk_modulus",
+        # "elasticity.elastic_anisotropy": "elastic_anisotropy",
+        # "elasticity.poisson_ratio": "poisson_ratio",
+        "formation_energy_per_atom": "formation_energy_per_atom",
+        "magnetic_type": "magnetic_order",
+        "oxide_type": "oxide_type",
+        "piezo.piezoelectric_tensor": "piezoelectric_tensor",
+        # "piezo.v_max": "null_symbol", # TODO": "add property
+        # "piezo.eij_max": "null_symbol", # TODO": "add property
+        "structure": "structure",
+        # "total_magnetization": "null_symbol",
         #  TODO": "add property total_magnetization_per_unit_cell
-}
+    }
 
     def __init__(self, api_key=None):
         _MPRester.__init__(self, api_key)

@@ -95,7 +95,7 @@ class PrintToLogger:
 class LogSniffer:
     """
     This class provides a context manager or explicit object to capture output written
-    to an existing logging.Logger and write it to a string. Purpose is for debugging
+    to an existing logging. Logger and write it to a string. Purpose is for debugging
     and verifying warning output in tests.
 
     Output is only available while within the established context by using get_output()
