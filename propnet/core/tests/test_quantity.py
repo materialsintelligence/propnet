@@ -181,6 +181,16 @@ class QuantityTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             q = NumQuantity(self.custom_symbol, value_string_np_array)
 
+        # Test failure initializing with NoneType objects
+        with self.assertRaises(ValueError):
+            q = QuantityFactory.create_quantity(self.custom_symbol, None)
+        with self.assertRaises(ValueError):
+            q = QuantityFactory.create_quantity(self.custom_object_symbol, None)
+        with self.assertRaises(TypeError):
+            q = NumQuantity(self.custom_symbol, None)
+        with self.assertRaises(ValueError):
+            q = ObjQuantity(self.custom_object_symbol, None)
+
         # Reject non-numerical quantities for non-object symbols
         with self.assertRaises(TypeError):
             q = QuantityFactory.create_quantity(self.custom_symbol, value_string_list_array)
@@ -226,6 +236,9 @@ class QuantityTest(unittest.TestCase):
         new_q = QuantityFactory.create_quantity("relative_permeability", 1)
         self.assertEqual(default.symbol, new_q.symbol)
         self.assertEqual(default.value, new_q.value)
+
+        with self.assertRaises(ValueError):
+            new_q = QuantityFactory.from_default('band_gap')
 
     def test_from_weighted_mean(self):
         qlist = [QuantityFactory.create_quantity(self.custom_symbol, val, tags=['testing'])
@@ -459,8 +472,8 @@ class QuantityTest(unittest.TestCase):
         self.assertFalse(non_numerical.contains_complex_type())
         self.assertFalse(non_numerical.contains_imaginary_value())
 
-    def test_value_coercion(self):
-        # Numerical value coercion
+    def test_type_coercion(self):
+        # Numerical type coercion
         q_int = QuantityFactory.create_quantity(self.custom_symbol, np.int64(5))
         q_float = QuantityFactory.create_quantity(self.custom_symbol, np.float64(5.0))
         q_complex = QuantityFactory.create_quantity(self.custom_symbol, np.complex64(5.0 + 1.j))
@@ -478,7 +491,7 @@ class QuantityTest(unittest.TestCase):
         self.assertTrue(isinstance(q_float_uncertainty.uncertainty.magnitude, float))
         self.assertTrue(isinstance(q_complex_uncertainty.uncertainty.magnitude, complex))
 
-        # Object value coercion for primitive type
+        # Object type coercion for primitive type
         q = QuantityFactory.create_quantity("is_metallic", 0)
         self.assertIsInstance(q, ObjQuantity)
         self.assertIsInstance(q.value, bool)
@@ -507,6 +520,37 @@ class QuantityTest(unittest.TestCase):
         q = QuantityFactory.create_quantity(self.custom_object_symbol, AnIncoercibleClass(5, 6))
         self.assertIsInstance(q, ObjQuantity)
         self.assertIsInstance(q.value, AnIncoercibleClass)
+
+        # Test coercion using QuantityFactory.to_quantity(). The difference between to_quantity()
+        # and create_quantity() is that create_quantity() always creates a new object, whereas
+        # to_quantity() will return the same object if it receives a BaseQuantity-derived object.
+        # For non-BaseQuantity-derived objects, their functionality is exactly the same.
+
+        # NumQuantity tests
+        q_in = QuantityFactory.create_quantity(self.custom_symbol, 123, units='dimensionless')
+        q_out = QuantityFactory.to_quantity(self.custom_symbol, q_in)
+        self.assertIs(q_in, q_out)
+
+        q_cq = QuantityFactory.create_quantity(self.custom_symbol, q_in, units='dimensionless')
+        self.assertIsNot(q_in, q_cq)
+        self.assertEqual(q_in, q_cq)
+
+        q_tq = QuantityFactory.to_quantity(self.custom_symbol, 123, units='dimensionless')
+        self.assertIsNot(q_in, q_tq)
+        self.assertEqual(q_in, q_tq)
+
+        # ObjQuantity tests
+        q_in = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
+        q_out = QuantityFactory.to_quantity(self.custom_object_symbol, q_in)
+        self.assertIs(q_in, q_out)
+
+        q_cq = QuantityFactory.create_quantity(self.custom_object_symbol, q_in)
+        self.assertIsNot(q_in, q_cq)
+        self.assertEqual(q_in, q_cq)
+
+        q_tq = QuantityFactory.to_quantity(self.custom_object_symbol, 'test')
+        self.assertIsNot(q_in, q_tq)
+        self.assertEqual(q_in, q_tq)
 
     def test_as_dict_from_dict(self):
         q = QuantityFactory.create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)
@@ -632,6 +676,11 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.provenance, q.provenance)
 
+        # Test failure of QuantityFactory.from_dict() with non BaseQuantity objects
+        d_provenance = q.provenance.as_dict()
+        with self.assertRaises(ValueError):
+            q_from_provenance = QuantityFactory.from_dict(d_provenance)
+
     def test_equality(self):
         q1 = QuantityFactory.create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)
         q1_copy = copy.deepcopy(q1)
@@ -680,7 +729,7 @@ class QuantityTest(unittest.TestCase):
 
         # Function requires pint quantities as inputs
         with self.assertRaises(TypeError):
-            result = NumQuantity.values_close_in_units(q_ev, q_ev_slightly_bigger)
+            NumQuantity.values_close_in_units(q_ev, q_ev_slightly_bigger)
 
         self.assertTrue(NumQuantity.values_close_in_units(q_ev.value, q_ev_slightly_bigger.value))
         self.assertFalse(NumQuantity.values_close_in_units(q_ev.value, q_ev_too_big.value))

@@ -630,6 +630,9 @@ class NumQuantity(BaseQuantity):
 class ObjQuantity(BaseQuantity):
     def __init__(self, symbol_type, value, tags=None,
                  provenance=None):
+        if value is None:
+            raise ValueError("ObjQuantity must hold a non-NoneType object for its value.")
+
         if isinstance(symbol_type, str):
             symbol_type = super().get_symbol_from_string(symbol_type)
 
@@ -744,10 +747,11 @@ class QuantityFactory(object):
             type based on value's type
 
         """
+        if value is None:
+            raise ValueError("Cannot initialize a BaseQuantity object with a value of None.")
 
         if isinstance(value, BaseQuantity):
-            if isinstance(value, NumQuantity):
-                units = units or value.units
+            units = units or value.units
             tags = tags or value.tags
             provenance = provenance or value.provenance
             uncertainty = uncertainty or value.uncertainty
@@ -762,9 +766,7 @@ class QuantityFactory(object):
         symbol_is_object = symbol_type.category == 'object'
 
         if not symbol_is_object:
-            if value is None:
-                raise ValueError("Cannot initialize a NumQuantity with a value of None.")
-            elif NumQuantity.is_acceptable_type(value):
+            if NumQuantity.is_acceptable_type(value):
                 return NumQuantity(symbol_type, value,
                                    units=units, tags=tags,
                                    provenance=provenance,
@@ -805,28 +807,28 @@ class QuantityFactory(object):
 
     @staticmethod
     def to_quantity(symbol: Union[str, Symbol],
-                    to_coerce: Union[float, np.ndarray, ureg.Quantity, "BaseQuantity"]) -> "BaseQuantity":
+                    to_coerce: Union[float, np.ndarray, ureg.Quantity, "BaseQuantity"],
+                    **kwargs) -> "BaseQuantity":
         """
-        Converts the argument into the appropriate child object of a BaseQuantity object based on its type:
-        - float -> given default units (as a pint object) and wrapped in a BaseQuantity object
-        - numpy.ndarray array -> given default units (pint) and wrapped in a BaseQuantity object
-        - ureg.Quantity -> simply wrapped in a BaseQuantity object
-        - BaseQuantity -> immediately returned without modification (same object, not copied)
-        - Any other python object -> simply wrapped in a ObjQuantity object
+        Converts the argument into a BaseQuantity-derived object. If input is:
+        - BaseQuantity-derived object -> immediately returned without modification (same object, not copied)
+        - Any other python object -> passed to create_quantity() with keyword arguments
+            to create a new BaseQuantity-derived object
 
         Args:
             symbol: a string or Symbol object representing the type of data stored
-            to_coerce: item to be converted into a BaseQuantity object
+            to_coerce: item to be converted into a BaseQuantity-derived object
+            kwargs: keyword arguments to create new object if to_coerce is not a BaseQuantity-derived object
         Returns:
-            (BaseQuantity) item that has been converted into a BaseQuantity object
+            (BaseQuantity) item as a BaseQuantity-derived object
         """
         # If a quantity is passed in, return the quantity.
         if isinstance(to_coerce, BaseQuantity):
             return to_coerce
 
         # Else
-        # Return the correct BaseQuantity - warn if units are assumed.
-        return QuantityFactory.create_quantity(symbol, to_coerce)
+        # Return the correct BaseQuantity - warns if units are assumed.
+        return QuantityFactory.create_quantity(symbol, to_coerce, **kwargs)
 
     @staticmethod
     def from_dict(d):
