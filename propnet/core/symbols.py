@@ -133,6 +133,12 @@ class Symbol(MSONable):
         self.units = units
         self.display_names = display_names
         self.display_symbols = display_symbols
+        # If a user enters [1] or [1, 1, ...] for shape, treat as a scalar
+        if shape and np.size(np.zeros(shape=shape)) == 1:
+            shape = 1
+        # If a user enters a 0 dimension, throw an error
+        if shape and np.size(np.zeros(shape=shape)) == 0:
+            raise ValueError("Symbol cannot have a shape with a 0-size dimension: ".format(shape))
         self.shape = shape
         self.comment = comment
         self.default_value = default_value

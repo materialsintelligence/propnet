@@ -115,7 +115,7 @@ class PropnetBuilder(Builder):
             sub_doc = {"quantities": qs,
                        "mean": unumpy.nominal_values(quantity.value).tolist(),
                        "std_dev": unumpy.std_devs(quantity.value).tolist(),
-                       "units": qs[0]['units'],
+                       "units": quantity.units.format_babel() if quantity.units else None,
                        "title": quantity._symbol_type.display_names[0]}
             # Symbol Name -> Sub_Document, listing all Quantities of that type.
             doc[symbol.name] = sub_doc
