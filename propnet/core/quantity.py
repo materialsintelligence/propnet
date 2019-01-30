@@ -25,40 +25,47 @@ logger = logging.getLogger(__name__)
 
 class BaseQuantity(ABC, MSONable):
     """
-    Class storing the value of a property.
+    Base class for storing the value of a property.
 
-    Constructed by the user to assign values to abstract Symbol types.
-    Represents the fact that a given Quantity has a given value. They
-    are added to the PropertyNetwork graph in the context of Material
-    objects that store collections of Quantity objects representing
-    that a given material has those properties.
+    Subclasses of BaseQuantity allow for different kind of information to be stored and interpreted.
 
     Attributes:
         symbol_type: (Symbol or str) the type of information that is represented
             by the associated value.  If a string, assigns a symbol from
             the default symbols that has that string name
-        _value: (id) the value associated with this symbol.  Note that
-            this should be either a pint quantity or an object.
+        value: (id) the value associated with this symbol. This can be any object.
         tags: (list<str>) tags associated with the quantity, typically
-            related to its provenance, e. g. "DFT" or "ML"
+            related to its origin, e. g. "DFT" or "ML" or "experiment"
+        provenance: (ProvenanceElement) provenance information of quantity origin
     """
 
     def __init__(self, symbol_type, value, tags=None,
                  provenance=None):
         """
-        Parses inputs for constructing a Property object.
+        Parses inputs for constructing a BaseQuantity object.
 
         Args:
-            symbol_type (Symbol or str): pointer to an existing Symbol
-                object in default_symbols or string giving the name
-                of a SymbolType object identifies the type of data
-                stored in the property.
-            value (id): value of the property.
+            symbol_type (Symbol or str): pointer to a Symbol
+                object in DEFAULT_SYMBOLS or string giving the name
+                of a Symbol object. Identifies the type of data
+                stored in the quantity.
+            value (id): value of the quantity.
             tags (list<str>): list of strings storing metadata from
-                Quantity evaluation.
+                evaluation.
             provenance (ProvenanceElement): provenance associated with the
-                object (e. g. inputs, model, see ProvenanceElement)
+                object (e. g. inputs, model, see ProvenanceElement). If not specified,
+                a default object will be created. All objects will receive
+                the time created and the internal ID as fields 'source.date_created'
+                and 'source.source_key', respectively, if the fields are not already
+                written.
         """
+
+        if not isinstance(symbol_type, Symbol):
+            symbol_type = self.get_symbol_from_string(symbol_type)
+
+        if provenance and not isinstance(provenance, ProvenanceElement):
+            raise TypeError("Expected ProvenanceElement for provenance. "
+                            "Instead received: {}".format(type(provenance)))
 
         self._value = value
         self._symbol_type = symbol_type
@@ -88,6 +95,15 @@ class BaseQuantity(ABC, MSONable):
 
     @staticmethod
     def get_symbol_from_string(name):
+        """
+        Looks up Symbol from name in DEFAULT_SYMBOLS registry.
+
+        Args:
+            name: (str) the name of the Symbol object
+
+        Returns: (Symbol) the Symbol object associated with the name
+
+        """
         # Invoke default symbol if symbol is a string
         if not isinstance(name, str):
             raise TypeError("Expected str, encountered {}".format(type(name)))
@@ -100,11 +116,20 @@ class BaseQuantity(ABC, MSONable):
     @property
     @abstractmethod
     def magnitude(self):
+        """
+        Returns the value of a quantity without any units.
+        Should be implemented for numerical subclasses. Otherwise call self.value.
+
+        Returns:
+            (id): value without units (if numerical), otherwise just the value
+        """
         pass
 
     @property
     def symbol(self):
         """
+        Returns the Symbol object associated with the quantity.
+
         Returns:
             (Symbol): Symbol of the BaseQuantity
         """
@@ -113,6 +138,8 @@ class BaseQuantity(ABC, MSONable):
     @property
     def tags(self):
         """
+        Returns the list of tags.
+
         Returns:
             (list<str>): tags of the BaseQuantity
         """
@@ -121,16 +148,20 @@ class BaseQuantity(ABC, MSONable):
     @property
     def provenance(self):
         """
+        Returns the object containing the provenance information for the quantity
+
         Returns:
-            (id): time of creation of the BaseQuantity
+            (ProvenanceElement): Provenance object for the quantity
         """
         return self._provenance
 
     @property
     def value(self):
         """
+        Returns a copy of the value object stored in the quantity.
+
         Returns:
-            (id): value of the BaseQuantity
+            (id): copy of value object stored in quantity
         """
         # This returns a deep copy of the object holding the value
         # in case it is a class instance and the user manipulates
@@ -139,22 +170,42 @@ class BaseQuantity(ABC, MSONable):
         # pint Quantities. pint automatically converts the magnitudes
         # into ndarrays, even for scalars, which breaks the careful
         # type controlling we do for NumQuantity.
-        # If this is problematic for large ndarrays, for example, then
-        # we can revisit this decision to copy.
+        # If this is problematic for large ndarrays or pymatgen objects,
+        # for example, then we can revisit this decision to copy.
         return copy.deepcopy(self._value)
 
     @property
     @abstractmethod
     def units(self):
+        """
+        Returns the units of the quantity.
+        Should be implemented for numerical subclasses. Otherwise return None.
+
+        Returns:
+            (pint.unit): units associated with the value
+        """
         pass
 
     @property
     @abstractmethod
     def uncertainty(self):
+        """
+        Returns the pint object holding the uncertainty of a quantity.
+        Should be implemented for numerical subclasses. Otherwise return None.
+
+        Returns:
+            (id): copy of uncertainty object stored in quantity
+        """
         pass
 
     @abstractmethod
     def pretty_string(self, **kwargs):
+        """
+        Returns a string representing the value of the object in a pretty format.
+
+        Returns:
+            (str): text string representing the value of an object
+        """
         pass
 
     def is_cyclic(self, visited=None):
@@ -224,12 +275,26 @@ class BaseQuantity(ABC, MSONable):
         return graph
 
     def draw_provenance_graph(self, filename, prog='dot', **kwargs):
+        """
+        Outputs the provenance graph for this quantity to a file.
+
+        Args:
+            filename: (str) filename for output
+            prog: (str) pygraphviz layout method for drawing the graph
+            **kwargs: args to pygraphviz.AGraph.draw() method
+        """
         nx_graph = self.get_provenance_graph()
         a_graph = nx.nx_agraph.to_agraph(nx_graph)
         a_graph.node_attr['style'] = 'filled'
         a_graph.draw(filename, prog=prog, **kwargs)
 
     def as_dict(self):
+        """
+        Serializes object as a dictionary. Object can be reconstructed with from_dict().
+
+        Returns:
+            (dict): representation of object as a dictionary
+        """
         symbol = self._symbol_type
         if symbol.name in DEFAULT_SYMBOLS.keys() and symbol == DEFAULT_SYMBOLS[symbol.name]:
             symbol = self._symbol_type.name
@@ -242,21 +307,56 @@ class BaseQuantity(ABC, MSONable):
 
     @abstractmethod
     def contains_nan_value(self):
+        """
+        Determines if value contains a NaN (not a number) value.
+        Should be implemented for numerical subclasses. Otherwise return False.
+
+        Returns:
+            (bool): True if value contains at least one NaN value.
+        """
         pass
 
     @abstractmethod
     def contains_complex_type(self):
+        """
+        Determines if value contains one or more complex-type values based on variable type.
+        Should be implemented for numerical subclasses. Otherwise return False.
+
+        Returns:
+            (bool): True if value contains at least one complex-type value.
+        """
         pass
 
     @abstractmethod
     def contains_imaginary_value(self):
+        """
+        Determines if value has a non-zero imaginary component. Differs from
+        contains_complex_type() in that it checks the imaginary component's value.
+        If zero or very small, returns True.
+
+        Should be implemented for numerical subclasses. Otherwise return False.
+
+        Returns:
+            (bool): True if value contains at least one value with a non-zero imaginary component.
+        """
         pass
 
     @abstractmethod
     def has_eq_value_to(self, rhs):
+        """
+        Determines if the current quantity's value is equal to that of another quantity.
+        This ignores provenance of the quantity and compares the values only.
+
+        Args:
+            rhs: (BaseQuantity) the quantity to which the current object will be compared
+
+        Returns: (bool): True if the values are found to be equal (or equivalent)
+
+        """
         pass
 
     def __hash__(self):
+        # ^ (binary xor) is commutative, so order of hashing does not matter
         hash_value = hash(self.symbol.name) ^ hash(self.provenance)
         for tag in self.tags:
             hash_value = hash_value ^ hash(tag)
@@ -272,12 +372,38 @@ class BaseQuantity(ABC, MSONable):
         return bool(self.value)
 
     def __eq__(self, other):
+        # Use has_eq_value_to() to compare only values.
         return self.symbol == other.symbol and \
                self.tags == other.tags and \
                self.provenance == other.provenance
 
 
 class NumQuantity(BaseQuantity):
+    """
+    Class extending BaseQuantity for storing numerical values, scalar and non-scalar.
+
+    Allowed scalar types: int, float, complex, np.integer, np.floating, np.complexfloating
+    Allowed array types: list, np.array
+
+    Note: Array types must contain only allowed scalar types. Scalars with numpy types will
+    be converted to python-native types.
+
+    Types shown below are how the objects are stored. See __init__() for initialization.
+
+    Attributes:
+        symbol_type: (Symbol) the type of information that is represented
+            by the associated value
+        value: (pint.Quantity) the value of the property wrapped in a pint quantity
+            for unit handling
+        units: (pint.unit) units of the object
+        tags: (list<str>) tags associated with the quantity, typically
+            related to its origin, e. g. "DFT" or "ML" or "experiment"
+        provenance: (ProvenanceElement) provenance associated with the
+                object. See BaseQuantity.__init__() for more info.
+        uncertainty: (pint.Quantity) uncertainty associated with the value stored in the same units
+    """
+
+    # Allowed types
     _ACCEPTABLE_SCALAR_TYPES = (int, float, complex)
     _ACCEPTABLE_ARRAY_TYPES = (list, np.ndarray)
     _ACCEPTABLE_DTYPES = (np.integer, np.floating, np.complexfloating)
@@ -288,6 +414,30 @@ class NumQuantity(BaseQuantity):
 
     def __init__(self, symbol_type, value, units=None, tags=None,
                  provenance=None, uncertainty=None):
+        """
+        Instantiates an instance of the NumQuantity class.
+
+        Args:
+            symbol_type: (Symbol or str) the type of information that is represented
+                by the associated value.  If a string, assigns a symbol from
+                the default symbols that has that string name
+            value: (int, float, complex, np.integer, np.floating, np.complexfloating,
+                list, np.ndarray, pint.Quantity) the value of the property
+            units: (str, tuple, list) desired units of the quantity. If value is a
+                pint.Quantity, the value will be converted to these units. Input can
+                be any acceptable unit format for pint.Quantity.
+            tags: (list<str>) tags associated with the quantity, typically
+                related to its origin, e. g. "DFT" or "ML" or "experiment"
+            provenance: (ProvenanceElement) provenance associated with the
+                object. See BaseQuantity.__init__() for more info.
+            uncertainty: (int, float, complex, np.integer, np.floating, np.complexfloating,
+                list, np.ndarray, pint.Quantity, tuple, NumQuantity) uncertainty
+                associated with the value stored in the same units. pint.Quantity,
+                tuple, and NumQuantity types will be converted to the units
+                specified in 'units'. Other types will be assumed to be in the
+                specified units.
+
+        """
         # TODO: Test value on the shape dictated by symbol
         if isinstance(symbol_type, str):
             symbol_type = BaseQuantity.get_symbol_from_string(symbol_type)
@@ -342,6 +492,15 @@ class NumQuantity(BaseQuantity):
 
     @staticmethod
     def _is_acceptable_dtype(this_dtype):
+        """
+        This function checks a dtype against the allowed dtypes for this class.
+
+        Args:
+            this_dtype: (numpy.dtype) the dtype to check
+
+        Returns: True if this_dtype is a sub-dtype of the acceptable dtypes.
+
+        """
         return any(np.issubdtype(this_dtype, dt) for dt in NumQuantity._ACCEPTABLE_DTYPES)
 
     def to(self, units):
@@ -349,7 +508,7 @@ class NumQuantity(BaseQuantity):
         Method to convert quantities between units, a la pint
 
         Args:
-            units (tuple or str): units to convert quantity to
+            units: (tuple or str) units to convert quantity to
 
         Returns:
 
@@ -369,17 +528,14 @@ class NumQuantity(BaseQuantity):
         quantities
 
         Args:
-            quantities ([BaseQuantity]): list of quantities
+            quantities ([NumQuantity]): list of quantities of the same type
 
-        Returns:
-            weighted mean
+        Returns: (NumQuantity) a quantity containing the weighted mean and
+            standard deviation.
         """
 
         if not all(isinstance(q, cls) for q in quantities):
-            # TODO: can't average ObjQuantities, highlights a weakness in
-            # Quantity class that might be fixed by changing class design
-            # ^^^ Not sure how we can address this
-            raise ValueError("Weighted mean cannot be applied to objects")
+            raise ValueError("Weighted mean cannot be applied to non-NumQuantity objects")
 
         input_symbol = quantities[0].symbol
         if not all(input_symbol == q.symbol for q in quantities):
