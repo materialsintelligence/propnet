@@ -12,10 +12,38 @@ logger = logging.getLogger(__name__)
 
 
 class CorrelationBuilder(Builder):
+    """
+    A class to calculate the correlation between properties derived by or used in propnet
+    using a suite of regression tools. Uses the Builder architecture for optional parallel
+    processing of data.
 
+    Note: serialization of builder does not work with custom correlation functions, although
+    interactive use does support them.
+
+    """
     def __init__(self, propnet_store, mp_store,
                  correlation_store, out_file=None,
                  funcs='linlsq', **kwargs):
+        """
+        Constructor for the the correlation builder.
+
+        Args:
+            propnet_store: (Mongolike Store) store instance pointing to propnet collection
+                with read access
+            mp_store: (Mongolike Store) store instance pointing to Materials Project collection with read access
+            correlation_store: (Mongolike Store) store instance pointing to collection with write access
+            out_file: (str) filename to output data in JSON format (useful if using a MemoryStore
+                for correlation_store)
+            funcs: (str, function, list<str, function>) functions to use for correlation. Built-in functions can
+                be specified by the following strings:
+
+                linlsq (default): linear least-squares, reports R^2
+                pearson: Pearson r-correlation, reports r
+                mic: maximal-information non-parametric exploration, reports maximal information coefficient
+                ransac: random sample consensus (RANSAC) regression, reports score
+                theilsen: Theil-Sen regression, reports score
+            **kwargs: arguments to the Builder class
+        """
 
         self.propnet_store = propnet_store
         self.mp_store = mp_store
@@ -28,7 +56,7 @@ class CorrelationBuilder(Builder):
 
         self._funcs = {}
 
-        if isinstance(funcs, str):
+        if not isinstance(funcs, list):
             funcs = [funcs]
 
         for f in funcs:
@@ -159,15 +187,17 @@ class CorrelationBuilder(Builder):
     def _cfunc_ransac(x, y):
         from sklearn.linear_model import RANSACRegressor
         r = RANSACRegressor(random_state=21)
-        score = r.score(x[:, np.newaxis], y)
-        return score
+        x_coeff = np.array(x)[:, np.newaxis]
+        r.fit(x_coeff, y)
+        return r.score(x_coeff, y)
 
     @staticmethod
     def _cfunc_theilsen(x, y):
         from sklearn.linear_model import TheilSenRegressor
         r = TheilSenRegressor(random_state=21)
-        score = r.score(x[:, np.newaxis], y)
-        return score
+        x_coeff = np.array(x)[:, np.newaxis]
+        r.fit(x_coeff, y)
+        return r.score(x_coeff, y)
 
     def update_targets(self, items):
         data = []
