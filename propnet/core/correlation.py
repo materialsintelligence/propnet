@@ -25,14 +25,14 @@ class CorrelationBuilder(Builder):
                  correlation_store, out_file=None,
                  funcs='linlsq', **kwargs):
         """
-        Constructor for the the correlation builder.
+        Constructor for the correlation builder.
 
         Args:
             propnet_store: (Mongolike Store) store instance pointing to propnet collection
                 with read access
             mp_store: (Mongolike Store) store instance pointing to Materials Project collection with read access
             correlation_store: (Mongolike Store) store instance pointing to collection with write access
-            out_file: (str) filename to output data in JSON format (useful if using a MemoryStore
+            out_file: (str) optional, filename to output data in JSON format (useful if using a MemoryStore
                 for correlation_store)
             funcs: (str, function, list<str, function>) functions to use for correlation. Built-in functions can
                 be specified by the following strings:
@@ -42,7 +42,8 @@ class CorrelationBuilder(Builder):
                 mic: maximal-information non-parametric exploration, reports maximal information coefficient
                 ransac: random sample consensus (RANSAC) regression, reports score
                 theilsen: Theil-Sen regression, reports score
-            **kwargs: arguments to the Builder class
+                all: runs all correlation functions above
+            **kwargs: arguments to the Builder superclass
         """
 
         self.propnet_store = propnet_store
@@ -78,6 +79,20 @@ class CorrelationBuilder(Builder):
                                                  **kwargs)
 
     def get_items(self):
+        """
+        Collects scalar data from propnet and MP databases, aggregates it by property, and creates
+        a generator to iterate over all pairs of properties, including pairing of the same property
+        with itself for sanity check, and correlation functions.
+
+        Returns: (generator) a generator providing a dictionary with the data for correlation:
+            {'x_data': (list<float>) data for first property (x-axis),
+             'x_name': (str) name of first property,
+             'y_data': (list<float>) data for second property (y-axis),
+             'y_name': (str) name of second property,
+             'func': (tuple<str, function>) name and function handle for correlation function
+             }
+
+        """
         data = defaultdict(dict)
         propnet_props = [v.name for v in DEFAULT_SYMBOLS.values()
                          if (v.category == 'property' and v.shape == 1)]
@@ -99,7 +114,7 @@ class CorrelationBuilder(Builder):
                             input_d[q['symbol_type']].append(this_q)
                     repeated_keys = set(input_d.keys()).intersection(set(data[mpid].keys()))
                     if repeated_keys:
-                        print('Repeated key(s) from inputs: {}'.format(repeated_keys))
+                        logger.warning('Repeated key(s) from inputs: {}'.format(repeated_keys))
                     data[mpid].update(
                         {k: sum(v) / len(v) for k, v in input_d.items()})
 
@@ -133,6 +148,10 @@ class CorrelationBuilder(Builder):
                     x.append(props_data[prop_a])
                     y.append(props_data[prop_b])
 
+            # MP data does not have units listed in database, so will be floats. propnet
+            # data may not have the same units as the MP data, so is stored as pint
+            # quantities. Here, the quantities are coerced into the units of MP data
+            # as stored in symbols and coverts them to floats.
             if x and any(isinstance(v, ureg.Quantity) for v in x):
                 x_float = [xx.to(DEFAULT_SYMBOLS[prop_a].units).magnitude
                            if isinstance(xx, ureg.Quantity) else xx for xx in x]
@@ -153,6 +172,21 @@ class CorrelationBuilder(Builder):
                 yield data_dict
 
     def process_item(self, item):
+        """
+        Run correlation calculation on a pair of properties using the specified function.
+
+        Args:
+            item: (dict) input provided by get_items() (see get_items() for structure)
+
+        Returns: (tuple<str, str, float, str, int>) output of calculation with necessary
+            information about calculation included. Format in tuple:
+                property A name,
+                property B name,
+                correlation value,
+                correlation function name,
+                number of data points used for correlation
+
+        """
         prop_a, prop_b = item['x_name'], item['y_name']
         data_a, data_b = item['x_data'], item['y_data']
         func_name, func = item['func']
@@ -166,6 +200,16 @@ class CorrelationBuilder(Builder):
 
     @staticmethod
     def _cfunc_mic(x, y):
+        """
+        Get maximal information coefficient for data set.
+
+        Args:
+            x: (list<float>) property A
+            y: (list<float>) property B
+
+        Returns: (float) maximal information coefficient
+
+        """
         from minepy import MINE
         m = MINE()
         m.compute_score(x, y)
@@ -173,18 +217,48 @@ class CorrelationBuilder(Builder):
 
     @staticmethod
     def _cfunc_linlsq(x, y):
+        """
+        Get R^2 value for linear least-squares fit of a data set.
+
+        Args:
+            x: (list<float>) property A
+            y: (list<float>) property B
+
+        Returns: (float) R^2 value
+
+        """
         from scipy import stats
         fit = stats.linregress(x, y)
         return fit.rvalue ** 2
 
     @staticmethod
     def _cfunc_pearson(x, y):
+        """
+        Get R value for Pearson fit of a data set.
+
+        Args:
+            x: (list<float>) property A
+            y: (list<float>) property B
+
+        Returns: (float) Pearson R value
+
+        """
         from scipy import stats
         fit = stats.pearsonr(x, y)
         return fit[0]
 
     @staticmethod
     def _cfunc_ransac(x, y):
+        """
+        Get random sample consensus (RANSAC) regression score for data set.
+
+        Args:
+            x: (list<float>) property A
+            y: (list<float>) property B
+
+        Returns: (float) RANSAC score
+
+        """
         from sklearn.linear_model import RANSACRegressor
         r = RANSACRegressor(random_state=21)
         x_coeff = np.array(x)[:, np.newaxis]
@@ -193,6 +267,16 @@ class CorrelationBuilder(Builder):
 
     @staticmethod
     def _cfunc_theilsen(x, y):
+        """
+        Get Theil-Sen regression score for data set.
+
+        Args:
+            x: (list<float>) property A
+            y: (list<float>) property B
+
+        Returns: (float) Theil-Sen score
+
+        """
         from sklearn.linear_model import TheilSenRegressor
         r = TheilSenRegressor(random_state=21)
         x_coeff = np.array(x)[:, np.newaxis]
@@ -200,18 +284,36 @@ class CorrelationBuilder(Builder):
         return r.score(x_coeff, y)
 
     def update_targets(self, items):
+        """
+        Write correlation data to Mongo store.
+
+        Args:
+            items: (list<dict>) list of results output by process_item()
+
+        """
         data = []
         for item in items:
             prop_a, prop_b, correlation, func_name, n_points = item
+            # This is so the hash is the same if prop_a and prop_b are swapped
+            sorted_props = [prop_a, prop_b]
+            sorted_props.sort()
             data.append({'property_a': prop_a,
                          'property_b': prop_b,
                          'correlation': correlation,
                          'correlation_func': func_name,
                          'n_points': n_points,
-                         'id': hash(prop_a) ^ hash(prop_b) ^ hash(func_name)})
+                         'id': hash(sorted_props[0]) ^ hash(sorted_props[1]) ^ hash(func_name)})
         self.correlation_store.update(data, key='id')
 
     def finalize(self, cursor=None):
+        """
+        Outputs correlation data to JSON file, if specified in instantiation, and runs
+        clean-up function for Builder.
+
+        Args:
+            cursor: (Mongo Store cursor) optional, cursor to close if not automatically closed.
+
+        """
         if self.out_file:
             matrix = self.get_correlation_matrices()
             with open(self.out_file, 'w') as f:
@@ -220,8 +322,24 @@ class CorrelationBuilder(Builder):
         super(CorrelationBuilder, self).finalize(cursor)
 
     def get_correlation_matrices(self, func_name=None):
-        if not func_name:
-            func_name = list(self._funcs.keys())
+        """
+        Builds document containing the correlation matrix with relevant data regarding
+        correlation algorithm and properties of the data set.
+
+        Args:
+            func_name: (str) optional, name of the correlation functions to include in the document
+                default: None, which is to include all that were run by this builder.
+
+        Returns: (dict) document containing correlation data. Format:
+            {'properties': (list<str>) names of properties calculated in order of how they are indexed
+                    in the matrices
+             'n_points': (list<list<int>>) list of lists (i.e. matrix) containing the number of data
+                    points evaluated during the fitting procedure
+             'correlation': (dict<str: list<list<float>>>) dictionary of matrices containing correlation
+                    results, keyed by correlation function name
+            }
+
+        """
 
         prop_data = self.correlation_store.query(criteria={'property_a': {'$exists': True}},
                                                  properties=['property_a'])
@@ -230,6 +348,12 @@ class CorrelationBuilder(Builder):
         out = {'properties': props,
                'n_points': None,
                'correlation': {}}
+
+        if not func_name:
+            func_name = list(self._funcs.keys())
+
+        if isinstance(func_name, str):
+            func_name = [func_name]
 
         for f in func_name:
             data = self.correlation_store.query(criteria={'correlation_func': f})
@@ -258,6 +382,14 @@ class CorrelationBuilder(Builder):
         return out
 
     def as_dict(self):
+        """
+        Returns the representation of the builder as a dictionary in JSON serializable format.
+        Note: because functions are not JSON serializable, custom functions are omitted when
+            serializing the object.
+
+        Returns: (dict) representation of this builder as a JSON-serializable dictionary
+
+        """
         d = super(CorrelationBuilder, self).as_dict()
         serialized_funcs = []
         for name, func in d['funcs'].items():
@@ -265,5 +397,9 @@ class CorrelationBuilder(Builder):
                 serialized_funcs.append(name)
             else:
                 logger.warning("Cannot serialize custom function '{}'. Omitting.".format(name))
+
+        if not serialized_funcs:
+            logger.warning("No functions were able to be serialized from this builder.")
+
         d['funcs'] = serialized_funcs
         return d
