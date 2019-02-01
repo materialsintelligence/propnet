@@ -392,7 +392,7 @@ class CorrelationBuilder(Builder):
         """
         d = super(CorrelationBuilder, self).as_dict()
         serialized_funcs = []
-        for name, func in d['funcs'].items():
+        for name in d['funcs'].keys():
             if name in self._correlation_funcs.keys():
                 serialized_funcs.append(name)
             else:
