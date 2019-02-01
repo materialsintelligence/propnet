@@ -574,6 +574,12 @@ class NumQuantity(BaseQuantity):
 
     @property
     def magnitude(self):
+        """
+        Returns the value of a quantity without any units.
+
+        Returns:
+            (int, float, complex, np.ndarray): value without units
+        """
         return self._value.magnitude
 
     @property
@@ -829,6 +835,12 @@ class ObjQuantity(BaseQuantity):
 
     @property
     def magnitude(self):
+        """
+        Returns the value of the quantity. Same as self.value.
+
+        Returns:
+            (id): value contained by quantity
+        """
         return self._value
 
     @property
