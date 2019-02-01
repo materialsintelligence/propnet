@@ -5,6 +5,10 @@ import json
 from collections import defaultdict
 from propnet.symbols import DEFAULT_SYMBOLS
 from propnet import ureg
+import logging
+import re
+
+logger = logging.getLogger(__name__)
 
 
 class CorrelationBuilder(Builder):
@@ -20,11 +24,11 @@ class CorrelationBuilder(Builder):
 
         self._correlation_funcs = {f.replace('_cfunc_', ''): getattr(self, f)
                                    for f in dir(self)
-                                   if f.startswith('_cfunc_') and callable(getattr(self, f))}
+                                   if re.match(r'^_cfunc_.+$', f) and callable(getattr(self, f))}
 
         self._funcs = {}
 
-        if not isinstance(funcs, list):
+        if isinstance(funcs, str):
             funcs = [funcs]
 
         for f in funcs:
@@ -58,7 +62,7 @@ class CorrelationBuilder(Builder):
             mpid = material['task_id']
             for prop, values in material.items():
                 if prop in propnet_props:
-                    data[mpid][prop] = values['mean']
+                    data[mpid][prop] = ureg.Quantity(values['mean'], values['units'])
                 elif prop == 'inputs':
                     input_d = defaultdict(list)
                     for q in values:
@@ -102,20 +106,20 @@ class CorrelationBuilder(Builder):
                     y.append(props_data[prop_b])
 
             if x and any(isinstance(v, ureg.Quantity) for v in x):
-                x_new = [xx.to(DEFAULT_SYMBOLS[prop_a].units).magnitude
-                         if isinstance(xx, ureg.Quantity) else xx for xx in x]
+                x_float = [xx.to(DEFAULT_SYMBOLS[prop_a].units).magnitude
+                           if isinstance(xx, ureg.Quantity) else xx for xx in x]
             else:
-                x_new = x
+                x_float = x
             if y and any(isinstance(v, ureg.Quantity) for v in y):
-                y_new = [yy.to(DEFAULT_SYMBOLS[prop_b].units).magnitude
-                         if isinstance(yy, ureg.Quantity) else yy for yy in y]
+                y_float = [yy.to(DEFAULT_SYMBOLS[prop_b].units).magnitude
+                           if isinstance(yy, ureg.Quantity) else yy for yy in y]
             else:
-                y_new = y
+                y_float = y
 
             for name, func in self._funcs.items():
-                data_dict = {'x_data': x_new,
+                data_dict = {'x_data': x_float,
                              'x_name': prop_a,
-                             'y_data': y_new,
+                             'y_data': y_float,
                              'y_name': prop_b,
                              'func': (name, func)}
                 yield data_dict
@@ -143,7 +147,7 @@ class CorrelationBuilder(Builder):
     def _cfunc_linlsq(x, y):
         from scipy import stats
         fit = stats.linregress(x, y)
-        return fit.rvalue**2
+        return fit.rvalue ** 2
 
     @staticmethod
     def _cfunc_pearson(x, y):
@@ -222,3 +226,14 @@ class CorrelationBuilder(Builder):
             out['correlation'][f] = corr_matrix
 
         return out
+
+    def as_dict(self):
+        d = super(CorrelationBuilder, self).as_dict()
+        serialized_funcs = []
+        for name, func in d['funcs'].items():
+            if name in self._correlation_funcs.keys():
+                serialized_funcs.append(name)
+            else:
+                logger.warning("Cannot serialize custom function '{}'. Omitting.".format(name))
+        d['funcs'] = serialized_funcs
+        return d
