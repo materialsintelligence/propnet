@@ -194,7 +194,7 @@ class BaseQuantity(ABC, MSONable):
         Should be implemented for numerical subclasses. Otherwise return None.
 
         Returns:
-            (id): copy of uncertainty object stored in quantity
+            (pint.Quantity): copy of uncertainty object stored in quantity
         """
         pass
 
@@ -356,10 +356,13 @@ class BaseQuantity(ABC, MSONable):
         pass
 
     def __hash__(self):
-        # ^ (binary xor) is commutative, so order of hashing does not matter
         hash_value = hash(self.symbol.name) ^ hash(self.provenance)
-        for tag in self.tags:
-            hash_value = hash_value ^ hash(tag)
+        if self.tags:
+            # Sorting to ensure it is deterministic
+            sorted_tags = self.tags.copy()
+            sorted_tags.sort()
+            for tag in sorted_tags:
+                hash_value = hash_value ^ hash(tag)
         return hash_value
 
     def __str__(self):
@@ -584,10 +587,22 @@ class NumQuantity(BaseQuantity):
 
     @property
     def units(self):
+        """
+        Returns the units of the quantity.
+
+        Returns:
+            (pint.unit): units associated with the value
+        """
         return self._value.units
 
     @property
     def uncertainty(self):
+        """
+        Returns the pint object holding the uncertainty of a quantity.
+
+        Returns:
+            (pint.Quantity): copy of uncertainty object stored in quantity
+        """
         # See note on BaseQuantity.value about why this is a deep copy
         return copy.deepcopy(self._uncertainty)
 
@@ -626,6 +641,16 @@ class NumQuantity(BaseQuantity):
         return recursive_list_type_check([to_check])
 
     def pretty_string(self, **kwargs):
+        """
+        Returns a string representing the value of the object in a pretty format with units.
+        Note: units are omitted for non-scalar properties.
+
+        Keyword Args:
+            sigfigs: (int) how many significant figures to include. default: 4
+        Returns:
+            (str): text string representing the value of an object
+        """
+
         # TODO: maybe support a rounding kwarg?
         if 'sigfigs' in kwargs.keys():
             sigfigs = kwargs['sigfigs']
@@ -712,6 +737,12 @@ class NumQuantity(BaseQuantity):
         return False
 
     def as_dict(self):
+        """
+        Serializes object as a dictionary. Object can be reconstructed with from_dict().
+
+        Returns:
+            (dict): representation of object as a dictionary
+        """
         d = super(NumQuantity, self).as_dict()
 
         d.update({"@module": self.__class__.__module__,
@@ -743,6 +774,19 @@ class NumQuantity(BaseQuantity):
             value_is_close
 
     def has_eq_value_to(self, rhs):
+        """
+        Determines if the current quantity's value is equivalent to that of another quantity.
+        This ignores provenance of the quantity and compares the values only.
+
+        Equivalence is defined as having the same numerical value in the units defined by the
+        quantities' symbol, within an absolute tolerance of 1e-8 and relative tolerance of 1e-5.
+
+        Args:
+            rhs: (NumQuantity) the quantity to which the current object will be compared
+
+        Returns: (bool): True if the values are found to be equivalent
+
+        """
         if not isinstance(rhs, type(self)):
             raise TypeError("This method requires two {} objects".format(type(self).__name__))
         return self.values_close_in_units(self.value, rhs.value,
@@ -750,8 +794,44 @@ class NumQuantity(BaseQuantity):
 
     @staticmethod
     def values_close_in_units(lhs, rhs, units_for_comparison=None):
+        """
+        Compares two pint quantities in a given unit. The purpose is to
+        ensure dimensional, small quantities (e.g. femtoseconds) don't
+        get discounted as small, close-to-zero quantities.
+
+        If units are not specified explicitly, they are selected using the
+        following criteria, in order of precedence:
+        1. If one quantity has a value of exactly 0, the units of that quantity
+            are used for comparison.
+        2. The units of both quantities are rescaled such that the magnitude
+            of each quantity is between 1 and 1000, or where the unit is at the
+            smallest (or largest) possible unit defined by pint. The smaller of
+            the two units is then used to compare the values (i.e. gram would be
+            selected over kilogram).
+
+        Note: dimensionless quantities will NOT be scaled and will be treated
+            as bare numbers. This means dimensionless values that are small,
+            but different will be treated as equal if abs(a-b) <= 1e-8, e.g.
+            1e-8 and 2e-8 will yield True, as will 1e-8 and 1e-20.
+
+        Args:
+            lhs: (pint.Quantity) quantity object to compare
+            rhs: (pint.Quantity) quantity object to compare
+            units_for_comparison: (str, pint.Units, tuple) units that the
+                quantities will be compared in. Input can be any acceptable
+                format for Quantity.to()
+
+        Returns: (bool) True if the values are equal within an absolute tolerance
+            of 1e-8 and a relative tolerance of 1e-5. False if not equal within
+            the tolerance bounds, or the dimensionality of the units are not equal.
+
+        """
         if not (isinstance(lhs, ureg.Quantity) and isinstance(rhs, ureg.Quantity)):
             raise TypeError("This method requires two pint Quantity objects")
+
+        if lhs.units.dimensionality != rhs.units.dimensionality:
+            return False
+
         if not units_for_comparison:
             if not isinstance(lhs.magnitude, np.ndarray):
                 if lhs.magnitude == 0 and rhs.magnitude == 0:
@@ -774,10 +854,13 @@ class NumQuantity(BaseQuantity):
                     else:
                         units_for_comparison = rhs_compact_units
             else:
-                if 1 * lhs.units < 1 * rhs.units:
-                    units_for_comparison = lhs.units
-                else:
-                    units_for_comparison = rhs.units
+                try:
+                    if 1 * lhs.units < 1 * rhs.units:
+                        units_for_comparison = lhs.units
+                    else:
+                        units_for_comparison = rhs.units
+                except DimensionalityError:
+                    return False
         try:
             lhs_convert = lhs.to(units_for_comparison)
             rhs_convert = rhs.to(units_for_comparison)
@@ -786,6 +869,15 @@ class NumQuantity(BaseQuantity):
         return np.allclose(lhs_convert, rhs_convert)
 
     def __hash__(self):
+        """
+        Hash function for this class.
+
+        Note: the hash function for this class does not hash the value,
+            so it cannot alone determine equality.
+
+        Returns: (int) hash value
+
+        """
         return super().__hash__()
 
 
@@ -845,24 +937,60 @@ class ObjQuantity(BaseQuantity):
 
     @property
     def units(self):
+        """
+        Returns None because this class does not support units.
+
+        Returns:
+            None
+        """
         return None
 
     @property
     def uncertainty(self):
+        """
+        Returns None because this class does not support uncertainty.
+
+        Returns:
+            None
+        """
         return None
 
     def pretty_string(self, **kwargs):
+        """
+        Returns a string representing the value of the object in a pretty format.
+
+        Returns:
+            (str): text string representing the value of an object
+        """
         return "{}".format(self.value)
 
     # TODO: Determine whether it's necessary to define these for ObjQuantity
     # we could just assess this if models return NumQuantity
     def contains_nan_value(self):
+        """
+        Returns False because this class does not support numerical types.
+
+        Returns:
+            (bool): False
+        """
         return False
 
     def contains_complex_type(self):
+        """
+        Returns False because this class does not support numerical types.
+
+        Returns:
+            (bool): False
+        """
         return False
 
     def contains_imaginary_value(self):
+        """
+        Returns False because this class does not support numerical types.
+
+        Returns:
+            (bool): False
+        """
         return False
 
     def has_eq_value_to(self, rhs):
