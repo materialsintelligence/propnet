@@ -356,6 +356,15 @@ class BaseQuantity(ABC, MSONable):
         pass
 
     def __hash__(self):
+        """
+        Hash function for this class.
+
+        Note: the hash function for this class does not hash the value,
+            so it cannot alone determine equality.
+
+        Returns: (int) hash value
+
+        """
         hash_value = hash(self.symbol.name) ^ hash(self.provenance)
         if self.tags:
             # Sorting to ensure it is deterministic
@@ -375,7 +384,21 @@ class BaseQuantity(ABC, MSONable):
         return bool(self.value)
 
     def __eq__(self, other):
-        # Use has_eq_value_to() to compare only values.
+        """
+        Determines equality of common components of BaseQuantity-derived objects.
+
+        Note: Does not check for equivalence of value. Derived classes should
+            override this method to determine equivalence of values.
+
+        Note: __eq__() does not provide comparisons to other types, but does support
+            implied comparisons by returning NotImplemented for other types.
+
+        Args:
+            other: (BaseQuantity-derived type) object for value comparison
+
+        Returns: (bool) True if the symbol, tags, and provenance are equal.
+
+        """
         return self.symbol == other.symbol and \
                self.tags == other.tags and \
                self.provenance == other.provenance
@@ -754,6 +777,22 @@ class NumQuantity(BaseQuantity):
         return d
 
     def __eq__(self, other):
+        """
+        Determines if another NumQuantity object is equivalent to this object.
+
+        Equivalence is defined as having the same symbol name, tags, provenance, and
+        equal (within tolerance) value and uncertainty in the default units of the symbol.
+
+        Note: __eq__() does not provide comparisons to other types, but does support
+            implied comparisons by returning NotImplemented for other types.
+
+        Args:
+            other: (NumQuantity) the object to compare to
+
+        Returns: (bool) True if the objects are equivalent
+
+        """
+        # Use has_eq_value_to() to compare only values.
         if not isinstance(other, NumQuantity):
             return NotImplemented
         if not self.uncertainty and not other.uncertainty:
@@ -882,8 +921,38 @@ class NumQuantity(BaseQuantity):
 
 
 class ObjQuantity(BaseQuantity):
+    """
+    Class extending BaseQuantity for storing any value type that does not require units.
+
+    Types shown below are how the objects are stored. See __init__() for initialization.
+
+    Attributes:
+        symbol_type: (Symbol) the type of information that is represented
+            by the associated value
+        value: (id) the value of the property
+        tags: (list<str>) tags associated with the quantity, typically
+            related to its origin, e. g. "DFT" or "ML" or "experiment"
+        provenance: (ProvenanceElement) provenance associated with the
+                object. See BaseQuantity.__init__() for more info.
+    """
+
     def __init__(self, symbol_type, value, tags=None,
                  provenance=None):
+        """
+        Instantiates an instance of the ObjQuantity class.
+
+        Args:
+            symbol_type: (Symbol or str) the type of information that is represented
+                by the associated value.  If a string, assigns a symbol from
+                the default symbols that has that string name
+            value: (id) the value of the property, can be any type except None.
+                Ideally, numerical values should be stored in NumQuantity objects,
+                because ObjQuantity does not support units.
+            tags: (list<str>) tags associated with the quantity, typically
+                related to its origin, e. g. "DFT" or "ML" or "experiment"
+            provenance: (ProvenanceElement) provenance associated with the
+                object. See BaseQuantity.__init__() for more info.
+        """
         if value is None:
             raise ValueError("ObjQuantity must hold a non-NoneType object for its value.")
 
@@ -994,11 +1063,30 @@ class ObjQuantity(BaseQuantity):
         return False
 
     def has_eq_value_to(self, rhs):
+        """
+        Determines if the value of another ObjQuantity is equivalent to the current.
+
+        Equivalence is defined by the default __eq__() method for the object held in value.
+
+        Args:
+            rhs: (ObjQuantity) object for value comparison
+
+        Returns: (bool) True if the values are equal.
+
+        """
         if not isinstance(rhs, type(self)):
             raise TypeError("This method requires two {} objects".format(type(self).__name__))
         return self.value == rhs.value
 
     def as_dict(self):
+        """
+        Serializes object as a dictionary. Object can be reconstructed with from_dict().
+
+        Note: If value is not JSON serializable, this object will not be JSON serializable.
+
+        Returns:
+            (dict): representation of object as a dictionary
+        """
         d = super().as_dict()
 
         d.update({"@module": self.__class__.__module__,
@@ -1008,17 +1096,47 @@ class ObjQuantity(BaseQuantity):
         return d
 
     def __eq__(self, other):
+        """
+        Determines if the value of another ObjQuantity is equivalent to the current.
+
+        Equivalence is defined by equivalence of symbol name, tags, provenance, and
+            value as indicated by the default __eq__() method for the object held
+            in value.
+
+        Note: __eq__() does not provide comparisons to other types, but does support
+            implied comparisons by returning NotImplemented for other types.
+
+        Args:
+            other: (ObjQuantity) object for value comparison
+
+        Returns: (bool) True if the objects are equal.
+
+        """
+        # Use has_eq_value_to() to compare only values.
         if not isinstance(other, ObjQuantity):
             return False
 
         return super().__eq__(other) and self.value == other.value
 
     def __hash__(self):
+        """
+        Hash function for this class.
+
+        Note: the hash function for this class does not hash the value,
+            so it cannot alone determine equality.
+
+        Returns: (int) hash value
+
+        """
         return super().__hash__()
 
 
 class QuantityFactory(object):
+    """
+    Helper class to construct BaseQuantity-derived objects using factory methods.
 
+    Use create_quantity() to generate objects on the fly depending on the value type.
+    """
     @staticmethod
     def create_quantity(symbol_type, value, units=None, tags=None,
                         provenance=None, uncertainty=None):
@@ -1128,6 +1246,15 @@ class QuantityFactory(object):
 
     @staticmethod
     def from_dict(d):
+        """
+        Method to construct BaseQuantity-derived objects from dictionaries.
+
+        Args:
+            d: (dict) input dictionary
+
+        Returns: (NumQuantity, ObjQuantity) new object defined from dictionary
+
+        """
         if d['@class'] == 'NumQuantity':
             return NumQuantity.from_dict(d)
         elif d['@class'] == 'ObjQuantity':
