@@ -143,11 +143,11 @@ class QuantityTest(unittest.TestCase):
         self.assertAlmostEqual(u.value.magnitude, 0.1)
         self.assertEqual(u.value.units.format_babel(), 'meter')
         with self.assertRaises(ValueError):
-            q = QuantityFactory.create_quantity(value_symbol, 126.1, uncertainty=u)
+            QuantityFactory.create_quantity(value_symbol, 126.1, uncertainty=u)
 
         # Test uncertainty with bad type for uncertainty
         with self.assertRaises(TypeError):
-            q = QuantityFactory.create_quantity(value_symbol, 126.1, uncertainty='test')
+            QuantityFactory.create_quantity(value_symbol, 126.1, uncertainty='test')
 
         # From custom object symbol
         q = QuantityFactory.create_quantity(self.custom_object_symbol, 'test')
@@ -163,11 +163,11 @@ class QuantityTest(unittest.TestCase):
 
         # Test failure with invalid symbol name
         with self.assertRaises(ValueError):
-            q = QuantityFactory.create_quantity("my_invalid_symbol_name", 1)
+            QuantityFactory.create_quantity("my_invalid_symbol_name", 1)
 
         # Test failure with incorrect type as symbol
         with self.assertRaises(TypeError):
-            q = QuantityFactory.create_quantity(self.custom_symbol.as_dict(), 100)
+            QuantityFactory.create_quantity(self.custom_symbol.as_dict(), 100)
 
         # Test failure on instantiating NumQuantity with non-numeric types
         with self.assertRaises(TypeError):
@@ -177,23 +177,23 @@ class QuantityTest(unittest.TestCase):
                                    ['a', 'test']]
         value_string_np_array = np.array(value_string_list_array)
         with self.assertRaises(TypeError):
-            q = NumQuantity(self.custom_symbol, value_string_list_array)
+            NumQuantity(self.custom_symbol, value_string_list_array)
         with self.assertRaises(TypeError):
-            q = NumQuantity(self.custom_symbol, value_string_np_array)
+            NumQuantity(self.custom_symbol, value_string_np_array)
 
         # Test failure initializing with NoneType objects
         with self.assertRaises(ValueError):
-            q = QuantityFactory.create_quantity(self.custom_symbol, None)
+            QuantityFactory.create_quantity(self.custom_symbol, None)
         with self.assertRaises(ValueError):
-            q = QuantityFactory.create_quantity(self.custom_object_symbol, None)
+            QuantityFactory.create_quantity(self.custom_object_symbol, None)
         with self.assertRaises(TypeError):
-            q = NumQuantity(self.custom_symbol, None)
+            NumQuantity(self.custom_symbol, None)
         with self.assertRaises(ValueError):
-            q = ObjQuantity(self.custom_object_symbol, None)
+            ObjQuantity(self.custom_object_symbol, None)
 
         # Reject non-numerical quantities for non-object symbols
         with self.assertRaises(TypeError):
-            q = QuantityFactory.create_quantity(self.custom_symbol, value_string_list_array)
+            QuantityFactory.create_quantity(self.custom_symbol, value_string_list_array)
 
         # Ensure warning is issued when assigning units or uncertainty to object-type symbol
 
@@ -238,7 +238,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(default.value, new_q.value)
 
         with self.assertRaises(ValueError):
-            new_q = QuantityFactory.from_default('band_gap')
+            QuantityFactory.from_default('band_gap')
 
     def test_from_weighted_mean(self):
         qlist = [QuantityFactory.create_quantity(self.custom_symbol, val, tags=['testing'])
@@ -250,12 +250,12 @@ class QuantityTest(unittest.TestCase):
 
         qlist.append(QuantityFactory.create_quantity(Symbol('B', units='dimensionless'), 15))
         with self.assertRaises(ValueError):
-            qagg = NumQuantity.from_weighted_mean(qlist)
+            NumQuantity.from_weighted_mean(qlist)
 
         with self.assertRaises(ValueError):
             qlist = [QuantityFactory.create_quantity(self.custom_object_symbol, str(val))
                      for val in np.arange(1, 2.01, 0.01)]
-            qagg = NumQuantity.from_weighted_mean(qlist)
+            NumQuantity.from_weighted_mean(qlist)
 
     def test_is_cyclic(self):
         b = Symbol("B", units="dimensionless")
@@ -502,7 +502,7 @@ class QuantityTest(unittest.TestCase):
         s = Symbol('A', category='object',
                    object_type='propnet.core.tests.external_test_class.ACoercibleClass')
         with self.assertRaises(NameError):
-            q = QuantityFactory.create_quantity(s, 55)
+            QuantityFactory.create_quantity(s, 55)
 
         # Test coercion after module imported
         from propnet.core.tests.external_test_class import ACoercibleClass, AnIncoercibleClass
@@ -514,7 +514,7 @@ class QuantityTest(unittest.TestCase):
         s = Symbol('A', category='object',
                    object_type='propnet.core.tests.external_test_class.AnIncoercibleClass')
         with self.assertRaises(TypeError):
-            q = QuantityFactory.create_quantity(s, 55)
+            QuantityFactory.create_quantity(s, 55)
 
         # Test lack of coercion when no type specified
         q = QuantityFactory.create_quantity(self.custom_object_symbol, AnIncoercibleClass(5, 6))
@@ -679,7 +679,7 @@ class QuantityTest(unittest.TestCase):
         # Test failure of QuantityFactory.from_dict() with non BaseQuantity objects
         d_provenance = q.provenance.as_dict()
         with self.assertRaises(ValueError):
-            q_from_provenance = QuantityFactory.from_dict(d_provenance)
+            QuantityFactory.from_dict(d_provenance)
 
     def test_equality(self):
         q1 = QuantityFactory.create_quantity(self.custom_symbol, 5, tags='experimental', uncertainty=1)
@@ -888,7 +888,7 @@ class QuantityTest(unittest.TestCase):
 
         # Cannot compare ObjQuantity to NumQuantity
         with self.assertRaises(TypeError):
-            result = q.has_eq_value_to(q_ev)
+            q.has_eq_value_to(q_ev)
 
         fields = list(q1.__dict__.keys())
 
