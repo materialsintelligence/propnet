@@ -30,7 +30,7 @@ class StorageTest(unittest.TestCase):
                 'display_names': [k],
                 'display_symbols': [k],
                 'units': (1, ()),
-                'shape': [1],
+                'shape': 1,
                 'object_type': None,
                 'comment': None,
                 'category': 'property',
