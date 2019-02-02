@@ -92,7 +92,7 @@ class Symbol(MSONable):
                 np.zeros(shape)
             except TypeError:
                 raise TypeError(
-                    "Shape provided for ({}) is invalid.".format(id))
+                    "Shape provided for ({}) is invalid.".format(name))
 
             if units is None:
                 units = 'dimensionless'
@@ -138,7 +138,7 @@ class Symbol(MSONable):
             shape = 1
         # If a user enters a 0 dimension, throw an error
         if shape and np.size(np.zeros(shape=shape)) == 0:
-            raise ValueError("Symbol cannot have a shape with a 0-size dimension: ".format(shape))
+            raise ValueError("Symbol cannot have a shape with a 0-size dimension: {}".format(shape))
         self.shape = shape
         self.comment = comment
         self.default_value = default_value
