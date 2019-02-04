@@ -6,7 +6,7 @@ from monty.json import jsanitize
 from maggma.stores import MemoryStore
 from maggma.runner import Runner
 
-from propnet.core.builder import PropnetBuilder
+from propnet.builders.mp_builder import PropnetBuilder
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
