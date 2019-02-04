@@ -200,13 +200,13 @@ class CorrelationBuilder(Builder):
         try:
             path_lengths = [g.get_degree_of_separation(prop_a, prop_b),
                             g.get_degree_of_separation(prop_b, prop_a)]
-            path_lengths = [p for p in path_lengths if p != -1]
+            path_lengths = [p for p in path_lengths if p is not None]
             if path_lengths:
                 path_length = min(path_lengths)
             else:
-                path_length = -1
+                path_length = None
         except ValueError:
-            path_length = -1
+            path_length = None
 
         if n_points < 2:
             correlation = 0.0
