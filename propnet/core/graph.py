@@ -567,9 +567,9 @@ class Graph(object):
         """
         # Ensure we have the properties in the graph.
         if start_property not in self._symbol_types.keys():
-            raise Exception("Symbol not found: " + str(start_property))
+            raise ValueError("Symbol not found: " + str(start_property))
         if end_property not in self._symbol_types.keys():
-            raise Exception("Symbol not found: " + str(end_property))
+            raise ValueError("Symbol not found: " + str(end_property))
         # Coerce types into actual Symbol objects.
         start_property = self._symbol_types[start_property]
         end_property = self._symbol_types[end_property]
