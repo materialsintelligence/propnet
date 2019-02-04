@@ -56,10 +56,10 @@ class Graph(object):
             Model object.
         _input_to_model ({Symbol: {Model}}): data structure mapping
             Symbol inputs to a set of corresponding Model objects that
-            input that Symbol.
+            take that Symbol as an input.
         _output_to_model ({Symbol: {Model}}): data structure mapping
             Symbol outputs to a set of corresponding Model objects that
-            output that Symbol.
+            produce that Symbol as an output.
 
     *** Dictionaries can be searched by supplying Symbol objects or
         Strings as to their names.
@@ -567,9 +567,9 @@ class Graph(object):
         """
         # Ensure we have the properties in the graph.
         if start_property not in self._symbol_types.keys():
-            raise Exception("Model not found: " + str(start_property))
+            raise Exception("Symbol not found: " + str(start_property))
         if end_property not in self._symbol_types.keys():
-            raise Exception("Model not found: " + str(end_property))
+            raise Exception("Symbol not found: " + str(end_property))
         # Coerce types into actual Symbol objects.
         start_property = self._symbol_types[start_property]
         end_property = self._symbol_types[end_property]
@@ -584,7 +584,8 @@ class Graph(object):
         to_visit_next = deque()     # all properties to visit in the next depth
         depth_count = 0
         found = False
-        while not found:
+        # Search for the target property
+        while True:
             while len(to_visit) != 0 and not found:
                 visiting = to_visit.popleft()
                 extending_models = self._input_to_model[visiting]
@@ -594,18 +595,18 @@ class Graph(object):
                         if found: break
                         for property_name in output_set:
                             connection = self._symbol_types[property_name]
-                            if connection in visited:
-                                continue
                             if connection == end_property:
                                 found = True
                                 break
+                            if connection in visited:
+                                continue
                             visited.add(connection)
                             to_visit_next.append(connection)
-            if len(to_visit_next) == 0:
+            depth_count += 1
+            if found or len(to_visit_next) == 0:
                 break
             while len(to_visit_next) != 0:
                 to_visit.append(to_visit_next.popleft())
-            depth_count += 1
         if found:
             return depth_count
         if not found:
