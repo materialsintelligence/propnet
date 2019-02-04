@@ -119,7 +119,7 @@ class CorrelationBuilder(Builder):
                         logger.warning('Repeated key(s) from inputs: {}'.format(repeated_keys))
                     data[mpid].update(
                         {k: sum(v) / len(v) for k, v in input_d.items()})
-        del propnet_data
+
         # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
         mp_query_props = ["piezo.eij_max", "elasticity.elastic_anisotropy", "elasticity.universal_anisotropy",
                           "diel.poly_electronic", "total_magnetization", "efermi",
@@ -142,7 +142,7 @@ class CorrelationBuilder(Builder):
                 elif prop in mp_query_props and value:
                     data[mpid][prop] = value
 
-        del mp_data
+
         for prop_a, prop_b in combinations_with_replacement(propnet_props + mp_props, 2):
             x = []
             y = []
