@@ -10,6 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class ProvenanceStore(ProvenanceElement):
+    """
+    A class to hold provenance data for storage using other storage-specific classes
+    StorageQuantity and ProvenanceStoreQuantity. The class explicitly coerces non-storage
+    types into storage-specific types.
+
+    The main purpose of these three classes is to prevent storing many copies of
+    provenance quantity data (i.e. the values) in the database to save on document size.
+    """
     def __init__(self, model=None, inputs=None, source=None):
         super(ProvenanceStore, self).__init__(model=model,
                                               source=source)
@@ -74,6 +82,14 @@ class ProvenanceStore(ProvenanceElement):
 
 
 class StorageQuantity(MSONable):
+    """
+    A class to hold quantity data intended for database storage using other storage-specific classes
+    ProvenanceStore and ProvenanceStoreQuantity. The class explicitly coerces non-storage
+    types into storage-specific types.
+
+    The main purpose of these three classes is to prevent storing many copies of
+    provenance quantity data (i.e. the values) in the database to save on document size.
+    """
     def __init__(self, data_type=None, symbol_type=None,
                  value=None, units=None,
                  internal_id=None, tags=None, provenance=None,
