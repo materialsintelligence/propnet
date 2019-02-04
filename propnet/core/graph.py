@@ -7,6 +7,7 @@ from collections import defaultdict
 from itertools import product
 from chronic import Timer, timings, clear
 from pandas import DataFrame
+from collections import deque
 
 import networkx as nx
 
@@ -55,10 +56,10 @@ class Graph(object):
             Model object.
         _input_to_model ({Symbol: {Model}}): data structure mapping
             Symbol inputs to a set of corresponding Model objects that
-            input that Symbol.
+            take that Symbol as an input.
         _output_to_model ({Symbol: {Model}}): data structure mapping
             Symbol outputs to a set of corresponding Model objects that
-            output that Symbol.
+            produce that Symbol as an output.
 
     *** Dictionaries can be searched by supplying Symbol objects or
         Strings as to their names.
@@ -458,7 +459,6 @@ class Graph(object):
 
         return derivable
 
-    # TODO: can we remove this?
     def required_inputs_for_property(self, property):
         """
         Determines all potential paths leading to a given symbol
@@ -483,7 +483,7 @@ class Graph(object):
         self._tree_builder(head)
         return SymbolTree(head)
 
-    def _tree_builder(self, to_expand):
+    def _tree_builder(self, to_expand: TreeElement):
         """
         Recursive helper method to build a SymbolTree.  Fills in
         the children of to_expand by all possible model
@@ -511,10 +511,19 @@ class Graph(object):
         # Store replacements.
         outputs = []
         prev = defaultdict(list)
-        # TODO: this also might be too complicated, marking for refactor
         for symbol in candidate_symbols:
             c_models = self._output_to_model[symbol]
             for model in c_models:
+                parent = to_expand.parent
+                parent: TreeElement
+                can_continue = True
+                while parent is not None:
+                    if parent.m is model:
+                        can_continue = False
+                        break
+                    parent = parent.parent
+                if not can_continue:
+                    continue
                 for input_set, output_set in zip(model.input_sets, model.output_sets):
                     can_continue = True
                     for input_symbol in input_set:
@@ -549,6 +558,59 @@ class Graph(object):
         """
         tree = self.required_inputs_for_property(end_property)
         return tree.get_paths_from(start_property)
+
+    def get_degree_of_separation(self, start_property: Union[str, Symbol], end_property: Union[str, Symbol]) -> int:
+        """
+        Returns the minimum number of models separating two properties.
+        Returns 0 if the start_property and end_property are equal.
+        Returns -1 if the start_property and end_properties are not connected.
+        """
+        # Ensure we have the properties in the graph.
+        if start_property not in self._symbol_types.keys():
+            raise Exception("Symbol not found: " + str(start_property))
+        if end_property not in self._symbol_types.keys():
+            raise Exception("Symbol not found: " + str(end_property))
+        # Coerce types into actual Symbol objects.
+        start_property = self._symbol_types[start_property]
+        end_property = self._symbol_types[end_property]
+        # Take care of case where start and end properties are the same
+        if start_property == end_property:
+            return 0
+        # Setup helper datastructures
+        visited = set()             # all properties visited
+        visited.add(start_property)
+        to_visit = deque()          # all properties to visit in the current depth
+        to_visit.append(start_property)
+        to_visit_next = deque()     # all properties to visit in the next depth
+        depth_count = 0
+        found = False
+        # Search for the target property
+        while True:
+            while len(to_visit) != 0 and not found:
+                visiting = to_visit.popleft()
+                extending_models = self._input_to_model[visiting]
+                for model in extending_models:
+                    if found: break
+                    for output_set in model.output_sets:
+                        if found: break
+                        for property_name in output_set:
+                            connection = self._symbol_types[property_name]
+                            if connection == end_property:
+                                found = True
+                                break
+                            if connection in visited:
+                                continue
+                            visited.add(connection)
+                            to_visit_next.append(connection)
+            depth_count += 1
+            if found or len(to_visit_next) == 0:
+                break
+            while len(to_visit_next) != 0:
+                to_visit.append(to_visit_next.popleft())
+        if found:
+            return depth_count
+        if not found:
+            return -1
 
     @staticmethod
     def generate_input_sets(props, this_quantity_pool):
