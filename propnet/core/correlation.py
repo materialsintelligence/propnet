@@ -142,7 +142,6 @@ class CorrelationBuilder(Builder):
                 elif prop in mp_query_props and value:
                     data[mpid][prop] = value
 
-
         for prop_a, prop_b in combinations_with_replacement(propnet_props + mp_props, 2):
             x = []
             y = []
