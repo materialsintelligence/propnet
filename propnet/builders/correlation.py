@@ -4,6 +4,7 @@ import numpy as np
 import json
 from collections import defaultdict
 from propnet.symbols import DEFAULT_SYMBOLS
+from propnet.core.graph import Graph
 from propnet import ureg
 import logging
 import re
@@ -187,6 +188,7 @@ class CorrelationBuilder(Builder):
                 correlation value,
                 correlation function name,
                 number of data points used for correlation
+                length of shortest path between properties on propnet graph (-1 if not connected)
 
         """
         prop_a, prop_b = item['x_name'], item['y_name']
@@ -194,11 +196,20 @@ class CorrelationBuilder(Builder):
         func_name, func = item['func']
         n_points = len(data_a)
 
+        g = Graph()
+        path_lengths = [g.get_degree_of_separation(prop_a, prop_b),
+                        g.get_degree_of_separation(prop_b, prop_a)]
+        path_lengths = [p for p in path_lengths if p != -1]
+        if path_lengths:
+            path_length = min(path_lengths)
+        else:
+            path_length = -1
+
         if n_points < 2:
             correlation = 0.0
         else:
             correlation = func(data_a, data_b)
-        return prop_a, prop_b, correlation, func_name, n_points
+        return prop_a, prop_b, correlation, func_name, n_points, path_length
 
     @staticmethod
     def _cfunc_mic(x, y):
@@ -295,7 +306,7 @@ class CorrelationBuilder(Builder):
         """
         data = []
         for item in items:
-            prop_a, prop_b, correlation, func_name, n_points = item
+            prop_a, prop_b, correlation, func_name, n_points, path_length = item
             # This is so the hash is the same if prop_a and prop_b are swapped
             sorted_props = [prop_a, prop_b]
             sorted_props.sort()
@@ -304,6 +315,7 @@ class CorrelationBuilder(Builder):
                          'correlation': correlation,
                          'correlation_func': func_name,
                          'n_points': n_points,
+                         'shortest_path_length': path_length,
                          'id': hash(sorted_props[0]) ^ hash(sorted_props[1]) ^ hash(func_name)})
         self.correlation_store.update(data, key='id')
 
@@ -349,6 +361,7 @@ class CorrelationBuilder(Builder):
 
         out = {'properties': props,
                'n_points': None,
+               'shortest_path_length': None,
                'correlation': {}}
 
         if not func_name:
@@ -361,23 +374,27 @@ class CorrelationBuilder(Builder):
             data = self.correlation_store.query(criteria={'correlation_func': f})
             corr_matrix: list = np.zeros(shape=(len(props), len(props))).tolist()
 
-            fill_n_points = False
-            if not out['n_points']:
-                fill_n_points = True
+            fill_info_matrices = False
+            if not out['n_points'] and not out['shortest_path_length']:
+                fill_info_matrices = True
                 out['n_points'] = np.zeros(shape=(len(props), len(props))).tolist()
+                out['shortest_path_length'] = np.zeros(shape=(len(props), len(props))).tolist()
 
             for d in data:
-                prop_a, prop_b, correlation, n_points = d['property_a'], \
-                                                        d['property_b'], \
-                                                        d['correlation'], \
-                                                        d['n_points']
+                prop_a, prop_b, correlation, n_points, path_length = d['property_a'], \
+                                                                     d['property_b'], \
+                                                                     d['correlation'], \
+                                                                     d['n_points'], \
+                                                                     d['shortest_path_length']
                 ia, ib = props.index(prop_a), props.index(prop_b)
                 corr_matrix[ia][ib] = correlation
                 corr_matrix[ib][ia] = correlation
 
-                if fill_n_points:
+                if fill_info_matrices:
                     out['n_points'][ia][ib] = n_points
                     out['n_points'][ib][ia] = n_points
+                    out['shortest_path_length'][ia][ib] = path_length
+                    out['shortest_path_length'][ib][ia] = path_length
 
             out['correlation'][f] = corr_matrix
 
