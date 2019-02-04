@@ -99,7 +99,9 @@ class CorrelationBuilder(Builder):
 
         propnet_data = self.propnet_store.query(
             criteria={},
-            properties=propnet_props + ['task_id', 'inputs'])
+            properties=[p + '.mean' for p in propnet_props] +
+                       [p + '.units' for p in propnet_props] +
+                       ['task_id', 'inputs'])
 
         for material in propnet_data:
             mpid = material['task_id']
