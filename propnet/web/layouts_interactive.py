@@ -150,7 +150,7 @@ def interactive_layout(app):
         output_rows = [
             {
                 'Property': symbol_string,
-                'Materials Project Value': quantity.pretty_string(3)
+                'Materials Project Value': quantity.pretty_string(sigfigs=3)
             }
             for symbol_string, quantity in mp_quantities.items()
         ]
