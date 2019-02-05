@@ -9,91 +9,57 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class ProvenanceStore(ProvenanceElement):
-    """
-    A class to hold provenance data for storage using other storage-specific classes
-    StorageQuantity and ProvenanceStoreQuantity. The class explicitly coerces non-storage
-    types into storage-specific types.
-
-    The main purpose of these three classes is to prevent storing many copies of
-    provenance quantity data (i.e. the values) in the database to save on document size.
-    """
-    def __init__(self, model=None, inputs=None, source=None):
-        super(ProvenanceStore, self).__init__(model=model,
-                                              source=source)
-
-        self.inputs = inputs
-
-    @property
-    def inputs(self):
-        return self._inputs
-
-    @inputs.setter
-    def inputs(self, rhv):
-        if rhv is None:
-            self._inputs = None
-            return
-
-        if isinstance(rhv, BaseQuantity):
-            rhv = [rhv]
-
-        if getattr(rhv, '__iter__') is None:
-            raise TypeError("Expected iterable object or BaseQuantity."
-                            "Instead received {}".format(type(rhv)))
-
-        if not all(isinstance(q, (StorageQuantity, BaseQuantity)) for q in rhv):
-            invalid_types = [type(q) for q in rhv if not isinstance(q, (StorageQuantity, BaseQuantity))]
-            raise TypeError("Invalid object type(s) provided: {}".format(invalid_types))
-
-        self._inputs = [ProvenanceStoreQuantity.from_quantity(q)
-                        if isinstance(q, BaseQuantity) else q
-                        for q in rhv]
-
-    @classmethod
-    def from_provenance_element(cls, provenance_in):
-        if isinstance(provenance_in, ProvenanceStore):
-            return copy.deepcopy(provenance_in)
-        elif not isinstance(provenance_in, ProvenanceElement):
-            raise TypeError("Expected input type ProvenanceElement. "
-                            "Instead received {}".format(type(provenance_in)))
-
-        return cls(model=provenance_in.model,
-                   inputs=provenance_in.inputs,
-                   source=provenance_in.source)
-
-    def to_provenance_element(self, lookup=None):
-        if self.inputs:
-            inputs = [v.to_quantity(lookup=lookup) for v in self.inputs]
-        else:
-            inputs = None
-        return ProvenanceElement(model=self.model,
-                                 inputs=inputs,
-                                 source=self.source)
-
-    def __eq__(self, other):
-        if type(other) is type(self):
-            return self.model == other.model and \
-                   set(self.inputs or []) == set(other.inputs or [])
-        elif isinstance(other, ProvenanceElement) and issubclass(type(self), ProvenanceElement):
-            return self.model == other.model and \
-                   set(self.inputs or []) == set(self.from_provenance_element(other).inputs or [])
-        else:
-            return NotImplemented
-
-
 class StorageQuantity(MSONable):
     """
-    A class to hold quantity data intended for database storage using other storage-specific classes
-    ProvenanceStore and ProvenanceStoreQuantity. The class explicitly coerces non-storage
-    types into storage-specific types.
+    A class to hold quantity data intended for database storage.
+
+    This class does not inherit from BaseQuantity in effort to remain autonomous as a storage
+    container, and not implementing much of the functionality required by the BaseQuantity class.
+
+    This class is the top-level object for storage. StorageQuantity objects contain a ProvenanceStore
+    object for provenance which therein contains ProvenanceStoreQuantity objects as its inputs.
+
+    Hierarchy for non-storage objects:
+        BaseQuantity has a ProvenanceElement (self.provenance)
+        ProvenanceElement has a list of BaseQuantity objects (self.provenance.inputs)
+        Each input BaseQuantity object has a ProvenanceElement with BaseQuantity inputs, etc.
+
+    Hierarchy for non-storage objects:
+        StorageQuantity has a ProvenanceStore (self.provenance)
+        ProvenanceStore has a list of ProvenanceStoreQuantity objects (self.provenance.inputs)
+        Each input ProvenanceStoreQuantity object has a ProvenanceStore
+            with ProvenanceStoreQuantity inputs, etc.
 
     The main purpose of these three classes is to prevent storing many copies of
     provenance quantity data (i.e. the values) in the database to save on document size.
     """
+
     def __init__(self, data_type=None, symbol_type=None,
                  value=None, units=None,
                  internal_id=None, tags=None, provenance=None,
                  uncertainty=None):
+        """
+        Constructor for StorageQuantity object.
+
+        Note: In general, one should use the from_quantity() class method to generate these
+        objects directly from BaseQuantity-derived objects.
+
+        Args:
+            data_type: (str) indicates what type of BaseQuantity object it was created from.
+                Must be "NumQuantity" or "ObjQuantity".
+            symbol_type: (Symbol) symbol representing the type of data contained in the object
+            value: (id) the data stored in the object
+            units: (pint.unit) unit object representing units of the value or None for non-
+                numerical values
+            internal_id: (str) unique identifier. (Note: this is used for lookup when the
+                object is deserialized)
+            tags: (list<str>) tags associated with the quantity, typically
+                related to its origin, e. g. "DFT" or "ML" or "experiment"
+            provenance: (ProvenanceElement or ProvenanceStore) provenance associated with the
+                object. See BaseQuantity.__init__() for more info.
+            uncertainty: (pint.Quantity or NumQuantity) uncertainty associated with the
+                value stored in the same units
+        """
 
         if isinstance(value, ureg.Quantity):
             value = copy.deepcopy(value)
@@ -112,6 +78,11 @@ class StorageQuantity(MSONable):
 
     @property
     def uncertainty(self):
+        """
+
+        Returns:
+
+        """
         # Returns copy so the class member remains immutable
         return copy.deepcopy(self._uncertainty)
 
@@ -233,6 +204,78 @@ class StorageQuantity(MSONable):
         if isinstance(other, (StorageQuantity, BaseQuantity)):
             return self._internal_id == other._internal_id and \
                    self.provenance == other.provenance
+        else:
+            return NotImplemented
+
+
+class ProvenanceStore(ProvenanceElement):
+    """
+    A class to hold provenance data for storage. It is held within a StorageQuantity
+    or ProvenanceStoreQuantity object. The class provides methods to coerce ProvenanceElement
+    objects for storage.
+
+    The main purpose of these three classes is to prevent storing many copies of
+    provenance quantity data (i.e. the values) in the database to save on document size.
+    """
+    def __init__(self, model=None, inputs=None, source=None):
+        super(ProvenanceStore, self).__init__(model=model,
+                                              source=source)
+
+        self.inputs = inputs
+
+    @property
+    def inputs(self):
+        return self._inputs
+
+    @inputs.setter
+    def inputs(self, rhv):
+        if rhv is None:
+            self._inputs = None
+            return
+
+        if isinstance(rhv, BaseQuantity):
+            rhv = [rhv]
+
+        if getattr(rhv, '__iter__') is None:
+            raise TypeError("Expected iterable object or BaseQuantity."
+                            "Instead received {}".format(type(rhv)))
+
+        if not all(isinstance(q, (StorageQuantity, BaseQuantity)) for q in rhv):
+            invalid_types = [type(q) for q in rhv if not isinstance(q, (StorageQuantity, BaseQuantity))]
+            raise TypeError("Invalid object type(s) provided: {}".format(invalid_types))
+
+        self._inputs = [ProvenanceStoreQuantity.from_quantity(q)
+                        if isinstance(q, BaseQuantity) else q
+                        for q in rhv]
+
+    @classmethod
+    def from_provenance_element(cls, provenance_in):
+        if isinstance(provenance_in, ProvenanceStore):
+            return copy.deepcopy(provenance_in)
+        elif not isinstance(provenance_in, ProvenanceElement):
+            raise TypeError("Expected input type ProvenanceElement. "
+                            "Instead received {}".format(type(provenance_in)))
+
+        return cls(model=provenance_in.model,
+                   inputs=provenance_in.inputs,
+                   source=provenance_in.source)
+
+    def to_provenance_element(self, lookup=None):
+        if self.inputs:
+            inputs = [v.to_quantity(lookup=lookup) for v in self.inputs]
+        else:
+            inputs = None
+        return ProvenanceElement(model=self.model,
+                                 inputs=inputs,
+                                 source=self.source)
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.model == other.model and \
+                   set(self.inputs or []) == set(other.inputs or [])
+        elif isinstance(other, ProvenanceElement) and issubclass(type(self), ProvenanceElement):
+            return self.model == other.model and \
+                   set(self.inputs or []) == set(self.from_provenance_element(other).inputs or [])
         else:
             return NotImplemented
 
