@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-from propnet.core.storage import StorageQuantity, ProvenanceStore, ProvenanceStoreQuantity
+from propnet.dbtools.storage import StorageQuantity, ProvenanceStore, ProvenanceStoreQuantity
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import QuantityFactory, NumQuantity, BaseQuantity
 from propnet.core.provenance import ProvenanceElement
@@ -59,7 +59,7 @@ class StorageTest(unittest.TestCase):
                                          "B": b}
 
         self.sq_custom_sym_as_dicts = {
-            k: [{'@module': 'propnet.core.storage',
+            k: [{'@module': 'propnet.dbtools.storage',
                  '@class': 'StorageQuantity',
                  'internal_id': vv._internal_id,
                  'data_type': 'NumQuantity',
@@ -72,16 +72,16 @@ class StorageTest(unittest.TestCase):
         }
 
         provenances_json = {
-            "A": [{'@module': 'propnet.core.storage',
+            "A": [{'@module': 'propnet.dbtools.storage',
                    '@class': 'ProvenanceStore',
                    'model': None,
                    'inputs': None,
                    'source': aa.provenance.source} for aa in a]}
         provenances_json['B'] = [
-            {'@module': 'propnet.core.storage',
+            {'@module': 'propnet.dbtools.storage',
              '@class': 'ProvenanceStore',
              'model': 'model1',
-             'inputs': [{'@module': 'propnet.core.storage',
+             'inputs': [{'@module': 'propnet.dbtools.storage',
                          '@class': 'ProvenanceStoreQuantity',
                          'data_type': 'NumQuantity',
                          'symbol_type': self.custom_symbols_json['A'],
@@ -131,7 +131,7 @@ class StorageTest(unittest.TestCase):
                                         "refractive_indices": [2.316340583741216, 2.593439239956374]}
 
         provenances_json['band_gaps'] = [
-            {'@module': 'propnet.core.storage',
+            {'@module': 'propnet.dbtools.storage',
              '@class': 'ProvenanceStore',
              'model': None,
              'inputs': None,
@@ -140,10 +140,10 @@ class StorageTest(unittest.TestCase):
         ]
 
         provenances_json['refractive_indices'] = [{
-            '@module': 'propnet.core.storage',
+            '@module': 'propnet.dbtools.storage',
             '@class': 'ProvenanceStore',
             'model': 'band_gap_refractive_index_moss',
-            'inputs': [{'@module': 'propnet.core.storage',
+            'inputs': [{'@module': 'propnet.dbtools.storage',
                         '@class': 'ProvenanceStoreQuantity',
                         'data_type': 'NumQuantity',
                         'symbol_type': 'band_gap',
@@ -164,7 +164,7 @@ class StorageTest(unittest.TestCase):
 
         self.quantity_with_uncertainty = NumQuantity.from_weighted_mean(b)
         self.sq_with_uncertainty_as_dict_no_numbers = {
-            '@module': 'propnet.core.storage',
+            '@module': 'propnet.dbtools.storage',
             '@class': 'StorageQuantity',
             'internal_id': self.quantity_with_uncertainty._internal_id,
             'data_type': 'NumQuantity',
@@ -175,11 +175,11 @@ class StorageTest(unittest.TestCase):
             'tags': []}
 
         provenances_json = {
-            '@module': 'propnet.core.storage',
+            '@module': 'propnet.dbtools.storage',
             '@class': 'ProvenanceStore',
             'model': 'aggregation',
             'inputs': [
-                {'@module': 'propnet.core.storage',
+                {'@module': 'propnet.dbtools.storage',
                  '@class': 'ProvenanceStoreQuantity',
                  'data_type': 'NumQuantity',
                  'symbol_type': self.custom_symbols_json['B'],
@@ -194,7 +194,7 @@ class StorageTest(unittest.TestCase):
         self.sq_with_uncertainty_json_no_numbers.update({"symbol_type": self.custom_symbols_json['B'],
                                                          "provenance": provenances_json})
         self.sq_with_uncertainty_numbers = {"value": 42.0,
-                                            "uncertainty": (4.0, ())}
+                                            "uncertainty": 4.0}
 
         obj_symbol = symbols['C']
         self.object_quantity = QuantityFactory.create_quantity(obj_symbol, "Test string")
@@ -210,7 +210,7 @@ class StorageTest(unittest.TestCase):
         self.sq_object_json = copy.deepcopy(self.sq_object_as_dict)
         self.sq_object_json.update(
             {"symbol_type": self.custom_syms_as_dicts['C'],
-             "provenance": {'@module': 'propnet.core.storage',
+             "provenance": {'@module': 'propnet.dbtools.storage',
                             '@class': 'ProvenanceStore',
                             'model': None,
                             'inputs': None,
@@ -402,20 +402,18 @@ class StorageTest(unittest.TestCase):
         sq = StorageQuantity.from_quantity(self.quantity_with_uncertainty)
         compare_dict = sq.as_dict()
         self.assertTrue(np.isclose(self.quantity_with_uncertainty.magnitude, compare_dict['value']))
-        uncertainty_value, uncertainty_units = compare_dict['uncertainty']
+        uncertainty_value = compare_dict['uncertainty']
         self.assertTrue(np.isclose(self.quantity_with_uncertainty.uncertainty.magnitude,
                                    uncertainty_value))
-        self.assertEqual(uncertainty_units, ())
         compare_dict.pop('value')
         compare_dict.pop('uncertainty')
         self.assertDictEqual(self.sq_with_uncertainty_as_dict_no_numbers, compare_dict)
 
         compare_dict = jsanitize(sq, strict=True)
         self.assertTrue(np.isclose(self.quantity_with_uncertainty.magnitude, compare_dict['value']))
-        uncertainty_value, uncertainty_units = compare_dict['uncertainty']
+        uncertainty_value = compare_dict['uncertainty']
         self.assertTrue(np.isclose(self.quantity_with_uncertainty.uncertainty.magnitude,
                                    uncertainty_value))
-        self.assertEqual(uncertainty_units, [])
         compare_dict.pop('value')
         compare_dict.pop('uncertainty')
         self.assertDictEqual(self.sq_with_uncertainty_json_no_numbers, compare_dict)
@@ -437,7 +435,7 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(q_from_dict._data_type, "NumQuantity")
             self.assertEqual(q_from_dict.symbol, q.symbol)
             self.assertTrue(np.isclose(q_from_dict.value, q.magnitude))
-            self.assertEqual(q_from_dict.units, q.units.format_babel())
+            self.assertEqual(q_from_dict.units, q.units)
             self.assertListEqual(q_from_dict.tags, q.tags)
             self.assertEqual(q_from_dict, q)
             self.rec_provenance_tree_check(q_from_dict.provenance, original_quantity.provenance)
@@ -448,7 +446,7 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(q_from_json_dict._data_type, "NumQuantity")
             self.assertEqual(q_from_json_dict.symbol, q.symbol)
             self.assertTrue(np.isclose(q_from_json_dict.value, q.magnitude))
-            self.assertEqual(q_from_json_dict.units, q.units.format_babel())
+            self.assertEqual(q_from_json_dict.units, q.units)
             self.assertListEqual(q_from_json_dict.tags, q.tags)
             self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)
             self.assertEqual(q_from_json_dict, q)
@@ -464,7 +462,7 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(q_from_dict._data_type, "NumQuantity")
             self.assertEqual(q_from_dict.symbol, q.symbol)
             self.assertTrue(np.isclose(q_from_dict.value, q.magnitude))
-            self.assertEqual(q_from_dict.units, q.units.format_babel())
+            self.assertEqual(q_from_dict.units, q.units)
             self.assertListEqual(q_from_dict.tags, q.tags)
             self.assertEqual(q_from_dict, q)
             self.rec_provenance_tree_check(q_from_dict.provenance, original_quantity.provenance)
@@ -475,7 +473,7 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(q_from_json_dict._data_type, "NumQuantity")
             self.assertEqual(q_from_json_dict.symbol, q.symbol)
             self.assertTrue(np.isclose(q_from_json_dict.magnitude, q.magnitude))
-            self.assertEqual(q_from_json_dict.units, q.units.format_babel())
+            self.assertEqual(q_from_json_dict.units, q.units)
             self.assertListEqual(q_from_json_dict.tags, q.tags)
             self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)
             self.assertEqual(q_from_json_dict, q)
@@ -491,7 +489,7 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(q_from_dict._data_type, "NumQuantity")
         self.assertEqual(q_from_dict.symbol, q.symbol)
         self.assertTrue(np.isclose(q_from_dict.value, q.magnitude))
-        self.assertEqual(q_from_dict.units, q.units.format_babel())
+        self.assertEqual(q_from_dict.units, q.units)
         self.assertTrue(np.isclose(q_from_dict.uncertainty, q.uncertainty))
         self.assertListEqual(q_from_dict.tags, q.tags)
         self.assertEqual(q_from_dict, q)
@@ -503,7 +501,7 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(q_from_json_dict._data_type, "NumQuantity")
         self.assertEqual(q_from_json_dict.symbol, q.symbol)
         self.assertTrue(np.isclose(q_from_json_dict.magnitude, q.magnitude))
-        self.assertEqual(q_from_json_dict.units, q.units.format_babel())
+        self.assertEqual(q_from_json_dict.units, q.units)
         self.assertTrue(np.isclose(q_from_json_dict.uncertainty, q.uncertainty))
         self.assertListEqual(q_from_json_dict.tags, q.tags)
         self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)

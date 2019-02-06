@@ -6,7 +6,7 @@ from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.entries.compatibility import MaterialsProjectCompatibility
 from propnet import logger
 from propnet.core.quantity import QuantityFactory
-from propnet.core.storage import StorageQuantity
+from propnet.dbtools.storage import StorageQuantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 from propnet.core.provenance import ProvenanceElement
