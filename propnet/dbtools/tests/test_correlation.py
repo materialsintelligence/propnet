@@ -1,0 +1,125 @@
+import unittest
+import os
+
+from monty.serialization import loadfn
+from monty.json import jsanitize
+from maggma.stores import MemoryStore
+from maggma.runner import Runner
+
+from propnet.dbtools.correlation import CorrelationBuilder
+
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+class CorrelationTest(unittest.TestCase):
+    def setUp(self):
+        self.propstore = MemoryStore()
+        self.propstore.connect()
+        materials = loadfn(os.path.join(TEST_DIR, "correlation_propnet_data.json"))
+        materials = jsanitize(materials, strict=True, allow_bson=True)
+        self.propstore.update(materials)
+        self.materials = MemoryStore()
+        self.materials.connect()
+        materials = loadfn(os.path.join(TEST_DIR, "correlation_mp_data.json"))
+        materials = jsanitize(materials, strict=True, allow_bson=True)
+        self.materials.update(materials)
+        self.correlation = MemoryStore()
+        self.correlation.connect()
+        self.propnet_props = ["band_gap_pbe", "bulk_modulus", "vickers_hardness"]
+        self.mp_query_props = ["magnetism.total_magnetization_normalized_vol"]
+        self.mp_props = ["total_magnetization_normalized_vol"]
+
+    def test_serial_runner(self):
+        builder = CorrelationBuilder(self.propstore, self.materials, self.correlation)
+        runner = Runner([builder])
+        runner.run()
+
+    def test_multiproc_runner(self):
+        builder = CorrelationBuilder(self.propstore, self.materials, self.correlation)
+        runner = Runner([builder], max_workers=2)
+        runner.run()
+
+    def test_process_item(self):
+        test_props = [['band_gap_pbe', 'total_magnetization_normalized_vol'],
+                      ['vickers_hardness', 'bulk_modulus']]
+        linlsq_correlation_values = [0.03620401274778131, 0.4155837083845686]
+        path_lengths = [None, 2]
+
+        for props, expected_correlation_val, expected_path_length in \
+                zip(test_props, linlsq_correlation_values, path_lengths):
+            builder = CorrelationBuilder(self.propstore, self.materials, self.correlation,
+                                         props=props)
+            processed = None
+            for item in builder.get_items():
+                if item['x_name'] != item['y_name']:
+                    processed = builder.process_item(item)
+                    break
+
+            self.assertIsNotNone(processed)
+            self.assertIsInstance(processed, tuple)
+            prop_a, prop_b, correlation, func_name, n_points, path_length = processed
+            self.assertListEqual([prop_a, prop_b], props)
+            self.assertAlmostEqual(correlation, expected_correlation_val)
+            self.assertEqual(func_name, 'linlsq')
+            self.assertEqual(n_points, 200)
+            self.assertEqual(path_length, expected_path_length)
+
+    def test_correlation_funcs(self):
+        def custom_correlation_func(x, y):
+            return 0.5
+
+        correlation_values = {
+            'linlsq': 0.4155837083845686,
+            'pearson': 0.6446578227126143,
+            'mic': 0.5616515521782413,
+            'theilsen': 0.4047519736540858,
+            'ransac': 0.3747245847179631,
+            'propnet.dbtools.tests.test_correlation.custom_correlation_func': 0.5}
+
+        builder = CorrelationBuilder(self.propstore, self.materials, self.correlation,
+                                     props=['vickers_hardness', 'bulk_modulus'],
+                                     funcs=['all', custom_correlation_func])
+
+        self.assertEqual(set(builder._funcs.keys()), set(correlation_values.keys()),
+                         msg="Are there new built-in functions in the correlation builder?")
+
+        for item in builder.get_items():
+            if item['x_name'] != item['y_name']:
+                processed = builder.process_item(item)
+                self.assertIsInstance(processed, tuple)
+                prop_a, prop_b, correlation, func_name, n_points, path_length = processed
+                self.assertListEqual([prop_a, prop_b], ['vickers_hardness', 'bulk_modulus'])
+                self.assertIn(func_name, correlation_values.keys())
+                # self.assertAlmostEqual(correlation, correlation_values[func_name])
+                self.assertEqual(n_points, 200)
+                self.assertEqual(path_length, 2)
+
+    # Just here for reference, in case anyone wants to create a new set
+    # of test materials. Requires mongogrant read access to knowhere.lbl.gov.
+    @unittest.skipIf(True, "Skipping test materials creation")
+    def create_test_docs(self):
+        from maggma.advanced_stores import MongograntStore
+        from monty.serialization import dumpfn
+        pnstore = MongograntStore("ro:knowhere.lbl.gov/mp_core", "propnet")
+        pnstore.connect()
+        mpstore = MongograntStore("ro:knowhere.lbl.gov/mp_core", "materials")
+        mpstore.connect()
+        cursor = pnstore.query(
+            criteria={'$and': [
+                {'$or': [{p: {'$exists': True}},
+                         {'inputs.symbol_type': p}]}
+                for p in self.propnet_props]},
+            properties=['task_id'])
+        pn_mpids = [item['task_id'] for item in cursor]
+        cursor = mpstore.query(criteria={p: {'$exists': True} for p in self.mp_query_props},
+                               properties=['task_id'])
+        mp_mpids = [item['task_id'] for item in cursor]
+        mpids = list(set(pn_mpids).intersection(set(mp_mpids)))[:200]
+        pn_data = pnstore.query(criteria={'task_id': {'$in': mpids}},
+                                properties=['task_id', 'inputs'] +
+                                           [p + '.mean' for p in self.propnet_props] +
+                                           [p + '.units' for p in self.propnet_props])
+        dumpfn(list(pn_data), os.path.join(TEST_DIR, "correlation_propnet_data.json"))
+        mp_data = mpstore.query(criteria={'task_id': {'$in': mpids}},
+                                properties=['task_id'] + self.mp_query_props)
+        dumpfn(list(mp_data), os.path.join(TEST_DIR, "correlation_mp_data.json"))

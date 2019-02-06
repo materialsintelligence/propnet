@@ -22,9 +22,16 @@ class CorrelationBuilder(Builder):
     interactive use does support them.
 
     """
+    # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
+    MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.elastic_anisotropy", "elasticity.universal_anisotropy",
+                      "diel.poly_electronic", "total_magnetization", "efermi",
+                      "magnetism.total_magnetization_normalized_vol"]
+    PROPNET_PROPS = [v.name for v in DEFAULT_SYMBOLS.values()
+                     if (v.category == 'property' and v.shape == 1)]
+
     def __init__(self, propnet_store, mp_store,
                  correlation_store, out_file=None,
-                 funcs='linlsq', **kwargs):
+                 funcs='linlsq', props=None, **kwargs):
         """
         Constructor for the correlation builder.
 
@@ -75,6 +82,24 @@ class CorrelationBuilder(Builder):
         if not self._funcs:
             raise ValueError("No valid correlation functions selected")
 
+        mp_prop_map = {(p.split(".")[1] if len(p.split(".")) == 2 else p): p for p in self.MP_QUERY_PROPS}
+        if not props:
+            self.mp_query_props = self.MP_QUERY_PROPS
+            self.mp_props = list(mp_prop_map.keys())
+            self.propnet_props = self.PROPNET_PROPS
+        else:
+            self.propnet_props = []
+            self.mp_props = []
+            self.mp_query_props = []
+            if isinstance(props, str):
+                props = [props]
+            for p in props:
+                if p in self.PROPNET_PROPS:
+                    self.propnet_props.append(p)
+                elif p in mp_prop_map.keys():
+                    self.mp_props.append(p)
+                    self.mp_query_props.append(mp_prop_map[p])
+
         super(CorrelationBuilder, self).__init__(sources=[propnet_store, mp_store],
                                                  targets=[correlation_store],
                                                  **kwargs)
@@ -95,24 +120,22 @@ class CorrelationBuilder(Builder):
 
         """
         data = defaultdict(dict)
-        propnet_props = [v.name for v in DEFAULT_SYMBOLS.values()
-                         if (v.category == 'property' and v.shape == 1)]
 
         propnet_data = self.propnet_store.query(
             criteria={},
-            properties=[p + '.mean' for p in propnet_props] +
-                       [p + '.units' for p in propnet_props] +
+            properties=[p + '.mean' for p in self.propnet_props] +
+                       [p + '.units' for p in self.propnet_props] +
                        ['task_id', 'inputs'])
 
         for material in propnet_data:
             mpid = material['task_id']
             for prop, values in material.items():
-                if prop in propnet_props:
+                if prop in self.propnet_props:
                     data[mpid][prop] = ureg.Quantity(values['mean'], values['units'])
                 elif prop == 'inputs':
                     input_d = defaultdict(list)
                     for q in values:
-                        if q['symbol_type'] in propnet_props:
+                        if q['symbol_type'] in self.propnet_props:
                             this_q = ureg.Quantity(q['value'], q['units'])
                             input_d[q['symbol_type']].append(this_q)
                     repeated_keys = set(input_d.keys()).intersection(set(data[mpid].keys()))
@@ -122,15 +145,10 @@ class CorrelationBuilder(Builder):
                         {k: sum(v) / len(v) for k, v in input_d.items()})
 
         # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
-        mp_query_props = ["piezo.eij_max", "elasticity.elastic_anisotropy", "elasticity.universal_anisotropy",
-                          "diel.poly_electronic", "total_magnetization", "efermi",
-                          "magnetism.total_magnetization_normalized_vol"]
-
-        mp_props = [p.split(".")[1] if len(p.split(".")) == 2 else p for p in mp_query_props]
 
         mp_data = self.mp_store.query(
             criteria={},
-            properties=mp_query_props + ['task_id']
+            properties=self.mp_query_props + ['task_id']
         )
 
         for material in mp_data:
@@ -138,12 +156,12 @@ class CorrelationBuilder(Builder):
             for prop, value in material.items():
                 if isinstance(value, dict):
                     for sub_prop, sub_value in value.items():
-                        if prop + '.' + sub_prop in mp_query_props and sub_value:
+                        if prop + '.' + sub_prop in self.mp_query_props and sub_value is not None:
                             data[mpid][sub_prop] = sub_value
-                elif prop in mp_query_props and value:
+                elif prop in self.mp_query_props and value is not None:
                     data[mpid][prop] = value
 
-        for prop_a, prop_b in combinations_with_replacement(propnet_props + mp_props, 2):
+        for prop_a, prop_b in combinations_with_replacement(self.propnet_props + self.mp_props, 2):
             x = []
             y = []
             for props_data in data.values():
