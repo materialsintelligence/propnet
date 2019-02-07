@@ -6,9 +6,10 @@ from monty.json import jsanitize
 from maggma.stores import MemoryStore
 from maggma.runner import Runner
 
-from propnet.core.builder import PropnetBuilder
+from propnet.dbtools.mp_builder import PropnetBuilder
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 class BuilderTest(unittest.TestCase):
     def setUp(self):
@@ -27,7 +28,7 @@ class BuilderTest(unittest.TestCase):
 
     def test_multiproc_runner(self):
         builder = PropnetBuilder(self.materials, self.propstore)
-        runner = Runner([builder])
+        runner = Runner([builder], max_workers=2)
         runner.run()
 
     def test_process_item(self):

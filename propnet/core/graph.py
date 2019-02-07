@@ -563,13 +563,13 @@ class Graph(object):
         """
         Returns the minimum number of models separating two properties.
         Returns 0 if the start_property and end_property are equal.
-        Returns -1 if the start_property and end_properties are not connected.
+        Returns None if the start_property and end_properties are not connected.
         """
         # Ensure we have the properties in the graph.
         if start_property not in self._symbol_types.keys():
-            raise Exception("Symbol not found: " + str(start_property))
+            raise ValueError("Symbol not found: " + str(start_property))
         if end_property not in self._symbol_types.keys():
-            raise Exception("Symbol not found: " + str(end_property))
+            raise ValueError("Symbol not found: " + str(end_property))
         # Coerce types into actual Symbol objects.
         start_property = self._symbol_types[start_property]
         end_property = self._symbol_types[end_property]
@@ -610,7 +610,7 @@ class Graph(object):
         if found:
             return depth_count
         if not found:
-            return -1
+            return None
 
     @staticmethod
     def generate_input_sets(props, this_quantity_pool):
