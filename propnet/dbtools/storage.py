@@ -252,17 +252,10 @@ class StorageQuantity(MSONable):
         Returns: (set) set of internal IDs whose values are missing. Empty set if
             all values are present or no provenance tree exists.
         """
-        def rec_get_missing_keys(provenance, keys):
-            if provenance.inputs:
-                for item in provenance.inputs:
-                    if not item.is_value_retrieved():
-                        keys.add(item._internal_id)
-                    rec_get_missing_keys(item.provenance, keys)
 
-        missing_keys = set()
         if self._provenance:
-            rec_get_missing_keys(self._provenance, missing_keys)
-        return missing_keys
+            return self._provenance.get_missing_keys()
+        return set()
 
     def __hash__(self):
         return hash(self._internal_id)
@@ -370,7 +363,14 @@ class ProvenanceStore(MSONable):
     provenance quantity data (i.e. the values) in the database to save on document size.
     """
     def __init__(self, provenance_in=None):
-        # super(ProvenanceStore, self).__init__()
+        """
+        Constructor for ProvenanceStore objects. Converts a ProvenanceElement object
+        into storage-ready object.
+
+        Args:
+            provenance_in: (ProvenanceElement) ProvenanceElement object for storage
+
+        """
         self._model = None
         self._source = None
         self._inputs = None
@@ -386,39 +386,118 @@ class ProvenanceStore(MSONable):
                             "Instead received: {}".format(type(provenance_in)))
 
     def _initialize(self, model=None, inputs=None, source=None):
+        """
+        Initializes instance variables with values. Needed for deserialization from
+        a dictionary.
+
+        Args:
+            model: (str) name of the model used to derive the quantity
+            inputs: (list<ProvenanceStoreQuantity>) quantities used as inputs to model
+            source: (dict) information about how/when the quantity was derived
+
+        """
         self._model = model
         self._source = source
         self._inputs = inputs
 
     @property
     def inputs(self):
+        """
+        Gets the input quantities stored in provenance. Returns a copy so they remain
+        immutable.
+
+        Returns: (list<ProvenanceStoreQuantity>) list of input quantities, None if none
+            present.
+
+        """
         return copy.deepcopy(self._inputs)
 
     @property
     def model(self):
+        """
+        Gets the name of the model used to calculate the associated quantity.
+
+        Returns: (str) name of the model
+
+        """
         return self._model
 
     @property
     def source(self):
+        """
+        Gets the source information for the provenance.
+
+        Returns: (dict) dictionary containing metadata about the provenance source
+
+        """
         return copy.deepcopy(self._source)
 
     @classmethod
     def from_provenance_element(cls, provenance_in):
+        """
+        Creates a ProvenanceStore from a ProvenanceElement. Differs from __init__()
+        in that if a ProvenanceStore is input instead of a ProvenanceElement, a copy
+        of the ProvenanceStore is returned.
+
+        Args:
+            provenance_in: (ProvenanceElement, ProvenanceStore) provenance object to
+                convert or copy
+
+        Returns: (ProvenanceStore) new provenance object for storage
+
+        """
         if isinstance(provenance_in, ProvenanceStore):
             return copy.deepcopy(provenance_in)
 
         return cls(provenance_in)
 
     def to_provenance_element(self, lookup=None):
-        if self.inputs:
-            inputs = [v.to_quantity(lookup=lookup) for v in self.inputs]
+        """
+        Converts the current object to a ProvenanceElement object, looking up missing input
+        values if needed.
+
+        Args:
+            lookup: (dict or function) lookup container for missing provenance input information
+
+        Returns: (ProvenanceElement) reconstructed provenance object
+
+        """
+        if self._inputs:
+            inputs = [v.to_quantity(lookup=lookup) for v in self._inputs]
         else:
             inputs = None
         return ProvenanceElement(model=self.model,
                                  inputs=inputs,
                                  source=self.source)
 
+    def get_missing_keys(self):
+        """
+        Finds the inputs in the provenance tree that are missing values and reports
+        their internal IDs.
+
+        Returns: (set) set of internal IDs whose values are missing. Empty set if
+            all values are present or no provenance tree exists.
+        """
+        def rec_get_missing_keys(provenance, keys):
+            if provenance.inputs:
+                for item in provenance.inputs:
+                    if not item.has_value():
+                        keys.add(item._internal_id)
+                    rec_get_missing_keys(item.provenance, keys)
+
+        missing_keys = set()
+        if self._inputs:
+            rec_get_missing_keys(self, missing_keys)
+        return missing_keys
+
     def as_dict(self):
+        """
+        Converts object to a dictionary representation for serialization. Can
+        be reconstructed using from_dict()
+
+        Returns: (dict) dictionary containing object information
+
+        """
         return {'@module': self.__class__.__module__,
                 '@class': self.__class__.__name__,
                 'model': self._model,
@@ -427,6 +506,17 @@ class ProvenanceStore(MSONable):
 
     @classmethod
     def from_dict(cls, d):
+        """
+        Constructs a ProvenanceStore object from its dictionary representation.
+
+        Args:
+            d: (dict) dictionary representation of the object. Can contain the
+                dictionary representation of other objects as long as they
+                implement from_dict()
+
+        Returns: (ProvenanceStore) new object constructed from dictionary values
+
+        """
         d_in = {k: MontyDecoder().process_decoded(v) for k, v in d.items()
                 if not k.startswith('@')}
         out = cls()
@@ -434,6 +524,21 @@ class ProvenanceStore(MSONable):
         return out
 
     def __eq__(self, other):
+        """
+        Determines equality with another provenance container, either a ProvenanceStore
+        or ProvenanceElement object.
+
+        Equality is defined as having the same model and inputs. Note this comparison is
+        not as strict as comparisons between ProvenanceElement objects because input value
+        equality is not explicitly evaluated.
+
+        Args:
+            other: (ProvenanceStore, ProvenanceElement) provenance object to compare
+
+        Returns: (bool) True if objects are equal, False otherwise. NotImplemented is returned
+            if the object is not a ProvenanceStore or ProvenanceElement object.
+
+        """
         if type(other) is type(self):
             return self.model == other.model and \
                    set(self.inputs or []) == set(other.inputs or [])
@@ -445,13 +550,34 @@ class ProvenanceStore(MSONable):
 
 
 class ProvenanceStoreQuantity(StorageQuantity):
-    def __init__(self, quantity_to_store=None, from_dict=False):
+    """
+    This class is the crux of the storage containers. It is the container for quantities
+    which are stored as provenance inputs. Upon serialization, value, units, and uncertainty
+    are explicitly omitted from the dictionary to save on space.
+
+    When recreated from dictionary objects, the objects will be missing the above values.
+    Before conversion to BaseQuantity-derived objects, these values must be replaced by providing
+    a lookup dictionary or function. The lookup must take an internal ID as input and output
+    a dictionary with 'value', 'units', and 'uncertainty' fields.
+    """
+    def __init__(self, quantity_to_store=None):
+        """
+        Constructor for ProvenanceStoreQuantity. Takes a BaseQuantity-derived object to convert
+        for storage.
+
+        Args:
+            quantity_to_store: (BaseQuantity) quantity to convert for storage
+        """
         super(ProvenanceStoreQuantity, self).__init__(quantity_to_store)
 
-        self._from_dict = from_dict
-        self._value_retrieved = self.value is not None
-
     def as_dict(self):
+        """
+        Gives the dictionary representation of this object, excluding value,
+        units, and uncertainty.
+
+        Returns: (dict) dictionary representation of this object for serialization
+
+        """
         symbol = self._symbol_type
         if symbol.name in DEFAULT_SYMBOLS.keys() and symbol == DEFAULT_SYMBOLS[symbol.name]:
             symbol = self._symbol_type.name
@@ -466,21 +592,39 @@ class ProvenanceStoreQuantity(StorageQuantity):
             "provenance": self._provenance
         }
 
-    @classmethod
-    def from_dict(cls, d):
-        d_in = {k: MontyDecoder().process_decoded(v) for k, v in d.items()
-                if not k.startswith('@')}
-        out = cls(from_dict=True)
-        out._initialize(**d_in)
-        return out
+    def has_value(self):
+        """
+        Determines if the object has a value that is not None.
 
-    def is_from_dict(self):
-        return self._from_dict
+        If function evaluates True, it is most likely that the object has not had
+        lookup_value() run with a valid lookup container. BaseQuantity-derived
+        objects cannot hold of a value of None, so it should not be possible
+        for the value to be None for another reason.
 
-    def is_value_retrieved(self):
-        return self._value_retrieved
+        Returns: (bool) False if the value is missing (is None). True otherwise.
+
+        """
+        return self._value is not None
 
     def lookup_value(self, lookup):
+        """
+        Looks up and replaces the value, units, and uncertainty of this quantity.
+
+        Lookup dictionaries should be keyed by internal ID, and have values which are
+        dictionaries with the fields shown below. Lookup functions should take one argument,
+        internal ID, and return a dictionary with the fields below.
+
+        Lookup return value construction:
+            value: (id) value of the quantity
+            units: (str) units of quantity, None if no units
+            uncertainty: (int, float, complex) uncertainty value, None if no uncertainty
+
+        Args:
+            lookup: (dict or function) container for looking up values
+
+        Returns: (bool) True if the value was successfully located and replaced. False otherwise.
+
+        """
         lookup_fun = None
         if isinstance(lookup, dict):
             lookup_fun = lookup.get
@@ -505,24 +649,34 @@ class ProvenanceStoreQuantity(StorageQuantity):
         self._value = d['value']
         self._units = d['units']
         self._uncertainty = d['uncertainty']
-        self._value_retrieved = True
         return True
 
     def to_quantity(self, lookup=None):
-        copy_of_self = copy.deepcopy(self)
-        if lookup:
-            copy_of_self.lookup_value(lookup)
+        """
+        Converts the object into a BaseQuantity-derived object, doing value lookup
+        and replacement as needed.
 
-        if not copy_of_self.is_value_retrieved():
-            if copy_of_self.is_from_dict():
-                raise ValueError("No value has been looked up successfully for this quantity. "
-                                 "Run lookup_value() first or make sure the specified lookup "
-                                 "function or dict contains the internal ID of this quantity: {}"
-                                 "".format(copy_of_self._internal_id))
-            else:
-                raise ValueError("Cannot create new BaseQuantity with no value. Property 'value' has no value, "
-                                 "possibly because it was never looked up. Use lookup_value() or initialize an "
-                                 "object with a value.")
+        Args:
+            lookup: (dict or function) container for looking up values
+
+        Returns: (BaseQuantity) current object as BaseQuantity-derived object
+
+        """
+        # So self remains non-mutated unless lookup_value() is called explicitly
+        copy_of_self = copy.deepcopy(self)
+
+        value_is_present = False
+        if not copy_of_self.has_value():
+            if lookup is not None:
+                value_is_present = copy_of_self.lookup_value(lookup)
+        else:
+            value_is_present = True
+
+        if not value_is_present:
+            raise ValueError("No value has been looked up successfully for this quantity. "
+                             "Run lookup_value() first or make sure the specified lookup "
+                             "function or dict contains the internal ID of this quantity: {}"
+                             "".format(copy_of_self._internal_id))
 
         return super(ProvenanceStoreQuantity, copy_of_self).to_quantity(lookup=lookup)
 

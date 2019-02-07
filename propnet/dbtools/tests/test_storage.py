@@ -251,8 +251,7 @@ class StorageTest(unittest.TestCase):
         self.assertIsNone(provenance_store_quantity.tags)
         self.assertIsNone(provenance_store_quantity.uncertainty)
         self.assertIsNone(provenance_store_quantity.units)
-        self.assertFalse(provenance_store_quantity.is_from_dict())
-        self.assertFalse(provenance_store_quantity.is_value_retrieved())
+        self.assertFalse(provenance_store_quantity.has_value())
 
         storage_quantity = StorageQuantity()
         self.assertIsNone(storage_quantity._data_type)
@@ -283,8 +282,7 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(storage_quantity.symbol, q.symbol)
             self.assertTrue(np.isclose(storage_quantity.value, q.value))
             self.assertListEqual(storage_quantity.tags, q.tags)
-            self.assertFalse(storage_quantity.is_from_dict())
-            self.assertTrue(storage_quantity.is_value_retrieved())
+            self.assertTrue(storage_quantity.has_value())
             # This checks __eq__() and that __eq__() commutes
             self.assertEqual(storage_quantity, q)
             self.assertEqual(q, storage_quantity)
@@ -300,8 +298,7 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(storage_quantity_with_uncertainty.symbol, q.symbol)
         self.assertTrue(np.isclose(storage_quantity_with_uncertainty.value, q.value))
         self.assertListEqual(storage_quantity_with_uncertainty.tags, q.tags)
-        self.assertFalse(storage_quantity_with_uncertainty.is_from_dict())
-        self.assertTrue(storage_quantity_with_uncertainty.is_value_retrieved())
+        self.assertTrue(storage_quantity_with_uncertainty.has_value())
         self.assertIsNotNone(storage_quantity_with_uncertainty.uncertainty)
         self.assertIsInstance(storage_quantity_with_uncertainty.uncertainty, ureg.Quantity)
         self.assertEqual(storage_quantity_with_uncertainty, q)
@@ -315,8 +312,7 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(storage_quantity_object.value, q.value)
         self.assertEqual(storage_quantity_object.symbol, q.symbol)
         self.assertListEqual(storage_quantity_object.tags, q.tags)
-        self.assertFalse(storage_quantity_object.is_from_dict())
-        self.assertTrue(storage_quantity_object.is_value_retrieved())
+        self.assertTrue(storage_quantity_object.has_value())
         self.assertIsNone(storage_quantity_object.units)
         self.assertEqual(storage_quantity_object, q)
 
@@ -630,13 +626,12 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(len(v_orig), 1)
             v_orig = v_orig[0]
             if check_from_dict:
-                self.assertTrue(v.is_from_dict())
-                self.assertFalse(v.is_value_retrieved())
+                self.assertFalse(v.has_value())
             elif NumQuantity.is_acceptable_type(v.value):
                 self.assertTrue(np.isclose(v.value, v_orig.value))
-                self.assertTrue(v.is_value_retrieved())
+                self.assertTrue(v.has_value())
             else:
                 self.assertEqual(v.value, v_orig.value)
-                self.assertTrue(v.is_value_retrieved())
+                self.assertTrue(v.has_value())
             self.assertListEqual(v.tags, v_orig.tags)
             self.rec_provenance_tree_check(v.provenance, v_orig.provenance, check_from_dict)
