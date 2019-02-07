@@ -619,7 +619,9 @@ class StorageTest(unittest.TestCase):
                     self.assertIsNone(v.value)
             q_json_dict = sq_json.to_quantity(lookup=lookup_dict)
             q_json_fun = sq_json.to_quantity(lookup=lookup_fun)
-            for q_json in (q_json_dict, q_json_fun):
+            q_json_reconstruct_dict = StorageQuantity.reconstruct_quantity(json_dict, lookup_dict)
+            q_json_reconstruct_fun = StorageQuantity.reconstruct_quantity(json_dict, lookup_fun)
+            for q_json in (q_json_dict, q_json_fun, q_json_reconstruct_dict, q_json_reconstruct_fun):
                 self.assertIsInstance(q_json, type(q))
                 if isinstance(q_json, NumQuantity):
                     self.assertTrue(np.isclose(q_json.value, q.value))
@@ -633,21 +635,40 @@ class StorageTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     # Needs lookup but doesn't get a lookup container
                     sq_json.to_quantity()
+                with self.assertRaises(ValueError):
+                    # Needs lookup but doesn't get a lookup container
+                    StorageQuantity.reconstruct_quantity(json_dict)
 
                 with self.assertRaises(ValueError):
                     sq_json.to_quantity(lookup=self.lookup_fun_missing_value)
 
+                with self.assertRaises(ValueError):
+                    StorageQuantity.reconstruct_quantity(json_dict,
+                                                         lookup=self.lookup_fun_missing_value)
+
                 with self.assertRaises(TypeError):
                     sq_json.to_quantity(lookup=self.lookup_fun_incorrect_type)
+
+                with self.assertRaises(TypeError):
+                    StorageQuantity.reconstruct_quantity(json_dict,
+                                                         lookup=self.lookup_fun_incorrect_type)
 
                 key = q.provenance.inputs[0]._internal_id
                 key_lookup = lookup_dict.pop(key)
                 with self.assertRaises(ValueError):
                     sq_json.to_quantity(lookup=lookup_dict)
                 with self.assertRaises(ValueError):
+                    StorageQuantity.reconstruct_quantity(json_dict, lookup=lookup_dict)
+                with self.assertRaises(ValueError):
                     sq_json.to_quantity(lookup=self.lookup_fun_key_not_found)
+                with self.assertRaises(ValueError):
+                    StorageQuantity.reconstruct_quantity(json_dict, lookup=self.lookup_fun_key_not_found)
                 lookup_dict[key] = key_lookup
 
+                with self.assertRaises(TypeError):
+                    sq_json.to_quantity(lookup='This is not a lookup')
+                with self.assertRaises(TypeError):
+                    StorageQuantity.reconstruct_quantity(json_dict, lookup='This is not a lookup')
 
     def lookup_fun(self, key):
         return self.get_lookup_dict().get(key)

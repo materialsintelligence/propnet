@@ -312,7 +312,7 @@ class StorageQuantity(MSONable):
         return out
 
     @staticmethod
-    def reconstruct_quantity(d, lookup):
+    def reconstruct_quantity(d, lookup=None):
         """
         Recreates BaseQuantity-derived object from JSON-serialized dictionary
         representation of the equivalent StorageQuantity.
