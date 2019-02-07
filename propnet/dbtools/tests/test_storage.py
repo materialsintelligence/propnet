@@ -20,7 +20,13 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class StorageTest(unittest.TestCase):
     def setUp(self):
-        # Most of this setup is verbatim from the GraphTest class
+        # Inspiration was taken from the GraphTest class
+        # I tried to construct the dictionaries for comparison
+        # without writing out every one explicity by reusing
+        # information where it was applicable.
+        # If this is too unreadable, can change to writing it
+        # out explicity in a JSON file and importing it. Would
+        # still need to replace some fields dynamically.
         symbols = StorageTest.generate_symbols()
 
         self.custom_syms_as_dicts = {
