@@ -10,6 +10,7 @@ from propnet import logger, ureg
 from sympy.parsing.sympy_parser import parse_expr
 import sympy as sp
 
+
 # TODO: This could be split into separate classes
 #       or a base class + subclasses for symbols with
 #       units vs those without
@@ -77,6 +78,10 @@ class Symbol(MSONable):
         if not display_names:
             display_names = [name]
 
+        self.object_type = None
+        self._object_class = None
+        self._object_module = None
+
         if category in ('property', 'condition'):
 
             if object_type is not None:
@@ -87,7 +92,10 @@ class Symbol(MSONable):
                 np.zeros(shape)
             except TypeError:
                 raise TypeError(
-                    "Shape provided for ({}) is invalid.".format(id))
+                    "Shape provided for ({}) is invalid.".format(name))
+
+            if units is None:
+                units = 'dimensionless'
 
             logger.info("Units parsed from a string format automatically, "
                         "do these look correct? %s", units)
@@ -100,16 +108,46 @@ class Symbol(MSONable):
                 raise ValueError("Cannot define units for generic objects.")
             units = None # ureg.parse_expression("")  # dimensionless
 
+            if object_type:
+                if isinstance(object_type, type):
+                    self._object_module = object_type.__module__
+                    self._object_class = object_type.__name__
+                else:
+                    # Do not try to import the module for security reasons.
+                    # We don't want malicious modules to be automatically imported.
+                    modclass = object_type.rsplit('.', 1)
+                    if len(modclass) == 1:
+                        self._object_module = 'builtins'
+                        self._object_class = modclass[0]
+                    else:
+                        self._object_module, self._object_class = modclass
+
+                if self._object_module == 'builtins':
+                    self.object_type = self._object_class
+                else:
+                    self.object_type = ".".join([self._object_module,
+                                                 self._object_class])
+
         self.name = name
         self.category = category
         self.units = units
-        self.object_type = object_type
         self.display_names = display_names
         self.display_symbols = display_symbols
+        # If a user enters [1] or [1, 1, ...] for shape, treat as a scalar
+        if shape and np.size(np.zeros(shape=shape)) == 1:
+            shape = 1
+        # If a user enters a 0 dimension, throw an error
+        if shape and np.size(np.zeros(shape=shape)) == 0:
+            raise ValueError("Symbol cannot have a shape with a 0-size dimension: {}".format(shape))
         self.shape = shape
         self.comment = comment
         self.default_value = default_value
 
+
+
+        # TODO: This should explicity deal with only numerical symbols
+        #       because it uses sympy to evaluate them until we make
+        #       a class to evaluate them using either sympy or a custom func
         # Note that symbol constraints are not constraint objects
         # at the moment because using them would result in a circular
         # dependence, this might be resolved with some reorganization
@@ -118,6 +156,14 @@ class Symbol(MSONable):
             self.constraint = sp.lambdify(self.name, expr)
         else:
             self.constraint = None
+
+    @property
+    def object_class(self):
+        return self._object_class
+
+    @property
+    def object_module(self):
+        return self._object_module
 
     @property
     def dimension_as_string(self):
@@ -166,6 +212,20 @@ class Symbol(MSONable):
             logger.warning("Cannot find compatible units for %s", self.name)
             return []
 
+    def is_correct_object_type(self, obj):
+        if self.category == 'object':
+            if not self.object_module and not self.object_class:
+                # If no type was specified, just accept any object.
+                # Leave it up to the model evaluation procedures to type check
+                return True
+
+            modname = obj.__class__.__module__
+            clsname = obj.__class__.__name__
+
+            return self.object_module == modname and self.object_class == clsname
+        else:
+            raise AttributeError("Object type not defined for symbol of category '{}'".format(self.category))
+
     def __hash__(self):
         return self.name.__hash__()
 
@@ -212,3 +272,10 @@ class Symbol(MSONable):
             data["object_type"] = self.object_type
 
         return safe_dump(data)
+
+    def as_dict(self):
+        d = super().as_dict()
+        if self.units:
+            d['units'] = d['units'].to_tuple()
+
+        return d

@@ -14,7 +14,7 @@ import networkx as nx
 from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
 from propnet.core.models import Model, CompositeModel
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.models import DEFAULT_MODEL_DICT
@@ -880,7 +880,7 @@ class Graph(object):
                         if not st:
                             raise ValueError(
                                 "Symbol type {} not found".format(symbol))
-                        q = Quantity(st, quantity)
+                        q = QuantityFactory.create_quantity(st, quantity)
                         to_return._symbol_to_quantity[st].add(q)
                         logger.debug("\t\t\tNew output: " + str(q))
 

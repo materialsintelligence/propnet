@@ -1,6 +1,10 @@
 categories:
 - thermal
-description: 'Predicts bulk melting point of crystalline materials using the Lindemann criterion. If the temperature is sufficiently high that the amplitude of the thermal vibrations is above some threshold, that the solid would begin to melt. This threshold is related to the Lindemann index/constant for the material, which can vary between 0.05 and 0.2, depending on a number of factors including crystal structure and external pressure. Here, the model uses an approximate value of 0.15 for Lindemann''s criterion.
+description: 'Predicts bulk melting point of crystalline materials using the Lindemann criterion. If the temperature is
+sufficiently high that the amplitude of the thermal vibrations is above some threshold, that the solid would begin to melt.
+This threshold is related to the Lindemann index/constant for the material,
+which can vary between 0.05 and 0.2, depending on a number of factors including crystal structure
+and external pressure. Here, the model uses an approximate value of 0.15 for Lindemann''s criterion.
   '
 equations:
 # Note that the Lindemann criterion is set to a default value of 0.15. Perhaps later can explore deriving it, if of interest.
