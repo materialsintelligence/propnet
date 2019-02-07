@@ -1,5 +1,5 @@
 from maggma.builders import Builder
-from itertools import combinations_with_replacement
+from itertools import product
 import numpy as np
 import json
 from collections import defaultdict
@@ -83,6 +83,7 @@ class CorrelationBuilder(Builder):
             raise ValueError("No valid correlation functions selected")
 
         mp_prop_map = {(p.split(".")[1] if len(p.split(".")) == 2 else p): p for p in self.MP_QUERY_PROPS}
+        self._props = props
         if not props:
             self.mp_query_props = self.MP_QUERY_PROPS
             self.mp_props = list(mp_prop_map.keys())
@@ -111,10 +112,10 @@ class CorrelationBuilder(Builder):
         with itself for sanity check, and correlation functions.
 
         Returns: (generator) a generator providing a dictionary with the data for correlation:
-            {'x_data': (list<float>) data for first property (x-axis),
-             'x_name': (str) name of first property,
-             'y_data': (list<float>) data for second property (y-axis),
-             'y_name': (str) name of second property,
+            {'x_data': (list<float>) data for independent property (x-axis),
+             'x_name': (str) name of independent property,
+             'y_data': (list<float>) data for dependent property (y-axis),
+             'y_name': (str) name of dependent property,
              'func': (tuple<str, function>) name and function handle for correlation function
              }
 
@@ -161,34 +162,35 @@ class CorrelationBuilder(Builder):
                 elif prop in self.mp_query_props and value is not None:
                     data[mpid][prop] = value
 
-        for prop_a, prop_b in combinations_with_replacement(self.propnet_props + self.mp_props, 2):
+        # product() produces all possible combinations of properties
+        for prop_x, prop_y in product(self.propnet_props + self.mp_props, repeat=2):
             x = []
             y = []
             for props_data in data.values():
-                if prop_a in props_data.keys() and prop_b in props_data.keys():
-                    x.append(props_data[prop_a])
-                    y.append(props_data[prop_b])
+                if prop_x in props_data.keys() and prop_y in props_data.keys():
+                    x.append(props_data[prop_x])
+                    y.append(props_data[prop_y])
 
             # MP data does not have units listed in database, so will be floats. propnet
             # data may not have the same units as the MP data, so is stored as pint
             # quantities. Here, the quantities are coerced into the units of MP data
             # as stored in symbols and coverts them to floats.
             if x and any(isinstance(v, ureg.Quantity) for v in x):
-                x_float = [xx.to(DEFAULT_SYMBOLS[prop_a].units).magnitude
+                x_float = [xx.to(DEFAULT_SYMBOLS[prop_x].units).magnitude
                            if isinstance(xx, ureg.Quantity) else xx for xx in x]
             else:
                 x_float = x
             if y and any(isinstance(v, ureg.Quantity) for v in y):
-                y_float = [yy.to(DEFAULT_SYMBOLS[prop_b].units).magnitude
+                y_float = [yy.to(DEFAULT_SYMBOLS[prop_y].units).magnitude
                            if isinstance(yy, ureg.Quantity) else yy for yy in y]
             else:
                 y_float = y
 
             for name, func in self._funcs.items():
                 data_dict = {'x_data': x_float,
-                             'x_name': prop_a,
+                             'x_name': prop_x,
                              'y_data': y_float,
-                             'y_name': prop_b,
+                             'y_name': prop_y,
                              'func': (name, func)}
                 yield data_dict
 
@@ -201,36 +203,33 @@ class CorrelationBuilder(Builder):
 
         Returns: (tuple<str, str, float, str, int>) output of calculation with necessary
             information about calculation included. Format in tuple:
-                property A name,
-                property B name,
+                independent property (x-axis) name,
+                dependent property (y-axis) name,
                 correlation value,
                 correlation function name,
                 number of data points used for correlation
-                length of shortest path between properties on propnet graph (-1 if not connected)
+                length of shortest path between properties on propnet graph where x-axis property
+                    is starting property and y-axis property is ending property.
+                    Note: if no (forward) connection exists, the path length will be None. This does
+                    not preclude y->x having a forward path.
 
         """
-        prop_a, prop_b = item['x_name'], item['y_name']
-        data_a, data_b = item['x_data'], item['y_data']
+        prop_x, prop_y = item['x_name'], item['y_name']
+        data_x, data_y = item['x_data'], item['y_data']
         func_name, func = item['func']
-        n_points = len(data_a)
+        n_points = len(data_x)
 
         g = Graph()
         try:
-            path_lengths = [g.get_degree_of_separation(prop_a, prop_b),
-                            g.get_degree_of_separation(prop_b, prop_a)]
-            path_lengths = [p for p in path_lengths if p is not None]
-            if path_lengths:
-                path_length = min(path_lengths)
-            else:
-                path_length = None
+            path_length = g.get_degree_of_separation(prop_x, prop_y)
         except ValueError:
             path_length = None
 
         if n_points < 2:
             correlation = 0.0
         else:
-            correlation = func(data_a, data_b)
-        return prop_a, prop_b, correlation, func_name, n_points, path_length
+            correlation = func(data_x, data_y)
+        return prop_x, prop_y, correlation, func_name, n_points, path_length
 
     @staticmethod
     def _cfunc_mic(x, y):
@@ -238,8 +237,8 @@ class CorrelationBuilder(Builder):
         Get maximal information coefficient for data set.
 
         Args:
-            x: (list<float>) property A
-            y: (list<float>) property B
+            x: (list<float>) independent property (x-axis)
+            y: (list<float>) dependent property (y-axis)
 
         Returns: (float) maximal information coefficient
 
@@ -255,8 +254,8 @@ class CorrelationBuilder(Builder):
         Get R^2 value for linear least-squares fit of a data set.
 
         Args:
-            x: (list<float>) property A
-            y: (list<float>) property B
+            x: (list<float>) independent property (x-axis)
+            y: (list<float>) dependent property (y-axis)
 
         Returns: (float) R^2 value
 
@@ -271,8 +270,8 @@ class CorrelationBuilder(Builder):
         Get R value for Pearson fit of a data set.
 
         Args:
-            x: (list<float>) property A
-            y: (list<float>) property B
+            x: (list<float>) independent property (x-axis)
+            y: (list<float>) dependent property (y-axis)
 
         Returns: (float) Pearson R value
 
@@ -287,8 +286,8 @@ class CorrelationBuilder(Builder):
         Get random sample consensus (RANSAC) regression score for data set.
 
         Args:
-            x: (list<float>) property A
-            y: (list<float>) property B
+            x: (list<float>) independent property (x-axis)
+            y: (list<float>) dependent property (y-axis)
 
         Returns: (float) RANSAC score
 
@@ -305,8 +304,8 @@ class CorrelationBuilder(Builder):
         Get Theil-Sen regression score for data set.
 
         Args:
-            x: (list<float>) property A
-            y: (list<float>) property B
+            x: (list<float>) independent property (x-axis)
+            y: (list<float>) dependent property (y-axis)
 
         Returns: (float) Theil-Sen score
 
@@ -327,17 +326,14 @@ class CorrelationBuilder(Builder):
         """
         data = []
         for item in items:
-            prop_a, prop_b, correlation, func_name, n_points, path_length = item
-            # This is so the hash is the same if prop_a and prop_b are swapped
-            sorted_props = [prop_a, prop_b]
-            sorted_props.sort()
-            data.append({'property_a': prop_a,
-                         'property_b': prop_b,
+            prop_x, prop_y, correlation, func_name, n_points, path_length = item
+            data.append({'property_x': prop_x,
+                         'property_y': prop_y,
                          'correlation': correlation,
                          'correlation_func': func_name,
                          'n_points': n_points,
                          'shortest_path_length': path_length,
-                         'id': hash(sorted_props[0]) ^ hash(sorted_props[1]) ^ hash(func_name)})
+                         'id': hash(prop_x) ^ hash(prop_y) ^ hash(func_name)})
         self.correlation_store.update(data, key='id')
 
     def finalize(self, cursor=None):
@@ -376,9 +372,9 @@ class CorrelationBuilder(Builder):
 
         """
 
-        prop_data = self.correlation_store.query(criteria={'property_a': {'$exists': True}},
-                                                 properties=['property_a'])
-        props = list(set(item['property_a'] for item in prop_data))
+        prop_data = self.correlation_store.query(criteria={'property_x': {'$exists': True}},
+                                                 properties=['property_x'])
+        props = list(set(item['property_x'] for item in prop_data))
 
         out = {'properties': props,
                'n_points': None,
@@ -402,20 +398,18 @@ class CorrelationBuilder(Builder):
                 out['shortest_path_length'] = np.zeros(shape=(len(props), len(props))).tolist()
 
             for d in data:
-                prop_a, prop_b, correlation, n_points, path_length = d['property_a'], \
-                                                                     d['property_b'], \
+                prop_x, prop_y, correlation, n_points, path_length = d['property_x'], \
+                                                                     d['property_y'], \
                                                                      d['correlation'], \
                                                                      d['n_points'], \
                                                                      d['shortest_path_length']
-                ia, ib = props.index(prop_a), props.index(prop_b)
+                ia, ib = props.index(prop_x), props.index(prop_y)
                 corr_matrix[ia][ib] = correlation
-                corr_matrix[ib][ia] = correlation
 
                 if fill_info_matrices:
                     out['n_points'][ia][ib] = n_points
                     out['n_points'][ib][ia] = n_points
                     out['shortest_path_length'][ia][ib] = path_length
-                    out['shortest_path_length'][ib][ia] = path_length
 
             out['correlation'][f] = corr_matrix
 
