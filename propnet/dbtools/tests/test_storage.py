@@ -271,100 +271,150 @@ class StorageTest(unittest.TestCase):
 
     def test_provenance_store_from_provenance_element(self):
         for q in chain.from_iterable(self.quantities_custom_symbol.values()):
-            storage_provenance = ProvenanceStore.from_provenance_element(q.provenance)
-            # This checks __eq__() for provenance, and that __eq__() commutes
-            self.assertEqual(storage_provenance, q.provenance)
-            self.assertEqual(q.provenance, storage_provenance)
+            # Check both ways to instantiate
+            storage_provenances = [ProvenanceStore.from_provenance_element(q.provenance),
+                                   ProvenanceStore(q.provenance)]
 
-            self.rec_provenance_tree_check(storage_provenance, q.provenance)
+            for storage_provenance in storage_provenances:
+                # This checks __eq__() for provenance, and that __eq__() commutes
+                self.assertEqual(storage_provenance, q.provenance)
+                self.assertEqual(q.provenance, storage_provenance)
+                self.rec_provenance_tree_check(storage_provenance, q.provenance)
+
+            # Test copy of StorageQuantity with from_quantity
+            p_in = ProvenanceStore(q.provenance)
+            p_out = ProvenanceStore.from_provenance_element(p_in)
+
+            self.assertIsNot(p_in, p_out)
+            self.assertEqual(p_in, p_out)
+
+        # Test fail with incorrect object type
+        with self.assertRaises(TypeError):
+            ProvenanceStore('Incorrect type')
+        with self.assertRaises(TypeError):
+            ProvenanceStore.from_provenance_element('Incorrect type')
 
     def test_provenance_storage_quantity_from_quantity(self):
         for q in chain.from_iterable(self.quantities_custom_symbol.values()):
-            storage_quantity = ProvenanceStoreQuantity.from_quantity(q)
-
-            self.assertIsInstance(storage_quantity, ProvenanceStoreQuantity)
-            self.assertEqual(storage_quantity._data_type, "NumQuantity")
-            # This checks value equality
-            self.assertEqual(storage_quantity.symbol, q.symbol)
-            self.assertTrue(np.isclose(storage_quantity.value, q.value))
-            self.assertListEqual(storage_quantity.tags, q.tags)
-            self.assertTrue(storage_quantity.has_value())
-            # This checks __eq__() and that __eq__() commutes
-            self.assertEqual(storage_quantity, q)
-            self.assertEqual(q, storage_quantity)
-            # This checks types and values explicitly in provenance to make sure everything was built correctly.
-            # It is more robust than __eq__()
-            self.rec_provenance_tree_check(storage_quantity.provenance, q.provenance)
+            storage_quantities = [ProvenanceStoreQuantity.from_quantity(q),
+                                  ProvenanceStoreQuantity(q)]
+            for storage_quantity in storage_quantities:
+                self.assertIsInstance(storage_quantity, ProvenanceStoreQuantity)
+                self.assertEqual(storage_quantity._data_type, "NumQuantity")
+                # This checks value equality
+                self.assertEqual(storage_quantity.symbol, q.symbol)
+                self.assertTrue(np.isclose(storage_quantity.value, q.value))
+                self.assertListEqual(storage_quantity.tags, q.tags)
+                self.assertTrue(storage_quantity.has_value())
+                # This checks __eq__() and that __eq__() commutes
+                self.assertEqual(storage_quantity, q)
+                self.assertEqual(q, storage_quantity)
+                # This checks types and values explicitly in provenance to make sure everything was built correctly.
+                # It is more robust than __eq__()
+                self.rec_provenance_tree_check(storage_quantity.provenance, q.provenance)
 
         q = self.quantity_with_uncertainty
-        storage_quantity_with_uncertainty = ProvenanceStoreQuantity.from_quantity(q)
-
-        self.assertIsInstance(storage_quantity_with_uncertainty, StorageQuantity)
-        self.assertEqual(storage_quantity_with_uncertainty._data_type, "NumQuantity")
-        self.assertEqual(storage_quantity_with_uncertainty.symbol, q.symbol)
-        self.assertTrue(np.isclose(storage_quantity_with_uncertainty.value, q.value))
-        self.assertListEqual(storage_quantity_with_uncertainty.tags, q.tags)
-        self.assertTrue(storage_quantity_with_uncertainty.has_value())
-        self.assertIsNotNone(storage_quantity_with_uncertainty.uncertainty)
-        self.assertIsInstance(storage_quantity_with_uncertainty.uncertainty, ureg.Quantity)
-        self.assertEqual(storage_quantity_with_uncertainty, q)
+        storage_quantities_with_uncertainty = [ProvenanceStoreQuantity.from_quantity(q),
+                                               ProvenanceStoreQuantity(q)]
+        for storage_quantity_with_uncertainty in storage_quantities_with_uncertainty:
+            self.assertIsInstance(storage_quantity_with_uncertainty, StorageQuantity)
+            self.assertEqual(storage_quantity_with_uncertainty._data_type, "NumQuantity")
+            self.assertEqual(storage_quantity_with_uncertainty.symbol, q.symbol)
+            self.assertTrue(np.isclose(storage_quantity_with_uncertainty.value, q.value))
+            self.assertListEqual(storage_quantity_with_uncertainty.tags, q.tags)
+            self.assertTrue(storage_quantity_with_uncertainty.has_value())
+            self.assertIsNotNone(storage_quantity_with_uncertainty.uncertainty)
+            self.assertIsInstance(storage_quantity_with_uncertainty.uncertainty, ureg.Quantity)
+            self.assertEqual(storage_quantity_with_uncertainty, q)
 
         # Test ObjQuantity coercion
         q = self.object_quantity
-        storage_quantity_object = ProvenanceStoreQuantity.from_quantity(q)
+        storage_quantities_object = [ProvenanceStoreQuantity.from_quantity(q),
+                                     ProvenanceStoreQuantity(q)]
+        for storage_quantity_object in storage_quantities_object:
+            self.assertIsInstance(storage_quantity_object, StorageQuantity)
+            self.assertEqual(storage_quantity_object._data_type, "ObjQuantity")
+            self.assertEqual(storage_quantity_object.value, q.value)
+            self.assertEqual(storage_quantity_object.symbol, q.symbol)
+            self.assertListEqual(storage_quantity_object.tags, q.tags)
+            self.assertTrue(storage_quantity_object.has_value())
+            self.assertIsNone(storage_quantity_object.units)
+            self.assertEqual(storage_quantity_object, q)
 
-        self.assertIsInstance(storage_quantity_object, StorageQuantity)
-        self.assertEqual(storage_quantity_object._data_type, "ObjQuantity")
-        self.assertEqual(storage_quantity_object.value, q.value)
-        self.assertEqual(storage_quantity_object.symbol, q.symbol)
-        self.assertListEqual(storage_quantity_object.tags, q.tags)
-        self.assertTrue(storage_quantity_object.has_value())
-        self.assertIsNone(storage_quantity_object.units)
-        self.assertEqual(storage_quantity_object, q)
+        # Test copy of StorageQuantity with from_quantity
+        q_in = ProvenanceStoreQuantity(q)
+        q_out = ProvenanceStoreQuantity.from_quantity(q_in)
+
+        self.assertIsNot(q_in, q_out)
+        self.assertEqual(q_in, q_out)
+
+        # Test fail with incorrect object type
+        with self.assertRaises(TypeError):
+            ProvenanceStoreQuantity('Incorrect type')
+        with self.assertRaises(TypeError):
+            ProvenanceStoreQuantity.from_quantity('Incorrect type')
 
     def test_storage_quantity_from_quantity(self):
         for q in chain.from_iterable(self.quantities_custom_symbol.values()):
-            storage_quantity = StorageQuantity.from_quantity(q)
-
-            self.assertIsInstance(storage_quantity, StorageQuantity)
-            self.assertEqual(storage_quantity._data_type, "NumQuantity")
-            # This checks value equality
-            self.assertEqual(storage_quantity.symbol, q.symbol)
-            self.assertIsInstance(storage_quantity.value, int)
-            self.assertTrue(storage_quantity.value, q.magnitude)
-            self.assertListEqual(storage_quantity.tags, q.tags)
-            # This checks __eq__() and that __eq__() commutes
-            self.assertEqual(storage_quantity, q)
-            self.assertEqual(q, storage_quantity)
-            # This checks types and values explicitly in provenance to make sure everything was built correctly.
-            # It is more robust than __eq__()
-            self.rec_provenance_tree_check(storage_quantity.provenance, q.provenance)
+            storage_quantities = [StorageQuantity.from_quantity(q),
+                                  StorageQuantity(q)]
+            for storage_quantity in storage_quantities:
+                self.assertIsInstance(storage_quantity, StorageQuantity)
+                self.assertEqual(storage_quantity._data_type, "NumQuantity")
+                # This checks value equality
+                self.assertEqual(storage_quantity.symbol, q.symbol)
+                self.assertIsInstance(storage_quantity.value, int)
+                self.assertTrue(storage_quantity.value, q.magnitude)
+                self.assertListEqual(storage_quantity.tags, q.tags)
+                # This checks __eq__() and that __eq__() commutes
+                self.assertEqual(storage_quantity, q)
+                self.assertEqual(q, storage_quantity)
+                # This checks types and values explicitly in provenance to make sure everything was built correctly.
+                # It is more robust than __eq__()
+                self.rec_provenance_tree_check(storage_quantity.provenance, q.provenance)
 
         q = self.quantity_with_uncertainty
-        storage_quantity_with_uncertainty = StorageQuantity.from_quantity(q)
+        storage_quantities_with_uncertainty = [StorageQuantity.from_quantity(q),
+                                               StorageQuantity(q)]
 
-        self.assertIsInstance(storage_quantity_with_uncertainty, StorageQuantity)
-        self.assertEqual(storage_quantity_with_uncertainty._data_type, "NumQuantity")
-        self.assertEqual(storage_quantity_with_uncertainty.symbol, q.symbol)
-        self.assertIsInstance(storage_quantity_with_uncertainty.value, float)
-        self.assertTrue(np.isclose(storage_quantity_with_uncertainty.value, q.value))
-        self.assertListEqual(storage_quantity_with_uncertainty.tags, q.tags)
-        self.assertIsNotNone(storage_quantity_with_uncertainty.uncertainty)
-        self.assertIsInstance(storage_quantity_with_uncertainty.uncertainty, ureg.Quantity)
-        self.assertEqual(storage_quantity_with_uncertainty, q)
+        for storage_quantity_with_uncertainty in storage_quantities_with_uncertainty:
+            self.assertIsInstance(storage_quantity_with_uncertainty, StorageQuantity)
+            self.assertEqual(storage_quantity_with_uncertainty._data_type, "NumQuantity")
+            self.assertEqual(storage_quantity_with_uncertainty.symbol, q.symbol)
+            self.assertIsInstance(storage_quantity_with_uncertainty.value, float)
+            self.assertTrue(np.isclose(storage_quantity_with_uncertainty.value, q.value))
+            self.assertListEqual(storage_quantity_with_uncertainty.tags, q.tags)
+            self.assertIsNotNone(storage_quantity_with_uncertainty.uncertainty)
+            self.assertIsInstance(storage_quantity_with_uncertainty.uncertainty, ureg.Quantity)
+            self.assertEqual(storage_quantity_with_uncertainty, q)
 
         # Test ObjQuantity coercion
         q = self.object_quantity
-        storage_quantity_object = StorageQuantity.from_quantity(q)
+        storage_quantities_object = [StorageQuantity.from_quantity(q),
+                                     StorageQuantity(q)]
 
-        self.assertIsInstance(storage_quantity_object, StorageQuantity)
-        self.assertEqual(storage_quantity_object._data_type, "ObjQuantity")
-        self.assertIsInstance(storage_quantity_object.value, str)
-        self.assertEqual(storage_quantity_object.value, q.value)
-        self.assertEqual(storage_quantity_object.symbol, q.symbol)
-        self.assertListEqual(storage_quantity_object.tags, q.tags)
-        self.assertIsNone(storage_quantity_object.units)
-        self.assertEqual(storage_quantity_object, q)
+        for storage_quantity_object in storage_quantities_object:
+            self.assertIsInstance(storage_quantity_object, StorageQuantity)
+            self.assertEqual(storage_quantity_object._data_type, "ObjQuantity")
+            self.assertIsInstance(storage_quantity_object.value, str)
+            self.assertEqual(storage_quantity_object.value, q.value)
+            self.assertEqual(storage_quantity_object.symbol, q.symbol)
+            self.assertListEqual(storage_quantity_object.tags, q.tags)
+            self.assertIsNone(storage_quantity_object.units)
+            self.assertEqual(storage_quantity_object, q)
+
+        # Test copy of StorageQuantity with from_quantity
+        q_in = StorageQuantity(q)
+        q_out = StorageQuantity.from_quantity(q_in)
+
+        self.assertIsNot(q_in, q_out)
+        self.assertEqual(q_in, q_out)
+
+        # Test fail with incorrect object type
+        with self.assertRaises(TypeError):
+            StorageQuantity('Incorrect type')
+        with self.assertRaises(TypeError):
+            StorageQuantity.from_quantity('Incorrect type')
 
     def test_as_dict_as_json(self):
         # Check symbols to be sure they are still ok
@@ -453,7 +503,7 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)
             self.assertEqual(q_from_json_dict, q)
             self.rec_provenance_tree_check(q_from_json_dict.provenance, original_quantity.provenance,
-                                           check_from_dict=True)
+                                           from_dict=True)
 
         # Test with canonical symbol
         for original_quantity in chain.from_iterable(self.quantities_canonical_symbol.values()):
@@ -480,7 +530,7 @@ class StorageTest(unittest.TestCase):
             self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)
             self.assertEqual(q_from_json_dict, q)
             self.rec_provenance_tree_check(q_from_json_dict.provenance, original_quantity.provenance,
-                                           check_from_dict=True)
+                                           from_dict=True)
 
         # Test with quantity with uncertainty, custom symbol
         original_quantity = self.quantity_with_uncertainty
@@ -509,7 +559,7 @@ class StorageTest(unittest.TestCase):
         self.assertEqual(q_from_json_dict.provenance, original_quantity.provenance)
         self.assertEqual(q_from_json_dict, q)
         self.rec_provenance_tree_check(q_from_json_dict.provenance, original_quantity.provenance,
-                                       check_from_dict=True)
+                                       from_dict=True)
 
         # Test with object quantity
         original_quantity = self.object_quantity
@@ -533,9 +583,9 @@ class StorageTest(unittest.TestCase):
         self.assertListEqual(q_from_json_dict.tags, q.tags)
         self.assertEqual(q_from_json_dict, q)
         self.rec_provenance_tree_check(q_from_json_dict.provenance, original_quantity.provenance,
-                                       check_from_dict=True)
+                                       from_dict=True)
 
-    def test_value_lookup(self):
+    def test_value_lookup_to_quantity(self):
         def rec_verify_lookup(p_lookup, p_original):
             self.assertIsInstance(p_lookup, ProvenanceElement)
             for v in p_lookup.inputs or []:
@@ -556,9 +606,11 @@ class StorageTest(unittest.TestCase):
         lookup_dict = self.get_lookup_dict()
         lookup_fun = self.lookup_fun
 
-        quantities = list(chain.from_iterable(self.quantities_custom_symbol.values())) + \
-                     list(chain.from_iterable(self.quantities_canonical_symbol.values())) + \
-                     [self.quantity_with_uncertainty, self.object_quantity]
+        quantities = \
+            list(chain.from_iterable(self.quantities_custom_symbol.values())) + \
+            list(chain.from_iterable(self.quantities_canonical_symbol.values())) + \
+            [self.quantity_with_uncertainty, self.object_quantity]
+
         for q in quantities:
             json_dict = jsanitize(StorageQuantity.from_quantity(q), strict=True)
             sq_json = MontyDecoder().process_decoded(json_dict)
@@ -579,18 +631,23 @@ class StorageTest(unittest.TestCase):
 
             if q.provenance.inputs:
                 with self.assertRaises(ValueError):
-                    q_json = sq_json.to_quantity(lookup=self.lookup_fun_missing_value)
+                    # Needs lookup but doesn't get a lookup container
+                    sq_json.to_quantity()
+
+                with self.assertRaises(ValueError):
+                    sq_json.to_quantity(lookup=self.lookup_fun_missing_value)
 
                 with self.assertRaises(TypeError):
-                    q_json = sq_json.to_quantity(lookup=self.lookup_fun_incorrect_type)
+                    sq_json.to_quantity(lookup=self.lookup_fun_incorrect_type)
 
                 key = q.provenance.inputs[0]._internal_id
                 key_lookup = lookup_dict.pop(key)
                 with self.assertRaises(ValueError):
-                    q_json = sq_json.to_quantity(lookup=lookup_dict)
+                    sq_json.to_quantity(lookup=lookup_dict)
                 with self.assertRaises(ValueError):
-                    q_json = sq_json.to_quantity(lookup=self.lookup_fun_key_not_found)
+                    sq_json.to_quantity(lookup=self.lookup_fun_key_not_found)
                 lookup_dict[key] = key_lookup
+
 
     def lookup_fun(self, key):
         return self.get_lookup_dict().get(key)
@@ -622,7 +679,7 @@ class StorageTest(unittest.TestCase):
                                            "uncertainty": q.uncertainty}
         return lookup_dict
 
-    def rec_provenance_tree_check(self, q_storage, q_original, check_from_dict=False):
+    def rec_provenance_tree_check(self, q_storage, q_original, from_dict=False):
         self.assertIsInstance(q_storage, ProvenanceStore)
         self.assertEqual(q_storage.model, q_original.model)
         for v in q_storage.inputs or []:
@@ -631,7 +688,7 @@ class StorageTest(unittest.TestCase):
                       if x._internal_id == v._internal_id]
             self.assertEqual(len(v_orig), 1)
             v_orig = v_orig[0]
-            if check_from_dict:
+            if from_dict:
                 self.assertFalse(v.has_value())
             elif NumQuantity.is_acceptable_type(v.value):
                 self.assertTrue(np.isclose(v.value, v_orig.value))
@@ -640,4 +697,4 @@ class StorageTest(unittest.TestCase):
                 self.assertEqual(v.value, v_orig.value)
                 self.assertTrue(v.has_value())
             self.assertListEqual(v.tags, v_orig.tags)
-            self.rec_provenance_tree_check(v.provenance, v_orig.provenance, check_from_dict)
+            self.rec_provenance_tree_check(v.provenance, v_orig.provenance, from_dict)

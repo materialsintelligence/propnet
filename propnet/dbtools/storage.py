@@ -218,10 +218,9 @@ class StorageQuantity(MSONable):
                              "Please provide a lookup dictionary or function with the "
                              "following keys: {}".format(self.get_missing_keys()))
 
-        if self.provenance is not None:
-            provenance_in = self._provenance.to_provenance_element(lookup=lookup)
-        else:
-            provenance_in = None
+        provenance_in = \
+            self._provenance.to_provenance_element(lookup=lookup) \
+            if self._provenance else None
 
         out = QuantityFactory.create_quantity(symbol_type=self._symbol_type,
                                               value=self._value,
@@ -242,7 +241,7 @@ class StorageQuantity(MSONable):
         Returns: True if there are inputs missing values in the provenance tree.
             False if all values are present or there is no provenance tree.
         """
-        return not self.get_missing_keys()
+        return self.get_missing_keys()
 
     def get_missing_keys(self):
         """
