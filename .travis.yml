@@ -19,6 +19,7 @@ install:
   - source activate test-environment
   - pip install -r requirements.txt
   - conda install pygraphviz
+  - conda install -c bioconda minepy
   - pip install nose
   - pip install coverage
   - pip install python-coveralls
