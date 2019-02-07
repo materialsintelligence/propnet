@@ -87,7 +87,7 @@ class CorrelationTest(unittest.TestCase):
             return 0.5
 
         correlation_values = {k: v for k, v in self.correlation_values_bulk_vickers.items()}
-        correlation_values['propnet.dbtools.tests.test_correlation.custom_correlation_func'] = 0.5
+        correlation_values['test_correlation.custom_correlation_func'] = 0.5
 
         builder = CorrelationBuilder(self.propstore, self.materials, self.correlation,
                                      props=['vickers_hardness', 'bulk_modulus'],
