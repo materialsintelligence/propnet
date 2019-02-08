@@ -33,20 +33,20 @@ class CorrelationTest(unittest.TestCase):
 
         # vickers hardness (x-axis) vs. bulk modulus (y-axis)
         self.correlation_values_vickers_bulk = {
-            'linlsq': 0.4155837083845686,
-            'pearson': 0.6446578227126143,
-            'spearman': 0.6975924398109954,
-            'mic': 0.5616515521782413,
-            'theilsen': 0.4047519736540858,
-            'ransac': 0.3747245847179631}
+            'linlsq': 0.08893624642281987,
+            'pearson': 0.2982218074233001,
+            'spearman': 0.6866436660916524,
+            'mic': 0.5678175866765903,
+            'theilsen': -0.9415258748260384,
+            'ransac': 0.03651531788436957}
 
         self.correlation_values_bulk_vickers = {
-            'linlsq': 0.4155837083845686,
-            'pearson': 0.6446578227126143,
-            'spearman': 0.6975924398109954,
-            'mic': 0.5616515521782413,
-            'theilsen': 0.39860109570815505,
-            'ransac': 0.3119656700613579}
+            'linlsq': 0.08893624642281987,
+            'pearson': 0.2982218074233001,
+            'spearman': 0.6866436660916524,
+            'mic': 0.5678175866765903,
+            'theilsen': 0.04858873752248394,
+            'ransac': -0.0278511120866598}
 
     def tearDown(self):
         if os.path.exists(os.path.join(TEST_DIR, "test_output.json")):
@@ -65,7 +65,7 @@ class CorrelationTest(unittest.TestCase):
     def test_process_item(self):
         test_props = [['band_gap_pbe', 'total_magnetization_normalized_vol'],
                       ['bulk_modulus', 'vickers_hardness']]
-        linlsq_correlation_values = [0.03620401274778131, 0.4155837083845686]
+        linlsq_correlation_values = [0.025473954287140395, 0.08893624642281987]
         path_lengths = [None, 2]
 
         for props, expected_correlation_val, expected_path_length in \
@@ -198,7 +198,8 @@ class CorrelationTest(unittest.TestCase):
         pn_data = pnstore.query(criteria={'task_id': {'$in': mpids}},
                                 properties=['task_id', 'inputs'] +
                                            [p + '.mean' for p in self.propnet_props] +
-                                           [p + '.units' for p in self.propnet_props])
+                                           [p + '.units' for p in self.propnet_props] +
+                                           [p + '.quantities' for p in self.propnet_props])
         dumpfn(list(pn_data), os.path.join(TEST_DIR, "correlation_propnet_data.json"))
         mp_data = mpstore.query(criteria={'task_id': {'$in': mpids}},
                                 properties=['task_id'] + self.mp_query_props)
