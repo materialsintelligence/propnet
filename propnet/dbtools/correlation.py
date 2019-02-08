@@ -363,11 +363,14 @@ class CorrelationBuilder(Builder):
 
         """
         if self.out_file:
-            matrix = self.get_correlation_matrices()
-            with open(self.out_file, 'w') as f:
-                json.dump(matrix, f)
+            self.write_correlation_data_file(self.out_file)
 
         super(CorrelationBuilder, self).finalize(cursor)
+
+    def write_correlation_data_file(self, out_file):
+        matrix = self.get_correlation_matrices()
+        with open(out_file, 'w') as f:
+            json.dump(matrix, f)
 
     def get_correlation_matrices(self, func_name=None):
         """

@@ -6,6 +6,8 @@ from monty.json import jsanitize
 from maggma.stores import MemoryStore
 from maggma.runner import Runner
 
+from itertools import product
+
 from propnet.dbtools.correlation import CorrelationBuilder
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -45,6 +47,10 @@ class CorrelationTest(unittest.TestCase):
             'mic': 0.5616515521782413,
             'theilsen': 0.39860109570815505,
             'ransac': 0.3119656700613579}
+
+    def tearDown(self):
+        if os.path.exists(os.path.join(TEST_DIR, "test_output.json")):
+            os.remove(os.path.join(TEST_DIR, "test_output.json"))
 
     def test_serial_runner(self):
         builder = CorrelationBuilder(self.propstore, self.materials, self.correlation)
@@ -111,14 +117,16 @@ class CorrelationTest(unittest.TestCase):
                 self.assertEqual(n_points, 200)
                 self.assertEqual(path_length, 2)
 
-    def test_database_write(self):
+    def test_database_and_file_write(self):
         builder = CorrelationBuilder(self.propstore, self.materials, self.correlation,
                                      props=self.propnet_props + self.mp_props,
-                                     funcs='all')
+                                     funcs='all',
+                                     out_file=os.path.join(TEST_DIR, "test_output.json"))
 
         runner = Runner([builder])
         runner.run()
 
+        # Test database output
         data = list(self.correlation.query(criteria={}))
         # count = n_props**2 * n_funcs
         # n_props = 4, n_funcs = 6
@@ -141,6 +149,30 @@ class CorrelationTest(unittest.TestCase):
                 self.assertAlmostEqual(
                     d['correlation'],
                     self.correlation_values_bulk_vickers[d['correlation_func']])
+
+        # Test file output
+        expected_file_data = loadfn(os.path.join(TEST_DIR, 'correlation_outfile.json'))
+        actual_file_data = loadfn(os.path.join(TEST_DIR, 'test_output.json'))
+
+        self.assertIsInstance(actual_file_data, dict)
+        self.assertEqual(actual_file_data.keys(), expected_file_data.keys())
+        self.assertEqual(set(actual_file_data['properties']), set(expected_file_data['properties']))
+
+        expected_props = expected_file_data['properties']
+        actual_props = actual_file_data['properties']
+
+        for prop_x, prop_y in product(expected_props, repeat=2):
+            iex, iey = expected_props.index(prop_x), expected_props.index(prop_y)
+            iax, iay = actual_props.index(prop_x), actual_props.index(prop_y)
+
+            self.assertEqual(actual_file_data['n_points'][iax][iay],
+                             expected_file_data['n_points'][iex][iey])
+            self.assertEqual(actual_file_data['shortest_path_length'][iax][iay],
+                             expected_file_data['shortest_path_length'][iex][iey])
+
+            for f in builder._funcs.keys():
+                self.assertAlmostEqual(actual_file_data['correlation'][f][iax][iay],
+                                       expected_file_data['correlation'][f][iex][iey])
 
     # Just here for reference, in case anyone wants to create a new set
     # of test materials. Requires mongogrant read access to knowhere.lbl.gov.
