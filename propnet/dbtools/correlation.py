@@ -23,7 +23,7 @@ class CorrelationBuilder(Builder):
 
     """
     # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
-    MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.elastic_anisotropy", "elasticity.universal_anisotropy",
+    MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.universal_anisotropy",
                       "diel.poly_electronic", "total_magnetization", "efermi",
                       "magnetism.total_magnetization_normalized_vol"]
     PROPNET_PROPS = [v.name for v in DEFAULT_SYMBOLS.values()
@@ -350,7 +350,7 @@ class CorrelationBuilder(Builder):
                          'correlation_func': func_name,
                          'n_points': n_points,
                          'shortest_path_length': path_length,
-                         'id': hash(prop_x) ^ hash(prop_y) ^ hash(func_name)})
+                         'id': hash((prop_x, prop_y)) ^ hash(func_name)})
         self.correlation_store.update(data, key='id')
 
     def finalize(self, cursor=None):
