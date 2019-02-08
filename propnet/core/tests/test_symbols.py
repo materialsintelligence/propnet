@@ -40,10 +40,14 @@ class SymbolTest(unittest.TestCase):
             self.assertTrue(st.display_symbols is not None and isinstance(st.display_symbols, list) and
                             len(st.display_symbols) != 0, st.name)
             self.assertTrue(st.comment is not None and isinstance(st.comment, str))
+            if st.category != 'object':
+                self.assertIsNotNone(st.units,
+                                     "The property/condition symbol {} is missing units.".format(st.name))
 
     def test_all_properties(self):
         self.assertEqual(str(DEFAULT_SYMBOLS['density'].units),
                          '1.0 gram / centimeter ** 3')
+
 
 if __name__ == "__main__":
     unittest.main()

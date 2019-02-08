@@ -90,7 +90,7 @@
       }
     },
     "outputs": {
-      "dimensionality": 3
+      "dimensionality": "3"
     }
   }
 ]
