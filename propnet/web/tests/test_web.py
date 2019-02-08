@@ -1,6 +1,5 @@
 import unittest
 import json
-from os import environ
 
 from propnet.core.graph import Graph
 no_store_file = False
