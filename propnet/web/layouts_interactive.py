@@ -16,7 +16,7 @@ from collections import OrderedDict
 from propnet.symbols import DEFAULT_SYMBOLS
 
 from propnet import ureg, logger
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import QuantityFactory
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 
@@ -150,7 +150,7 @@ def interactive_layout(app):
         output_rows = [
             {
                 'Property': symbol_string,
-                'Materials Project Value': quantity.pretty_string(3)
+                'Materials Project Value': quantity.pretty_string(sigfigs=3)
             }
             for symbol_string, quantity in mp_quantities.items()
         ]
@@ -173,9 +173,8 @@ def interactive_layout(app):
     )
     def evaluate(input_rows, data, aggregate):
 
-
-        quantities = [Quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
-                               value=ureg.parse_expression(row['Editable Value']))
+        quantities = [QuantityFactory.create_quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
+                                                      value=ureg.parse_expression(row['Editable Value']))
                       for idx, row in enumerate(input_rows) if row['Editable Value']]
 
         if data and len(data) > 0:
@@ -199,7 +198,7 @@ def interactive_layout(app):
 
         output_rows = [{
             'Property': quantity.symbol.display_names[0],
-            'Value': quantity.pretty_string(3)
+            'Value': quantity.pretty_string(sigfigs=3)
         } for quantity in output_quantities]
 
         output_table = dt.DataTable(id='output-table',

@@ -29,5 +29,8 @@ config = {
     },
     "description": "Model relating the direct and converse piezoelectric tensor via the elastic tensor",
     "references": [],
+    "implemented_by": [
+        "shyamd"
+    ],
     "plug_in": plug_in
 }

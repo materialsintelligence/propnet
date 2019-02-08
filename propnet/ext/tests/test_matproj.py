@@ -18,7 +18,7 @@ class MPResterTest(unittest.TestCase):
         mpr = MPRester()
         mat = mpr.get_material_for_mpid(mpid)
         quantity = next(iter(mat['structure']))
-        self.assertEqual(quantity.provenance.source, "Materials Project")
+        self.assertEqual(quantity.provenance.source['source'], "Materials Project")
         self.assertIn('structure', mat.get_symbols())
 
     def test_get_mpid_from_formula(self):
