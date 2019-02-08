@@ -121,8 +121,8 @@ class CorrelationTest(unittest.TestCase):
 
         data = list(self.correlation.query(criteria={}))
         # count = n_props**2 * n_funcs
-        # n_props = 4, n_funcs = 5
-        self.assertEqual(len(data), 80)
+        # n_props = 4, n_funcs = 6
+        self.assertEqual(len(data), 96, msg="Are there new built-in funcs in the builder?")
 
         for d in data:
             self.assertIsInstance(d, dict)
