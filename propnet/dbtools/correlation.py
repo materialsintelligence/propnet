@@ -127,24 +127,29 @@ class CorrelationBuilder(Builder):
             criteria={},
             properties=[p + '.mean' for p in self.propnet_props] +
                        [p + '.units' for p in self.propnet_props] +
+                       [p + '.quantities' for p in self.propnet_props] +
                        ['task_id', 'inputs'])
 
         for material in propnet_data:
             mpid = material['task_id']
+
+            input_d = defaultdict(list)
+            for q in material['inputs']:
+                if q['symbol_type'] in self.propnet_props:
+                    this_q = ureg.Quantity(q['value'], q['units'])
+                    input_d[q['symbol_type']].append(this_q)
+
             for prop, values in material.items():
                 if prop in self.propnet_props:
-                    data[mpid][prop] = ureg.Quantity(values['mean'], values['units'])
-                elif prop == 'inputs':
-                    input_d = defaultdict(list)
-                    for q in values:
-                        if q['symbol_type'] in self.propnet_props:
-                            this_q = ureg.Quantity(q['value'], q['units'])
-                            input_d[q['symbol_type']].append(this_q)
-                    repeated_keys = set(input_d.keys()).intersection(set(data[mpid].keys()))
-                    if repeated_keys:
-                        logger.warning('Repeated key(s) from inputs: {}'.format(repeated_keys))
-                    data[mpid].update(
-                        {k: sum(v) / len(v) for k, v in input_d.items()})
+                    if prop in input_d.keys():
+                        for q in values['quantities']:
+                            input_d[prop].append(ureg.Quantity(q['value'], q['units']))
+                    else:
+                        this_q = ureg.Quantity(values['mean'], values['units'])
+                        input_d[prop] = [this_q]
+
+            data[mpid].update(
+                {k: sum(v) / len(v) for k, v in input_d.items()})
 
         # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
 
@@ -363,11 +368,14 @@ class CorrelationBuilder(Builder):
 
         """
         if self.out_file:
-            matrix = self.get_correlation_matrices()
-            with open(self.out_file, 'w') as f:
-                json.dump(matrix, f)
+            self.write_correlation_data_file(self.out_file)
 
         super(CorrelationBuilder, self).finalize(cursor)
+
+    def write_correlation_data_file(self, out_file):
+        matrix = self.get_correlation_matrices()
+        with open(out_file, 'w') as f:
+            json.dump(matrix, f)
 
     def get_correlation_matrices(self, func_name=None):
         """
