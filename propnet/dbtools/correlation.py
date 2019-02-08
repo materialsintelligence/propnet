@@ -47,6 +47,7 @@ class CorrelationBuilder(Builder):
 
                 linlsq (default): linear least-squares, reports R^2
                 pearson: Pearson r-correlation, reports r
+                spearman: Spearman rank correlation, reports r
                 mic: maximal-information non-parametric exploration, reports maximal information coefficient
                 ransac: random sample consensus (RANSAC) regression, reports score
                 theilsen: Theil-Sen regression, reports score
