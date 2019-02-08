@@ -281,6 +281,22 @@ class CorrelationBuilder(Builder):
         return fit[0]
 
     @staticmethod
+    def _cfunc_spearman(x, y):
+        """
+        Get R value for Spearman fit of a data set.
+
+        Args:
+            x: (list<float>) independent property (x-axis)
+            y: (list<float>) dependent property (y-axis)
+
+        Returns: (float) Spearman R value
+
+        """
+        from scipy import stats
+        fit = stats.spearmanr(x, y)
+        return fit[0]
+
+    @staticmethod
     def _cfunc_ransac(x, y):
         """
         Get random sample consensus (RANSAC) regression score for data set.

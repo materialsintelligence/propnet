@@ -33,6 +33,7 @@ class CorrelationTest(unittest.TestCase):
         self.correlation_values_vickers_bulk = {
             'linlsq': 0.4155837083845686,
             'pearson': 0.6446578227126143,
+            'spearman': 0.,
             'mic': 0.5616515521782413,
             'theilsen': 0.4047519736540858,
             'ransac': 0.3747245847179631}
@@ -40,6 +41,7 @@ class CorrelationTest(unittest.TestCase):
         self.correlation_values_bulk_vickers = {
             'linlsq': 0.4155837083845686,
             'pearson': 0.6446578227126143,
+            'spearman': 0.6975924398109954,
             'mic': 0.5616515521782413,
             'theilsen': 0.39860109570815505,
             'ransac': 0.3119656700613579}
