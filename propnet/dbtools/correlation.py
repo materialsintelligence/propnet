@@ -23,7 +23,7 @@ class CorrelationBuilder(Builder):
 
     """
     # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
-    MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.elastic_anisotropy", "elasticity.universal_anisotropy",
+    MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.universal_anisotropy",
                       "diel.poly_electronic", "total_magnetization", "efermi",
                       "magnetism.total_magnetization_normalized_vol"]
     PROPNET_PROPS = [v.name for v in DEFAULT_SYMBOLS.values()
@@ -47,6 +47,7 @@ class CorrelationBuilder(Builder):
 
                 linlsq (default): linear least-squares, reports R^2
                 pearson: Pearson r-correlation, reports r
+                spearman: Spearman rank correlation, reports r
                 mic: maximal-information non-parametric exploration, reports maximal information coefficient
                 ransac: random sample consensus (RANSAC) regression, reports score
                 theilsen: Theil-Sen regression, reports score
@@ -281,6 +282,22 @@ class CorrelationBuilder(Builder):
         return fit[0]
 
     @staticmethod
+    def _cfunc_spearman(x, y):
+        """
+        Get R value for Spearman fit of a data set.
+
+        Args:
+            x: (list<float>) independent property (x-axis)
+            y: (list<float>) dependent property (y-axis)
+
+        Returns: (float) Spearman R value
+
+        """
+        from scipy import stats
+        fit = stats.spearmanr(x, y)
+        return fit[0]
+
+    @staticmethod
     def _cfunc_ransac(x, y):
         """
         Get random sample consensus (RANSAC) regression score for data set.
@@ -333,7 +350,7 @@ class CorrelationBuilder(Builder):
                          'correlation_func': func_name,
                          'n_points': n_points,
                          'shortest_path_length': path_length,
-                         'id': hash(prop_x) ^ hash(prop_y) ^ hash(func_name)})
+                         'id': hash((prop_x, prop_y)) ^ hash(func_name)})
         self.correlation_store.update(data, key='id')
 
     def finalize(self, cursor=None):
