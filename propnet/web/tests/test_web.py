@@ -1,5 +1,6 @@
 import unittest
 import json
+from os import environ
 
 from propnet.web.app import app, symbol_layout, model_layout
 from propnet.web.utils import graph_conversion
@@ -9,7 +10,9 @@ routes = [
     '/'
 ]
 
-# auto add final /
+
+@unittest.skipIf(environ.get('PROPNET_STORE_FILE', None) is None,
+                 "No data store provided. Skipping web tests.")
 class WebTest(unittest.TestCase):
     """
     Base class for dash unittests
