@@ -368,11 +368,20 @@ class CorrelationBuilder(Builder):
 
         """
         if self.out_file:
-            self.write_correlation_data_file(self.out_file)
+            try:
+                self.write_correlation_data_file(self.out_file)
+            except OSError:
+                logger.warning("Cannot open file for writing! Skipping file writing.")
 
         super(CorrelationBuilder, self).finalize(cursor)
 
     def write_correlation_data_file(self, out_file):
+        """
+        Gets data dictionary containing correlation matrices and outputs to a file.
+        
+        Args:
+            out_file: (str) file path and name for output to JSON file
+        """
         matrix = self.get_correlation_matrices()
         with open(out_file, 'w') as f:
             json.dump(matrix, f)
