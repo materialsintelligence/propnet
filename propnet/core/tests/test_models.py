@@ -3,16 +3,22 @@ import unittest
 import math
 import numpy as np
 
-from propnet.models import DEFAULT_MODEL_NAMES, DEFAULT_MODEL_DICT, DEFAULT_MODELS
-from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES
+import propnet.models
+import propnet.symbols
+
 from propnet.core.models import EquationModel
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import QuantityFactory
-
+from propnet.core.registry import Registry
 
 # TODO: test PyModule, PyModel
 # TODO: separate these into specific tests of model functionality
 #       and validation of default models
+DEFAULT_MODEL_DICT = Registry("models")
+DEFAULT_MODEL_NAMES = list(DEFAULT_MODEL_DICT.keys())
+DEFAULT_MODELS = list(DEFAULT_MODEL_DICT.values())
+DEFAULT_SYMBOL_TYPE_NAMES = tuple( Registry("symbols").keys())
+
 class ModelTest(unittest.TestCase):
     def test_instantiate_all_models(self):
         models_to_test = []
