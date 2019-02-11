@@ -724,9 +724,8 @@ class Graph(object):
                                              allow_failure=allow_model_failure)
                         for model_and_input_set in models_and_input_sets)
 
-        timer_name = 'num_quantities_derived: {}'.format(sum(len(v) for v in quantity_pool.values()))
-        with Timer(timer_name):
-            results = await asyncio.gather(*tasks_to_run)
+        # timer_name = 'num_quantities_derived: {}'.format(sum(len(v) for v in quantity_pool.values()))
+        results = await asyncio.gather(*tasks_to_run)
 
         added_quantities.extend(chain.from_iterable(results))
         return added_quantities, quantity_pool
@@ -738,8 +737,9 @@ class Graph(object):
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
 
-        result = await model.evaluate(input_dict,
-                                      allow_failure=allow_failure)
+        with Timer(model.name):
+            result = await model.evaluate(input_dict,
+                                          allow_failure=allow_failure)
         # TODO: Maybe provenance should be done in evaluate?
 
         success = result.pop('successful')
