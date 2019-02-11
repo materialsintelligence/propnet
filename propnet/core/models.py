@@ -7,6 +7,7 @@ import re
 import logging
 from abc import ABC, abstractmethod
 from itertools import chain
+import asyncio
 
 import six
 from monty.serialization import loadfn
@@ -161,7 +162,7 @@ class Model(ABC):
         """
         return remap(symbols, getattr(self, "symbol_property_map", {}))
 
-    def evaluate(self, symbol_quantity_dict_in, allow_failure=True):
+    async def evaluate(self, symbol_quantity_dict_in, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
         if the corresponding input symbol_values represents a valid
@@ -175,7 +176,7 @@ class Model(ABC):
         evaluate also handles any requisite unit_mapping
 
         Args:
-            symbol_quantity_dict ({property_name: Quantity}): a mapping of
+            symbol_quantity_dict_in ({property_name: Quantity}): a mapping of
                 symbol names to quantities to be substituted
             allow_failure (bool): whether or not to catch
                 errors in model evaluation
