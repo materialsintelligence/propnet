@@ -3,11 +3,13 @@ from itertools import product
 import numpy as np
 import json
 from collections import defaultdict
-from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.core.graph import Graph
 from propnet import ureg
 import logging
 import re
+
+import propnet.symbols
+from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ class CorrelationBuilder(Builder):
     MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.universal_anisotropy",
                       "diel.poly_electronic", "total_magnetization", "efermi",
                       "magnetism.total_magnetization_normalized_vol"]
-    PROPNET_PROPS = [v.name for v in DEFAULT_SYMBOLS.values()
+    PROPNET_PROPS = [v.name for v in Registry("symbols").values()
                      if (v.category == 'property' and v.shape == 1)]
 
     def __init__(self, propnet_store, mp_store,
@@ -182,12 +184,12 @@ class CorrelationBuilder(Builder):
             # quantities. Here, the quantities are coerced into the units of MP data
             # as stored in symbols and coverts them to floats.
             if x and any(isinstance(v, ureg.Quantity) for v in x):
-                x_float = [xx.to(DEFAULT_SYMBOLS[prop_x].units).magnitude
+                x_float = [xx.to(Registry("symbols")[prop_x].units).magnitude
                            if isinstance(xx, ureg.Quantity) else xx for xx in x]
             else:
                 x_float = x
             if y and any(isinstance(v, ureg.Quantity) for v in y):
-                y_float = [yy.to(DEFAULT_SYMBOLS[prop_y].units).magnitude
+                y_float = [yy.to(Registry("symbols")[prop_y].units).magnitude
                            if isinstance(yy, ureg.Quantity) else yy for yy in y]
             else:
                 y_float = y
@@ -378,7 +380,7 @@ class CorrelationBuilder(Builder):
     def write_correlation_data_file(self, out_file):
         """
         Gets data dictionary containing correlation matrices and outputs to a file.
-        
+
         Args:
             out_file: (str) file path and name for output to JSON file
         """

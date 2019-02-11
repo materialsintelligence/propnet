@@ -7,8 +7,6 @@ from os import environ
 from random import choice
 from monty.serialization import loadfn
 
-from propnet.symbols import DEFAULT_SYMBOLS
-
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
@@ -16,6 +14,9 @@ from pydash import get
 
 from pymatgen import MPRester
 from pymatgen.util.string import unicodeify
+
+import propnet.symbols
+from propnet.core.registry import Registry
 
 mpr = MPRester()
 
@@ -27,7 +28,7 @@ try:
     store.connect()
 except ServerSelectionTimeoutError:
     # layout won't work if database is down, but at least web app will stay up
-    scalar_symbols = {k: v for k, v in DEFAULT_SYMBOLS.items()
+    scalar_symbols = {k: v for k, v in Registry("symbols").items()
                       if (v.category == 'property' and v.shape == 1)}
     warning_layout = html.Div('No database connection could be established.',
                               style={'font-family': 'monospace',
@@ -36,7 +37,7 @@ except ServerSelectionTimeoutError:
                                      'font-size': '1.2em'})
 else:
     cut_off = 100  # need at least this many available quantities for plot
-    scalar_symbols = {k: v for k, v in DEFAULT_SYMBOLS.items()
+    scalar_symbols = {k: v for k, v in Registry("symbols").items()
                       if (v.category == 'property' and v.shape == 1
                           and store.query(
                 criteria={f'{k}.mean': {'$exists': True}}).count() > cut_off)}
@@ -253,10 +254,10 @@ def plot_layout(app):
         formula = unicodeify(s.composition.reduced_formula)
 
         info = f"""
-        
+
 ### {formula}
 ##### [{mpid}](https://materialsproject.org/materials/{mpid})
-        
+
 x = {x:.2f} {scalar_symbols[x_prop].unit_as_string}
 
 y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
