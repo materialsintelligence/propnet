@@ -8,6 +8,8 @@ from itertools import product
 from chronic import Timer, timings, clear
 from pandas import DataFrame
 from collections import deque
+import asyncio
+from itertools import chain
 
 import networkx as nx
 
@@ -688,8 +690,8 @@ class Graph(object):
         # Filter for duplicates
         return set(models_and_input_sets)
 
-    def derive_quantities(self, new_quantities, quantity_pool=None,
-                          allow_model_failure=True):
+    async def derive_quantities(self, new_quantities, quantity_pool=None,
+                                allow_model_failure=True):
         """
         Algorithm for expanding quantity pool
 
@@ -718,25 +720,35 @@ class Graph(object):
         added_quantities = []
 
         # Evaluate model for each input set and add new valid quantities
-        for model_and_input_set in models_and_input_sets:
-            model = model_and_input_set[0]
-            inputs = model_and_input_set[1:]
-            input_dict = {q.symbol: q for q in inputs}
-            logger.info('Evaluating %s with input %s', model, input_dict)
+        tasks_to_run = (self._evaluate_model(model_and_input_set,
+                                             allow_failure=allow_model_failure)
+                        for model_and_input_set in models_and_input_sets)
 
-            with Timer(model.name):
-                result = model.evaluate(input_dict,
-                                        allow_failure=allow_model_failure)
-            # TODO: Maybe provenance should be done in evaluate?
+        results = asyncio.gather(*tasks_to_run)
 
-            success = result.pop('successful')
-            if success:
-                noncyclic = filter(lambda x: not x.is_cyclic(), result.values())
-                added_quantities.extend(list(noncyclic))
-            else:
-                logger.info("Model evaluation unsuccessful %s",
-                            result['message'])
+        added_quantities.extend(chain.from_iterable(results))
         return added_quantities, quantity_pool
+
+    @staticmethod
+    async def _evaluate_model(model_and_input_set, allow_failure=True):
+        model = model_and_input_set[0]
+        inputs = model_and_input_set[1:]
+        input_dict = {q.symbol: q for q in inputs}
+        logger.info('Evaluating %s with input %s', model, input_dict)
+
+        result = await model.evaluate(input_dict,
+                                      allow_failure=allow_failure)
+        # TODO: Maybe provenance should be done in evaluate?
+
+        success = result.pop('successful')
+        if success:
+            noncyclic = filter(lambda x: not x.is_cyclic(), result.values())
+            out = list(noncyclic)
+        else:
+            logger.info("Model evaluation unsuccessful %s",
+                        result['message'])
+            out = []
+        return out
 
     def evaluate(self, material, allow_model_failure=True):
         """
@@ -766,9 +778,10 @@ class Graph(object):
         # Loop util no new Quantity objects are derived.
         logger.debug("Beginning main loop with quantities %s", new_quantities)
         while new_quantities:
-            new_quantities, quantity_pool = self.derive_quantities(
+            loop = asyncio.get_event_loop()
+            new_quantities, quantity_pool = loop.run_until_complete(self.derive_quantities(
                 new_quantities, quantity_pool,
-                allow_model_failure=allow_model_failure)
+                allow_model_failure=allow_model_failure))
 
         # store model evaluation statistics
         self._timings = timings
