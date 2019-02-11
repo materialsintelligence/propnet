@@ -23,7 +23,7 @@ class CorrelationBuilder(Builder):
 
     """
     # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
-    MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.elastic_anisotropy", "elasticity.universal_anisotropy",
+    MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.universal_anisotropy",
                       "diel.poly_electronic", "total_magnetization", "efermi",
                       "magnetism.total_magnetization_normalized_vol"]
     PROPNET_PROPS = [v.name for v in DEFAULT_SYMBOLS.values()
@@ -47,6 +47,7 @@ class CorrelationBuilder(Builder):
 
                 linlsq (default): linear least-squares, reports R^2
                 pearson: Pearson r-correlation, reports r
+                spearman: Spearman rank correlation, reports r
                 mic: maximal-information non-parametric exploration, reports maximal information coefficient
                 ransac: random sample consensus (RANSAC) regression, reports score
                 theilsen: Theil-Sen regression, reports score
@@ -126,24 +127,29 @@ class CorrelationBuilder(Builder):
             criteria={},
             properties=[p + '.mean' for p in self.propnet_props] +
                        [p + '.units' for p in self.propnet_props] +
+                       [p + '.quantities' for p in self.propnet_props] +
                        ['task_id', 'inputs'])
 
         for material in propnet_data:
             mpid = material['task_id']
+
+            input_d = defaultdict(list)
+            for q in material['inputs']:
+                if q['symbol_type'] in self.propnet_props:
+                    this_q = ureg.Quantity(q['value'], q['units'])
+                    input_d[q['symbol_type']].append(this_q)
+
             for prop, values in material.items():
                 if prop in self.propnet_props:
-                    data[mpid][prop] = ureg.Quantity(values['mean'], values['units'])
-                elif prop == 'inputs':
-                    input_d = defaultdict(list)
-                    for q in values:
-                        if q['symbol_type'] in self.propnet_props:
-                            this_q = ureg.Quantity(q['value'], q['units'])
-                            input_d[q['symbol_type']].append(this_q)
-                    repeated_keys = set(input_d.keys()).intersection(set(data[mpid].keys()))
-                    if repeated_keys:
-                        logger.warning('Repeated key(s) from inputs: {}'.format(repeated_keys))
-                    data[mpid].update(
-                        {k: sum(v) / len(v) for k, v in input_d.items()})
+                    if prop in input_d.keys():
+                        for q in values['quantities']:
+                            input_d[prop].append(ureg.Quantity(q['value'], q['units']))
+                    else:
+                        this_q = ureg.Quantity(values['mean'], values['units'])
+                        input_d[prop] = [this_q]
+
+            data[mpid].update(
+                {k: sum(v) / len(v) for k, v in input_d.items()})
 
         # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
 
@@ -281,6 +287,22 @@ class CorrelationBuilder(Builder):
         return fit[0]
 
     @staticmethod
+    def _cfunc_spearman(x, y):
+        """
+        Get R value for Spearman fit of a data set.
+
+        Args:
+            x: (list<float>) independent property (x-axis)
+            y: (list<float>) dependent property (y-axis)
+
+        Returns: (float) Spearman R value
+
+        """
+        from scipy import stats
+        fit = stats.spearmanr(x, y)
+        return fit[0]
+
+    @staticmethod
     def _cfunc_ransac(x, y):
         """
         Get random sample consensus (RANSAC) regression score for data set.
@@ -333,7 +355,7 @@ class CorrelationBuilder(Builder):
                          'correlation_func': func_name,
                          'n_points': n_points,
                          'shortest_path_length': path_length,
-                         'id': hash(prop_x) ^ hash(prop_y) ^ hash(func_name)})
+                         'id': hash((prop_x, prop_y)) ^ hash(func_name)})
         self.correlation_store.update(data, key='id')
 
     def finalize(self, cursor=None):
@@ -346,11 +368,23 @@ class CorrelationBuilder(Builder):
 
         """
         if self.out_file:
-            matrix = self.get_correlation_matrices()
-            with open(self.out_file, 'w') as f:
-                json.dump(matrix, f)
+            try:
+                self.write_correlation_data_file(self.out_file)
+            except OSError:
+                logger.warning("Cannot open file for writing! Skipping file writing.")
 
         super(CorrelationBuilder, self).finalize(cursor)
+
+    def write_correlation_data_file(self, out_file):
+        """
+        Gets data dictionary containing correlation matrices and outputs to a file.
+        
+        Args:
+            out_file: (str) file path and name for output to JSON file
+        """
+        matrix = self.get_correlation_matrices()
+        with open(out_file, 'w') as f:
+            json.dump(matrix, f)
 
     def get_correlation_matrices(self, func_name=None):
         """
