@@ -6,11 +6,14 @@ from io import StringIO
 from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
 
-from propnet.symbols import DEFAULT_SYMBOL_TYPE_NAMES, Symbol
-from propnet.models import DEFAULT_MODEL_NAMES
+from propnet.core.symbols import Symbol
 from propnet.core.models import Model
 
 from monty.serialization import loadfn
+
+import propnet.models
+import propnet.symbols
+from propnet.core.registry import Registry
 
 log = logging.getLogger(__name__)
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
@@ -183,14 +186,14 @@ def parse_path(pathname):
         mode = 'model'
     elif pathname.startswith('/model'):
         mode = 'model'
-        for model in DEFAULT_MODEL_NAMES:
+        for model in Registry("models").keys():
             if pathname.startswith('/model/{}'.format(model)):
                 value = model
     elif pathname == '/property':
         mode = 'property'
     elif pathname.startswith('/property'):
         mode = 'property'
-        for property in DEFAULT_SYMBOL_TYPE_NAMES:
+        for property in Registry("symbols").keys():
             if pathname.startswith('/property/{}'.format(property)):
                 value = property
     elif pathname.startswith('/explore'):
