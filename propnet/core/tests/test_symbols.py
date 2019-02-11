@@ -1,7 +1,9 @@
 import unittest
 
 from propnet.core.symbols import Symbol
-from propnet.symbols import DEFAULT_SYMBOLS
+
+import propnet.symbols
+from propnet.core.registry import Registry
 
 
 class SymbolTest(unittest.TestCase):
@@ -31,7 +33,7 @@ class SymbolTest(unittest.TestCase):
         """
         Goes through the Quantity .yaml files and ensures the definitions are complete.
         """
-        for st in DEFAULT_SYMBOLS.values():
+        for st in Registry("symbols").values():
             self.assertTrue(st.name is not None and st.name.isidentifier())
             self.assertTrue(st.category is not None and st.category
                             in ('property', 'condition', 'object'))
@@ -45,7 +47,7 @@ class SymbolTest(unittest.TestCase):
                                      "The property/condition symbol {} is missing units.".format(st.name))
 
     def test_all_properties(self):
-        self.assertEqual(str(DEFAULT_SYMBOLS['density'].units),
+        self.assertEqual(str(Registry("symbols")['density'].units),
                          '1.0 gram / centimeter ** 3')
 
 
