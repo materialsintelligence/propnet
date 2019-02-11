@@ -6,6 +6,8 @@ from monty.json import jsanitize
 from maggma.stores import MemoryStore
 from maggma.runner import Runner
 
+from itertools import product
+
 from propnet.dbtools.correlation import CorrelationBuilder
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,18 +33,24 @@ class CorrelationTest(unittest.TestCase):
 
         # vickers hardness (x-axis) vs. bulk modulus (y-axis)
         self.correlation_values_vickers_bulk = {
-            'linlsq': 0.4155837083845686,
-            'pearson': 0.6446578227126143,
-            'mic': 0.5616515521782413,
-            'theilsen': 0.4047519736540858,
-            'ransac': 0.3747245847179631}
+            'linlsq': 0.08893624642281987,
+            'pearson': 0.2982218074233001,
+            'spearman': 0.6866436660916524,
+            'mic': 0.5678175866765903,
+            'theilsen': -0.9415258748260384,
+            'ransac': 0.03651531788436957}
 
         self.correlation_values_bulk_vickers = {
-            'linlsq': 0.4155837083845686,
-            'pearson': 0.6446578227126143,
-            'mic': 0.5616515521782413,
-            'theilsen': 0.39860109570815505,
-            'ransac': 0.3119656700613579}
+            'linlsq': 0.08893624642281987,
+            'pearson': 0.2982218074233001,
+            'spearman': 0.6866436660916524,
+            'mic': 0.5678175866765903,
+            'theilsen': 0.04858873752248394,
+            'ransac': -0.0278511120866598}
+
+    def tearDown(self):
+        if os.path.exists(os.path.join(TEST_DIR, "test_output.json")):
+            os.remove(os.path.join(TEST_DIR, "test_output.json"))
 
     def test_serial_runner(self):
         builder = CorrelationBuilder(self.propstore, self.materials, self.correlation)
@@ -57,7 +65,7 @@ class CorrelationTest(unittest.TestCase):
     def test_process_item(self):
         test_props = [['band_gap_pbe', 'total_magnetization_normalized_vol'],
                       ['bulk_modulus', 'vickers_hardness']]
-        linlsq_correlation_values = [0.03620401274778131, 0.4155837083845686]
+        linlsq_correlation_values = [0.025473954287140395, 0.08893624642281987]
         path_lengths = [None, 2]
 
         for props, expected_correlation_val, expected_path_length in \
@@ -109,18 +117,20 @@ class CorrelationTest(unittest.TestCase):
                 self.assertEqual(n_points, 200)
                 self.assertEqual(path_length, 2)
 
-    def test_database_write(self):
+    def test_database_and_file_write(self):
         builder = CorrelationBuilder(self.propstore, self.materials, self.correlation,
                                      props=self.propnet_props + self.mp_props,
-                                     funcs='all')
+                                     funcs='all',
+                                     out_file=os.path.join(TEST_DIR, "test_output.json"))
 
         runner = Runner([builder])
         runner.run()
 
+        # Test database output
         data = list(self.correlation.query(criteria={}))
         # count = n_props**2 * n_funcs
-        # n_props = 4, n_funcs = 5
-        self.assertEqual(len(data), 80)
+        # n_props = 4, n_funcs = 6
+        self.assertEqual(len(data), 96, msg="Are there new built-in funcs in the builder?")
 
         for d in data:
             self.assertIsInstance(d, dict)
@@ -139,6 +149,30 @@ class CorrelationTest(unittest.TestCase):
                 self.assertAlmostEqual(
                     d['correlation'],
                     self.correlation_values_bulk_vickers[d['correlation_func']])
+
+        # Test file output
+        expected_file_data = loadfn(os.path.join(TEST_DIR, 'correlation_outfile.json'))
+        actual_file_data = loadfn(os.path.join(TEST_DIR, 'test_output.json'))
+
+        self.assertIsInstance(actual_file_data, dict)
+        self.assertEqual(actual_file_data.keys(), expected_file_data.keys())
+        self.assertEqual(set(actual_file_data['properties']), set(expected_file_data['properties']))
+
+        expected_props = expected_file_data['properties']
+        actual_props = actual_file_data['properties']
+
+        for prop_x, prop_y in product(expected_props, repeat=2):
+            iex, iey = expected_props.index(prop_x), expected_props.index(prop_y)
+            iax, iay = actual_props.index(prop_x), actual_props.index(prop_y)
+
+            self.assertEqual(actual_file_data['n_points'][iax][iay],
+                             expected_file_data['n_points'][iex][iey])
+            self.assertEqual(actual_file_data['shortest_path_length'][iax][iay],
+                             expected_file_data['shortest_path_length'][iex][iey])
+
+            for f in builder._funcs.keys():
+                self.assertAlmostEqual(actual_file_data['correlation'][f][iax][iay],
+                                       expected_file_data['correlation'][f][iex][iey])
 
     # Just here for reference, in case anyone wants to create a new set
     # of test materials. Requires mongogrant read access to knowhere.lbl.gov.
@@ -164,7 +198,8 @@ class CorrelationTest(unittest.TestCase):
         pn_data = pnstore.query(criteria={'task_id': {'$in': mpids}},
                                 properties=['task_id', 'inputs'] +
                                            [p + '.mean' for p in self.propnet_props] +
-                                           [p + '.units' for p in self.propnet_props])
+                                           [p + '.units' for p in self.propnet_props] +
+                                           [p + '.quantities' for p in self.propnet_props])
         dumpfn(list(pn_data), os.path.join(TEST_DIR, "correlation_propnet_data.json"))
         mp_data = mpstore.query(criteria={'task_id': {'$in': mpids}},
                                 properties=['task_id'] + self.mp_query_props)
