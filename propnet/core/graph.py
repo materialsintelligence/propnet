@@ -728,7 +728,9 @@ class Graph(object):
                                              allow_failure=allow_model_failure)
                         for model_and_input_set in models_and_input_sets)
 
-        results = asyncio.gather(*tasks_to_run)
+        timer_name = 'num_quantities_derived: {}'.format(sum(len(v) for v in quantity_pool.values()))
+        with Timer(timer_name):
+            results = await asyncio.gather(*tasks_to_run)
 
         added_quantities.extend(chain.from_iterable(results))
         return added_quantities, quantity_pool
@@ -782,8 +784,7 @@ class Graph(object):
         # Loop util no new Quantity objects are derived.
         logger.debug("Beginning main loop with quantities %s", new_quantities)
         while new_quantities:
-            loop = asyncio.get_event_loop()
-            new_quantities, quantity_pool = loop.run_until_complete(self.derive_quantities(
+            new_quantities, quantity_pool = asyncio.run(self.derive_quantities(
                 new_quantities, quantity_pool,
                 allow_model_failure=allow_model_failure))
 
