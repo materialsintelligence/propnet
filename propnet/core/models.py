@@ -162,7 +162,7 @@ class Model(ABC):
         """
         return remap(symbols, getattr(self, "symbol_property_map", {}))
 
-    async def evaluate(self, symbol_quantity_dict_in, allow_failure=True):
+    def evaluate(self, symbol_quantity_dict_in, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
         if the corresponding input symbol_values represents a valid
@@ -595,7 +595,7 @@ class EquationModel(Model, MSONable):
                         connections.append(
                             {"inputs": inputs,
                              "outputs": [str(symbol)],
-                             "_lambdas": {str(symbol): sp.lambdify(inputs, new)}
+                             "_sympy_exprs": {str(symbol): new}
                              })
             else:
                 for eqn in equations:
@@ -605,7 +605,7 @@ class EquationModel(Model, MSONable):
                     connections.append(
                         {"inputs": inputs,
                          "outputs": outputs,
-                         "_lambdas": {outputs[0]: sp.lambdify(inputs, parse_expr(input_expr))}
+                         "_sympy_exprs": {outputs[0]: parse_expr(input_expr)}
                          })
         else:
             # TODO: I don't think this needs to be supported necessarily
@@ -613,9 +613,9 @@ class EquationModel(Model, MSONable):
             #       and two outputs where you only want one connection
             for connection in connections:
                 new = sp.solve(sympy_expressions, connection['outputs'])
-                lambdas = {str(sym): sp.lambdify(connection['inputs'], solved)
-                           for sym, solved in new.items()}
-                connection["_lambdas"] = lambdas
+                sympy_exprs = {str(sym): solved
+                               for sym, solved in new.items()}
+                connection["_sympy_exprs"] = sympy_exprs
 
         #self.equations = equations
         super(EquationModel, self).__init__(
@@ -640,7 +640,10 @@ class EquationModel(Model, MSONable):
         output = {}
         for connection in self.connections:
             if set(connection['inputs']) <= set(symbol_value_dict.keys()):
-                for output_sym, func in connection['_lambdas'].items():
+                for output_sym, sympy_expr in connection['_sympy_exprs'].items():
+                    # We lambdify these expressions on the fly so this
+                    # function can be pickled and run in parallel
+                    func = sp.lambdify(connection['inputs'], sympy_expr)
                     output_vals = func(**symbol_value_dict)
                     # TODO: this decision to only take max real values should
                     #       should probably be reevaluated at some point
