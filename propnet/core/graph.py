@@ -9,7 +9,8 @@ from chronic import Timer, timings, clear
 from pandas import DataFrame
 from collections import deque
 import asyncio
-from itertools import chain
+import concurrent.futures
+from itertools import chain, cycle
 
 import networkx as nx
 
@@ -688,13 +689,14 @@ class Graph(object):
             for model in self._input_to_model[quantity.symbol]:
                 input_sets = self.get_input_sets_for_model(
                     model, quantity, quantity_pool)
-                models_and_input_sets += [
-                    tuple([model] + sorted(list(input_set), key=lambda x: (x.symbol.name, x.value)))
-                          for input_set in input_sets]
+                for input_set in input_sets:
+                    sorting_key = {x: (x.symbol.name, x.value) for x in input_set}
+                    models_and_input_sets += [
+                        tuple([model] + sorted(list(input_set), key=sorting_key.get))]
         # Filter for duplicates
         return set(models_and_input_sets)
 
-    async def derive_quantities(self, new_quantities, quantity_pool=None,
+    def derive_quantities(self, new_quantities, quantity_pool=None,
                                 allow_model_failure=True):
         """
         Algorithm for expanding quantity pool
@@ -724,32 +726,35 @@ class Graph(object):
         added_quantities = []
 
         # Evaluate model for each input set and add new valid quantities
-        tasks_to_run = (self._evaluate_model(model_and_input_set,
-                                             allow_failure=allow_model_failure)
-                        for model_and_input_set in models_and_input_sets)
+        # tasks_to_run = (self._evaluate_model(model_and_input_set,
+        #                                      allow_failure=allow_model_failure)
+        #                 for model_and_input_set in models_and_input_sets)
 
         # timer_name = 'num_quantities_derived: {}'.format(sum(len(v) for v in quantity_pool.values()))
-        results = await asyncio.gather(*tasks_to_run)
+        # results = await asyncio.gather(*tasks_to_run)
+        with Timer('model_evaluation'):
+            with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+                for result in executor.map(Graph._evaluate_model, models_and_input_sets, cycle([allow_model_failure])):
+                    added_quantities.extend(result)
 
-        added_quantities.extend(chain.from_iterable(results))
+        # added_quantities.extend(chain.from_iterable(results))
         return added_quantities, quantity_pool
 
     @staticmethod
-    async def _evaluate_model(model_and_input_set, allow_failure=True):
+    def _evaluate_model(model_and_input_set, allow_failure=True):
         model = model_and_input_set[0]
         inputs = model_and_input_set[1:]
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
 
         with Timer(model.name):
-            result = await model.evaluate(input_dict,
+            result = model.evaluate(input_dict,
                                           allow_failure=allow_failure)
         # TODO: Maybe provenance should be done in evaluate?
 
         success = result.pop('successful')
         if success:
-            noncyclic = filter(lambda x: not x.is_cyclic(), result.values())
-            out = list(noncyclic)
+            out = [v for v in result.values() if not v.is_cyclic()]
         else:
             logger.info("Model evaluation unsuccessful %s",
                         result['message'])
@@ -784,9 +789,12 @@ class Graph(object):
         # Loop util no new Quantity objects are derived.
         logger.debug("Beginning main loop with quantities %s", new_quantities)
         while new_quantities:
-            new_quantities, quantity_pool = asyncio.run(self.derive_quantities(
+#             new_quantities, quantity_pool = asyncio.run(self.derive_quantities(
+#                 new_quantities, quantity_pool,
+#                 allow_model_failure=allow_model_failure))
+            new_quantities, quantity_pool = self.derive_quantities(
                 new_quantities, quantity_pool,
-                allow_model_failure=allow_model_failure))
+                allow_model_failure=allow_model_failure)
 
         # store model evaluation statistics
         self._timings = timings
