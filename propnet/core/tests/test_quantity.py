@@ -9,7 +9,6 @@ import logging
 
 from pymatgen.util.testing import PymatgenTest
 from propnet.core.symbols import Symbol
-from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.core.exceptions import SymbolConstraintError
 from propnet.core.quantity import QuantityFactory, NumQuantity, ObjQuantity
 from propnet.core.materials import Material
@@ -17,6 +16,9 @@ from propnet.core.graph import Graph
 from propnet import ureg
 from propnet.core.provenance import ProvenanceElement
 from propnet.core.utils import LogSniffer
+
+import propnet.symbols
+from propnet.core.registry import Registry
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -586,7 +588,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.uncertainty, q.uncertainty)
         self.assertEqual(q_from.provenance, q.provenance)
 
-        q = QuantityFactory.create_quantity(DEFAULT_SYMBOLS['debye_temperature'],
+        q = QuantityFactory.create_quantity(Registry("symbols")['debye_temperature'],
                                             500, tags='experimental', uncertainty=10)
         d = q.as_dict()
 
@@ -648,7 +650,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.provenance, q.provenance)
 
-        q = QuantityFactory.create_quantity(DEFAULT_SYMBOLS['is_metallic'],
+        q = QuantityFactory.create_quantity(Registry("symbols")['is_metallic'],
                                             False, tags='dft')
         d = q.as_dict()
 
@@ -944,3 +946,6 @@ class QuantityTest(unittest.TestCase):
         q = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless', tags='custom')
         self.assertEqual(str(q), "<A, 1 dimensionless, ['custom']>")
         self.assertEqual(repr(q), "<A, 1 dimensionless, ['custom']>")
+
+if __name__ == "__main__":
+    unittest.main()
