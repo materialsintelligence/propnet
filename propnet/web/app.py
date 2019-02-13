@@ -11,6 +11,7 @@ from propnet.web.layouts_symbols import symbol_layout, symbols_index
 from propnet.web.layouts_plot import plot_layout
 from propnet.web.layouts_home import home_layout
 from propnet.web.layouts_interactive import interactive_layout
+from propnet.web.layouts_correlate import correlate_layout
 from propnet.web.layouts_explore import explore_layout
 
 from mp_dash_components import GraphComponent
@@ -47,6 +48,8 @@ layout_menu = html.Div(
               #html.Span(' • '),
               dcc.Link('Generate', href='/generate'),
               html.Span(' • '),
+              dcc.Link('Correlate', href='/correlate'),
+              html.Span(' • '),
               dcc.Link('Plot', href='/plot')
               ])
 # header
@@ -71,6 +74,7 @@ app.css.append_css(
     {'external_url': 'https://codepen.io/mikesmith1611/pen/QOKgpG.css'})
 
 PLOT_LAYOUT = plot_layout(app)
+CORRELATE_LAYOUT = correlate_layout(app)
 INTERACTIVE_LAYOUT = interactive_layout(app)
 EXPLORE_LAYOUT = explore_layout(app)
 
@@ -114,6 +118,8 @@ def display_page(pathname):
             return PLOT_LAYOUT
         elif path_info['mode'] == 'generate':
             return INTERACTIVE_LAYOUT
+        elif path_info['mode'] == 'correlate':
+            return CORRELATE_LAYOUT
         elif path_info['mode'] == 'home':
             return home_layout()
         else:
