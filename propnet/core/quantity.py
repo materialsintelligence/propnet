@@ -208,37 +208,21 @@ class BaseQuantity(ABC, MSONable):
         """
         pass
 
-    def is_cyclic(self, visited=None):
+    def is_cyclic(self):
         """
         Algorithm for determining if there are any cycles in
         the provenance tree, i. e. a repeated quantity in a
         tree branch
 
-        Args:
-            visited (list of visited model/symbols in the built tree
-                that allows for recursion
-
         Returns:
             (bool) whether or not there is a cycle in the quantity
                 provenance, i. e. repeated value in a tree branch
         """
-        if visited is None:
-            visited = set()
-        if self.symbol in visited:
-            return True
-        visited.add(self.symbol)
-        if self.provenance is None:
-            return False
-        # add distinct model hash to distinguish properties from models,
-        # e.g. pugh ratio
-        model_hash = "model_{}".format(self.provenance.model)
-        if model_hash in visited:
-            return True
-        visited.add(model_hash)
-        for p_input in self.provenance.inputs or []:
-            this_visited = visited.copy()
-            if p_input.is_cyclic(this_visited):
-                return True
+
+        if self.provenance and self.provenance.model:
+            return self.provenance.model_in_provenance_tree(self.provenance.model) or \
+                self.provenance.symbol_in_provenance_tree(self.symbol)
+
         return False
 
     def get_provenance_graph(self, start=None, filter_long_labels=True):

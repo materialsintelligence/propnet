@@ -61,6 +61,31 @@ class ProvenanceElement(MSONable):
     def source(self, rhv):
         self._source = rhv
 
+    def symbol_in_provenance_tree(self, symbol):
+        def rec_symbol_search(symbol_to_find, provenance):
+            for q in provenance.inputs or []:
+                if q.symbol == symbol_to_find:
+                    return True
+                elif rec_symbol_search(symbol_to_find, q.provenance):
+                    return True
+            return False
+
+        return rec_symbol_search(symbol, self)
+
+    def model_in_provenance_tree(self, model):
+        def rec_model_search(model_to_find, provenance):
+            if provenance.model and provenance.model == model_to_find:
+                return True
+            for q in provenance.inputs or []:
+                if rec_model_search(model_to_find, q.provenance):
+                    return True
+            return False
+
+        for q in self.inputs or []:
+            if rec_model_search(model, q.provenance):
+                return True
+        return False
+
     def __str__(self):
         pre = ",".join([
             "<{}, {}, {}>".format(q._symbol_type.name, q.value, q._provenance)
