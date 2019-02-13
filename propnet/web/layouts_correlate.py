@@ -37,15 +37,21 @@ correlation_funcs = store.query().distinct("correlation_func")
 
 
 def violin_plot(correlation_func="mic"):
+
     path_lengths = sorted(
         store.query().distinct("shortest_path_length"), key=lambda x: (x is None, x)
     )
-    properties = store.query().distinct("property_x")
 
     docs = store.query(
         criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
         properties=["property_x", "property_y", "shortest_path_length", "correlation"],
     )
+
+    all_correlations = [d['correlation'] for d in store.query(criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
+        properties=["correlation"])]
+    ymax = np.nanpercentile(all_correlations, 90)
+    ymin = np.nanpercentile(all_correlations, 10)
+
 
     points = {p: [] for p in path_lengths}
     for d in docs:
@@ -58,19 +64,22 @@ def violin_plot(correlation_func="mic"):
         points_p = points[p]
         trace = {
             "type": "violin",
-            "x": [p if isinstance(p, int) else 8]*len(points_p),
+            "x": [p if isinstance(p, int) else 8] * len(points_p),
             "y": [point[0] for point in points_p],
             "text": [point[1] for point in points_p],
             "name": str(p),
             "box": {"visible": True},
+            "points": "all",
             "meanline": {"visible": True},
+            "hoverinfo": "y+text+name"
         }
         data.append(trace)
 
     layout = {
         "title": f"Correlation between properties based on {correlation_func} score",
-        "yaxis": {"zeroline": False, "showgrid": False, "title": "Correlation score"},
-        "xaxis": {"showticklabels": False}
+        "yaxis": {"zeroline": False, "showgrid": False, "title": "Correlation score",
+                  "range": [ymin, ymax]},
+        "xaxis": {"showticklabels": False},
     }
 
     return go.Figure(data=data, layout=layout)
@@ -88,12 +97,12 @@ def correlate_layout(app):
     correlation_func_choice = dcc.Dropdown(
         id="correlation_func_choice",
         options=[{"label": f, "value": f} for f in correlation_funcs],
-        value='mic',
+        value="mic",
     )
 
     @app.callback(
-        Output('correlation_violin', 'figure'),
-        [Input('correlation_func_choice', 'value')]
+        Output("correlation_violin", "figure"),
+        [Input("correlation_func_choice", "value")],
     )
     def regenerate_figure_for_new_correlation_func(correlation_func):
         if not correlation_func:
