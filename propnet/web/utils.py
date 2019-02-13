@@ -164,6 +164,8 @@ def parse_path(pathname):
         mode = 'plot'
     elif pathname.startswith('/generate'):
         mode = 'generate'
+    elif pathname.startswith('/correlate'):
+        mode = 'correlate'
     elif pathname.startswith('/home'):
         mode = 'home'
 
