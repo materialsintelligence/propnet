@@ -23,8 +23,9 @@ for f in _DEFAULT_SYMBOL_TYPE_FILES:
         raise ValueError('Name/filename mismatch in {}'.format(f))
 
 # Stores all loaded properties' names in a tuple in the global scope.
-Registry("units").update({name: symbol.units
-                      for name, symbol in Registry("symbols").items()})
+DEFAULT_UNITS = {name: symbol.units.format_babel() if symbol.units else None
+                 for name, symbol in Registry("symbols").items()}
+DEFAULT_SYMBOL_TYPE_NAMES = tuple(Registry("symbols").keys())
 
 # This is just to enable importing this module
 for name, symbol in Registry("symbols").items():

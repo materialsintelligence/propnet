@@ -853,7 +853,8 @@ class NumQuantity(BaseQuantity):
 
         """
         if not (isinstance(lhs, ureg.Quantity) and isinstance(rhs, ureg.Quantity)):
-            raise TypeError("This method requires two pint Quantity objects")
+            raise TypeError("This method requires two pint Quantity objects. "
+                            "Received:\n{} == {}".format(type(lhs), type(rhs)))
 
         if lhs.units.dimensionality != rhs.units.dimensionality:
             return False

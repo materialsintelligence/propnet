@@ -19,6 +19,7 @@ from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
+from propnet import ureg
 
 # noinspection PyUnresolvedReferences
 import propnet.symbols
@@ -89,18 +90,19 @@ class Model(ABC):
 
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
-        self.symbol_property_map = {k: k for k in self.all_properties}
-        self.symbol_property_map.update(symbol_property_map or {})
+        self._symbol_property_map = {k: k for k in self.all_properties}
+        self._symbol_property_map.update(symbol_property_map or {})
 
         if scrub_units is not None or 'empirical' in self.categories:
-            self.unit_map = {prop_name: Registry("units").get(prop_name)
-                             for prop_name in self.all_properties}
+            self._unit_map = {prop_name: Registry("units").get(prop_name)
+                              for prop_name in self.all_properties}
             # Update with explicitly supplied units if specified
             if isinstance(scrub_units, dict):
-                self.unit_map.update(self.map_symbols_to_properties(scrub_units))
-            self.unit_map = self.map_properties_to_symbols(self.unit_map)
+                scrub_units = {k: ureg.Unit(v).format_babel() for k, v in scrub_units.items()}
+                self._unit_map.update(self.map_symbols_to_properties(scrub_units))
+            self._unit_map = self.map_properties_to_symbols(self._unit_map)
         else:
-            self.unit_map = {}
+            self._unit_map = {}
 
         # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
@@ -117,6 +119,14 @@ class Model(ABC):
             test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
                          for data in test_data]
         self._test_data = test_data
+
+    @property
+    def unit_map(self):
+        return {k: ureg.Unit(v) for k, v in self._unit_map.items()}
+
+    @property
+    def symbol_property_map(self):
+        return self._symbol_property_map
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
