@@ -7,7 +7,6 @@ import re
 import logging
 from abc import ABC, abstractmethod
 from itertools import chain
-import asyncio
 
 import six
 from monty.serialization import loadfn

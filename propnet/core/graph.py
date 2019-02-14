@@ -10,14 +10,15 @@ from pandas import DataFrame
 from collections import deque
 import asyncio
 import concurrent.futures
-from itertools import chain, cycle
+import pint
+import sys
 
 import networkx as nx
 
 from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
 from propnet.core.models import Model, CompositeModel
-from propnet.core.quantity import QuantityFactory
+from propnet.core.quantity import QuantityFactory, BaseQuantity
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import SymbolTree, TreeElement
 
@@ -104,6 +105,20 @@ class Graph(object):
             self.update_composite_models(Registry("composite_models"))
         else:
             self.update_composite_models(composite_models)
+
+        # Objects for asynchronous graph evaluation
+        self._evaluation_queue = None
+        self._quantity_analysis_queue = None
+        self._input_sets_being_processed = set()
+        self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=1, initializer=self._initialize_registry)
+        self._allow_model_failure = True
+
+    @staticmethod
+    def _initialize_registry():
+        ureg = pint.UnitRegistry()
+        ureg.define('atom = []')
+        ureg.define('Rydberg = 13.605693009 * eV = Ry')  # from CODATA 13.605 693 009(84) eV
+        ureg.define('USD = [currency]')
 
     def __str__(self):
         """
@@ -696,9 +711,7 @@ class Graph(object):
         # Filter for duplicates
         return set(models_and_input_sets)
 
-    '''
-    def derive_quantities(self, new_quantities, quantity_pool=None,
-                                allow_model_failure=True):
+    async def _derive_quantities(self, new_quantities, allow_model_failure=True):
         """
         Algorithm for expanding quantity pool
 
@@ -715,70 +728,28 @@ class Graph(object):
                 quantity pool
 
         """
-        # Update quantity pool
-        quantity_pool = quantity_pool or defaultdict(set)
-        for quantity in new_quantities:
-            quantity_pool[quantity.symbol].add(quantity)
-
-        # Generate all of the models and input sets to be evaluated
-        logger.info("Generating models and input sets for %s", new_quantities)
-        models_and_input_sets = self.generate_models_and_input_sets(
-            new_quantities, quantity_pool)
-        added_quantities = []
-
-        # Evaluate model for each input set and add new valid quantities
-        # tasks_to_run = (self._evaluate_model(model_and_input_set,
-        #                                      allow_failure=allow_model_failure)
-        #                 for model_and_input_set in models_and_input_sets)
-
-        # timer_name = 'num_quantities_derived: {}'.format(sum(len(v) for v in quantity_pool.values()))
-        # results = await asyncio.gather(*tasks_to_run)
-        with Timer('model_evaluation'):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                for result in executor.map(Graph._evaluate_model, models_and_input_sets, cycle([allow_model_failure])):
-                    added_quantities.extend(result)
-
-        # added_quantities.extend(chain.from_iterable(results))
-        return added_quantities, quantity_pool
-    '''
-
-    async def derive_quantities(self, new_quantities, allow_model_failure=True):
-        """
-        Algorithm for expanding quantity pool
-
-        Args:
-            new_quantities ([Quantity]): list of quantities which to
-                consider as new inputs to models
-            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
-                keyed by symbol from which to draw additional quantities
-                for model inputs
-
-        Returns:
-            additional_quantities ([Quantity]): new derived quantities
-            quantity_pool ({symbol: {Quantity}}): augmented version of
-                quantity pool
-
-        """
-
-        quantity_analysis_queue = asyncio.Queue()
-        evaluation_queue = asyncio.Queue()
-        futures_queue = asyncio.Queue()
-
+        event_loop = asyncio.get_running_loop()
+        self._evaluation_queue = asyncio.Queue()
+        self._quantity_analysis_queue = asyncio.Queue()
+        self._allow_model_failure = allow_model_failure
         for q in new_quantities:
-            await quantity_analysis_queue.put(q)
+            self._quantity_analysis_queue.put_nowait(q.as_dict())
 
-        analysis_future = asyncio.create_task(self._analyze_quantities(quantity_analysis_queue,
-                                                                       evaluation_queue))
+        analysis_future = event_loop.create_task(self._analyze_quantities())
 
-        pool = asyncio.gather(analysis_future)
+        pool = await asyncio.gather(analysis_future, loop=event_loop)
+        self._evaluation_queue = None
+        self._quantity_analysis_queue = None
+        return pool[0]
 
-        return pool
-
-    async def _analyze_quantities(self, analysis_queue, evaluation_queue):
+    async def _analyze_quantities(self):
         pool = defaultdict(set)
+        event_loop = asyncio.get_running_loop()
+        distributor_future = event_loop.create_task(self._assign_input_sets_to_workers())
 
         while True:
-            q = await analysis_queue.get()
+            d = await self._quantity_analysis_queue.get()
+            q = QuantityFactory.from_dict(d)
             input_sets = self.generate_models_and_input_sets([q], pool)
             input_sets_to_queue = []
             for input_set in input_sets:
@@ -787,33 +758,51 @@ class Graph(object):
 
             pool[q.symbol].add(q)
 
-            if not input_sets_to_queue and analysis_queue.empty() and \
-                    evaluation_queue.empty():
+            if not input_sets_to_queue and self._quantity_analysis_queue.empty() and \
+                    self._evaluation_queue.empty() and \
+                    len(self._input_sets_being_processed) == 0:
+                distributor_future.cancel()
                 return pool
 
             for input_set in input_sets_to_queue:
-                await evaluation_queue.put(input_set)
+                self._evaluation_queue.put_nowait(input_set)
 
-    async def _assign_input_sets_to_workers(self, evaluation_queue, in_process_queue):
-        executor = concurrent.futures.ProcessPoolExecutor(max_workers=4)
+            self._quantity_analysis_queue.task_done()
+
+    async def _assign_input_sets_to_workers(self):
+        event_loop = asyncio.get_running_loop()
         while True:
-            input_set = await evaluation_queue.get()
-            future = executor.submit(self._evaluate_model, input_set)
-            yield future, input_set
-            await in_process_queue.put((future, input_set))
-            evaluation_queue.task_done()
+            input_set = await self._evaluation_queue.get()
+            serialized_input_set = (input_set[0].name, [v.as_dict() for v in input_set[1:]])
+            future = event_loop.run_in_executor(self._executor, self._evaluate_model, serialized_input_set)
+            # future = event_loop.create_task(self._evaluate_model_async(serialized_input_set))
+            self._input_sets_being_processed.add(future)
+            future.add_done_callback(self._parallel_job_done)
+            self._evaluation_queue.task_done()
 
-    async def _get_new_quantities(self):
-
+    def _parallel_job_done(self, future):
+        try:
+            new_qs = future.result()
+            for q in new_qs:
+                self._quantity_analysis_queue.put_nowait(q)
+        except Exception as ex:
+            if not self._allow_model_failure:
+                raise ex
+        finally:
+            try:
+                self._input_sets_being_processed.remove(future)
+            except KeyError:
+                pass
 
     @staticmethod
     async def _generates_noncyclic_output(input_set):
         model = input_set[0]
         inputs = input_set[1:]
+        input_symbols = set(v.symbol for v in inputs)
         outputs = set()
         for s in model.connections:
-            if set(s['inputs']) == set(inputs):
-                outputs = outputs.union(s['outputs'])
+            if set(model.map_symbols_to_properties(s['inputs'])) == input_symbols:
+                outputs = outputs.union(model.map_symbols_to_properties(s['outputs']))
 
         model_in_all_trees = all(input_q.provenance.model_in_provenance_tree(model)
                                  for input_q in inputs)
@@ -825,25 +814,35 @@ class Graph(object):
         return not (model_in_all_trees and symbol_in_all_trees)
 
     @staticmethod
-    async def _evaluate_model(model_and_input_set, allow_failure=True):
-        model = model_and_input_set[0]
-        inputs = model_and_input_set[1:]
+    async def _evaluate_model_async(*args, **kwargs):
+        Graph._evaluate_model(*args, **kwargs)
+
+    @staticmethod
+    def _evaluate_model(model_and_input_set, allow_failure=True):
+        return []
+        '''
+        model, serialized_inputs = model_and_input_set
+        inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
+        print('I am about to evaluate {}'.format(model))
+        sys.stdout.flush()
 
         with Timer(model.name):
             result = model.evaluate(input_dict,
                                     allow_failure=allow_failure)
         # TODO: Maybe provenance should be done in evaluate?
-
+        print('I evaluated')
+        sys.stdout.flush()
         success = result.pop('successful')
         if success:
-            out = [v for v in result.values() if not v.is_cyclic()]
+            out = [v.as_dict() for v in result.values() if not v.is_cyclic()]
         else:
             logger.info("Model evaluation unsuccessful %s",
                         result['message'])
             out = []
         return out
+        '''
 
     def evaluate(self, material, allow_model_failure=True):
         """
@@ -881,7 +880,7 @@ class Graph(object):
                 allow_model_failure=allow_model_failure)
         '''
 
-        quantity_pool = asyncio.run(self.derive_quantities(input_quantities))
+        quantity_pool = asyncio.run(self._derive_quantities(input_quantities))
 
         # store model evaluation statistics
         self._timings = timings
