@@ -246,6 +246,10 @@ class Model(ABC):
             model=self.name, inputs=list(input_symbol_quantity_dict.values()),
             source="propnet")
 
+        # DEBUG
+        if not all(isinstance(v.value, ureg.Quantity) for v in provenance.inputs):
+            raise TypeError("what the heck man")
+
         out = self.map_symbols_to_properties(out)
         unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
         for symbol, value in out.items():
@@ -260,7 +264,9 @@ class Model(ABC):
                             "message": errmsg}
                 else:
                     raise err
-
+            # DEBUG
+            if not all(isinstance(v.value, ureg.Quantity) for v in quantity.provenance.inputs):
+                raise TypeError("what the heck man")
             if quantity.contains_nan_value():
                 return {"successful": False,
                         "message": "Evaluation returned invalid values (NaN)"}

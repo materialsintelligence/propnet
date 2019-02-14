@@ -105,6 +105,13 @@ class ProvenanceElement(MSONable):
             hash_value = hash_value ^ hash(v)
         return hash_value
 
+    def as_dict(self):
+        d = super().as_dict()
+        if self.inputs is not None:
+            inputs = [item.as_dict() for item in self.inputs]
+            d['inputs'] = inputs
+        return d
+
 
 class SymbolTree(object):
     """

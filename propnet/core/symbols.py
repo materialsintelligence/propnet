@@ -149,12 +149,21 @@ class Symbol(MSONable):
         #       a class to evaluate them using either sympy or a custom func
         # Note that symbol constraints are not constraint objects
         # at the moment because using them would result in a circular
-        # dependence, this might be resolved with some reorganization
-        if constraint:
-            expr = parse_expr(constraint)
-            self.constraint = sp.lambdify(self.name, expr)
-        else:
-            self.constraint = None
+
+        if constraint is not None:
+            try:
+                func = sp.lambdify(self.name, parse_expr(constraint))
+                func(0)
+            except Exception:
+                raise ValueError("Constraint expression invalid: {}".format(constraint))
+
+        self._constraint = constraint
+
+    @property
+    def constraint(self):
+        if self._constraint:
+            return sp.lambdify(self.name, parse_expr(self._constraint))
+        return None
 
     @property
     def units(self):
