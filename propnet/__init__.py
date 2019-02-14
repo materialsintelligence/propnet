@@ -12,7 +12,8 @@ print_logger = logging.getLogger(__name__ + "_print_log")
 # TODO: just move this to the web view ...
 log_stream = StringIO()
 log_handler = logging.StreamHandler(stream=log_stream)
-log_handler.setLevel(logging.WARNING)
+# log_handler.setLevel(logging.WARNING)
+log_handler.setLevel(logging.DEBUG)
 logger.addHandler(log_handler)
 
 # make sure we see our log messages in Jupyter too
@@ -33,7 +34,6 @@ logger.warning("Propnet is not intended for public use at this time. "
 
 # module-wide unit registry
 ureg = UnitRegistry()
-
 # add atoms as a unit-less quantity to our unit registry, e.g. for eV/atom
 ureg.define('atom = []')
 ureg.define('Rydberg = 13.605693009 * eV = Ry')  # from CODATA 13.605 693 009(84) eV
