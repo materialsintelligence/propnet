@@ -1,5 +1,6 @@
 import numpy as np
 from monty.json import MSONable
+from monty.serialization import MontyDecoder
 from datetime import datetime
 import sys
 
@@ -8,7 +9,7 @@ import networkx as nx
 from abc import ABC, abstractmethod
 
 from propnet import ureg
-from pint import DimensionalityError
+from pint import DimensionalityError, UnitRegistry
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
 
@@ -290,7 +291,18 @@ class BaseQuantity(ABC, MSONable):
 
         return {"symbol_type": symbol,
                 "provenance": self.provenance.as_dict() if self.provenance else None,
-                "tags": self.tags}
+                "tags": self.tags,
+                "internal_id": self._internal_id}
+
+    @classmethod
+    def from_dict(cls, d):
+        decoded = {k: MontyDecoder().process_decoded(v) for k, v in d.items() if not k.startswith('@')}
+        internal_id = decoded.pop('internal_id')
+        value = decoded.pop('value')
+        symbol_type = decoded.pop('symbol_type')
+        q = cls(symbol_type, value, **decoded)
+        q._internal_id = internal_id
+        return q
 
     @abstractmethod
     def contains_nan_value(self):
@@ -462,7 +474,7 @@ class NumQuantity(BaseQuantity):
         units = units or symbol_type.units
 
         if isinstance(value, self._ACCEPTABLE_DTYPES):
-            value_in = ureg.Quantity(np.asscalar(value), units)
+            value_in = ureg.Quantity(value.item(), units)
         elif isinstance(value, ureg.Quantity):
             value_in = value.to(units)
         elif self.is_acceptable_type(value):
@@ -476,7 +488,7 @@ class NumQuantity(BaseQuantity):
 
         if uncertainty is not None:
             if isinstance(uncertainty, self._ACCEPTABLE_DTYPES):
-                self._uncertainty = ureg.Quantity(np.asscalar(uncertainty), units)
+                self._uncertainty = ureg.Quantity(uncertainty.item(), units)
             elif isinstance(uncertainty, ureg.Quantity):
                 self._uncertainty = uncertainty.to(units)
             elif isinstance(uncertainty, NumQuantity):
