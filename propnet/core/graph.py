@@ -109,7 +109,7 @@ class Graph(object):
         self._quantity_analysis_queue = None
         self._processing_queue = None
         self._input_sets_being_processed = set()
-        self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=1, initializer=self._initialize_registry)
+        self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=4, initializer=self._initialize_registry)
         self._allow_model_failure = True
 
     @staticmethod
@@ -749,8 +749,11 @@ class Graph(object):
         distributor_future = event_loop.create_task(self._assign_input_sets_to_workers())
 
         while True:
-            d = await self._quantity_analysis_queue.get()
-            q = QuantityFactory.from_dict(d)
+            calc_result = await self._quantity_analysis_queue.get()
+            if isinstance(calc_result, str) and calc_result == 'Done':
+                distributor_future.cancel()
+                return pool
+            q = QuantityFactory.from_dict(calc_result)
             input_sets = self.generate_models_and_input_sets([q], pool)
             input_sets_to_queue = []
             for input_set in input_sets:
@@ -759,16 +762,10 @@ class Graph(object):
 
             pool[q.symbol].add(q)
 
-            print('New input sets?: {}'.format(len(input_sets_to_queue)))
-            print('New quantities to process: {}'.format(self._quantity_analysis_queue.qsize()))
-            print('Input sets queued for calculation: {}'.format(self._evaluation_queue.qsize()))
-            print('There are {} calculations processing'.format(len(self._input_sets_being_processed)))
-
             if not input_sets_to_queue and self._quantity_analysis_queue.empty() and \
                     self._evaluation_queue.empty() and \
                     len(self._input_sets_being_processed) == 0:
                 distributor_future.cancel()
-                # monitor_future.cancel()
                 return pool
 
             for input_set in input_sets_to_queue:
@@ -806,8 +803,7 @@ class Graph(object):
         if self._quantity_analysis_queue.empty() and \
                 self._evaluation_queue.empty() and \
                 len(self._input_sets_being_processed) == 0:
-            print('Pretty sure we are done')
-            sys.stdout.flush()
+            self._quantity_analysis_queue.put_nowait('Done')
 
     @staticmethod
     async def _generates_noncyclic_output(input_set):
