@@ -95,14 +95,15 @@ class Symbol(MSONable):
                     "Shape provided for ({}) is invalid.".format(name))
 
             if units is None:
-                units = 'dimensionless'
-
-            logger.info("Units parsed from a string format automatically, "
-                        "do these look correct? %s", units)
-            if isinstance(units, six.string_types):
+                units = 1 * ureg.dimensionless
+            elif isinstance(units, six.string_types):
                 units = 1 * ureg.parse_expression(units)
-            else:
+            elif isinstance(units, tuple):
                 units = ureg.Quantity.from_tuple(units)
+            else:
+                raise TypeError("Cannot parse unit format: {}".format(type(units)))
+
+            units = units.units.format_babel()
         else:
             if units is not None:
                 raise ValueError("Cannot define units for generic objects.")
@@ -130,7 +131,7 @@ class Symbol(MSONable):
 
         self.name = name
         self.category = category
-        self.units = units
+        self._units = units
         self.display_names = display_names
         self.display_symbols = display_symbols
         # If a user enters [1] or [1, 1, ...] for shape, treat as a scalar
@@ -143,8 +144,6 @@ class Symbol(MSONable):
         self.comment = comment
         self.default_value = default_value
 
-
-
         # TODO: This should explicity deal with only numerical symbols
         #       because it uses sympy to evaluate them until we make
         #       a class to evaluate them using either sympy or a custom func
@@ -156,6 +155,10 @@ class Symbol(MSONable):
             self.constraint = sp.lambdify(self.name, expr)
         else:
             self.constraint = None
+
+    @property
+    def units(self):
+        return ureg.Unit(self._units) if self._units else None
 
     @property
     def object_class(self):
@@ -276,6 +279,6 @@ class Symbol(MSONable):
     def as_dict(self):
         d = super().as_dict()
         if self.units:
-            d['units'] = d['units'].to_tuple()
+            d['units'] = (1 * d['units']).to_tuple()
 
         return d

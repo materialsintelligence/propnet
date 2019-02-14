@@ -25,7 +25,7 @@ for f in _DEFAULT_SYMBOL_TYPE_FILES:
         raise ValueError('Name/filename mismatch in {}'.format(f))
 
 # Stores all loaded properties' names in a tuple in the global scope.
-DEFAULT_UNITS = {name: symbol.units
+DEFAULT_UNITS = {name: symbol.units.format_babel() if symbol.units else None
                  for name, symbol in DEFAULT_SYMBOLS.items()}
 DEFAULT_SYMBOL_TYPE_NAMES = tuple(DEFAULT_SYMBOLS.keys())
 

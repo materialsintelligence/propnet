@@ -107,7 +107,7 @@ class Graph(object):
         # Objects for asynchronous graph evaluation
         self._evaluation_queue = None
         self._quantity_analysis_queue = None
-        self._processing_queue = None
+        self._finished_queue = None
         self._input_sets_being_processed = set()
         self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=4, initializer=self._initialize_registry)
         self._allow_model_failure = True
@@ -710,7 +710,7 @@ class Graph(object):
         # Filter for duplicates
         return set(models_and_input_sets)
 
-    async def _derive_quantities(self, new_quantities, allow_model_failure=True):
+    async def _start_async_evaluation(self, new_quantities, allow_model_failure=True):
         """
         Algorithm for expanding quantity pool
 
@@ -730,7 +730,7 @@ class Graph(object):
         event_loop = asyncio.get_running_loop()
         self._evaluation_queue = asyncio.Queue()
         self._quantity_analysis_queue = asyncio.Queue()
-        self._processing_queue = asyncio.Queue()
+        self._finished_queue = asyncio.Queue()
         self._allow_model_failure = allow_model_failure
         for q in new_quantities:
             self._quantity_analysis_queue.put_nowait(q.as_dict())
@@ -745,15 +745,16 @@ class Graph(object):
     async def _analyze_quantities(self):
         pool = defaultdict(set)
         event_loop = asyncio.get_running_loop()
-        # monitor_future = event_loop.create_task(self._monitor_parallel_jobs())
+        finished_future = event_loop.create_task(self._parallel_job_done())
         distributor_future = event_loop.create_task(self._assign_input_sets_to_workers())
 
         while True:
-            calc_result = await self._quantity_analysis_queue.get()
-            if isinstance(calc_result, str) and calc_result == 'Done':
+            item = await self._quantity_analysis_queue.get()
+            if isinstance(item, str) and item == 'Done':
                 distributor_future.cancel()
+                finished_future.cancel()
                 return pool
-            q = QuantityFactory.from_dict(calc_result)
+            q = QuantityFactory.from_dict(item)
             input_sets = self.generate_models_and_input_sets([q], pool)
             input_sets_to_queue = []
             for input_set in input_sets:
@@ -762,48 +763,55 @@ class Graph(object):
 
             pool[q.symbol].add(q)
 
-            if not input_sets_to_queue and self._quantity_analysis_queue.empty() and \
-                    self._evaluation_queue.empty() and \
-                    len(self._input_sets_being_processed) == 0:
-                distributor_future.cancel()
-                return pool
-
             for input_set in input_sets_to_queue:
                 self._evaluation_queue.put_nowait(input_set)
 
             self._quantity_analysis_queue.task_done()
 
+            if not input_sets_to_queue and self._quantity_analysis_queue.empty() and \
+                    self._evaluation_queue.empty() and \
+                    len(self._input_sets_being_processed) == 0:
+                distributor_future.cancel()
+                finished_future.cancel()
+                return pool
+
     async def _assign_input_sets_to_workers(self):
         event_loop = asyncio.get_running_loop()
         while True:
             input_set = await self._evaluation_queue.get()
-            serialized_input_set = (input_set[0].name, [v.as_dict() for v in input_set[1:]])
-            future = event_loop.run_in_executor(self._executor, self._evaluate_model, serialized_input_set)
+            model = input_set[0]
+            serialized_inputs = [v.as_dict() for v in input_set[1:]]
+            serialized_input_set = (model, serialized_inputs)
+            future: asyncio.Future = event_loop.run_in_executor(self._executor,
+                                                                self._evaluate_model,
+                                                                serialized_input_set)
             # future = event_loop.create_task(self._evaluate_model_async(serialized_input_set))
             with Lock():
                 self._input_sets_being_processed.add(future)
-            # self._processing_queue.put_nowait(future)
-            future.add_done_callback(self._parallel_job_done)
+            future.add_done_callback(self._finished_queue.put_nowait)
             self._evaluation_queue.task_done()
 
-    def _parallel_job_done(self, future):
-        # Maybe have another thread watch a generator for these futures
-        # and remove them from the set when they are done
-        try:
-            new_qs = future.result()
-            for q in new_qs:
-                self._quantity_analysis_queue.put_nowait(q)
-        except Exception as ex:
-            if not self._allow_model_failure:
-                raise ex
-        finally:
-            with Lock():
-                self._input_sets_being_processed.remove(future)
+    async def _parallel_job_done(self):
+        while True:
+            future = await self._finished_queue.get()
+            try:
+                new_qs = future.result()
+                for q in new_qs:
+                    self._quantity_analysis_queue.put_nowait(q)
+            except Exception as ex:
+                if not self._allow_model_failure:
+                    raise ex
+            finally:
+                with Lock():
+                    self._input_sets_being_processed.remove(future)
 
-        if self._quantity_analysis_queue.empty() and \
-                self._evaluation_queue.empty() and \
-                len(self._input_sets_being_processed) == 0:
-            self._quantity_analysis_queue.put_nowait('Done')
+            self._finished_queue.task_done()
+
+            if self._quantity_analysis_queue.empty() and \
+                    self._evaluation_queue.empty() and \
+                    self._finished_queue.empty() and \
+                    len(self._input_sets_being_processed) == 0:
+                self._quantity_analysis_queue.put_nowait('Done')
 
     @staticmethod
     async def _generates_noncyclic_output(input_set):
@@ -830,8 +838,7 @@ class Graph(object):
 
     @staticmethod
     def _evaluate_model(model_and_input_set, allow_failure=True):
-        serialized_model, serialized_inputs = model_and_input_set
-        model = DEFAULT_MODEL_DICT[serialized_model]
+        model, serialized_inputs = model_and_input_set
         inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
@@ -887,7 +894,7 @@ class Graph(object):
                 allow_model_failure=allow_model_failure)
         '''
 
-        quantity_pool = asyncio.run(self._derive_quantities(input_quantities))
+        quantity_pool = self.derive_quantities(input_quantities)
 
         # store model evaluation statistics
         self._timings = timings
@@ -895,6 +902,9 @@ class Graph(object):
         new_material = Material()
         new_material._symbol_to_quantity = quantity_pool
         return new_material
+
+    def derive_quantities(self, input_quantities):
+        return asyncio.run(self._start_async_evaluation(input_quantities))
 
     def super_evaluate(self, material, allow_model_failure=True):
         """
