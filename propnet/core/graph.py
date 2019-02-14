@@ -758,6 +758,11 @@ class Graph(object):
 
             pool[q.symbol].add(q)
 
+            print(not input_sets_to_queue)
+            print(self._quantity_analysis_queue.empty())
+            print(self._evaluation_queue.empty())
+            print(len(self._input_sets_being_processed))
+
             if not input_sets_to_queue and self._quantity_analysis_queue.empty() and \
                     self._evaluation_queue.empty() and \
                     len(self._input_sets_being_processed) == 0:
@@ -781,6 +786,12 @@ class Graph(object):
             self._evaluation_queue.task_done()
 
     def _parallel_job_done(self, future):
+        # Maybe have another thread watch a generator for these futures
+        # and remove them from the set when they are done
+        try:
+            self._input_sets_being_processed.remove(future)
+        except KeyError:
+            asyncio.sleep(0.5)
         try:
             new_qs = future.result()
             for q in new_qs:
@@ -788,11 +799,6 @@ class Graph(object):
         except Exception as ex:
             if not self._allow_model_failure:
                 raise ex
-        finally:
-            try:
-                self._input_sets_being_processed.remove(future)
-            except KeyError:
-                pass
 
     @staticmethod
     async def _generates_noncyclic_output(input_set):
@@ -819,20 +825,17 @@ class Graph(object):
 
     @staticmethod
     def _evaluate_model(model_and_input_set, allow_failure=True):
-        return []
-        '''
-        model, serialized_inputs = model_and_input_set
+        serialized_model, serialized_inputs = model_and_input_set
+        model = DEFAULT_MODEL_DICT[serialized_model]
         inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
-        print('I am about to evaluate {}'.format(model))
         sys.stdout.flush()
 
         with Timer(model.name):
             result = model.evaluate(input_dict,
                                     allow_failure=allow_failure)
         # TODO: Maybe provenance should be done in evaluate?
-        print('I evaluated')
         sys.stdout.flush()
         success = result.pop('successful')
         if success:
@@ -842,7 +845,6 @@ class Graph(object):
                         result['message'])
             out = []
         return out
-        '''
 
     def evaluate(self, material, allow_model_failure=True):
         """
