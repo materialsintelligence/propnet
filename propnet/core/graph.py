@@ -5,12 +5,12 @@ Module containing classes and methods for graph functionality in Propnet code.
 import logging
 from collections import defaultdict
 from itertools import product
-from chronic import Timer, timings, clear
+from chronic import Timer, timings
 from pandas import DataFrame
 from collections import deque
 import asyncio
 import concurrent.futures
-import pint
+from multiprocessing import cpu_count
 import sys
 from threading import Lock
 
@@ -19,12 +19,11 @@ import networkx as nx
 from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
 from propnet.core.models import Model, CompositeModel
-from propnet.core.quantity import QuantityFactory, BaseQuantity
+from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.models import DEFAULT_MODEL_DICT
 from propnet.symbols import Symbol, DEFAULT_SYMBOLS
-from propnet import ureg
 
 from typing import Set, Dict, Union
 
@@ -91,7 +90,7 @@ class Graph(object):
         self._composite_models = dict()
         self._input_to_model = defaultdict(set)
         self._output_to_model = defaultdict(set)
-        self._timings = None                        # type:Dict[,]
+        self._timings = None
 
         if symbol_types:
             self.update_symbol_types(symbol_types)
@@ -115,8 +114,14 @@ class Graph(object):
             if max_workers is not None:
                 raise ValueError('Cannot specify max_workers with serial=True')
             self._executor = None
+            self._max_workers = 0
         else:
             self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
+            if max_workers is None:
+                self._max_workers = cpu_count()
+            else:
+                self._max_workers = max_workers
+
         self._allow_model_failure = True
 
     def __del__(self):
@@ -751,96 +756,105 @@ class Graph(object):
             self._analysis_queue.put_nowait(q)
 
         while True:
-            q = await self._analysis_queue.get()
-            if isinstance(q, str) and q == 'Done':
+            with Timer('waiting_for_new_qs'):
+                q = await self._analysis_queue.get()
+            with Timer('processing_new_qs'):
+                if isinstance(q, str) and q == 'Done':
+                    self._analysis_queue.task_done()
+                    self._evaluation_queue.put_nowait('Done')
+                    self._finished_queue.put_nowait('Done')
+                    return pool
+                input_sets = self.generate_models_and_input_sets([q], pool)
+                input_sets_to_queue = []
+                for input_set in input_sets:
+                    if self._generates_noncyclic_output(input_set):
+                        input_sets_to_queue.append(input_set)
+
+                pool[q.symbol].add(q)
+
+                for input_set in input_sets_to_queue:
+                    self._evaluation_queue.put_nowait(input_set)
+
                 self._analysis_queue.task_done()
-                self._evaluation_queue.put_nowait('Done')
-                self._finished_queue.put_nowait('Done')
-                return pool
-            input_sets = self.generate_models_and_input_sets([q], pool)
-            input_sets_to_queue = []
-            for input_set in input_sets:
-                if await self._generates_noncyclic_output(input_set):
-                    input_sets_to_queue.append(input_set)
 
-            pool[q.symbol].add(q)
-
-            for input_set in input_sets_to_queue:
-                self._evaluation_queue.put_nowait(input_set)
-
-            self._analysis_queue.task_done()
-
-            if not input_sets_to_queue and self._analysis_queue.empty() and \
-                    self._evaluation_queue.empty() and \
-                    len(self._input_sets_being_processed) == 0:
-                self._evaluation_queue.put_nowait('Done')
-                self._finished_queue.put_nowait('Done')
-                return pool
+                if not input_sets_to_queue and self._analysis_queue.empty() and \
+                        self._evaluation_queue.empty() and \
+                        len(self._input_sets_being_processed) == 0:
+                    self._evaluation_queue.put_nowait('Done')
+                    self._finished_queue.put_nowait('Done')
+                    return pool
 
     async def _assign_input_sets_to_workers(self):
         event_loop = asyncio.get_running_loop()
         while True:
-            input_set = await self._evaluation_queue.get()
-            if isinstance(input_set, str) and input_set == 'Done':
+            with Timer('waiting_for_new_input_sets'):
+                input_set = await self._evaluation_queue.get()
+            with Timer('processing_new_input_sets'):
+                if isinstance(input_set, str) and input_set == 'Done':
+                    self._evaluation_queue.task_done()
+                    return
+                model = input_set[0]
+                serialized_inputs = [v.as_dict() for v in input_set[1:]]
+                serialized_input_set = (model, serialized_inputs)
+                with Lock():
+                    self._input_sets_being_processed.add(serialized_input_set)
+                if self._executor:
+                    # Run in parallel
+                    future: asyncio.Future = event_loop.run_in_executor(self._executor,
+                                                              self._evaluate_model,
+                                                              serialized_input_set)
+
+                else:
+                    # Run serially asynchronously
+                    future: asyncio.Future = event_loop.create_task(self._evaluate_model_async(serialized_input_set))
+
+                future.add_done_callback(self._finished_queue.put_nowait)
                 self._evaluation_queue.task_done()
-                return
-            model = input_set[0]
-            serialized_inputs = [v.as_dict() for v in input_set[1:]]
-            serialized_input_set = (model, serialized_inputs)
-            if self._executor:
-                # Run in parallel
-                future: asyncio.Future = event_loop.run_in_executor(self._executor,
-                                                                    self._evaluate_model,
-                                                                    serialized_input_set)
-            else:
-                # Run serially asynchronously
-                future: asyncio.Future = event_loop.create_task(self._evaluate_model_async(serialized_input_set))
-            with Lock():
-                self._input_sets_being_processed.add(future)
-            future.add_done_callback(self._finished_queue.put_nowait)
-            self._evaluation_queue.task_done()
 
     async def _parallel_job_done(self):
         while True:
-            future = await self._finished_queue.get()
-            if isinstance(future, str) and future == 'Done':
+            with Timer('waiting_for_finished_calcs'):
+                future = await self._finished_queue.get()
+            with Timer('processing_finished_calcs'):
+                if isinstance(future, str) and future == 'Done':
+                    self._finished_queue.task_done()
+                    return
+                try:
+                    new_qs = future.result()
+                    for q in new_qs:
+                        self._analysis_queue.put_nowait(QuantityFactory.from_dict(q))
+                except Exception as ex:
+                    if not self._allow_model_failure:
+                        raise ex
+                finally:
+                    with Lock():
+                        self._input_sets_being_processed.remove(future)
+
                 self._finished_queue.task_done()
-                return
-            try:
-                new_qs = future.result()
-                for q in new_qs:
-                    self._analysis_queue.put_nowait(QuantityFactory.from_dict(q))
-            except Exception as ex:
-                if not self._allow_model_failure:
-                    raise ex
-            finally:
-                with Lock():
-                    self._input_sets_being_processed.remove(future)
 
-            self._finished_queue.task_done()
-
-            if self._analysis_queue.empty() and \
-                    self._evaluation_queue.empty() and \
-                    self._finished_queue.empty() and \
-                    len(self._input_sets_being_processed) == 0:
-                self._analysis_queue.put_nowait('Done')
+                if self._analysis_queue.empty() and \
+                        self._evaluation_queue.empty() and \
+                        self._finished_queue.empty() and \
+                        len(self._input_sets_being_processed) == 0:
+                    self._analysis_queue.put_nowait('Done')
 
     @staticmethod
-    async def _generates_noncyclic_output(input_set):
-        model = input_set[0]
-        inputs = input_set[1:]
-        input_symbols = set(v.symbol for v in inputs)
-        outputs = set()
-        for s in model.connections:
-            if set(model.map_symbols_to_properties(s['inputs'])) == input_symbols:
-                outputs = outputs.union(model.map_symbols_to_properties(s['outputs']))
+    def _generates_noncyclic_output(input_set):
+        with Timer('test_cyclic'):
+            model = input_set[0]
+            inputs = input_set[1:]
+            input_symbols = set(v.symbol for v in inputs)
+            outputs = set()
+            for s in model.connections:
+                if set(model.map_symbols_to_properties(s['inputs'])) == input_symbols:
+                    outputs = outputs.union(model.map_symbols_to_properties(s['outputs']))
 
-        model_in_all_trees = all(input_q.provenance.model_in_provenance_tree(model)
-                                 for input_q in inputs)
+            model_in_all_trees = all(input_q.provenance.model_in_provenance_tree(model)
+                                     for input_q in inputs)
 
-        symbol_in_all_trees = all(all(input_q.provenance.symbol_in_provenance_tree(output)
-                                      for input_q in inputs)
-                                  for output in outputs)
+            symbol_in_all_trees = all(all(input_q.provenance.symbol_in_provenance_tree(output)
+                                          for input_q in inputs)
+                                      for output in outputs)
 
         return not (model_in_all_trees and symbol_in_all_trees)
 
@@ -850,28 +864,27 @@ class Graph(object):
 
     @staticmethod
     def _evaluate_model(model_and_input_set, allow_failure=True):
-        model, serialized_inputs = model_and_input_set
-        inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
-        input_dict = {q.symbol: q for q in inputs}
-        logger.info('Evaluating %s with input %s', model, input_dict)
-        sys.stdout.flush()
+        with Timer('model_evaluation_overhead'):
+            model, serialized_inputs = model_and_input_set
+            inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
+            input_dict = {q.symbol: q for q in inputs}
+            logger.info('Evaluating %s with input %s', model, input_dict)
+            sys.stdout.flush()
 
         with Timer(model.name):
-            try:
-                result = model.evaluate(input_dict,
-                                        allow_failure=allow_failure)
-            except Exception as ex:
-                raise ex
+            result = model.evaluate(input_dict,
+                                    allow_failure=allow_failure)
         # TODO: Maybe provenance should be done in evaluate?
 
-        success = result.pop('successful')
-        if success:
-            out = [v.as_dict() for v in result.values() if not v.is_cyclic()]
-        else:
-            logger.info("Model evaluation unsuccessful %s",
-                        result['message'])
-            out = []
-        return out
+        with Timer('model_evaluation_overhead'):
+            success = result.pop('successful')
+            if success:
+                out = [v.as_dict() for v in result.values() if not v.is_cyclic()]
+            else:
+                logger.info("Model evaluation unsuccessful %s",
+                            result['message'])
+                out = []
+            return out
 
     def evaluate(self, material, allow_model_failure=True):
         """
@@ -892,9 +905,6 @@ class Graph(object):
 
         # Generate initial quantity set and pool
         input_quantities = material.get_quantities()
-
-        # clear existing model evaluation statistics
-        clear()
 
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
