@@ -3,6 +3,7 @@ import os
 
 import json
 from monty.json import jsanitize
+from monty.serialization import loadfn
 from maggma.stores import MemoryStore
 from maggma.runner import Runner
 
@@ -37,20 +38,20 @@ class CorrelationTest(unittest.TestCase):
 
         # vickers hardness (x-axis) vs. bulk modulus (y-axis)
         self.correlation_values_vickers_bulk = {
-            'linlsq': 0.08893624642281987,
-            'pearson': 0.2982218074233001,
-            'spearman': 0.6866436660916524,
-            'mic': 0.5678175866765903,
-            'theilsen': -0.9415258748260384,
-            'ransac': 0.03651531788436957}
+            'linlsq': 0.07030669243379202,
+            'pearson': 0.2651540918669593,
+            'spearman': 0.6759408985224631,
+            'mic': 0.5529971905082182,
+            'theilsen': -3.9351770244782456,
+            'ransac': -4.528702228127463}
 
         self.correlation_values_bulk_vickers = {
-            'linlsq': 0.08893624642281987,
-            'pearson': 0.2982218074233001,
-            'spearman': 0.6866436660916524,
-            'mic': 0.5678175866765903,
-            'theilsen': 0.04858873752248394,
-            'ransac': -0.0278511120866598}
+            'linlsq': 0.07030669243379202,
+            'pearson': 0.2651540918669593,
+            'spearman': 0.6759408985224631,
+            'mic': 0.5529971905082182,
+            'theilsen': 0.040612225849504746,
+            'ransac': 0.04576997520687298}
 
     def tearDown(self):
         if os.path.exists(os.path.join(TEST_DIR, "test_output.json")):
@@ -69,7 +70,7 @@ class CorrelationTest(unittest.TestCase):
     def test_process_item(self):
         test_props = [['band_gap_pbe', 'total_magnetization_normalized_vol'],
                       ['bulk_modulus', 'vickers_hardness']]
-        linlsq_correlation_values = [0.025473954287140395, 0.08893624642281987]
+        linlsq_correlation_values = [0.03522007675120975, 0.07030669243379202]
         path_lengths = [None, 2]
 
         for props, expected_correlation_val, expected_path_length in \
@@ -145,15 +146,16 @@ class CorrelationTest(unittest.TestCase):
             self.assertEqual(d['n_points'], 200)
             if d['property_x'] == 'vickers_hardness' and \
                     d['property_y'] == 'bulk_modulus':
+                # print("{}: {}".format(d['correlation_func'], d['correlation']))
                 self.assertAlmostEqual(
                     d['correlation'],
                     self.correlation_values_vickers_bulk[d['correlation_func']])
             elif d['property_x'] == 'bulk_modulus' and \
                     d['property_y'] == 'vickers_hardness':
+                # print("{}: {}".format(d['correlation_func'], d['correlation']))
                 self.assertAlmostEqual(
                     d['correlation'],
                     self.correlation_values_bulk_vickers[d['correlation_func']])
-
         # Test file output
         expected_file_data = loadfn(os.path.join(TEST_DIR, 'correlation_outfile.json'))
         actual_file_data = loadfn(os.path.join(TEST_DIR, 'test_output.json'))
