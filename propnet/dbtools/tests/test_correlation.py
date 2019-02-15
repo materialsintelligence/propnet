@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from monty.serialization import loadfn
+import json
 from monty.json import jsanitize
 from maggma.stores import MemoryStore
 from maggma.runner import Runner
@@ -14,22 +14,26 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class CorrelationTest(unittest.TestCase):
+
     def setUp(self):
+        self.propnet_props = ["band_gap_pbe", "bulk_modulus", "vickers_hardness"]
+        self.mp_query_props = ["magnetism.total_magnetization_normalized_vol"]
+        self.mp_props = ["total_magnetization_normalized_vol"]
+
         self.propstore = MemoryStore()
         self.propstore.connect()
-        materials = loadfn(os.path.join(TEST_DIR, "correlation_propnet_data.json"))
+        with open(os.path.join(TEST_DIR, "correlation_propnet_data.json"), 'r') as f:
+            materials = json.load(f)
         materials = jsanitize(materials, strict=True, allow_bson=True)
         self.propstore.update(materials)
         self.materials = MemoryStore()
         self.materials.connect()
-        materials = loadfn(os.path.join(TEST_DIR, "correlation_mp_data.json"))
+        with open(os.path.join(TEST_DIR, "correlation_mp_data.json"), 'r') as f:
+            materials = json.load(f)
         materials = jsanitize(materials, strict=True, allow_bson=True)
         self.materials.update(materials)
         self.correlation = MemoryStore()
         self.correlation.connect()
-        self.propnet_props = ["band_gap_pbe", "bulk_modulus", "vickers_hardness"]
-        self.mp_query_props = ["magnetism.total_magnetization_normalized_vol"]
-        self.mp_props = ["total_magnetization_normalized_vol"]
 
         # vickers hardness (x-axis) vs. bulk modulus (y-axis)
         self.correlation_values_vickers_bulk = {
@@ -176,7 +180,7 @@ class CorrelationTest(unittest.TestCase):
 
     # Just here for reference, in case anyone wants to create a new set
     # of test materials. Requires mongogrant read access to knowhere.lbl.gov.
-    @unittest.skipIf(False, "Skipping test materials creation")
+    @unittest.skipIf(True, "Skipping test materials creation")
     def create_test_docs(self):
         from maggma.advanced_stores import MongograntStore
         from monty.serialization import dumpfn
