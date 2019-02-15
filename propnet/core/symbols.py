@@ -203,12 +203,8 @@ class Symbol(MSONable):
         if self.units.dimensionless:
             return "dimensionless"
 
-        # self.units has both the units and (sometimes) a
-        # prefactor (its magnitude)
-        unit_str = '{:~P}'.format(self.units.units)
-
-        if self.units.magnitude != 1:
-            unit_str = '{} {}'.format(self.units.magnitude, unit_str)
+        # Below is a special formatting string specific to pint units
+        unit_str = '{:~P}'.format(self.units)
 
         return unit_str
 
