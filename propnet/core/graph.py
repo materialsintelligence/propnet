@@ -706,7 +706,7 @@ class Graph(object):
         # Filter for duplicates
         return set(models_and_input_sets)
 
-    async def _start_async_evaluation(self, input_quantities, allow_model_failure=True):
+    async def _start_async_evaluation(self, input_quantities):
         """
         Algorithm for expanding quantity pool
 
@@ -727,7 +727,6 @@ class Graph(object):
         self._evaluation_queue = asyncio.Queue()
         self._analysis_queue = asyncio.Queue()
         self._finished_queue = asyncio.Queue()
-        self._allow_model_failure = allow_model_failure
 
         pool, _, _ = await asyncio.gather(self._analyze_quantities(input_quantities),
                                           self._assign_input_sets_to_workers(),
@@ -846,10 +845,13 @@ class Graph(object):
         sys.stdout.flush()
 
         with Timer(model.name):
-            result = model.evaluate(input_dict,
-                                    allow_failure=allow_failure)
+            try:
+                result = model.evaluate(input_dict,
+                                        allow_failure=allow_failure)
+            except Exception as ex:
+                raise ex
         # TODO: Maybe provenance should be done in evaluate?
-        sys.stdout.flush()
+
         success = result.pop('successful')
         if success:
             out = [v.as_dict() for v in result.values() if not v.is_cyclic()]
@@ -885,16 +887,8 @@ class Graph(object):
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
         logger.debug("Beginning main loop with quantities %s", input_quantities)
-        '''
-        while new_quantities:
-#             new_quantities, quantity_pool = asyncio.run(self.derive_quantities(
-#                 new_quantities, quantity_pool,
-#                 allow_model_failure=allow_model_failure))
-            new_quantities, quantity_pool = self.derive_quantities(
-                new_quantities, quantity_pool,
-                allow_model_failure=allow_model_failure)
-        '''
 
+        self._allow_model_failure = allow_model_failure
         quantity_pool = self.derive_quantities(input_quantities)
 
         # store model evaluation statistics
@@ -905,7 +899,7 @@ class Graph(object):
         return new_material
 
     def derive_quantities(self, input_quantities):
-        return asyncio.run(self._start_async_evaluation(input_quantities), debug=True)
+        return asyncio.run(self._start_async_evaluation(input_quantities), debug=False)
 
     def super_evaluate(self, material, allow_model_failure=True):
         """
@@ -924,6 +918,7 @@ class Graph(object):
         if not isinstance(material, CompositeMaterial):
             raise Exception("material provided is not a SuperMaterial: " + str(type(material)))
 
+        self._allow_model_failure = allow_model_failure
         # Evaluate material's sub-materials
         evaluated_materials = list()
         for m in material.materials:
@@ -936,7 +931,7 @@ class Graph(object):
         # Run all SuperModels in the graph on this SuperMaterial if
         # a material mapping can be established.  Store any derived quantities.
         all_quantities = defaultdict(set)
-        for (k, v) in material._symbol_to_quantity:
+        for k, v in material._symbol_to_quantity:
             all_quantities[k].add(v)
 
         to_return = CompositeMaterial(evaluated_materials)

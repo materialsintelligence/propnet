@@ -46,4 +46,4 @@ class SymbolTest(unittest.TestCase):
 
     def test_all_properties(self):
         self.assertEqual(str(DEFAULT_SYMBOLS['density'].units),
-                         '1.0 gram / centimeter ** 3')
+                         'gram / centimeter ** 3')
