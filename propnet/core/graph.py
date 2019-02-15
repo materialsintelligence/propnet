@@ -846,7 +846,7 @@ class Graph(object):
 
     @staticmethod
     async def _evaluate_model_async(*args, **kwargs):
-        Graph._evaluate_model(*args, **kwargs)
+        return Graph._evaluate_model(*args, **kwargs)
 
     @staticmethod
     def _evaluate_model(model_and_input_set, allow_failure=True):
