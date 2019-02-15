@@ -182,7 +182,7 @@ class CorrelationTest(unittest.TestCase):
 
     # Just here for reference, in case anyone wants to create a new set
     # of test materials. Requires mongogrant read access to knowhere.lbl.gov.
-    @unittest.skipIf(False, "Skipping test materials creation")
+    @unittest.skipIf(True, "Skipping test materials creation")
     def create_test_docs(self):
         from maggma.advanced_stores import MongograntStore
         from monty.serialization import dumpfn
