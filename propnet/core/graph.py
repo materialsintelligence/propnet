@@ -76,9 +76,11 @@ class Graph(object):
     """
 
     def __init__(self,
-                 models: Dict[str, Model]=None,
-                 composite_models: Dict[str, CompositeModel]=None,
-                 symbol_types: Dict[str, Symbol]=None) -> None:
+                 models: Dict[str, Model] = None,
+                 composite_models: Dict[str, CompositeModel] = None,
+                 symbol_types: Dict[str, Symbol] = None,
+                 serial: bool = False,
+                 max_workers: int = None) -> None:
         """
         Creates a Graph instance
         """
@@ -112,11 +114,17 @@ class Graph(object):
         self._analysis_queue = None
         self._finished_queue = None
         self._input_sets_being_processed = set()
-        self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=4)
+        if serial:
+            if max_workers is not None:
+                raise ValueError('Cannot specify max_workers with serial=True')
+            self._executor = None
+        else:
+            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
         self._allow_model_failure = True
 
     def __del__(self):
-        self._executor.shutdown()
+        if self._executor:
+            self._executor.shutdown()
 
     def __str__(self):
         """
@@ -782,10 +790,14 @@ class Graph(object):
             model = input_set[0]
             serialized_inputs = [v.as_dict() for v in input_set[1:]]
             serialized_input_set = (model, serialized_inputs)
-            future: asyncio.Future = event_loop.run_in_executor(self._executor,
-                                                                self._evaluate_model,
-                                                                serialized_input_set)
-            # future = event_loop.create_task(self._evaluate_model_async(serialized_input_set))
+            if self._executor:
+                # Run in parallel
+                future: asyncio.Future = event_loop.run_in_executor(self._executor,
+                                                                    self._evaluate_model,
+                                                                    serialized_input_set)
+            else:
+                # Run serially asynchronously
+                future: asyncio.Future = event_loop.create_task(self._evaluate_model_async(serialized_input_set))
             with Lock():
                 self._input_sets_being_processed.add(future)
             future.add_done_callback(self._finished_queue.put_nowait)

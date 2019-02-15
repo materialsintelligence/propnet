@@ -249,21 +249,24 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models()
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
-        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
-        material_derived = g.evaluate(material)
 
-        expected_quantities = self.expected_quantities
+        for run_serial, max_workers in zip((True, False), (None, 4)):
+            g = Graph(symbol_types=symbols, models=models, composite_models=dict(),
+                      serial=run_serial, max_workers=max_workers)
+            material_derived = g.evaluate(material)
 
-        self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
-                        "evaluate() mutated the original material argument.")
+            expected_quantities = self.expected_quantities
 
-        derived_quantities = material_derived.get_quantities()
-        self.assertTrue(len(expected_quantities) == len(derived_quantities),
-                        "Evaluate did not correctly derive outputs.")
-        for q in expected_quantities:
-            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
-                            "Evaluate failed to derive all outputs.")
-            self.assertTrue(q in derived_quantities)
+            self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
+                            "evaluate() mutated the original material argument.")
+
+            derived_quantities = material_derived.get_quantities()
+            self.assertTrue(len(expected_quantities) == len(derived_quantities),
+                            "Evaluate did not correctly derive outputs.")
+            for q in expected_quantities:
+                self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+                                "Evaluate failed to derive all outputs.")
+                self.assertTrue(q in derived_quantities)
 
     def test_evaluate_cyclic(self):
         """
@@ -273,21 +276,24 @@ class GraphTest(unittest.TestCase):
         symbols = GraphTest.generate_canonical_symbols()
         models = GraphTest.generate_canonical_models()
         material = GraphTest.generate_canonical_material(symbols)
-        g = Graph(symbol_types=symbols, models=models, composite_models=dict())
-        material_derived = g.evaluate(material)
 
-        expected_quantities = self.expected_quantities
+        for run_serial, max_workers in zip((True, False), (None, 4)):
+            g = Graph(symbol_types=symbols, models=models, composite_models=dict(),
+                      serial=run_serial, max_workers=max_workers)
+            material_derived = g.evaluate(material)
 
-        self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
-                        "evaluate() mutated the original material argument.")
+            expected_quantities = self.expected_quantities
 
-        derived_quantities = material_derived.get_quantities()
-        self.assertTrue(len(expected_quantities) == len(derived_quantities),
-                        "Evaluate did not correctly derive outputs.")
-        for q in expected_quantities:
-            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
-                            "Evaluate failed to derive all outputs.")
-            self.assertTrue(q in derived_quantities)
+            self.assertTrue(material == GraphTest.generate_canonical_material(symbols),
+                            "evaluate() mutated the original material argument.")
+
+            derived_quantities = material_derived.get_quantities()
+            self.assertTrue(len(expected_quantities) == len(derived_quantities),
+                            "Evaluate did not correctly derive outputs.")
+            for q in expected_quantities:
+                self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+                                "Evaluate failed to derive all outputs.")
+                self.assertTrue(q in derived_quantities)
 
     def test_derive_quantities(self):
         # Simple one quantity test
