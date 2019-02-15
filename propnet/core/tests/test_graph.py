@@ -154,7 +154,6 @@ class GraphTest(unittest.TestCase):
         m.add_quantity(q2)
         return m
 
-    @unittest.skip
     def test_graph_setup(self):
         """
         Tests the outcome of constructing the canonical graph.
@@ -188,7 +187,6 @@ class GraphTest(unittest.TestCase):
                                     "Canonical constructed graph does not have an edge from input: "
                                     "{} to model: {}".format(symbol, m))
 
-    @unittest.skip
     def test_model_add_remove(self):
         """
         Tests the outcome of adding and removing a model from the canonical graph.
@@ -220,7 +218,6 @@ class GraphTest(unittest.TestCase):
         self.assertTrue(m6 in g._output_to_model[symbols['A']],
                         "Model was unsuccessfully added to the graph.")
 
-    @unittest.skip
     def test_symbol_add_remove(self):
         """
         Tests the outcome of adding and removing a Symbol from the canonical graph.
@@ -268,7 +265,6 @@ class GraphTest(unittest.TestCase):
                             "Evaluate failed to derive all outputs.")
             self.assertTrue(q in derived_quantities)
 
-    @unittest.skip
     def test_evaluate_cyclic(self):
         """
         Tests the evaluation algorithm on a cyclic graph.
@@ -293,7 +289,6 @@ class GraphTest(unittest.TestCase):
                             "Evaluate failed to derive all outputs.")
             self.assertTrue(q in derived_quantities)
 
-    @unittest.skip
     def test_derive_quantities(self):
         # Simple one quantity test
         quantity = QuantityFactory.create_quantity("band_gap", 3.2)
@@ -301,7 +296,6 @@ class GraphTest(unittest.TestCase):
         qpool = graph.derive_quantities([quantity])
         new_mat = graph.evaluate(Material([quantity]))
 
-    @unittest.skip
     def test_evaluate_constraints(self):
         """
         Tests the evaluation algorithm on a non-cyclic graph involving
@@ -329,7 +323,6 @@ class GraphTest(unittest.TestCase):
                             "Evaluate failed to derive all outputs.")
             self.assertTrue(q in derived_quantities)
 
-    @unittest.skip
     def test_evaluate_constraints_cyclic(self):
         """
         Tests the evaluation algorithm on a cyclic graph involving constraints.
@@ -357,7 +350,6 @@ class GraphTest(unittest.TestCase):
                             "Evaluate failed to derive all outputs.")
             self.assertTrue(q in derived_quantities)
 
-    @unittest.skip
     def test_evaluate_single_material_degenerate_property(self):
         """
         Graph has one material on it: mat1
@@ -413,7 +405,6 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(q is not None,
                             "Quantity missing from evaluate.")
 
-    @unittest.skip
     def test_symbol_expansion(self):
         """
         Tests the Symbol Expansion algorithm on a non-cyclic graph.
@@ -447,8 +438,6 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(ts[i] == ans[i],
                             "Symbol Expansion failed: test - " + str(i))\
 
-
-    @unittest.skip
     def test_symbol_expansion_cyclic(self):
         """
         Tests the Symbol Expansion algorithm on a cyclic graph.
@@ -481,7 +470,6 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(ts[i] == ans[i],
                             "Symbol Expansion failed: test - " + str(i))
 
-    @unittest.skip
     def test_symbol_expansion_constraints(self):
         """
         Tests the Symbol Expansion algorithm on a non-cyclic graph with constraints.
@@ -518,7 +506,6 @@ class GraphTest(unittest.TestCase):
             self.assertEqual(ts[i], ans[i],
                              "Symbol Expansion failed: test - " + str(i))
 
-    @unittest.skip
     def test_symbol_expansion_cyclic_constraints(self):
         """
         Tests the Symbol Expansion algorithm on a cyclic graph with constraints.
@@ -553,7 +540,6 @@ class GraphTest(unittest.TestCase):
             self.assertEqual(ts[i], ans[i],
                              "Symbol Expansion failed: test - " + str(i))
 
-    @unittest.skip
     def test_symbol_ancestry(self):
         """
         Tests the Symbol Ancestry algorithm on a non-cyclic graph.
@@ -615,7 +601,6 @@ class GraphTest(unittest.TestCase):
                         m_map_2[models['model2']].children[0].inputs == {symbols['A']},
                         "Tree branch improperly formed.")
 
-    @unittest.skip
     def test_symbol_ancestry_cyclic(self):
         """
         Tests the Symbol Ancestry algorithm on a cyclic graph.
@@ -676,7 +661,6 @@ class GraphTest(unittest.TestCase):
                         m_map_2[models['model2']].children[0].inputs == {symbols['A']},
                         "Tree branch improperly formed.")
 
-    @unittest.skip
     def test_symbol_ancestry_constraint(self):
         """
         Tests the Symbol Ancestry algorithm on a non-cyclic graph with constraints.
@@ -750,7 +734,6 @@ class GraphTest(unittest.TestCase):
                         m_map_1[models['model2']].children[0].inputs == {symbols['A']},
                         "Tree branch improperly formed.")
 
-    @unittest.skip
     def test_symbol_ancestry_cyclic_constraint(self):
         """
         Tests the Symbol Ancestry algorithm on a cyclic graph with constraints.
@@ -823,7 +806,6 @@ class GraphTest(unittest.TestCase):
                         m_map_1[models['model2']].children[0].inputs == {symbols['A']},
                         "Tree branch improperly formed.")
 
-    @unittest.skip
     def test_get_path(self):
         """
         Tests the ability to generate all paths from one symbol to another.
@@ -856,7 +838,6 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(i in ans_2,
                             "Incorrect paths generated.")
 
-    @unittest.skip
     def test_get_path_constraint(self):
         """
         Tests the ability to generate all paths from one symbol to another with constraints.
@@ -895,7 +876,6 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(i in ans_2,
                             "Incorrect paths generated.")
 
-    @unittest.skip
     def test_super_evaluate(self):
         """
         Tests the graph's composite material evaluation.
@@ -926,7 +906,6 @@ class GraphTest(unittest.TestCase):
         self.assertTrue(len(sm._symbol_to_quantity['pilling_bedworth_ratio']) > 0,
                         "Super Evaluate failed to derive expected outputs.")
 
-
     def test_provenance(self):
         model4 = EquationModel(name="model4", equations=["D=B*C*11"], constraints=["G==0"])
         symbols = GraphTest.generate_canonical_symbols()
@@ -943,41 +922,41 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(q._provenance.inputs is None)
         for q in material_derived._symbol_to_quantity[symbols['B']]:
             if q.value == 38:
-                self.assertTrue(q._provenance.model is models['model1'].name,
-                                "provenance improperly calculated")
+                self.assertEquals(q._provenance.model, models['model1'].name,
+                                  "provenance improperly calculated")
                 self.assertTrue(expected_quantities[0] in q._provenance.inputs,
                                 "provenance improperly calculated")
             else:
-                self.assertTrue(q._provenance.model is models['model1'].name,
-                                "provenance improperly calculated")
+                self.assertEquals(q._provenance.model, models['model1'].name,
+                                  "provenance improperly calculated")
                 self.assertTrue(expected_quantities[1] in q._provenance.inputs,
                                 "provenance improperly calculated")
         for q in material_derived._symbol_to_quantity[symbols['C']]:
             if q.value == 57:
-                self.assertTrue(q._provenance.model is models['model1'].name,
-                                "provenance improperly calculated")
+                self.assertEquals(q._provenance.model, models['model1'].name,
+                                  "provenance improperly calculated")
                 self.assertTrue(expected_quantities[0] in q._provenance.inputs,
                                 "provenance improperly calculated")
             else:
-                self.assertTrue(q._provenance.model is models['model1'].name,
-                                "provenance improperly calculated")
+                self.assertEquals(q._provenance.model, models['model1'].name,
+                                  "provenance improperly calculated")
                 self.assertTrue(expected_quantities[1] in q._provenance.inputs,
                                 "provenance improperly calculated")
         for q in material_derived._symbol_to_quantity[symbols['G']]:
             if q.value == 95:
-                self.assertTrue(q._provenance.model is models['model2'].name,
-                                "provenance improperly calculated")
+                self.assertEquals(q._provenance.model, models['model2'].name,
+                                  "provenance improperly calculated")
                 self.assertTrue(expected_quantities[0] in q._provenance.inputs,
                                 "provenance improperly calculated")
             else:
-                self.assertTrue(q._provenance.model is models['model2'].name,
-                                "provenance improperly calculated")
+                self.assertEquals(q._provenance.model, models['model2'].name,
+                                  "provenance improperly calculated")
                 self.assertTrue(expected_quantities[1] in q._provenance.inputs,
                                 "provenance improperly calculated")
         for q in material_derived._symbol_to_quantity[symbols['D']]:
             if q.value == 70395:
-                self.assertTrue(q._provenance.model is models['model5'].name,
-                                "provenance improperly calculated")
+                self.assertEquals(q._provenance.model, models['model5'].name,
+                                  "provenance improperly calculated")
                 self.assertTrue(expected_quantities[4] in q._provenance.inputs,
                                 "provenance improperly calculated")
                 self.assertTrue(expected_quantities[12] in q._provenance.inputs,

@@ -98,10 +98,10 @@ class Symbol(MSONable):
                 units = 1 * ureg.dimensionless
             elif isinstance(units, six.string_types):
                 units = 1 * ureg.parse_expression(units)
-            elif isinstance(units, tuple):
+            elif isinstance(units, (tuple, list)):
                 units = ureg.Quantity.from_tuple(units)
             else:
-                raise TypeError("Cannot parse unit format: {}".format(type(units)))
+                raise TypeError("Cannot parse unit format: {}".format(units))
 
             units = units.units.format_babel()
         else:

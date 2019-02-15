@@ -122,7 +122,8 @@ class Model(ABC):
 
     @property
     def unit_map(self):
-        return {k: ureg.Unit(v) for k, v in self._unit_map.items()}
+        return {k: ureg.Unit(v) if v is not None else None
+                for k, v in self._unit_map.items()}
 
     @property
     def symbol_property_map(self):
@@ -233,7 +234,7 @@ class Model(ABC):
         # Plug in and check constraints
         try:
             with PrintToLogger():
-                out = self.plug_in(input_symbol_value_dict)
+                out: dict = self.plug_in(input_symbol_value_dict)
         except Exception as err:
             if allow_failure:
                 return {"successful": False,
@@ -247,10 +248,6 @@ class Model(ABC):
         provenance = ProvenanceElement(
             model=self.name, inputs=list(input_symbol_quantity_dict.values()),
             source="propnet")
-
-        # DEBUG
-        if not all(isinstance(v.value, ureg.Quantity) for v in provenance.inputs):
-            raise TypeError("what the heck man")
 
         out = self.map_symbols_to_properties(out)
         unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
@@ -266,9 +263,7 @@ class Model(ABC):
                             "message": errmsg}
                 else:
                     raise err
-            # DEBUG
-            if not all(isinstance(v.value, ureg.Quantity) for v in quantity.provenance.inputs):
-                raise TypeError("what the heck man")
+
             if quantity.contains_nan_value():
                 return {"successful": False,
                         "message": "Evaluation returned invalid values (NaN)"}
