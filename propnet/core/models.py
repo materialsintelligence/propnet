@@ -253,8 +253,8 @@ class Model(ABC):
         with Timer('generate_symbol_map'):
             out = self.map_symbols_to_properties(out)
             unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
-        with Timer('create_objects'):
-            for symbol, value in out.items():
+        for symbol, value in out.items():
+            with Timer('create_objects'):
                 try:
                     quantity = QuantityFactory.create_quantity(
                         symbol, value, unit_map_as_properties.get(symbol),
@@ -267,17 +267,17 @@ class Model(ABC):
                     else:
                         raise err
 
-                if quantity.contains_nan_value():
-                    return {"successful": False,
-                            "message": "Evaluation returned invalid values (NaN)"}
-                # TODO: Update when we figure out how we're going to handle complex quantities
-                # Model evaluation will fail if complex values are returned when no complex input was given
-                # Can surely handle this more gracefully, or assume that the users will apply constraints
-                if quantity.contains_imaginary_value() and not contains_complex_input:
-                    return {"successful": False,
-                            "message": "Evaluation returned invalid values (complex)"}
+            if quantity.contains_nan_value():
+                return {"successful": False,
+                        "message": "Evaluation returned invalid values (NaN)"}
+            # TODO: Update when we figure out how we're going to handle complex quantities
+            # Model evaluation will fail if complex values are returned when no complex input was given
+            # Can surely handle this more gracefully, or assume that the users will apply constraints
+            if quantity.contains_imaginary_value() and not contains_complex_input:
+                return {"successful": False,
+                        "message": "Evaluation returned invalid values (complex)"}
 
-                out[symbol] = quantity
+            out[symbol] = quantity
 
         out['successful'] = True
         return out
