@@ -7,6 +7,7 @@ import re
 import logging
 from abc import ABC, abstractmethod
 from itertools import chain
+from chronic import Timer
 
 import six
 from monty.serialization import loadfn
@@ -230,49 +231,51 @@ class Model(ABC):
         input_symbol_value_dict = {k: symbol_value_dict[k] for k in input_symbol_quantity_dict.keys()}
 
         # Plug in and check constraints
-        try:
-            with PrintToLogger():
-                out: dict = self.plug_in(input_symbol_value_dict)
-        except Exception as err:
-            if allow_failure:
-                return {"successful": False,
-                        "message": "{} evaluation failed: {}".format(self, err)}
-            else:
-                raise err
+        with Timer('plug_in'):
+            try:
+                with PrintToLogger():
+                    out: dict = self.plug_in(input_symbol_value_dict)
+            except Exception as err:
+                if allow_failure:
+                    return {"successful": False,
+                            "message": "{} evaluation failed: {}".format(self, err)}
+                else:
+                    raise err
         if not self.check_constraints({**symbol_value_dict, **out}):
             return {"successful": False,
                     "message": "Constraints not satisfied"}
+        with Timer('create_provenance'):
+            provenance = ProvenanceElement(
+                model=self.name, inputs=list(input_symbol_quantity_dict.values()),
+                source="propnet")
+        with Timer('generate_symbol_map'):
+            out = self.map_symbols_to_properties(out)
+            unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
+        with Timer('create_objects'):
+            for symbol, value in out.items():
+                try:
+                    quantity = QuantityFactory.create_quantity(
+                        symbol, value, unit_map_as_properties.get(symbol),
+                        provenance=provenance)
+                except SymbolConstraintError as err:
+                    if allow_failure:
+                        errmsg = "{} symbol constraint failed: {}".format(self, err)
+                        return {"successful": False,
+                                "message": errmsg}
+                    else:
+                        raise err
 
-        provenance = ProvenanceElement(
-            model=self.name, inputs=list(input_symbol_quantity_dict.values()),
-            source="propnet")
-
-        out = self.map_symbols_to_properties(out)
-        unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
-        for symbol, value in out.items():
-            try:
-                quantity = QuantityFactory.create_quantity(
-                    symbol, value, unit_map_as_properties.get(symbol),
-                    provenance=provenance)
-            except SymbolConstraintError as err:
-                if allow_failure:
-                    errmsg = "{} symbol constraint failed: {}".format(self, err)
+                if quantity.contains_nan_value():
                     return {"successful": False,
-                            "message": errmsg}
-                else:
-                    raise err
+                            "message": "Evaluation returned invalid values (NaN)"}
+                # TODO: Update when we figure out how we're going to handle complex quantities
+                # Model evaluation will fail if complex values are returned when no complex input was given
+                # Can surely handle this more gracefully, or assume that the users will apply constraints
+                if quantity.contains_imaginary_value() and not contains_complex_input:
+                    return {"successful": False,
+                            "message": "Evaluation returned invalid values (complex)"}
 
-            if quantity.contains_nan_value():
-                return {"successful": False,
-                        "message": "Evaluation returned invalid values (NaN)"}
-            # TODO: Update when we figure out how we're going to handle complex quantities
-            # Model evaluation will fail if complex values are returned when no complex input was given
-            # Can surely handle this more gracefully, or assume that the users will apply constraints
-            if quantity.contains_imaginary_value() and not contains_complex_input:
-                return {"successful": False,
-                        "message": "Evaluation returned invalid values (complex)"}
-
-            out[symbol] = quantity
+                out[symbol] = quantity
 
         out['successful'] = True
         return out
@@ -653,7 +656,8 @@ class EquationModel(Model, MSONable):
                 for output_sym, sympy_expr in connection['_sympy_exprs'].items():
                     # We lambdify these expressions on the fly so this
                     # function can be pickled and run in parallel
-                    func = sp.lambdify(connection['inputs'], sympy_expr)
+                    with Timer('lambdify'):
+                        func = sp.lambdify(connection['inputs'], sympy_expr)
                     output_vals = func(**symbol_value_dict)
                     # TODO: this decision to only take max real values should
                     #       should probably be reevaluated at some point
