@@ -8,6 +8,7 @@ import logging
 from abc import ABC, abstractmethod
 from itertools import chain
 from chronic import Timer
+from copy import copy
 
 import six
 from monty.serialization import loadfn
@@ -70,7 +71,7 @@ class Model(ABC):
                  description=None, categories=None, references=None, implemented_by=None,
                  symbol_property_map=None, scrub_units=None, test_data=None):
         self.name = name
-        self.connections = connections
+        self._connections = connections
         self.description = description
         if isinstance(categories, str):
             categories = [categories]
@@ -120,6 +121,10 @@ class Model(ABC):
             test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
                          for data in test_data]
         self._test_data = test_data
+
+    @property
+    def connections(self):
+        return self._connections
 
     @property
     def unit_map(self):
@@ -632,12 +637,33 @@ class EquationModel(Model, MSONable):
                                for sym, solved in new.items()}
                 connection["_sympy_exprs"] = sympy_exprs
 
-        #self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
             symbol_property_map, scrub_units,
             test_data=test_data)
+
+        self._generate_lambdas()
+
+    @property
+    def connections(self):
+        if not all('_lambdas' in connection.keys() for connection in self._connections):
+            self._generate_lambdas()
+        return self._connections
+
+    def _generate_lambdas(self):
+        for connection in self._connections:
+            connection['_lambdas'] = {}
+            for output_sym, sympy_expr in connection['_sympy_exprs'].items():
+                connection['_lambdas'][output_sym] = \
+                    sp.lambdify(connection['inputs'], sympy_expr)
+
+    def __getstate__(self):
+        d = copy(self.__dict__)
+        for connection in d['_connections']:
+            if '_lambdas' in connection.keys():
+                del connection['_lambdas']
+        return d
 
     def plug_in(self, symbol_value_dict):
         """
@@ -652,14 +678,13 @@ class EquationModel(Model, MSONable):
         Returns (dict):
             symbol-keyed output dictionary
         """
+
         output = {}
         for connection in self.connections:
             if set(connection['inputs']) <= set(symbol_value_dict.keys()):
-                for output_sym, sympy_expr in connection['_sympy_exprs'].items():
+                for output_sym, func in connection['_lambdas'].items():
                     # We lambdify these expressions on the fly so this
                     # function can be pickled and run in parallel
-                    with Timer('lambdify'):
-                        func = sp.lambdify(connection['inputs'], sympy_expr)
                     output_vals = func(**symbol_value_dict)
                     # TODO: this decision to only take max real values should
                     #       should probably be reevaluated at some point
