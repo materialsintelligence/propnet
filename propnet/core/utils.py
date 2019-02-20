@@ -73,6 +73,9 @@ class PrintToLogger:
         for line in buf.rstrip().splitlines():
             self.logger.info(line.rstrip())
 
+    def flush(self, *args, **kwargs):
+        pass
+
     @staticmethod
     def get_print_log():
         """

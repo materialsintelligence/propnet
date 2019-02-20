@@ -13,6 +13,8 @@ import concurrent.futures
 from multiprocessing import cpu_count
 import sys
 from threading import Lock
+import random
+import json
 
 import networkx as nx
 
@@ -24,10 +26,12 @@ from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.models import COMPOSITE_MODEL_DICT
 from propnet.models import DEFAULT_MODEL_DICT
 from propnet.symbols import Symbol, DEFAULT_SYMBOLS
+from propnet.core.utils import PrintToLogger
 
 from typing import Set, Dict, Union
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class Graph(object):
@@ -751,19 +755,24 @@ class Graph(object):
         return pool
 
     async def _analyze_quantities(self, initial_quantities):
+        print("Analysis coroutine is running")
         pool = defaultdict(set)
         for q in initial_quantities:
+            print(q.symbol.name)
             self._analysis_queue.put_nowait(q)
 
         while True:
             with Timer('waiting_for_new_qs'):
                 q = await self._analysis_queue.get()
+                print("Analysis received input to process")
             with Timer('processing_new_qs'):
                 if isinstance(q, str) and q == 'Done':
+                    print("Analysis received kill signal")
                     self._analysis_queue.task_done()
                     self._evaluation_queue.put_nowait('Done')
                     self._finished_queue.put_nowait('Done')
                     return pool
+                print("Got {} quantity ({}) to process".format(q.symbol.name, q.value))
                 input_sets = self.generate_models_and_input_sets([q], pool)
                 input_sets_to_queue = []
                 for input_set in input_sets:
@@ -772,7 +781,12 @@ class Graph(object):
 
                 pool[q.symbol].add(q)
 
+                if not input_sets_to_queue:
+                    print("No input sets for this quantity")
+                else:
+                    print("Queuing input sets for models:")
                 for input_set in input_sets_to_queue:
+                    print(input_set[0].name)
                     self._evaluation_queue.put_nowait(input_set)
 
                 self._analysis_queue.task_done()
@@ -780,24 +794,30 @@ class Graph(object):
                 if not input_sets_to_queue and self._analysis_queue.empty() and \
                         self._evaluation_queue.empty() and \
                         len(self._input_sets_being_processed) == 0:
+                    print("Reached analysis exit condition. Sending kill signals")
                     self._evaluation_queue.put_nowait('Done')
                     self._finished_queue.put_nowait('Done')
                     return pool
 
     async def _assign_input_sets_to_workers(self):
+        print("Assignment coroutine is running")
         event_loop = asyncio.get_running_loop()
         while True:
             with Timer('waiting_for_new_input_sets'):
                 input_set = await self._evaluation_queue.get()
+                print("Assignment received input to process")
             with Timer('processing_new_input_sets'):
                 if isinstance(input_set, str) and input_set == 'Done':
+                    print("Assignment received kill signal")
                     self._evaluation_queue.task_done()
                     return
+                identifier = random.randint(0, 10000)
                 model = input_set[0]
+                print("Assigning {}-{} for processing".format(model.name, identifier))
                 serialized_inputs = [v.as_dict() for v in input_set[1:]]
                 serialized_input_set = (model, serialized_inputs)
-                with Lock():
-                    self._input_sets_being_processed.add(serialized_input_set)
+                # identifier = pickle.dumps(serialized_input_set)
+
                 if self._executor:
                     # Run in parallel
                     future: asyncio.Future = event_loop.run_in_executor(self._executor,
@@ -808,34 +828,44 @@ class Graph(object):
                     # Run serially asynchronously
                     future: asyncio.Future = event_loop.create_task(self._evaluate_model_async(serialized_input_set))
 
+                # with Lock():
+                self._input_sets_being_processed.add(future)
+                print("{}-{} listed as being processed".format(model.name, identifier))
                 future.add_done_callback(self._finished_queue.put_nowait)
+                print("{}-{} callback added".format(model.name, identifier))
                 self._evaluation_queue.task_done()
 
     async def _parallel_job_done(self):
         while True:
             with Timer('waiting_for_finished_calcs'):
                 future = await self._finished_queue.get()
+                print("Received input for parallel job processing")
             with Timer('processing_finished_calcs'):
                 if isinstance(future, str) and future == 'Done':
+                    print("Received kill signal parallel job processing")
                     self._finished_queue.task_done()
                     return
                 try:
+                    print("Processing result")
                     new_qs = future.result()
                     for q in new_qs:
+                        print("Received: {}.\nQueuing for analysis".format(q['symbol_type']))
                         self._analysis_queue.put_nowait(QuantityFactory.from_dict(q))
                 except Exception as ex:
+                    print("Model evaluation failed...moving on")
                     if not self._allow_model_failure:
                         raise ex
                 finally:
-                    with Lock():
-                        self._input_sets_being_processed.remove(future)
-
+                    # with Lock():
+                    self._input_sets_being_processed.remove(future)
+                print("Future removed from queue")
                 self._finished_queue.task_done()
 
                 if self._analysis_queue.empty() and \
                         self._evaluation_queue.empty() and \
                         self._finished_queue.empty() and \
                         len(self._input_sets_being_processed) == 0:
+                    print("Reached exit condition for parallel job. Sending kill signal.")
                     self._analysis_queue.put_nowait('Done')
 
     @staticmethod
@@ -869,6 +899,7 @@ class Graph(object):
             inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
             input_dict = {q.symbol: q for q in inputs}
             logger.info('Evaluating %s with input %s', model, input_dict)
+            print('Evaluating {} with input {}'.format(model.name, input_dict))
             sys.stdout.flush()
 
         with Timer(model.name):
@@ -879,8 +910,10 @@ class Graph(object):
         with Timer('model_evaluation_overhead'):
             success = result.pop('successful')
             if success:
+                print("Model {} evaluation successful".format(model.name))
                 out = [v.as_dict() for v in result.values() if not v.is_cyclic()]
             else:
+                print("Model {} evaluation unsuccessful".format(model.name))
                 logger.info("Model evaluation unsuccessful %s",
                             result['message'])
                 out = []
@@ -911,7 +944,11 @@ class Graph(object):
         logger.debug("Beginning main loop with quantities %s", input_quantities)
 
         self._allow_model_failure = allow_model_failure
-        quantity_pool = self.derive_quantities(input_quantities)
+        plog = PrintToLogger()
+        with plog:
+            quantity_pool = self.derive_quantities(input_quantities)
+        with open('/Users/clegaspi/output_text.txt', 'w') as f:
+            json.dump(plog.get_print_log(), f)
 
         # store model evaluation statistics
         self._timings = timings

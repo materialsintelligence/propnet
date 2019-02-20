@@ -12,7 +12,8 @@ print_logger = logging.getLogger(__name__ + "_print_log")
 # TODO: just move this to the web view ...
 log_stream = StringIO()
 log_handler = logging.StreamHandler(stream=log_stream)
-log_handler.setLevel(logging.WARNING)
+# log_handler.setLevel(logging.WARNING)
+log_handler.setLevel(logging.ERROR)
 logger.addHandler(log_handler)
 
 # make sure we see our log messages in Jupyter too
