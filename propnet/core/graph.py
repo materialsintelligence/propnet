@@ -812,10 +812,10 @@ class Graph(object):
                     self._evaluation_queue.task_done()
                     return
                 identifier = random.randint(0, 10000)
-                model = input_set[0]
-                print("Assigning {}-{} for processing".format(model.name, identifier))
+                model_name = input_set[0].name
+                print("Assigning {}-{} for processing".format(model_name, identifier))
                 serialized_inputs = [v.as_dict() for v in input_set[1:]]
-                serialized_input_set = (model, serialized_inputs)
+                serialized_input_set = (model_name, serialized_inputs)
                 # identifier = pickle.dumps(serialized_input_set)
 
                 if self._executor:
@@ -830,9 +830,9 @@ class Graph(object):
 
                 # with Lock():
                 self._input_sets_being_processed.add(future)
-                print("{}-{} listed as being processed".format(model.name, identifier))
+                print("{}-{} listed as being processed".format(model_name, identifier))
                 future.add_done_callback(self._finished_queue.put_nowait)
-                print("{}-{} callback added".format(model.name, identifier))
+                print("{}-{} callback added".format(model_name, identifier))
                 self._evaluation_queue.task_done()
 
     async def _parallel_job_done(self):
@@ -895,7 +895,8 @@ class Graph(object):
     @staticmethod
     def _evaluate_model(model_and_input_set, allow_failure=True):
         with Timer('model_evaluation_overhead'):
-            model, serialized_inputs = model_and_input_set
+            model_name, serialized_inputs = model_and_input_set
+            model = DEFAULT_MODEL_DICT[model_name]
             inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
             input_dict = {q.symbol: q for q in inputs}
             logger.info('Evaluating %s with input %s', model, input_dict)
@@ -944,11 +945,8 @@ class Graph(object):
         logger.debug("Beginning main loop with quantities %s", input_quantities)
 
         self._allow_model_failure = allow_model_failure
-        plog = PrintToLogger()
-        with plog:
-            quantity_pool = self.derive_quantities(input_quantities)
-        with open('/Users/clegaspi/output_text.txt', 'w') as f:
-            json.dump(plog.get_print_log(), f)
+
+        quantity_pool = self.derive_quantities(input_quantities)
 
         # store model evaluation statistics
         self._timings = timings

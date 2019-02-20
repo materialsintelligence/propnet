@@ -2,6 +2,7 @@
 
 import six
 import numpy as np
+from copy import copy
 
 from monty.json import MSONable
 from ruamel.yaml import safe_dump
@@ -158,12 +159,20 @@ class Symbol(MSONable):
                 raise ValueError("Constraint expression invalid: {}".format(constraint))
 
         self._constraint = constraint
+        self._constraint_func = None
 
     @property
     def constraint(self):
         if self._constraint:
-            return sp.lambdify(self.name, parse_expr(self._constraint))
+            if self._constraint_func is None:
+                self._constraint_func = sp.lambdify(self.name, parse_expr(self._constraint))
+            return self._constraint_func
         return None
+
+    def __getstate__(self):
+        d = copy(self.__dict__)
+        d['_constraint_func'] = None
+        return d
 
     @property
     def units(self):
