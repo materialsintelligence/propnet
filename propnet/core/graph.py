@@ -8,13 +8,9 @@ from itertools import product
 from chronic import Timer, timings
 from pandas import DataFrame
 from collections import deque
-import asyncio
 import concurrent.futures
+from functools import partial
 from multiprocessing import cpu_count
-import sys
-from threading import Lock
-import random
-import json
 
 import networkx as nx
 
@@ -23,8 +19,7 @@ from propnet.core.materials import Material
 from propnet.core.models import Model, CompositeModel
 from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import SymbolTree, TreeElement
-from propnet.core.symbols import Symbol
-from propnet.core.utils import PrintToLogger
+from propnet.symbols import Symbol
 
 # noinspection PyUnresolvedReferences
 import propnet.models
@@ -35,33 +30,27 @@ from propnet.core.registry import Registry
 from typing import Set, Dict, Union
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class Graph(object):
     """
     Class containing methods for creating and interacting with a
     Property Network.
-
     The Property Network contains a set of Node namedtuples with
     connections stored as directed edges between the nodes.
-
     Upon initialization a base graph is constructed consisting of all
     valid SymbolTypes and Models found in surrounding folders. These are
     Symbol and Model node_types respectively. Connections are formed
     between the nodes based on given inputs and outputs of the models.
     At this stage the graph represents a symbolic web of properties
     without any actual input values.
-
     Materials and Properties / Conditions can be added at runtime using
     appropriate support methods. These methods dynamically create
     additional PropnetNodes and edges on the graph of Material and
     Quantity node_types respectively.
-
     Given a set of Materials and Properties / Conditions, the symbolic
     web of properties can be utilized to predict values of connected
     properties on demand.
-
     Attributes:
         _symbol_types ({str: Symbol}): data structure mapping Symbol
             name to Symbol object.
@@ -73,18 +62,14 @@ class Graph(object):
         _output_to_model ({Symbol: {Model}}): data structure mapping
             Symbol outputs to a set of corresponding Model objects that
             produce that Symbol as an output.
-
     *** Dictionaries can be searched by supplying Symbol objects or
         Strings as to their names.
-
     """
 
     def __init__(self,
-                 models: Dict[str, Model] = None,
-                 composite_models: Dict[str, CompositeModel] = None,
-                 symbol_types: Dict[str, Symbol] = None,
-                 serial: bool = False,
-                 max_workers: int = None) -> None:
+                 models: Dict[str, Model]=None,
+                 composite_models: Dict[str, CompositeModel]=None,
+                 symbol_types: Dict[str, Symbol]=None) -> None:
         """
         Creates a Graph instance
         """
@@ -98,7 +83,8 @@ class Graph(object):
         self._composite_models = dict()
         self._input_to_model = defaultdict(set)
         self._output_to_model = defaultdict(set)
-        self._timings = None
+        self._timings = None                        # type:Dict[,]
+        self._n_workers = None
 
         if symbol_types:
             self.update_symbol_types(symbol_types)
@@ -113,35 +99,11 @@ class Graph(object):
         else:
             self.update_composite_models(composite_models)
 
-        # Objects for asynchronous graph evaluation
-        self._evaluation_queue = None
-        self._analysis_queue = None
-        self._finished_queue = None
-        self._input_sets_being_processed = set()
-        if serial:
-            if max_workers is not None:
-                raise ValueError('Cannot specify max_workers with serial=True')
-            self._executor = None
-            self._max_workers = 0
-        else:
-            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
-            if max_workers is None:
-                self._max_workers = cpu_count()
-            else:
-                self._max_workers = max_workers
-
-        self._allow_model_failure = True
-
-    def __del__(self):
-        if self._executor:
-            self._executor.shutdown()
-
     def __str__(self):
         """
         Returns a full summary of the graph in terms of the SymbolTypes,
         Symbols, Materials, and Models that it contains. Connections are
         shown as nesting within the printout.
-
         Returns:
             (str) representation of this Graph object.
         """
@@ -161,10 +123,8 @@ class Graph(object):
         Add / redefine user-defined symbol types to the graph. If the
         input, symbol_types, includes keys in self._symbol_types,
         they are redefined.
-
         Args:
             symbol_types ({name: Symbol}): symbol types to add
-
         Returns:
             None
         """
@@ -176,10 +136,8 @@ class Graph(object):
         Removes user-defined Symbol objects to the Graph. Removes
         any models that input or output this Symbol because they
         are no longer defined without the given symbol_types.
-
         Args:
             symbol_types ({name:Symbol}): symbol types to remove
-
         Returns:
             None
         """
@@ -206,7 +164,6 @@ class Graph(object):
         """
         Getter method, returns a set of all Symbol objects
         present on the graph.
-
         Returns ({Symbol}):
             set of symbols present on the graph
         """
@@ -222,10 +179,8 @@ class Graph(object):
         The addition of a model may fail if appropriate Symbol objects
         are not already on the graph.  If any addition operation fails,
         the entire update is aborted.
-
         Args:
             models ({name: Model}): Instances of the model class
-
         Returns:
             None
         """
@@ -254,10 +209,8 @@ class Graph(object):
     def remove_models(self, models):
         """
         Remove user-defined models from the Graph.
-
         Args:
             models ({name: Model}): Instances of the model class
-
         Returns:
             None
         """
@@ -279,7 +232,6 @@ class Graph(object):
         """
         Getter method, returns a set of all model objects present
         on the graph.
-
         Returns ({Model}):
             set of models in the graph
         """
@@ -340,7 +292,6 @@ class Graph(object):
         """
         Generates a networkX data structure representing the property
         network and returns this object.
-
         Returns:
             (networkX.multidigraph)
         """
@@ -380,14 +331,12 @@ class Graph(object):
                     include_orphans=False, **kwargs):
         """
         Output the graph to a file
-
         Args:
             filename (str): filename for file
             draw (bool): whether to draw or write file
             include_orphans (bool): whether to include orphan symbols
                 in graph output
             **kwargs (kwargs): kwargs to draw or write
-
         Returns:
             None
         """
@@ -406,13 +355,11 @@ class Graph(object):
         Given a set of Symbol objects, returns all new Symbol objects
         that may be calculable from the inputs. Resulting set contains
         only those new Symbol objects derivable.
-
         The result should be used with caution:
             1) Models may not produce an output if their input
                 conditions are not met.
             2) Models may require more than one Quantity of a
                 given Symbol type to generate an output.
-
         Args:
             property_type_set ({Symbol}): the set of Symbol objects
                 taken as starting properties.
@@ -502,18 +449,15 @@ class Graph(object):
         Determines all potential paths leading to a given symbol
         object. Answers the question: What sets of properties are
         required to calculate this given property?
-
         Paths are represented as a series of models and required
         input Symbol objects. Paths can be searched to determine
         specifically how to get from one property to another.
-
         Warning: Method indicates sets of Symbol objects required
             to calculate the property.  It does not indicate how
             many of each Symbol is required. It does not guarantee
             that supplying Quantities of these types will result
             in a new Symbol output as conditions / assumptions may
             not be met.
-
         Returns:
             propnet.core.utils.SymbolTree
         """
@@ -526,10 +470,8 @@ class Graph(object):
         Recursive helper method to build a SymbolTree.  Fills in
         the children of to_expand by all possible model
         substitutions.
-
         Args:
             to_expand: (TreeElement) element that will be expanded
-
         Returns:
             None
         """
@@ -655,12 +597,10 @@ class Graph(object):
         """
         Generates all combinatorially-unique sets of input dicts given
         a list of property names and a quantity pool
-
         Args:
             props ([str]): property names
             this_quantity_pool ({Symbol: Set(Quantity)}): quantities
                 keyed by symbols
-
         Returns ([{str: Quantity}]):
             list of symbol strings mapped to Quantity values.
         """
@@ -675,7 +615,6 @@ class Graph(object):
         """
         Generates all of the valid input sets for a given model, a fixed
         quantity, and a quantity pool from which to draw remaining properties
-
         Args:
             model (Model): model for which to evaluate valid input sets
             fixed_quantity (Quantity): quantity which must be included
@@ -683,10 +622,8 @@ class Graph(object):
             quantity_pool ({symbol: {Quantity}}): dict of quantity sets
                 keyed by symbol from which to draw additional quantities
                 for model inputs
-
         Returns:
             list of sets of input quantities for the model
-
         """
         evaluation_lists = [c for c in model.evaluation_list
                             if fixed_quantity.symbol in c]
@@ -702,7 +639,6 @@ class Graph(object):
     def generate_models_and_input_sets(self, new_quantities, quantity_pool):
         """
         Helper method to generate input sets for models
-
         Args:
             new_quantities ([Quantity]): list of new quantities from which
                 to derive new input sets (these are "fixed" quantities
@@ -710,7 +646,6 @@ class Graph(object):
             quantity_pool ({symbol: {Quantity}}): dict of quantity sets
                 keyed by symbol from which to draw additional quantities
                 for model inputs
-
         Returns:
             ([tuple]): list of tuples of models and their associated input
                 sets, uses tuple so duplicate checking can be performed
@@ -720,237 +655,170 @@ class Graph(object):
             for model in self._input_to_model[quantity.symbol]:
                 input_sets = self.get_input_sets_for_model(
                     model, quantity, quantity_pool)
-                for input_set in input_sets:
-                    sorting_key = {x: (x.symbol.name, x.value) for x in input_set}
-                    models_and_input_sets += [
-                        tuple([model] + sorted(list(input_set), key=sorting_key.get))]
+                models_and_input_sets += [
+                    tuple([model] + sorted(list(input_set), key=lambda x: (x.symbol.name, x.value)))
+                          for input_set in input_sets]
         # Filter for duplicates
         return set(models_and_input_sets)
 
-    async def _start_async_evaluation(self, input_quantities):
+    def derive_quantities(self, new_quantities, quantity_pool=None,
+                          allow_model_failure=True, executor=None):
         """
         Algorithm for expanding quantity pool
-
         Args:
             new_quantities ([Quantity]): list of quantities which to
                 consider as new inputs to models
             quantity_pool ({symbol: {Quantity}}): dict of quantity sets
                 keyed by symbol from which to draw additional quantities
                 for model inputs
-
         Returns:
             additional_quantities ([Quantity]): new derived quantities
             quantity_pool ({symbol: {Quantity}}): augmented version of
                 quantity pool
-
         """
-        event_loop = asyncio.get_running_loop()
-        self._evaluation_queue = asyncio.Queue()
-        self._analysis_queue = asyncio.Queue()
-        self._finished_queue = asyncio.Queue()
+        # Update quantity pool
+        quantity_pool = quantity_pool or defaultdict(set)
+        for quantity in new_quantities:
+            quantity_pool[quantity.symbol].add(quantity)
 
-        pool, _, _ = await asyncio.gather(self._analyze_quantities(input_quantities),
-                                          self._assign_input_sets_to_workers(),
-                                          self._parallel_job_done(),
-                                          loop=event_loop)
-        self._evaluation_queue = None
-        self._analysis_queue = None
-        self._finished_queue = None
-        return pool
+        run_serial = False
+        if executor is None:
+            run_serial = True
 
-    async def _analyze_quantities(self, initial_quantities):
-        print("Analysis coroutine is running")
-        pool = defaultdict(set)
-        for q in initial_quantities:
-            print(q.symbol.name)
-            self._analysis_queue.put_nowait(q)
+        # Generate all of the models and input sets to be evaluated
+        logger.info("Generating models and input sets for %s", new_quantities)
+        models_and_input_sets = self.generate_models_and_input_sets(
+            new_quantities, quantity_pool)
+        # print("Found {} input sets".format(len(models_and_input_sets)))
+        # Evaluate model for each input set and add new valid quantities
+        if run_serial:
+            added_quantities = Graph._run_serial(models_and_input_sets,
+                                                 allow_model_failure=allow_model_failure)
+        else:
+            added_quantities = Graph._run_parallel(executor, self._n_workers, models_and_input_sets,
+                                                   allow_model_failure=allow_model_failure)
 
-        while True:
-            with Timer('waiting_for_new_qs'):
-                q = await self._analysis_queue.get()
-                print("Analysis received input to process")
-            with Timer('processing_new_qs'):
-                if isinstance(q, str) and q == 'Done':
-                    print("Analysis received kill signal")
-                    self._analysis_queue.task_done()
-                    self._evaluation_queue.put_nowait('Done')
-                    self._finished_queue.put_nowait('Done')
-                    return pool
-                print("Got {} quantity ({}) to process".format(q.symbol.name, q.value))
-                input_sets = self.generate_models_and_input_sets([q], pool)
-                input_sets_to_queue = []
-                for input_set in input_sets:
-                    if self._generates_noncyclic_output(input_set):
-                        input_sets_to_queue.append(input_set)
-
-                pool[q.symbol].add(q)
-
-                if not input_sets_to_queue:
-                    print("No input sets for this quantity")
-                else:
-                    print("Queuing input sets for models:")
-                for input_set in input_sets_to_queue:
-                    print(input_set[0].name)
-                    self._evaluation_queue.put_nowait(input_set)
-
-                self._analysis_queue.task_done()
-
-                if not input_sets_to_queue and self._analysis_queue.empty() and \
-                        self._evaluation_queue.empty() and \
-                        len(self._input_sets_being_processed) == 0:
-                    print("Reached analysis exit condition. Sending kill signals")
-                    self._evaluation_queue.put_nowait('Done')
-                    self._finished_queue.put_nowait('Done')
-                    return pool
-
-    async def _assign_input_sets_to_workers(self):
-        print("Assignment coroutine is running")
-        event_loop = asyncio.get_running_loop()
-        while True:
-            with Timer('waiting_for_new_input_sets'):
-                input_set = await self._evaluation_queue.get()
-                print("Assignment received input to process")
-            with Timer('processing_new_input_sets'):
-                if isinstance(input_set, str) and input_set == 'Done':
-                    print("Assignment received kill signal")
-                    self._evaluation_queue.task_done()
-                    return
-                identifier = random.randint(0, 10000)
-                model_name = input_set[0].name
-                print("Assigning {}-{} for processing".format(model_name, identifier))
-                serialized_inputs = [v.as_dict() for v in input_set[1:]]
-                serialized_input_set = (model_name, serialized_inputs)
-                # identifier = pickle.dumps(serialized_input_set)
-
-                if self._executor:
-                    # Run in parallel
-                    future: asyncio.Future = event_loop.run_in_executor(self._executor,
-                                                              self._evaluate_model,
-                                                              serialized_input_set)
-
-                else:
-                    # Run serially asynchronously
-                    future: asyncio.Future = event_loop.create_task(self._evaluate_model_async(serialized_input_set))
-
-                # with Lock():
-                self._input_sets_being_processed.add(future)
-                print("{}-{} listed as being processed".format(model_name, identifier))
-                future.add_done_callback(self._finished_queue.put_nowait)
-                print("{}-{} callback added".format(model_name, identifier))
-                self._evaluation_queue.task_done()
-
-    async def _parallel_job_done(self):
-        while True:
-            with Timer('waiting_for_finished_calcs'):
-                future = await self._finished_queue.get()
-                print("Received input for parallel job processing")
-            with Timer('processing_finished_calcs'):
-                if isinstance(future, str) and future == 'Done':
-                    print("Received kill signal parallel job processing")
-                    self._finished_queue.task_done()
-                    return
-                try:
-                    print("Processing result")
-                    new_qs = future.result()
-                    for q in new_qs:
-                        print("Received: {}.\nQueuing for analysis".format(q['symbol_type']))
-                        self._analysis_queue.put_nowait(QuantityFactory.from_dict(q))
-                except Exception as ex:
-                    print("Model evaluation failed...moving on")
-                    if not self._allow_model_failure:
-                        raise ex
-                finally:
-                    # with Lock():
-                    self._input_sets_being_processed.remove(future)
-                print("Future removed from queue")
-                self._finished_queue.task_done()
-
-                if self._analysis_queue.empty() and \
-                        self._evaluation_queue.empty() and \
-                        self._finished_queue.empty() and \
-                        len(self._input_sets_being_processed) == 0:
-                    print("Reached exit condition for parallel job. Sending kill signal.")
-                    self._analysis_queue.put_nowait('Done')
+        return added_quantities, quantity_pool
 
     @staticmethod
-    def _generates_noncyclic_output(input_set):
-        with Timer('test_cyclic'):
-            model = input_set[0]
-            inputs = input_set[1:]
-            input_symbols = set(v.symbol for v in inputs)
-            outputs = set()
-            for s in model.connections:
-                if set(model.map_symbols_to_properties(s['inputs'])) == input_symbols:
-                    outputs = outputs.union(model.map_symbols_to_properties(s['outputs']))
-
-            model_in_all_trees = all(input_q.provenance.model_in_provenance_tree(model)
-                                     for input_q in inputs)
-
-            symbol_in_all_trees = all(all(input_q.provenance.symbol_in_provenance_tree(output)
-                                          for input_q in inputs)
-                                      for output in outputs)
-
-        return not (model_in_all_trees and symbol_in_all_trees)
+    def _run_serial(models_and_input_sets, allow_model_failure=True):
+        outputs = []
+        # print("Processing {} input sets serially".format(len(models_and_input_sets)))
+        for model_and_input_set in models_and_input_sets:
+            try:
+                out = Graph._evaluate_model(model_and_input_set,
+                                            allow_failure=allow_model_failure,
+                                            serialized=False)
+                outputs.extend(out)
+            except Exception as ex:
+                if not allow_model_failure:
+                    raise ex
+        # print("Found {} new quantities".format(len(outputs)))
+        return outputs
 
     @staticmethod
-    async def _evaluate_model_async(*args, **kwargs):
-        return Graph._evaluate_model(*args, **kwargs)
+    def _run_parallel(executor, n_workers, models_and_input_sets, allow_model_failure=True):
+        serialized_input_sets = []
+        # print("Serializing {} input sets".format(len(models_and_input_sets)))
+        for model_and_input_set in models_and_input_sets:
+            model = model_and_input_set[0].name
+            input_set = model_and_input_set[1:]
+            serialized_inputs = [v.as_dict() for v in input_set]
+            serialized_input_sets.append((model, *serialized_inputs))
+        # print("Processing {} serialized input sets".format(len(serialized_input_sets)))
+        func = partial(Graph._evaluate_model, allow_failure=allow_model_failure, serialized=True)
+        chunk_size = int(len(serialized_input_sets) / n_workers) + 1
+        # print("Chunk size: {}".format(chunk_size))
+        results = executor.map(func, serialized_input_sets, chunksize=chunk_size)
+        outputs = []
+        for new_qs in results:
+            for d in new_qs:
+                if isinstance(d, Exception) and not allow_model_failure:
+                    raise d
+                outputs.append(QuantityFactory.from_dict(d))
+
+        # print("Found {} new quantities".format(len(outputs)))
+        return outputs
 
     @staticmethod
-    def _evaluate_model(model_and_input_set, allow_failure=True):
-        with Timer('model_evaluation_overhead'):
-            model_name, serialized_inputs = model_and_input_set
-            model = DEFAULT_MODEL_DICT[model_name]
+    def _evaluate_model(model_and_input_set, allow_failure=True, serialized=True):
+        serialized_model = model_and_input_set[0]
+        serialized_inputs = model_and_input_set[1:]
+        if serialized:
+            model = DEFAULT_MODEL_DICT[serialized_model]
             inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
-            input_dict = {q.symbol: q for q in inputs}
-            logger.info('Evaluating %s with input %s', model, input_dict)
-            print('Evaluating {} with input {}'.format(model.name, input_dict))
-            sys.stdout.flush()
+        else:
+            model = serialized_model
+            inputs = serialized_inputs
+        input_dict = {q.symbol: q for q in inputs}
+        logger.info('Evaluating %s with input %s', model, input_dict)
+        # print('Evaluating {} with input {}'.format(model.name, input_dict))
+        # sys.stdout.flush()
 
-        with Timer(model.name):
-            result = model.evaluate(input_dict,
-                                    allow_failure=allow_failure)
+        try:
+            with Timer(model.name):
+                result = model.evaluate(input_dict,
+                                        allow_failure=allow_failure)
+        except Exception as ex:
+            # If we get an exception, then allow_failure should be False
+            # or we got some other exception we need to know about
+            out = [ex]
+            return out
         # TODO: Maybe provenance should be done in evaluate?
 
-        with Timer('model_evaluation_overhead'):
-            success = result.pop('successful')
-            if success:
-                print("Model {} evaluation successful".format(model.name))
+        success = result.pop('successful')
+        if success:
+            # print("Model {} evaluation successful".format(model.name))
+            if serialized:
                 out = [v.as_dict() for v in result.values() if not v.is_cyclic()]
             else:
-                print("Model {} evaluation unsuccessful".format(model.name))
-                logger.info("Model evaluation unsuccessful %s",
-                            result['message'])
-                out = []
-            return out
+                out = [v for v in result.values() if not v.is_cyclic()]
+        else:
+            # print("Model {} evaluation UNsuccessful".format(model.name))
+            logger.info("Model evaluation unsuccessful %s",
+                        result['message'])
+            out = []
+        return out
 
-    def evaluate(self, material, allow_model_failure=True):
+    def evaluate(self, material, allow_model_failure=True, parallel=False, max_workers=None):
         """
         Given a Material object as input, creates a new Material object
         to include all derivable properties.  Optional argument limits the
         scope of which models or properties are tested. Returns a
         reference to the new, augmented Material object.
-
         Args:
             material (Material): which material's properties will be expanded.
             allow_model_failure (Bool): whether to continue with graph evaluation
             if a model fails.
-
         Returns:
             (Material) reference to the newly derived material object.
         """
         logger.debug("Beginning evaluation")
 
         # Generate initial quantity set and pool
-        input_quantities = material.get_quantities()
+        new_quantities = material.get_quantities()
+        quantity_pool = None
+
+        if parallel:
+            executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
+            if max_workers is None:
+                self._n_workers = cpu_count()
+            else:
+                self._n_workers = max_workers
+        else:
+            executor = None
+
+        # clear existing model evaluation statistics
+        # clear()
 
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
-        logger.debug("Beginning main loop with quantities %s", input_quantities)
-
-        self._allow_model_failure = allow_model_failure
-
-        quantity_pool = self.derive_quantities(input_quantities)
+        logger.debug("Beginning main loop with quantities %s", new_quantities)
+        while new_quantities:
+            new_quantities, quantity_pool = self.derive_quantities(
+                new_quantities, quantity_pool,
+                allow_model_failure=allow_model_failure,
+                executor=executor)
 
         # store model evaluation statistics
         self._timings = timings
@@ -959,19 +827,14 @@ class Graph(object):
         new_material._symbol_to_quantity = quantity_pool
         return new_material
 
-    def derive_quantities(self, input_quantities):
-        return asyncio.run(self._start_async_evaluation(input_quantities), debug=False)
-
     def super_evaluate(self, material, allow_model_failure=True):
         """
         Given a SuperMaterial object as input, creates a new SuperMaterial
         object to include all derivable properties.  Returns a reference to
         the new, augmented SuperMaterial object.
-
         Args:
             material (SuperMaterial): material for which properties
                 will be expanded.
-
         Returns:
             (Material) reference to the newly derived material object.
         """
@@ -979,7 +842,6 @@ class Graph(object):
         if not isinstance(material, CompositeMaterial):
             raise Exception("material provided is not a SuperMaterial: " + str(type(material)))
 
-        self._allow_model_failure = allow_model_failure
         # Evaluate material's sub-materials
         evaluated_materials = list()
         for m in material.materials:
@@ -992,7 +854,7 @@ class Graph(object):
         # Run all SuperModels in the graph on this SuperMaterial if
         # a material mapping can be established.  Store any derived quantities.
         all_quantities = defaultdict(set)
-        for k, v in material._symbol_to_quantity:
+        for (k, v) in material._symbol_to_quantity:
             all_quantities[k].add(v)
 
         to_return = CompositeMaterial(evaluated_materials)
