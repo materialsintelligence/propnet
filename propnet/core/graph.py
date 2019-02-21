@@ -721,7 +721,10 @@ class Graph(object):
         serialized_input_sets = []
         # print("Serializing {} input sets".format(len(models_and_input_sets)))
         for model_and_input_set in models_and_input_sets:
-            model = model_and_input_set[0].name
+            if model_and_input_set[0] in DEFAULT_MODEL_DICT.keys():
+                model = model_and_input_set[0].name
+            else:
+                model = model_and_input_set[0]
             input_set = model_and_input_set[1:]
             serialized_inputs = [v.as_dict() for v in input_set]
             serialized_input_sets.append((model, *serialized_inputs))
@@ -745,7 +748,10 @@ class Graph(object):
         serialized_model = model_and_input_set[0]
         serialized_inputs = model_and_input_set[1:]
         if serialized:
-            model = DEFAULT_MODEL_DICT[serialized_model]
+            if isinstance(serialized_model, str):
+                model = DEFAULT_MODEL_DICT[serialized_model]
+            else:
+                model = serialized_model
             inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
         else:
             model = serialized_model

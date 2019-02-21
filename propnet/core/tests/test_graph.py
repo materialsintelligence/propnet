@@ -250,10 +250,9 @@ class GraphTest(unittest.TestCase):
         material = GraphTest.generate_canonical_material(symbols)
         del models['model6']
 
-        for run_serial, max_workers in zip((True, False), (None, 4)):
-            g = Graph(symbol_types=symbols, models=models, composite_models=dict(),
-                      serial=run_serial, max_workers=max_workers)
-            material_derived = g.evaluate(material)
+        for run_parallel, max_workers in zip((False, True), (None, 4)):
+            g = Graph(symbol_types=symbols, models=models, composite_models=dict())
+            material_derived = g.evaluate(material, parallel=run_parallel, max_workers=max_workers)
 
             expected_quantities = self.expected_quantities
 
@@ -277,10 +276,9 @@ class GraphTest(unittest.TestCase):
         models = GraphTest.generate_canonical_models()
         material = GraphTest.generate_canonical_material(symbols)
 
-        for run_serial, max_workers in zip((True, False), (None, 4)):
-            g = Graph(symbol_types=symbols, models=models, composite_models=dict(),
-                      serial=run_serial, max_workers=max_workers)
-            material_derived = g.evaluate(material)
+        for run_parallel, max_workers in zip((False, True), (None, 4)):
+            g = Graph(symbol_types=symbols, models=models, composite_models=dict())
+            material_derived = g.evaluate(material, parallel=run_parallel, max_workers=max_workers)
 
             expected_quantities = self.expected_quantities
 
