@@ -236,39 +236,37 @@ class Model(ABC):
         input_symbol_value_dict = {k: symbol_value_dict[k] for k in input_symbol_quantity_dict.keys()}
 
         # Plug in and check constraints
-        with Timer('plug_in'):
-            try:
-                with PrintToLogger():
-                    out: dict = self.plug_in(input_symbol_value_dict)
-            except Exception as err:
-                if allow_failure:
-                    return {"successful": False,
-                            "message": "{} evaluation failed: {}".format(self, err)}
-                else:
-                    raise err
+        try:
+            with PrintToLogger():
+                out: dict = self.plug_in(input_symbol_value_dict)
+        except Exception as err:
+            if allow_failure:
+                return {"successful": False,
+                        "message": "{} evaluation failed: {}".format(self, err)}
+            else:
+                raise err
         if not self.check_constraints({**symbol_value_dict, **out}):
             return {"successful": False,
                     "message": "Constraints not satisfied"}
-        with Timer('create_provenance'):
-            provenance = ProvenanceElement(
-                model=self.name, inputs=list(input_symbol_quantity_dict.values()),
-                source="propnet")
-        with Timer('generate_symbol_map'):
-            out = self.map_symbols_to_properties(out)
-            unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
+
+        provenance = ProvenanceElement(
+            model=self.name, inputs=list(input_symbol_quantity_dict.values()),
+            source="propnet")
+
+        out = self.map_symbols_to_properties(out)
+        unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
         for symbol, value in out.items():
-            with Timer('create_objects'):
-                try:
-                    quantity = QuantityFactory.create_quantity(
-                        symbol, value, unit_map_as_properties.get(symbol),
-                        provenance=provenance)
-                except SymbolConstraintError as err:
-                    if allow_failure:
-                        errmsg = "{} symbol constraint failed: {}".format(self, err)
-                        return {"successful": False,
-                                "message": errmsg}
-                    else:
-                        raise err
+            try:
+                quantity = QuantityFactory.create_quantity(
+                    symbol, value, unit_map_as_properties.get(symbol),
+                    provenance=provenance)
+            except SymbolConstraintError as err:
+                if allow_failure:
+                    errmsg = "{} symbol constraint failed: {}".format(self, err)
+                    return {"successful": False,
+                            "message": errmsg}
+                else:
+                    raise err
 
             if quantity.contains_nan_value():
                 return {"successful": False,
@@ -651,7 +649,8 @@ class EquationModel(Model, MSONable):
 
     def _generate_lambdas(self):
         for connection in self._connections:
-            connection['_lambdas'] = {}
+            if '_lambdas' not in connection.keys():
+                connection['_lambdas'] = dict()
             for output_sym, sympy_expr in connection['_sympy_exprs'].items():
                 connection['_lambdas'][output_sym] = \
                     sp.lambdify(connection['inputs'], sympy_expr)
