@@ -643,24 +643,28 @@ class EquationModel(Model, MSONable):
 
     @property
     def connections(self):
-        if not all('_lambdas' in connection.keys() for connection in self._connections):
+        if not all(['_lambdas' in connection.keys() for connection in self._connections]):
             self._generate_lambdas()
         return self._connections
 
     def _generate_lambdas(self):
         for connection in self._connections:
-            if '_lambdas' not in connection.keys():
-                connection['_lambdas'] = dict()
             for output_sym, sympy_expr in connection['_sympy_exprs'].items():
-                connection['_lambdas'][output_sym] = \
-                    sp.lambdify(connection['inputs'], sympy_expr)
+                sp_lambda = sp.lambdify(connection['inputs'], sympy_expr)
+                if '_lambdas' not in connection.keys():
+                    connection['_lambdas'] = dict()
+                connection['_lambdas'][output_sym] = sp_lambda
 
     def __getstate__(self):
-        d = copy(self.__dict__)
+        d = self.__dict__.copy()
         for connection in d['_connections']:
             if '_lambdas' in connection.keys():
                 del connection['_lambdas']
         return d
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._generate_lambdas()
 
     def plug_in(self, symbol_value_dict):
         """
