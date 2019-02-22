@@ -976,45 +976,43 @@ class ObjQuantity(BaseQuantity):
         if value is None:
             raise ValueError("ObjQuantity must hold a non-NoneType object for its value.")
 
-        with Timer('get_symbol'):
-            if isinstance(symbol_type, str):
-                symbol_type = super().get_symbol_from_string(symbol_type)
+        if isinstance(symbol_type, str):
+            symbol_type = super().get_symbol_from_string(symbol_type)
 
-        with Timer('coerce_value'):
-            if not symbol_type.is_correct_object_type(value):
-                old_type = type(value)
-                target_module = symbol_type.object_module
-                target_class = symbol_type.object_class
-                if target_module in sys.modules and \
-                        hasattr(sys.modules[target_module], target_class):
-                    try:
-                        cls_ = getattr(sys.modules[target_module], target_class)
-                        value = cls_(value)
-                    except (TypeError, ValueError):
-                        raise TypeError("Mismatch in type of value ({}) and type specified "
-                                        "by '{}' object symbol ({}).\nTypecasting failed."
-                                        "".format(old_type.__name__,
-                                                  symbol_type.name,
-                                                  symbol_type.object_class))
-                else:
-                    # Do not try to import the module for security reasons.
-                    # We don't want malicious modules to be automatically imported.
-                    raise NameError("Mismatch in type of value ({}) and type specified "
-                                    "by '{}' object symbol ({}).\nCannot typecast because "
-                                    "'{}' is not imported or does not exist."
+        if not symbol_type.is_correct_object_type(value):
+            old_type = type(value)
+            target_module = symbol_type.object_module
+            target_class = symbol_type.object_class
+            if target_module in sys.modules and \
+                    hasattr(sys.modules[target_module], target_class):
+                try:
+                    cls_ = getattr(sys.modules[target_module], target_class)
+                    value = cls_(value)
+                except (TypeError, ValueError):
+                    raise TypeError("Mismatch in type of value ({}) and type specified "
+                                    "by '{}' object symbol ({}).\nTypecasting failed."
                                     "".format(old_type.__name__,
                                               symbol_type.name,
-                                              symbol_type.object_class,
-                                              symbol_type.object_type))
+                                              symbol_type.object_class))
+            else:
+                # Do not try to import the module for security reasons.
+                # We don't want malicious modules to be automatically imported.
+                raise NameError("Mismatch in type of value ({}) and type specified "
+                                "by '{}' object symbol ({}).\nCannot typecast because "
+                                "'{}' is not imported or does not exist."
+                                "".format(old_type.__name__,
+                                          symbol_type.name,
+                                          symbol_type.object_class,
+                                          symbol_type.object_type))
 
-                logger.warning("WARNING: Mismatch in type of value ({}) "
-                               "and type specified by '{}' object symbol ({}). "
-                               "Value cast as '{}'.".format(old_type.__name__,
-                                                            symbol_type.name,
-                                                            symbol_type.object_class,
-                                                            symbol_type.object_type))
-        with Timer('run_super_init'):
-            super(ObjQuantity, self).__init__(symbol_type, value, tags=tags, provenance=provenance)
+            logger.warning("WARNING: Mismatch in type of value ({}) "
+                           "and type specified by '{}' object symbol ({}). "
+                           "Value cast as '{}'.".format(old_type.__name__,
+                                                        symbol_type.name,
+                                                        symbol_type.object_class,
+                                                        symbol_type.object_type))
+
+        super(ObjQuantity, self).__init__(symbol_type, value, tags=tags, provenance=provenance)
 
     @property
     def magnitude(self):
