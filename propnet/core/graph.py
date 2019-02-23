@@ -65,7 +65,9 @@ class Graph(object):
     def __init__(self,
                  models: Dict[str, Model]=None,
                  composite_models: Dict[str, CompositeModel]=None,
-                 symbol_types: Dict[str, Symbol]=None) -> None:
+                 symbol_types: Dict[str, Symbol]=None,
+                 parallel: bool=False,
+                 max_workers: int=None) -> None:
         """
         Creates a Graph instance
         """
@@ -80,7 +82,19 @@ class Graph(object):
         self._input_to_model = defaultdict(set)
         self._output_to_model = defaultdict(set)
         self._timings = None                        # type:Dict[,]
-        self._n_workers = None
+
+        if parallel:
+            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
+            if max_workers is None:
+                self._max_workers = cpu_count()
+            else:
+                self._max_workers = max_workers
+        else:
+            if max_workers is not None:
+                raise ValueError('Cannot specify max_workers with parallel=False')
+            # self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+            self._executor = None
+            self._max_workers = 0
 
         if symbol_types:
             self.update_symbol_types(symbol_types)
@@ -94,6 +108,10 @@ class Graph(object):
             self.update_composite_models(COMPOSITE_MODEL_DICT)
         else:
             self.update_composite_models(composite_models)
+
+    def __del__(self):
+        if self._executor:
+            self._executor.shutdown(wait=True)
 
     def __str__(self):
         """
@@ -658,7 +676,7 @@ class Graph(object):
         return set(models_and_input_sets)
 
     def derive_quantities(self, new_quantities, quantity_pool=None,
-                          allow_model_failure=True, executor=None):
+                          allow_model_failure=True):
         """
         Algorithm for expanding quantity pool
         Args:
@@ -678,7 +696,7 @@ class Graph(object):
             quantity_pool[quantity.symbol].add(quantity)
 
         run_serial = False
-        if executor is None:
+        if self._executor is None:
             run_serial = True
 
         # Generate all of the models and input sets to be evaluated
@@ -691,7 +709,7 @@ class Graph(object):
             added_quantities = Graph._run_serial(models_and_input_sets,
                                                  allow_model_failure=allow_model_failure)
         else:
-            added_quantities = Graph._run_parallel(executor, self._n_workers, models_and_input_sets,
+            added_quantities = Graph._run_parallel(self._executor, self._max_workers, models_and_input_sets,
                                                    allow_model_failure=allow_model_failure)
 
         return added_quantities, quantity_pool
@@ -702,9 +720,11 @@ class Graph(object):
         # print("Processing {} input sets serially".format(len(models_and_input_sets)))
         for model_and_input_set in models_and_input_sets:
             try:
-                out = Graph._evaluate_model(model_and_input_set,
-                                            allow_failure=allow_model_failure,
-                                            serialized=False)
+                model = model_and_input_set[0]
+                inputs = model_and_input_set[1:]
+                input_tuple = (model, inputs)
+                out = Graph._evaluate_model(input_tuple,
+                                            allow_failure=allow_model_failure)
                 outputs.extend(out)
             except Exception as ex:
                 if not allow_model_failure:
@@ -714,44 +734,30 @@ class Graph(object):
 
     @staticmethod
     def _run_parallel(executor, n_workers, models_and_input_sets, allow_model_failure=True):
-        serialized_input_sets = []
+        input_tuples = []
         # print("Serializing {} input sets".format(len(models_and_input_sets)))
         for model_and_input_set in models_and_input_sets:
-            if model_and_input_set[0] in DEFAULT_MODEL_DICT.keys():
-                model = model_and_input_set[0].name
-            else:
-                model = model_and_input_set[0]
-            input_set = model_and_input_set[1:]
-            serialized_inputs = [v.as_dict() for v in input_set]
-            serialized_input_sets.append((model, *serialized_inputs))
+            model = model_and_input_set[0]
+            inputs = model_and_input_set[1:]
+            input_tuples.append((model, inputs))
         # print("Processing {} serialized input sets".format(len(serialized_input_sets)))
-        func = partial(Graph._evaluate_model, allow_failure=allow_model_failure, serialized=True)
-        chunk_size = int(len(serialized_input_sets) / n_workers) + 1
+        func = partial(Graph._evaluate_model, allow_failure=allow_model_failure)
+        chunk_size = int(len(input_tuples) / n_workers) + 1
         # print("Chunk size: {}".format(chunk_size))
-        results = executor.map(func, serialized_input_sets, chunksize=chunk_size)
+        results = executor.map(func, input_tuples, chunksize=chunk_size)
         outputs = []
         for new_qs in results:
-            for d in new_qs:
-                if isinstance(d, Exception) and not allow_model_failure:
-                    raise d
-                outputs.append(QuantityFactory.from_dict(d))
+            for q in new_qs:
+                if isinstance(q, Exception) and not allow_model_failure:
+                    raise q
+                outputs.append(q)
 
         # print("Found {} new quantities".format(len(outputs)))
         return outputs
 
     @staticmethod
-    def _evaluate_model(model_and_input_set, allow_failure=True, serialized=True):
-        serialized_model = model_and_input_set[0]
-        serialized_inputs = model_and_input_set[1:]
-        if serialized:
-            if isinstance(serialized_model, str):
-                model = DEFAULT_MODEL_DICT[serialized_model]
-            else:
-                model = serialized_model
-            inputs = [QuantityFactory.from_dict(v) for v in serialized_inputs]
-        else:
-            model = serialized_model
-            inputs = serialized_inputs
+    def _evaluate_model(model_and_input_set, allow_failure=True):
+        model, inputs = model_and_input_set
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
         # print('Evaluating {} with input {}'.format(model.name, input_dict))
@@ -771,10 +777,7 @@ class Graph(object):
         success = result.pop('successful')
         if success:
             # print("Model {} evaluation successful".format(model.name))
-            if serialized:
-                out = [v.as_dict() for v in result.values() if not v.is_cyclic()]
-            else:
-                out = [v for v in result.values() if not v.is_cyclic()]
+            out = [v for v in result.values() if not v.is_cyclic()]
         else:
             # print("Model {} evaluation UNsuccessful".format(model.name))
             logger.info("Model evaluation unsuccessful %s",
@@ -782,7 +785,7 @@ class Graph(object):
             out = []
         return out
 
-    def evaluate(self, material, allow_model_failure=True, parallel=False, max_workers=None):
+    def evaluate(self, material, allow_model_failure=True):
         """
         Given a Material object as input, creates a new Material object
         to include all derivable properties.  Optional argument limits the
@@ -801,15 +804,6 @@ class Graph(object):
         new_quantities = material.get_quantities()
         quantity_pool = None
 
-        if parallel:
-            executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
-            if max_workers is None:
-                self._n_workers = cpu_count()
-            else:
-                self._n_workers = max_workers
-        else:
-            executor = None
-
         # clear existing model evaluation statistics
         # clear()
 
@@ -819,8 +813,7 @@ class Graph(object):
         while new_quantities:
             new_quantities, quantity_pool = self.derive_quantities(
                 new_quantities, quantity_pool,
-                allow_model_failure=allow_model_failure,
-                executor=executor)
+                allow_model_failure=allow_model_failure)
 
         # store model evaluation statistics
         self._timings = timings
