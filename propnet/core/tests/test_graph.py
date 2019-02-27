@@ -12,7 +12,9 @@ import os
 import json
 from monty.json import MontyDecoder, jsanitize
 
-from propnet.symbols import DEFAULT_SYMBOLS
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 # TODO: I think the expansion/tree traversal methods are very cool
 #       and should be preserved for now, even though they don't work.e
@@ -360,10 +362,10 @@ class GraphTest(unittest.TestCase):
         # Setup
         propnet = Graph()
         mat1 = Material()
-        permeability = [QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permeability'], 1),
-                        QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permeability'], 2)]
-        permittivity = [QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permittivity'], 3),
-                        QuantityFactory.create_quantity(DEFAULT_SYMBOLS['relative_permittivity'], 5)]
+        permeability = [QuantityFactory.create_quantity(Registry("symbols")['relative_permeability'], 1),
+                        QuantityFactory.create_quantity(Registry("symbols")['relative_permeability'], 2)]
+        permittivity = [QuantityFactory.create_quantity(Registry("symbols")['relative_permittivity'], 3),
+                        QuantityFactory.create_quantity(Registry("symbols")['relative_permittivity'], 5)]
 
         for q in permeability + permittivity:
             mat1.add_quantity(q)
@@ -389,9 +391,9 @@ class GraphTest(unittest.TestCase):
                                                                          inputs=[permeability[1],
                                                                                  permittivity[1]]))]
 
-        # st_outputs = [DEFAULT_SYMBOLS['relative_permeability'],
-        #               DEFAULT_SYMBOLS['relative_permittivity'],
-        #               DEFAULT_SYMBOLS['refractive_index']]
+        # st_outputs = [Registry("symbols")['relative_permeability'],
+        #               Registry("symbols")['relative_permittivity'],
+        #               Registry("symbols")['refractive_index']]
 
         # Test
         for q_expected in s_outputs:
@@ -970,3 +972,7 @@ class GraphTest(unittest.TestCase):
             with open(os.path.join(TEST_DIR, '{}.json'.format(mpid)), 'w') as f:
                 qs = jsanitize(m.get_quantities(), strict=True)
                 f.write(json.dumps(qs))
+
+if __name__ == "__main__":
+    unittest.main()
+

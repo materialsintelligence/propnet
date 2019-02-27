@@ -6,9 +6,11 @@ from pydash import set_
 import networkx as nx
 from propnet.core.graph import Graph
 
-from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.web.utils import graph_conversion, AESTHETICS
 
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 # layouts for symbol detail pages
 def symbol_layout(symbol_name, aesthetics=None):
@@ -27,7 +29,7 @@ def symbol_layout(symbol_name, aesthetics=None):
     # list to hold layouts for each section
     layouts = []
 
-    symbol = DEFAULT_SYMBOLS[symbol_name]
+    symbol = Registry("symbols")[symbol_name]
 
     main_name = symbol.display_names[0]
 
@@ -81,11 +83,11 @@ def symbol_layout(symbol_name, aesthetics=None):
 def symbols_index():
 
     symbol_links = {}
-    for symbol_name in DEFAULT_SYMBOLS:
+    for symbol_name in Registry("symbols"):
 
         # group by tag
-        symbol_type = DEFAULT_SYMBOLS[symbol_name].category
-        display_name = DEFAULT_SYMBOLS[symbol_name].display_names[0]
+        symbol_type = Registry("symbols")[symbol_name].category
+        display_name = Registry("symbols")[symbol_name].display_names[0]
 
         if symbol_type not in symbol_links:
             symbol_links[symbol_type] = []

@@ -10,9 +10,12 @@ from propnet.dbtools.storage import StorageQuantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 from propnet.core.provenance import ProvenanceElement
-from propnet.models import DEFAULT_MODEL_DICT
 from propnet.ext.matproj import MPRester
 from pydash import get
+
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 
 class PropnetBuilder(Builder):
@@ -91,8 +94,8 @@ class PropnetBuilder(Builder):
         logger.info("Evaluating graph for %s", item['task_id'])
         graph = Graph()
         graph.remove_models(
-            {"dimensionality_cheon": DEFAULT_MODEL_DICT['dimensionality_cheon'],
-             "dimensionality_gorai": DEFAULT_MODEL_DICT['dimensionality_gorai']})
+            {"dimensionality_cheon": Registry("models")['dimensionality_cheon'],
+             "dimensionality_gorai": Registry("models")['dimensionality_gorai']})
         new_material = graph.evaluate(material)
 
         # Format document and return

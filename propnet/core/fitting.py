@@ -11,9 +11,11 @@ from collections import OrderedDict
 import numpy as np
 
 from scipy.optimize import minimize
-from propnet.models import DEFAULT_MODEL_NAMES
 from propnet.core.quantity import QuantityFactory
 
+# noinspection PyUnresolvedReferences
+import propnet.models
+from propnet.core.registry import Registry
 
 def aggregate_quantities(quantities, model_score_dict=None):
     """
@@ -78,7 +80,7 @@ def fit_model_scores(materials, benchmarks, models=None,
             SSE for the benchmarked dataset
 
     """
-    model_list = models or DEFAULT_MODEL_NAMES
+    model_list = models or list(Registry("models").keys())
 
     def f(f_scores):
         model_score_dict = {m: max(s, min_score)

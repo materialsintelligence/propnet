@@ -13,7 +13,9 @@ from dash.exceptions import PreventUpdate
 
 from collections import OrderedDict
 
-from propnet.symbols import DEFAULT_SYMBOLS
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 from propnet import ureg, logger
 from propnet.core.quantity import QuantityFactory
@@ -27,7 +29,8 @@ MPR = MPRester()
 
 # explicitly making this an OrderedDict so we can go back from the
 # display name to the symbol name
-SCALAR_SYMBOLS = OrderedDict({k: v for k, v in sorted(DEFAULT_SYMBOLS.items(), key=lambda x: x[1].display_names[0])
+SCALAR_SYMBOLS = OrderedDict({k: v for k, v in sorted(Registry("symbols").items(),
+                                                      key=lambda x: x[1].display_names[0])
                               if ((v.category == 'property' or v.category == 'condition')
                                   and v.shape == 1)})
 ROW_IDX_TO_SYMBOL_NAME = [symbol for symbol in SCALAR_SYMBOLS.keys()]
@@ -41,7 +44,8 @@ DEFAULT_ROWS = [
 ]
 
 
-REMAINING_SYMBOLS = OrderedDict({k: v for k, v in sorted(DEFAULT_SYMBOLS.items(), key=lambda x: x[1].display_names[0])
+REMAINING_SYMBOLS = OrderedDict({k: v for k, v in sorted(Registry("symbols").items(),
+                                                         key=lambda x: x[1].display_names[0])
                                 if not ((v.category == 'property' or v.category == 'condition')
                                         and v.shape == 1)})
 REMAINING_ROW_IDX_TO_SYMBOL_NAME = [symbol for symbol in REMAINING_SYMBOLS.keys()]
@@ -53,6 +57,7 @@ REMAINING_DEFAULT_ROWS = [
     }
     for symbol in REMAINING_SYMBOLS.values()
 ]
+
 
 def interactive_layout(app):
 

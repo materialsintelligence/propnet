@@ -57,3 +57,6 @@ class FittingTests(unittest.TestCase):
                                   models=model_names)
         self.assertAlmostEqual(
             scores['band_gap_refractive_index_herve_vandamme'], 1.371478, 3)
+
+if __name__ == "__main__":
+    unittest.main()

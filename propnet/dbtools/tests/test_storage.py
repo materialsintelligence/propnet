@@ -7,13 +7,15 @@ from propnet.dbtools.storage import StorageQuantity, ProvenanceStore, Provenance
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import QuantityFactory, NumQuantity, BaseQuantity
 from propnet.core.provenance import ProvenanceElement
-from propnet.models import DEFAULT_MODEL_DICT
 from propnet import ureg
 
 from monty.json import jsanitize, MontyDecoder
 import copy
 from itertools import chain
 
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -105,7 +107,7 @@ class StorageTest(unittest.TestCase):
         band_gaps = [QuantityFactory.create_quantity('band_gap', 3.3, 'eV'),
                      QuantityFactory.create_quantity('band_gap', 2.1, 'eV')]
 
-        bg_ri_model = DEFAULT_MODEL_DICT['band_gap_refractive_index_moss']
+        bg_ri_model = Registry("models")['band_gap_refractive_index_moss']
         refractive_indices = [bg_ri_model.evaluate({"Eg": bg}).pop('refractive_index') for bg in band_gaps]
 
         self.quantities_canonical_symbol = {"band_gaps": band_gaps,

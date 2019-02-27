@@ -3,9 +3,12 @@ from monty.serialization import MontyDecoder
 from propnet.core.quantity import BaseQuantity, QuantityFactory
 from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
-from propnet.symbols import DEFAULT_SYMBOLS
 import copy
 import logging
+
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
 
@@ -277,7 +280,7 @@ class StorageQuantity(MSONable):
 
         """
         symbol = self._symbol_type
-        if symbol.name in DEFAULT_SYMBOLS.keys() and symbol == DEFAULT_SYMBOLS[symbol.name]:
+        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name]:
             symbol = self._symbol_type.name
 
         return {"@module": self.__class__.__module__,
@@ -305,7 +308,7 @@ class StorageQuantity(MSONable):
         d_in = {k: MontyDecoder().process_decoded(v) for k, v in d.items()
                 if not k.startswith("@")}
         if isinstance(d_in['symbol_type'], str):
-            d_in['symbol_type'] = DEFAULT_SYMBOLS[d_in['symbol_type']]
+            d_in['symbol_type'] = Registry("symbols")[d_in['symbol_type']]
 
         out = cls()
         out._initialize(**d_in)
@@ -578,7 +581,7 @@ class ProvenanceStoreQuantity(StorageQuantity):
 
         """
         symbol = self._symbol_type
-        if symbol.name in DEFAULT_SYMBOLS.keys() and symbol == DEFAULT_SYMBOLS[symbol.name]:
+        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name]:
             symbol = self._symbol_type.name
 
         return {

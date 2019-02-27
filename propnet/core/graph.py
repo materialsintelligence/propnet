@@ -15,10 +15,14 @@ from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
 from propnet.core.models import Model, CompositeModel
 from propnet.core.quantity import QuantityFactory
+from propnet.core.symbols import Symbol
 from propnet.core.provenance import SymbolTree, TreeElement
-from propnet.models import COMPOSITE_MODEL_DICT
-from propnet.models import DEFAULT_MODEL_DICT
-from propnet.symbols import Symbol, DEFAULT_SYMBOLS
+
+# noinspection PyUnresolvedReferences
+import propnet.models
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 from typing import Set, Dict, Union
 
@@ -75,7 +79,7 @@ class Graph(object):
         """
 
         # set our defaults if no models/symbol types supplied
-        symbol_types = symbol_types or DEFAULT_SYMBOLS
+        symbol_types = symbol_types or Registry("symbols")
 
         # create the graph
         self._symbol_types = dict()
@@ -89,12 +93,12 @@ class Graph(object):
             self.update_symbol_types(symbol_types)
 
         if models is None:
-            self.update_models(DEFAULT_MODEL_DICT)
+            self.update_models(Registry("models"))
         else:
             self.update_models(models)
 
         if composite_models is None:
-            self.update_composite_models(COMPOSITE_MODEL_DICT)
+            self.update_composite_models(Registry("composite_models"))
         else:
             self.update_composite_models(composite_models)
 

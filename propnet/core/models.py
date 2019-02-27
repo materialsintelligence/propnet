@@ -19,14 +19,16 @@ from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
-from propnet.symbols import DEFAULT_UNITS
+
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
 
 # TODO: maybe this should go somewhere else, like a dedicated settings.py
 TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
-                             "models", "test_data")
-
+                             "models", "tests", "pymodel_test_data")
 
 class Model(ABC):
     """
@@ -91,7 +93,7 @@ class Model(ABC):
         self.symbol_property_map.update(symbol_property_map or {})
 
         if scrub_units is not None or 'empirical' in self.categories:
-            self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
+            self.unit_map = {prop_name: Registry("units").get(prop_name)
                              for prop_name in self.all_properties}
             # Update with explicitly supplied units if specified
             if isinstance(scrub_units, dict):

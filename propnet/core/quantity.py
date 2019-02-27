@@ -11,7 +11,10 @@ from propnet import ureg
 from pint import DimensionalityError
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
-from propnet.symbols import DEFAULT_SYMBOLS, DEFAULT_SYMBOL_VALUES
+
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 from propnet.core.exceptions import SymbolConstraintError
 from typing import Union
@@ -46,7 +49,7 @@ class BaseQuantity(ABC, MSONable):
 
         Args:
             symbol_type (Symbol or str): pointer to a Symbol
-                object in DEFAULT_SYMBOLS or string giving the name
+                object in Registry("symbols") or string giving the name
                 of a Symbol object. Identifies the type of data
                 stored in the quantity.
             value (id): value of the quantity.
@@ -96,7 +99,7 @@ class BaseQuantity(ABC, MSONable):
     @staticmethod
     def get_symbol_from_string(name):
         """
-        Looks up Symbol from name in DEFAULT_SYMBOLS registry.
+        Looks up Symbol from name in Registry("symbols") registry.
 
         Args:
             name: (str) the name of the Symbol object
@@ -108,10 +111,10 @@ class BaseQuantity(ABC, MSONable):
         if not isinstance(name, str):
             raise TypeError("Expected str, encountered {}".format(type(name)))
 
-        if name not in DEFAULT_SYMBOLS.keys():
+        if name not in Registry("symbols").keys():
             raise ValueError("Symbol type {} not recognized".format(name))
 
-        return DEFAULT_SYMBOLS[name]
+        return Registry("symbols")[name]
 
     @property
     @abstractmethod
@@ -296,7 +299,7 @@ class BaseQuantity(ABC, MSONable):
             (dict): representation of object as a dictionary
         """
         symbol = self._symbol_type
-        if symbol.name in DEFAULT_SYMBOLS.keys() and symbol == DEFAULT_SYMBOLS[symbol.name]:
+        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name]:
             symbol = self._symbol_type.name
         else:
             symbol = symbol.as_dict()
@@ -1213,7 +1216,7 @@ class QuantityFactory(object):
         Returns:
             BaseQuantity corresponding to default quantity from default
         """
-        val = DEFAULT_SYMBOL_VALUES.get(symbol)
+        val = Registry("symbol_values").get(symbol)
         if val is None:
             raise ValueError("No default value for {}".format(symbol))
         prov = ProvenanceElement(model='default')
