@@ -11,7 +11,9 @@ from propnet.core.models import Model
 
 from monty.serialization import loadfn
 
+# noinspection PyUnresolvedReferences
 import propnet.models
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 
@@ -193,9 +195,9 @@ def parse_path(pathname):
         mode = 'property'
     elif pathname.startswith('/property'):
         mode = 'property'
-        for property in Registry("symbols").keys():
-            if pathname.startswith('/property/{}'.format(property)):
-                value = property
+        for property_ in Registry("symbols").keys():
+            if pathname.startswith('/property/{}'.format(property_)):
+                value = property_
     elif pathname.startswith('/explore'):
         mode = 'explore'
     elif pathname.startswith('/plot'):

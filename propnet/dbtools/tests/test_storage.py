@@ -13,6 +13,7 @@ from monty.json import jsanitize, MontyDecoder
 import copy
 from itertools import chain
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

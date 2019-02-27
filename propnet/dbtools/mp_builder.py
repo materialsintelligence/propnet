@@ -13,6 +13,7 @@ from propnet.core.provenance import ProvenanceElement
 from propnet.ext.matproj import MPRester
 from pydash import get
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

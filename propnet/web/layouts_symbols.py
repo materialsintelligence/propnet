@@ -8,6 +8,7 @@ from propnet.core.graph import Graph
 
 from propnet.web.utils import graph_conversion, AESTHETICS
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

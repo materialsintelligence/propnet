@@ -9,6 +9,7 @@ import warnings
 from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.symbols import Symbol
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

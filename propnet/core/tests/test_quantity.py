@@ -17,6 +17,7 @@ from propnet import ureg
 from propnet.core.provenance import ProvenanceElement
 from propnet.core.utils import LogSniffer
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

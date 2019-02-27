@@ -5,6 +5,7 @@ from propnet.core.quantity import QuantityFactory
 from propnet.core.graph import Graph
 from propnet.core.provenance import ProvenanceElement
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

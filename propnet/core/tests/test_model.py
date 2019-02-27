@@ -3,17 +3,19 @@ import unittest
 import math
 import numpy as np
 
+# noinspection PyUnresolvedReferences
 import propnet.models
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 
 from propnet.core.models import EquationModel
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import QuantityFactory
-from propnet.core.registry import Registry
 
 # TODO: test PyModule, PyModel
 # TODO: separate these into specific tests of model functionality
 #       and validation of default models
+
 
 class ModelTest(unittest.TestCase):
 

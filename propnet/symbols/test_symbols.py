@@ -1,5 +1,6 @@
 import unittest
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

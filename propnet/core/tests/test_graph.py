@@ -12,6 +12,7 @@ import os
 import json
 from monty.json import MontyDecoder, jsanitize
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

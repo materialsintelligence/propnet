@@ -15,6 +15,7 @@ from pydash import get
 from pymatgen import MPRester
 from pymatgen.util.string import unicodeify
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

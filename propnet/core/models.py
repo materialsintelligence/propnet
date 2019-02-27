@@ -20,6 +20,7 @@ from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: maybe this should go somewhere else, like a dedicated settings.py
 TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
-                             "models", "test_data")
+                             "models", "tests", "pymodel_test_data")
 
 class Model(ABC):
     """

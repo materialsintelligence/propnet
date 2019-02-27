@@ -9,7 +9,9 @@ from propnet.core.graph import Graph
 
 from propnet.web.utils import references_to_markdown, graph_conversion, AESTHETICS
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
+# noinspection PyUnresolvedReferences
 import propnet.models
 from propnet.core.registry import Registry
 

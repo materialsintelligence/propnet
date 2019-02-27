@@ -1,13 +1,11 @@
 import unittest
 
-import math
-import numpy as np
-
+# noinspection PyUnresolvedReferences
 import propnet.models
 from propnet.core.registry import Registry
 
 
-class ModelsTest(unittest.TestCase):
+class DefaultModelsTest(unittest.TestCase):
     def test_instantiate_all_models(self):
         models_to_test = []
         for model_name in Registry("models").keys():
@@ -84,7 +82,7 @@ returns {'mu_e': 8994.92312225673}
 """
         self.assertEqual(example_model.example_code, example_code)
 
-        for name, model in Registry("models").items():
+        for model in Registry("models").values():
             # A little weird, but otherwise you don't get the explicit error
             try:
                 exec(model.example_code)

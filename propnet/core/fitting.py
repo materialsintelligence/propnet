@@ -13,6 +13,7 @@ import numpy as np
 from scipy.optimize import minimize
 from propnet.core.quantity import QuantityFactory
 
+# noinspection PyUnresolvedReferences
 import propnet.models
 from propnet.core.registry import Registry
 

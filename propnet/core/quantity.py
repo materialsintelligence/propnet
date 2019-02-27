@@ -12,6 +12,7 @@ from pint import DimensionalityError
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

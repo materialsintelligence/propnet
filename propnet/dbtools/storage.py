@@ -6,6 +6,7 @@ from propnet import ureg
 import copy
 import logging
 
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

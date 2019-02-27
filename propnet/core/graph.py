@@ -18,7 +18,9 @@ from propnet.core.quantity import QuantityFactory
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import SymbolTree, TreeElement
 
+# noinspection PyUnresolvedReferences
 import propnet.models
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

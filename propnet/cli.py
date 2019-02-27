@@ -10,6 +10,7 @@ from os import environ
 from propnet.core.models import EquationModel, PyModel
 from monty.serialization import loadfn
 
+# noinspection PyUnresolvedReferences
 import propnet.models
 from propnet.core.registry import Registry
 
