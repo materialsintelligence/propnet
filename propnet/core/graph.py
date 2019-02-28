@@ -4,8 +4,8 @@ Module containing classes and methods for graph functionality in Propnet code.
 
 import logging
 from collections import defaultdict
-from itertools import product
-from chronic import Timer, timings
+from itertools import product, chain
+from chronic import Timer, timings, clear
 from pandas import DataFrame
 from collections import deque
 import concurrent.futures
@@ -85,7 +85,7 @@ class Graph(object):
         self._composite_models = dict()
         self._input_to_model = defaultdict(set)
         self._output_to_model = defaultdict(set)
-        self._timings = None                        # type:Dict[,]
+        self._timings = None
 
         if parallel:
             self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
@@ -365,7 +365,6 @@ class Graph(object):
             agraph.draw(filename, prog=prog, **kwargs)
         else:
             agraph.write(filename, **kwargs)
-
 
     # TODO: can we remove this?
     def calculable_properties(self, property_type_set):
@@ -679,7 +678,7 @@ class Graph(object):
         # Filter for duplicates
         return set(models_and_input_sets)
 
-    def derive_quantities(self, new_quantities, quantity_pool=None,
+    async def derive_quantities(self, new_quantities, quantity_pool=None,
                           allow_model_failure=True):
         """
         Algorithm for expanding quantity pool
@@ -707,56 +706,62 @@ class Graph(object):
         logger.info("Generating models and input sets for %s", new_quantities)
         models_and_input_sets = self.generate_models_and_input_sets(
             new_quantities, quantity_pool)
-        # print("Found {} input sets".format(len(models_and_input_sets)))
+
+        input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
+
+        inputs_to_calculate = list(filter(lambda x: Graph._generates_noncyclic_output(x),
+                                          input_tuples))
+
         # Evaluate model for each input set and add new valid quantities
         if run_serial:
-            added_quantities = Graph._run_serial(models_and_input_sets,
+            added_quantities = await Graph._run_serial(inputs_to_calculate,
                                                  allow_model_failure=allow_model_failure)
         else:
-            added_quantities = Graph._run_parallel(self._executor, self._max_workers, models_and_input_sets,
+            added_quantities = await Graph._run_parallel(self._executor, self._max_workers, inputs_to_calculate,
                                                    allow_model_failure=allow_model_failure)
 
         return added_quantities, quantity_pool
 
     @staticmethod
-    def _run_serial(models_and_input_sets, allow_model_failure=True):
+    def _generates_noncyclic_output(input_set):
+        model, inputs = input_set
+        input_symbols = set(v.symbol for v in inputs)
+        outputs = set()
+        for s in model.connections:
+            if set(model.map_symbols_to_properties(s['inputs'])) == input_symbols:
+                outputs = outputs.union(model.map_symbols_to_properties(s['outputs']))
+
+        model_in_all_trees = all(input_q.provenance.model_in_provenance_tree(model)
+                                 for input_q in inputs)
+
+        symbol_in_all_trees = all(all(input_q.provenance.symbol_in_provenance_tree(output)
+                                      for input_q in inputs)
+                                  for output in outputs)
+
+        return not (model_in_all_trees and symbol_in_all_trees)
+
+    @staticmethod
+    async def _run_serial(models_and_input_sets, allow_model_failure=True):
         outputs = []
-        # print("Processing {} input sets serially".format(len(models_and_input_sets)))
         for model_and_input_set in models_and_input_sets:
-            try:
-                model = model_and_input_set[0]
-                inputs = model_and_input_set[1:]
-                input_tuple = (model, inputs)
-                out = Graph._evaluate_model(input_tuple,
-                                            allow_failure=allow_model_failure)
-                outputs.extend(out)
-            except Exception as ex:
-                if not allow_model_failure:
-                    raise ex
-        # print("Found {} new quantities".format(len(outputs)))
+            out = Graph._evaluate_model(model_and_input_set,
+                                        allow_failure=allow_model_failure)
+            if isinstance(out[0], Exception):
+                raise out[0]
+            outputs.extend(out)
         return outputs
 
     @staticmethod
-    def _run_parallel(executor, n_workers, models_and_input_sets, allow_model_failure=True):
-        input_tuples = []
-        # print("Serializing {} input sets".format(len(models_and_input_sets)))
-        for model_and_input_set in models_and_input_sets:
-            model = model_and_input_set[0]
-            inputs = model_and_input_set[1:]
-            input_tuples.append((model, inputs))
-        # print("Processing {} serialized input sets".format(len(serialized_input_sets)))
+    async def _run_parallel(executor, n_workers, models_and_input_sets, allow_model_failure=True):
         func = partial(Graph._evaluate_model, allow_failure=allow_model_failure)
-        chunk_size = int(len(input_tuples) / n_workers) + 1
-        # print("Chunk size: {}".format(chunk_size))
-        results = executor.map(func, input_tuples, chunksize=chunk_size)
+        chunk_size = int(len(models_and_input_sets) / n_workers) + 1
+        results = await executor.map(func, models_and_input_sets, chunksize=chunk_size)
         outputs = []
-        for new_qs in results:
-            for q in new_qs:
-                if isinstance(q, Exception) and not allow_model_failure:
-                    raise q
+        for q in chain.from_iterable(results):
+            if isinstance(q, Exception):
+                raise q
+            else:
                 outputs.append(q)
-
-        # print("Found {} new quantities".format(len(outputs)))
         return outputs
 
     @staticmethod
@@ -764,8 +769,6 @@ class Graph(object):
         model, inputs = model_and_input_set
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
-        # print('Evaluating {} with input {}'.format(model.name, input_dict))
-        # sys.stdout.flush()
 
         try:
             with Timer(model.name):
@@ -774,22 +777,19 @@ class Graph(object):
         except Exception as ex:
             # If we get an exception, then allow_failure should be False
             # or we got some other exception we need to know about
-            out = [ex]
-            return out
+            return [ex]
         # TODO: Maybe provenance should be done in evaluate?
 
         success = result.pop('successful')
         if success:
-            # print("Model {} evaluation successful".format(model.name))
             out = [v for v in result.values() if not v.is_cyclic()]
         else:
-            # print("Model {} evaluation UNsuccessful".format(model.name))
             logger.info("Model evaluation unsuccessful %s",
                         result['message'])
             out = []
         return out
 
-    def evaluate(self, material, allow_model_failure=True):
+    async def evaluate(self, material, allow_model_failure=True):
         """
         Given a Material object as input, creates a new Material object
         to include all derivable properties.  Optional argument limits the
@@ -808,14 +808,11 @@ class Graph(object):
         new_quantities = material.get_quantities()
         quantity_pool = None
 
-        # clear existing model evaluation statistics
-        # clear()
-
         # Derive new Quantities
         # Loop util no new Quantity objects are derived.
         logger.debug("Beginning main loop with quantities %s", new_quantities)
         while new_quantities:
-            new_quantities, quantity_pool = self.derive_quantities(
+            new_quantities, quantity_pool = await self.derive_quantities(
                 new_quantities, quantity_pool,
                 allow_model_failure=allow_model_failure)
 
@@ -935,6 +932,10 @@ class Graph(object):
         mappings = self.evaluate(to_return)._symbol_to_quantity
         to_return._symbol_to_quantity = mappings
         return to_return
+
+    def clear_statistics(self):
+        self._timings = None
+        clear()
 
     @property
     def evaluation_statistics(self):

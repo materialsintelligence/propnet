@@ -7,8 +7,7 @@ import re
 import logging
 from abc import ABC, abstractmethod
 from itertools import chain
-from chronic import Timer
-from copy import copy
+import asyncio
 
 import six
 from monty.serialization import loadfn
@@ -180,7 +179,10 @@ class Model(ABC):
         """
         return remap(symbols, getattr(self, "symbol_property_map", {}))
 
-    def evaluate(self, symbol_quantity_dict_in, allow_failure=True):
+    async def _plug_in_async(self, *args, **kwargs):
+        return self.plug_in(*args, **kwargs)
+
+    async def evaluate(self, symbol_quantity_dict_in, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
         if the corresponding input symbol_values represents a valid
@@ -240,7 +242,10 @@ class Model(ABC):
         # Plug in and check constraints
         try:
             with PrintToLogger():
-                out: dict = self.plug_in(input_symbol_value_dict)
+                task = asyncio.create_task(
+                    self._plug_in_async(input_symbol_value_dict))
+                await asyncio.wait_for(task, timeout=1)
+                out = task.result()
         except Exception as err:
             if allow_failure:
                 return {"successful": False,
