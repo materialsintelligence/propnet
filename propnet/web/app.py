@@ -13,7 +13,7 @@ from propnet.web.layouts_home import home_layout
 from propnet.web.layouts_interactive import interactive_layout
 from propnet.web.layouts_explore import explore_layout
 
-from mp_dash_components import GraphComponent
+from crystal_toolkit import GraphComponent
 
 from propnet.web.utils import parse_path
 
