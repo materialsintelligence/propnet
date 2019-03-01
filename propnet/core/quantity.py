@@ -3,14 +3,13 @@ from monty.json import MSONable
 from monty.serialization import MontyDecoder
 from datetime import datetime
 import sys
-from chronic import Timer
 
 import networkx as nx
 
 from abc import ABC, abstractmethod
 
 from propnet import ureg
-from pint import DimensionalityError, UnitRegistry
+from pint import DimensionalityError
 from propnet.core.symbols import Symbol
 from propnet.core.provenance import ProvenanceElement
 
@@ -465,49 +464,44 @@ class NumQuantity(BaseQuantity):
 
         """
         # TODO: Test value on the shape dictated by symbol
-        with Timer('get_symbol'):
-            if isinstance(symbol_type, str):
-                symbol_type = BaseQuantity.get_symbol_from_string(symbol_type)
+        if isinstance(symbol_type, str):
+            symbol_type = BaseQuantity.get_symbol_from_string(symbol_type)
 
         # Set default units if not supplied
-        with Timer('get_units'):
-            if not units:
-                logger.warning("No units supplied, assuming default units from symbol.")
+        if not units:
+            logger.warning("No units supplied, assuming default units from symbol.")
 
-            units = units or symbol_type.units
+        units = units or symbol_type.units
 
-        with Timer('coerce_value'):
-            if isinstance(value, self._ACCEPTABLE_DTYPES):
-                value_in = ureg.Quantity(value.item(), units)
-            elif isinstance(value, ureg.Quantity):
-                value_in = value.to(units)
-            elif self.is_acceptable_type(value):
-                value_in = ureg.Quantity(value, units)
+        if isinstance(value, self._ACCEPTABLE_DTYPES):
+            value_in = ureg.Quantity(value.item(), units)
+        elif isinstance(value, ureg.Quantity):
+            value_in = value.to(units)
+        elif self.is_acceptable_type(value):
+            value_in = ureg.Quantity(value, units)
+        else:
+            raise TypeError('Invalid type passed to constructor for value:'
+                            ' {}'.format(type(value)))
+
+        super(NumQuantity, self).__init__(symbol_type, value_in,
+                                          tags=tags, provenance=provenance)
+
+        if uncertainty is not None:
+            if isinstance(uncertainty, self._ACCEPTABLE_DTYPES):
+                self._uncertainty = ureg.Quantity(uncertainty.item(), units)
+            elif isinstance(uncertainty, ureg.Quantity):
+                self._uncertainty = uncertainty.to(units)
+            elif isinstance(uncertainty, NumQuantity):
+                self._uncertainty = uncertainty._value.to(units)
+            elif isinstance(uncertainty, tuple):
+                self._uncertainty = ureg.Quantity.from_tuple(uncertainty).to(units)
+            elif self.is_acceptable_type(uncertainty):
+                self._uncertainty = ureg.Quantity(uncertainty, units)
             else:
-                raise TypeError('Invalid type passed to constructor for value:'
-                                ' {}'.format(type(value)))
-
-        with Timer('run_super_init'):
-            super(NumQuantity, self).__init__(symbol_type, value_in,
-                                              tags=tags, provenance=provenance)
-
-        with Timer('coerce_uncertainty'):
-            if uncertainty is not None:
-                if isinstance(uncertainty, self._ACCEPTABLE_DTYPES):
-                    self._uncertainty = ureg.Quantity(uncertainty.item(), units)
-                elif isinstance(uncertainty, ureg.Quantity):
-                    self._uncertainty = uncertainty.to(units)
-                elif isinstance(uncertainty, NumQuantity):
-                    self._uncertainty = uncertainty._value.to(units)
-                elif isinstance(uncertainty, tuple):
-                    self._uncertainty = ureg.Quantity.from_tuple(uncertainty).to(units)
-                elif self.is_acceptable_type(uncertainty):
-                    self._uncertainty = ureg.Quantity(uncertainty, units)
-                else:
-                    raise TypeError('Invalid type passed to constructor for uncertainty:'
-                                    ' {}'.format(type(uncertainty)))
-            else:
-                self._uncertainty = None
+                raise TypeError('Invalid type passed to constructor for uncertainty:'
+                                ' {}'.format(type(uncertainty)))
+        else:
+            self._uncertainty = None
 
         # TODO: Symbol-level constraints are hacked together atm,
         #       constraints as a whole need to be refactored and
@@ -516,13 +510,12 @@ class NumQuantity(BaseQuantity):
         #       sympy to evaluate the constraints. Would be better
         #       to make some class for symbol and/or model constraints
 
-        with Timer('evaluate_constraint'):
-            symbol_constraint = symbol_type.constraint
-            if symbol_constraint is not None:
-                if not symbol_constraint(**{symbol_type.name: self.magnitude}):
-                    raise SymbolConstraintError(
-                        "NumQuantity with {} value does not satisfy {}".format(
-                            value, symbol_constraint))
+        symbol_constraint = symbol_type.constraint
+        if symbol_constraint is not None:
+            if not symbol_constraint(**{symbol_type.name: self.magnitude}):
+                raise SymbolConstraintError(
+                    "NumQuantity with {} value does not satisfy {}".format(
+                        value, symbol_constraint))
 
     @staticmethod
     def _is_acceptable_dtype(this_dtype):

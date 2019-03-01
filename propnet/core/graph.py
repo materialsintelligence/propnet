@@ -20,6 +20,7 @@ from propnet.core.models import Model, CompositeModel
 from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.symbols import Symbol
+from propnet.core.utils import Timeout
 
 # noinspection PyUnresolvedReferences
 import propnet.models
@@ -678,8 +679,8 @@ class Graph(object):
         # Filter for duplicates
         return set(models_and_input_sets)
 
-    async def derive_quantities(self, new_quantities, quantity_pool=None,
-                          allow_model_failure=True):
+    def derive_quantities(self, new_quantities, quantity_pool=None,
+                          allow_model_failure=True, timeout=None):
         """
         Algorithm for expanding quantity pool
         Args:
@@ -714,11 +715,13 @@ class Graph(object):
 
         # Evaluate model for each input set and add new valid quantities
         if run_serial:
-            added_quantities = await Graph._run_serial(inputs_to_calculate,
-                                                 allow_model_failure=allow_model_failure)
+            added_quantities = Graph._run_serial(inputs_to_calculate,
+                                                 allow_model_failure=allow_model_failure,
+                                                 timeout=timeout)
         else:
-            added_quantities = await Graph._run_parallel(self._executor, self._max_workers, inputs_to_calculate,
-                                                   allow_model_failure=allow_model_failure)
+            added_quantities = Graph._run_parallel(self._executor, self._max_workers, inputs_to_calculate,
+                                                   allow_model_failure=allow_model_failure,
+                                                   timeout=timeout)
 
         return added_quantities, quantity_pool
 
@@ -741,21 +744,26 @@ class Graph(object):
         return not (model_in_all_trees and symbol_in_all_trees)
 
     @staticmethod
-    async def _run_serial(models_and_input_sets, allow_model_failure=True):
+    def _run_serial(models_and_input_sets, allow_model_failure=True, timeout=None):
         outputs = []
         for model_and_input_set in models_and_input_sets:
             out = Graph._evaluate_model(model_and_input_set,
-                                        allow_failure=allow_model_failure)
-            if isinstance(out[0], Exception):
+                                        allow_failure=allow_model_failure,
+                                        timeout=timeout)
+            if out and isinstance(out[0], Exception):
                 raise out[0]
             outputs.extend(out)
         return outputs
 
     @staticmethod
-    async def _run_parallel(executor, n_workers, models_and_input_sets, allow_model_failure=True):
-        func = partial(Graph._evaluate_model, allow_failure=allow_model_failure)
+    def _run_parallel(executor, n_workers, models_and_input_sets,
+                      allow_model_failure=True,
+                      timeout=None):
+        func = partial(Graph._evaluate_model,
+                       allow_failure=allow_model_failure,
+                       timeout=timeout)
         chunk_size = int(len(models_and_input_sets) / n_workers) + 1
-        results = await executor.map(func, models_and_input_sets, chunksize=chunk_size)
+        results = executor.map(func, models_and_input_sets, chunksize=chunk_size)
         outputs = []
         for q in chain.from_iterable(results):
             if isinstance(q, Exception):
@@ -765,15 +773,20 @@ class Graph(object):
         return outputs
 
     @staticmethod
-    def _evaluate_model(model_and_input_set, allow_failure=True):
+    def _evaluate_model(model_and_input_set, allow_failure=True, timeout=None):
         model, inputs = model_and_input_set
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
 
         try:
-            with Timer(model.name):
-                result = model.evaluate(input_dict,
-                                        allow_failure=allow_failure)
+            with Timeout(seconds=timeout):
+                with Timer(model.name):
+                    result = model.evaluate(input_dict,
+                                            allow_failure=allow_failure)
+        except TimeoutError:
+            result = {'successful': False,
+                      'message': 'Model evaluation timed out for {}'.format(model.name)}
+            print("Timed out")
         except Exception as ex:
             # If we get an exception, then allow_failure should be False
             # or we got some other exception we need to know about
@@ -789,7 +802,7 @@ class Graph(object):
             out = []
         return out
 
-    async def evaluate(self, material, allow_model_failure=True):
+    def evaluate(self, material, allow_model_failure=True, timeout=None):
         """
         Given a Material object as input, creates a new Material object
         to include all derivable properties.  Optional argument limits the
@@ -812,9 +825,10 @@ class Graph(object):
         # Loop util no new Quantity objects are derived.
         logger.debug("Beginning main loop with quantities %s", new_quantities)
         while new_quantities:
-            new_quantities, quantity_pool = await self.derive_quantities(
+            new_quantities, quantity_pool = self.derive_quantities(
                 new_quantities, quantity_pool,
-                allow_model_failure=allow_model_failure)
+                allow_model_failure=allow_model_failure,
+                timeout=timeout)
 
         # store model evaluation statistics
         self._timings = timings

@@ -1,4 +1,7 @@
-import os, sys, logging
+import os
+import sys
+import logging
+import signal
 from io import StringIO
 from monty.serialization import loadfn, dumpfn
 from habanero.cn import content_negotiation
@@ -208,3 +211,34 @@ class LogSniffer:
         if self.is_started():
             self._sniffer.truncate(0)
             self._sniffer.seek(0)
+
+# TODO: This should be exactly the same as maggma.utils.Timeout, but at the time of
+#       writing, the package has not been updated on PyPI. Remove and replace usages
+#       with version from maggma when it becomes available
+
+
+class Timeout:
+    # implementation courtesy of https://stackoverflow.com/a/22348885/637562
+
+    def __init__(self, seconds=1, error_message=""):
+        """
+        Set a maximum running time for functions.
+        :param seconds (int): Seconds before TimeoutError raised, set to None to disable,
+        default is set assuming a maximum running time of 1 day for 100,000 items
+        parallelized across 16 cores, i.e. int(16 * 24 * 60 * 60 / 1e5)
+        :param error_message (str): Error message to display with TimeoutError
+        """
+        self.seconds = int(seconds) if seconds else None
+        self.error_message = error_message
+
+    def _handle_timeout(self, signum, frame):
+        raise TimeoutError(self.error_message)
+
+    def __enter__(self):
+        if self.seconds:
+            signal.signal(signal.SIGALRM, self._handle_timeout)
+            signal.alarm(self.seconds)
+
+    def __exit__(self, type, value, traceback):
+        if self.seconds:
+            signal.alarm(0)
