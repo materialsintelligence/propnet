@@ -1,4 +1,6 @@
 language: python
+sudo: required
+dist: xenial
 services: mongodb
 python:
   - "3.7.2"
