@@ -1,9 +1,7 @@
 language: python
-dist: xenial
-sudo: true
 services: mongodb
 python:
-  - "3.7"
+  - "3.6"
 install:
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
@@ -16,7 +14,6 @@ install:
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
-
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy
   - source activate test-environment
   - pip install -r requirements.txt
