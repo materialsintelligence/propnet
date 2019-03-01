@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import dash_html_components as html
 import dash_core_components as dcc
-from mp_dash_components import GraphComponent
+from crystal_toolkit import GraphComponent
 
 import networkx as nx
 from propnet.core.graph import Graph

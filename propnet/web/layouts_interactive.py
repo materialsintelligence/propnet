@@ -2,7 +2,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table_experiments as dt
 
-from mp_dash_components import GraphComponent
+from crystal_toolkit import GraphComponent
 from propnet.web.utils import graph_conversion, AESTHETICS
 
 import json

@@ -21,10 +21,12 @@ Flask-Caching==1.3.3
 uncertainties==3.0.2
 maggma>=0.11.0
 gbml>=1.1.0
-mp-dash-components>=0.0.2
+crystal-toolkit>=0.0.1
 scikit-learn>=0.20.0
 chronic>=0.3.4
 matminer>=0.4.3
 pandas>=0.23.4
 scipy>=1.0.1
+sympy>=1.3
+minepy>=1.2.3
 -e .

@@ -1,6 +1,6 @@
 import dash_html_components as html
 import dash_core_components as dcc
-from mp_dash_components import GraphComponent
+from crystal_toolkit import GraphComponent
 from pydash import set_
 
 import networkx as nx
