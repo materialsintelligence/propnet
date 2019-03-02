@@ -21,8 +21,6 @@ from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
 
-# noinspection PyUnresolvedReferences
-import propnet.symbols
 from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
@@ -30,6 +28,7 @@ logger = logging.getLogger(__name__)
 # TODO: maybe this should go somewhere else, like a dedicated settings.py
 TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
                              "models", "tests", "pymodel_test_data")
+
 
 class Model(ABC):
     """
@@ -64,10 +63,13 @@ class Model(ABC):
             'empirical' categories
         test_data (list of {'inputs': [], 'outputs': []): test data with
             which to evaluate the model
+        is_builtin (bool): True if the model is a default model included with propnet
+            (this option not intended to be set by users)
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None, implemented_by=None,
-                 symbol_property_map=None, scrub_units=None, test_data=None):
+                 symbol_property_map=None, scrub_units=None, test_data=None,
+                 is_builtin=False):
         self.name = name
         self._connections = connections
         self.description = description
@@ -78,6 +80,7 @@ class Model(ABC):
             implemented_by = [implemented_by]
         self.implemented_by = implemented_by or []
         self.references = references_to_bib(references or [])
+        self._is_builtin = is_builtin
 
         # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
@@ -119,6 +122,10 @@ class Model(ABC):
             test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
                          for data in test_data]
         self._test_data = test_data
+
+    @property
+    def is_builtin(self):
+        return self._is_builtin
 
     @property
     def connections(self):
@@ -424,6 +431,9 @@ class Model(ABC):
         Returns:
             True if validation completes successfully
         """
+        if self._test_data is None:
+            return False
+
         for test_dataset in self._test_data:
             self.test(**test_dataset)
         return True
@@ -494,6 +504,8 @@ class Model(ABC):
         Returns: example code for this model
 
         """
+        if self._test_data is None:
+            return ""
         example_inputs = self._test_data[0]['inputs']
         example_outputs = str(self._test_data[0]['outputs'])
 
@@ -594,7 +606,8 @@ class EquationModel(Model, MSONable):
     def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
                  categories=None, references=None, implemented_by=None,
-                 scrub_units=None, solve_for_all_symbols=False, test_data=None):
+                 scrub_units=None, solve_for_all_symbols=False, test_data=None,
+                 is_builtin=False):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -637,7 +650,8 @@ class EquationModel(Model, MSONable):
             name, connections, constraints, description,
             categories, references, implemented_by,
             symbol_property_map, scrub_units,
-            test_data=test_data)
+            test_data=test_data,
+            is_builtin=is_builtin)
 
         self._generate_lambdas()
 
@@ -702,7 +716,7 @@ class EquationModel(Model, MSONable):
             return output
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, is_builtin=False):
         """
         Invokes EquationModel from filename
 
@@ -714,6 +728,7 @@ class EquationModel(Model, MSONable):
         """
         model = loadfn(filename)
         if isinstance(model, dict):
+            model['is_builtin'] = is_builtin
             return cls.from_dict(model)
         return model
 
@@ -728,13 +743,13 @@ class PyModel(Model):
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
                  implemented_by=None, symbol_property_map=None,
-                 scrub_units=True, test_data=None):
+                 scrub_units=True, test_data=None, is_builtin=False):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
             symbol_property_map, scrub_units,
-            test_data=test_data)
+            test_data=test_data, is_builtin=is_builtin)
 
     def plug_in(self, symbol_value_dict):
         """
@@ -759,14 +774,14 @@ class PyModuleModel(PyModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path):
+    def __init__(self, module_path, is_builtin=False):
         """
         Args:
             module_path (str): path to module to instantiate model
         """
         self._module_path = module_path
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
-        super(PyModuleModel, self).__init__(**mod.config)
+        super(PyModuleModel, self).__init__(**mod.config, is_builtin=is_builtin)
 
     def as_dict(self):
         return {"module_path": self._module_path,
@@ -952,14 +967,14 @@ class PyModuleCompositeModel(CompositeModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path):
+    def __init__(self, module_path, is_builtin=False):
         """
         Args:
             module_path (str): path to module to instantiate model
         """
         self._module_path = module_path
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
-        super(PyModuleCompositeModel, self).__init__(**mod.config)
+        super(PyModuleCompositeModel, self).__init__(**mod.config, is_builtin=is_builtin)
 
     def as_dict(self):
         return {"module_path": self._module_path,

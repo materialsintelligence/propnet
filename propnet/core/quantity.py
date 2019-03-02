@@ -284,7 +284,8 @@ class BaseQuantity(ABC, MSONable):
             (dict): representation of object as a dictionary
         """
         symbol = self._symbol_type
-        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name]:
+        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name] and \
+                symbol.is_builtin:
             symbol = self._symbol_type.name
         else:
             symbol = symbol.as_dict()

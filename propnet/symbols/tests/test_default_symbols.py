@@ -11,6 +11,8 @@ class SymbolsTest(unittest.TestCase):
         Goes through the Quantity .yaml files and ensures the definitions are complete.
         """
         for st in Registry("symbols").values():
+            if not st.is_builtin:
+                continue
             self.assertTrue(st.name is not None and st.name.isidentifier())
             self.assertTrue(
                 st.category is not None
@@ -24,7 +26,8 @@ class SymbolsTest(unittest.TestCase):
                 and isinstance(st.display_symbols, list)
                 and len(st.display_symbols) != 0, st.name)
             self.assertTrue(
-                st.comment is not None and isinstance(st.comment, str))
+                st.comment is not None and isinstance(st.comment, str),
+                "{} does not have a comment".format(st.name))
             if st.category != 'object':
                 self.assertIsNotNone(
                     st.units,
@@ -32,6 +35,7 @@ class SymbolsTest(unittest.TestCase):
                     format(st.name))
 
     def test_all_properties(self):
+        # This should probably be fleshed out more
         self.assertEqual(
             str(Registry("symbols")['density'].units),
             'gram / centimeter ** 3')

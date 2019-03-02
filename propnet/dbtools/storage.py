@@ -280,7 +280,8 @@ class StorageQuantity(MSONable):
 
         """
         symbol = self._symbol_type
-        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name]:
+        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name] and \
+                symbol.is_builtin:
             symbol = self._symbol_type.name
 
         return {"@module": self.__class__.__module__,
@@ -581,7 +582,8 @@ class ProvenanceStoreQuantity(StorageQuantity):
 
         """
         symbol = self._symbol_type
-        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name]:
+        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name] and \
+                symbol.is_builtin:
             symbol = self._symbol_type.name
 
         return {

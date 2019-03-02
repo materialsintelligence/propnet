@@ -1,7 +1,6 @@
 import os
 import sys
 import logging
-import signal
 from io import StringIO
 from monty.serialization import loadfn, dumpfn
 from habanero.cn import content_negotiation
@@ -10,6 +9,9 @@ from propnet import print_logger, print_stream
 _REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__),
                                      '../data/reference_cache.json')
 _REFERENCE_CACHE = loadfn(_REFERENCE_CACHE_PATH)
+
+logger = logging.getLogger(__name__)
+
 
 def references_to_bib(refs):
     """
@@ -217,28 +219,44 @@ class LogSniffer:
 #       with version from maggma when it becomes available
 
 
-class Timeout:
-    # implementation courtesy of https://stackoverflow.com/a/22348885/637562
+if os.name == 'posix':
+    # signal is not supported by non-Unix systems, and so in turn, cannot
+    # timeout models. There are few elegant solutions to killing threads in Python
+    # that are cross-platform. If something better comes up, implement it.
+    import signal
 
-    def __init__(self, seconds=1, error_message=""):
-        """
-        Set a maximum running time for functions.
-        :param seconds (int): Seconds before TimeoutError raised, set to None to disable,
-        default is set assuming a maximum running time of 1 day for 100,000 items
-        parallelized across 16 cores, i.e. int(16 * 24 * 60 * 60 / 1e5)
-        :param error_message (str): Error message to display with TimeoutError
-        """
-        self.seconds = int(seconds) if seconds else None
-        self.error_message = error_message
+    class Timeout:
+        # implementation courtesy of https://stackoverflow.com/a/22348885/637562
 
-    def _handle_timeout(self, signum, frame):
-        raise TimeoutError(self.error_message)
+        def __init__(self, seconds=1, error_message=""):
+            """
+            Set a maximum running time for functions.
+            :param seconds (int): Seconds before TimeoutError raised, set to None to disable,
+            default is set assuming a maximum running time of 1 day for 100,000 items
+            parallelized across 16 cores, i.e. int(16 * 24 * 60 * 60 / 1e5)
+            :param error_message (str): Error message to display with TimeoutError
+            """
+            self.seconds = int(seconds) if seconds else None
+            self.error_message = error_message
 
-    def __enter__(self):
-        if self.seconds:
-            signal.signal(signal.SIGALRM, self._handle_timeout)
-            signal.alarm(self.seconds)
+        def _handle_timeout(self, signum, frame):
+            raise TimeoutError(self.error_message)
 
-    def __exit__(self, type, value, traceback):
-        if self.seconds:
-            signal.alarm(0)
+        def __enter__(self):
+            if self.seconds:
+                signal.signal(signal.SIGALRM, self._handle_timeout)
+                signal.alarm(self.seconds)
+
+        def __exit__(self, type_, value, traceback):
+            if self.seconds:
+                signal.alarm(0)
+else:
+    class Timeout:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            logger.warning("Timeout class not implemented on Windows.")
+
+        def __exit__(self, type_, value, traceback):
+            pass

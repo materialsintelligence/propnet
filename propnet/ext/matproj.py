@@ -133,7 +133,8 @@ class MPRester(_MPRester):
         for material_properties in materials_properties:
             material = Material()
             for property_name, property_value in material_properties.items():
-                provenance = ProvenanceElement(source='Materials Project')
+                provenance = ProvenanceElement(source={'source': 'Materials Project',
+                                                       'source_key': material_properties.get('material_id', None)})
                 quantity = QuantityFactory.create_quantity(self.mapping[property_name], property_value,
                                                            provenance=provenance)
                 material.add_quantity(quantity)

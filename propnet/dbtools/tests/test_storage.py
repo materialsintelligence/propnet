@@ -14,7 +14,7 @@ import copy
 from itertools import chain
 
 # noinspection PyUnresolvedReferences
-import propnet.symbols
+import propnet.models
 from propnet.core.registry import Registry
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,10 +24,10 @@ class StorageTest(unittest.TestCase):
     def setUp(self):
         # Inspiration was taken from the GraphTest class
         # I tried to construct the dictionaries for comparison
-        # without writing out every one explicity by reusing
+        # without writing out every one explicitly by reusing
         # information where it was applicable.
         # If this is too unreadable, can change to writing it
-        # out explicity in a JSON file and importing it. Would
+        # out explicitly in a JSON file and importing it. Would
         # still need to replace some fields dynamically.
         symbols = StorageTest.generate_symbols()
 
@@ -43,7 +43,8 @@ class StorageTest(unittest.TestCase):
                 'comment': None,
                 'category': 'property',
                 'constraint': None,
-                'default_value': None} for k in ['A', 'B', 'C']
+                'default_value': None,
+                'is_builtin': False} for k in ['A', 'B', 'C']
         }
         self.custom_syms_as_dicts['C'].update(
             {"units": None,
@@ -228,6 +229,11 @@ class StorageTest(unittest.TestCase):
         # This setting allows dict differences to be shown in full
         self.maxDiff = None
 
+    def tearDown(self):
+        non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
+        for sym in non_builtin_syms:
+            Registry("symbols").pop(sym)
+
     @staticmethod
     def generate_symbols():
         """
@@ -238,11 +244,16 @@ class StorageTest(unittest.TestCase):
         b = Symbol('B', ['B'], ['B'], units="dimensionless", shape=[1])
         c = Symbol('C', ['C'], ['C'], category="object", object_type=str)
 
-        return {
+        syms = {
             'A': a,
             'B': b,
             'C': c
         }
+
+        for sym in syms.values():
+            Registry("symbols")[sym] = sym
+
+        return syms
 
     def test_default_instantiation(self):
         provenance_store = ProvenanceStore()

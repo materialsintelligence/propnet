@@ -33,7 +33,8 @@ class Symbol(MSONable):
 
     def __init__(self, name, display_names=None, display_symbols=None,
                  units=None, shape=None, object_type=None, comment=None,
-                 category='property', constraint=None, default_value=None):
+                 category='property', constraint=None, default_value=None,
+                 is_builtin=False):
         """
         Parses and validates a series of inputs into a PropertyMetadata
         tuple, a format that PropNet expects.
@@ -65,6 +66,8 @@ class Symbol(MSONable):
                 name, e. g. bulk_modulus > 0.
             default_value: default value for the symbol, e. g. 300 for
                 temperature or 1 for magnetic permeability
+            is_builtin (bool): True if the model is included with propnet
+                by default. Not intended to be set explicitly by users
         """
 
         # TODO: not sure object should be distinguished
@@ -144,6 +147,7 @@ class Symbol(MSONable):
         self.shape = shape
         self.comment = comment
         self.default_value = default_value
+        self._is_builtin = is_builtin
 
         # TODO: This should explicity deal with only numerical symbols
         #       because it uses sympy to evaluate them until we make
@@ -173,6 +177,10 @@ class Symbol(MSONable):
         d = copy(self.__dict__)
         d['_constraint_func'] = None
         return d
+
+    @property
+    def is_builtin(self):
+        return self._is_builtin
 
     @property
     def units(self):

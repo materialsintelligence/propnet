@@ -35,6 +35,9 @@ class RegistryMeta(abc.ABCMeta):
 
         return cls.all_instances[name]
 
+    def clear_all_registries(cls):
+        cls.all_instances.clear()
+
 
 class Registry(dict, metaclass=RegistryMeta):
     pass

@@ -4,10 +4,11 @@ from propnet.core.provenance import SymbolPath, ProvenanceElement
 from propnet.core.materials import Material
 from propnet.core.materials import CompositeMaterial
 from propnet.core.symbols import Symbol
-from propnet.core.models import EquationModel
+from propnet.core.models import EquationModel, PyModuleModel
 from propnet.core.quantity import QuantityFactory
 from propnet.ext.matproj import MPRester
-from propnet import ureg
+from multiprocessing import cpu_count
+from chronic import Timer, timings
 
 import os
 import json
@@ -32,6 +33,7 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 class GraphTest(unittest.TestCase):
     def setUp(self):
         symbols = GraphTest.generate_canonical_symbols()
+        _ = GraphTest.generate_canonical_models()
 
         a = [QuantityFactory.create_quantity(symbols['A'], 19),
              QuantityFactory.create_quantity(symbols['A'], 23)]
@@ -87,6 +89,14 @@ class GraphTest(unittest.TestCase):
         self.expected_quantities = a + b + c + d_model4 + d_model5 + f + g
         self.expected_constrained_quantities = a + b + c + d_model5 + f + g
 
+    def tearDown(self):
+        non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
+        for sym in non_builtin_syms:
+            Registry("symbols").pop(sym)
+        non_builtin_models = [k for k, v in Registry("models").items() if not v.is_builtin]
+        for model in non_builtin_models:
+            Registry("models").pop(model)
+
     @staticmethod
     def generate_canonical_symbols():
         """
@@ -99,7 +109,8 @@ class GraphTest(unittest.TestCase):
         D = Symbol('D', ['D'], ['D'], units="dimensionless", shape=[1])
         G = Symbol('G', ['G'], ['G'], units="dimensionless", shape=[1])
         F = Symbol('F', ['F'], ['F'], units="dimensionless", shape=[1])
-        return {
+
+        syms = {
             'A': A,
             'B': B,
             'C': C,
@@ -107,6 +118,11 @@ class GraphTest(unittest.TestCase):
             'G': G,
             'F': F
         }
+
+        for sym in syms.values():
+            Registry("symbols")[sym] = sym
+
+        return syms
 
     @staticmethod
     def generate_canonical_models(constrain_model_4=False):
@@ -136,7 +152,10 @@ class GraphTest(unittest.TestCase):
                                    symbol_property_map=sym_map)
 
         models = [model1, model2, model3, model4, model5, model6]
-        return {x.name : x for x in models}
+        models_dict = {x.name: x for x in models}
+        Registry("models").update(models_dict)
+
+        return models_dict
 
     @staticmethod
     def generate_canonical_material(c_symbols):
@@ -186,6 +205,25 @@ class GraphTest(unittest.TestCase):
                     self.assertTrue(m in g._output_to_model[symbol],
                                     "Canonical constructed graph does not have an edge from input: "
                                     "{} to model: {}".format(symbol, m))
+
+    # This test will not work on non-Unix machines because the 'signal' package is incompatible
+    # which enables model evaluation timeout
+    @unittest.skipIf(os.name != 'posix', "Skipping because timeout not implemented on non-Unix systems")
+    def test_model_timeout(self):
+        sleepy_model = PyModuleModel('propnet.core.tests.sleepy_model')
+        Registry("models")[sleepy_model.name] = sleepy_model
+        g = Graph(models={sleepy_model.name: sleepy_model})
+        q = QuantityFactory.create_quantity("A", 5, 'dimensionless')
+        with Timer('model_timeout'):
+            _ = g.derive_quantities([q], timeout=1)
+
+        self.assertTrue(timings['model_timeout']['total_elapsed'] < 2)
+
+        g.clear_statistics()
+        with Timer('model_timeout'):
+            _ = g.derive_quantities([q], timeout=None)
+
+        self.assertTrue(timings['model_timeout']['total_elapsed'] >= 2)
 
     def test_model_add_remove(self):
         """
@@ -442,7 +480,7 @@ class GraphTest(unittest.TestCase):
 
         for i in range(0, len(ts)):
             self.assertTrue(ts[i] == ans[i],
-                            "Symbol Expansion failed: test - " + str(i))\
+                            "Symbol Expansion failed: test - " + str(i))
 
     def test_symbol_expansion_cyclic(self):
         """
@@ -882,7 +920,7 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(i in ans_2,
                             "Incorrect paths generated.")
 
-    def test_super_evaluate(self):
+    def test_composite_evaluate(self):
         """
         Tests the graph's composite material evaluation.
         """
@@ -901,15 +939,25 @@ class GraphTest(unittest.TestCase):
         m1.remove_symbol("band_gap_pbe")
         m1.add_quantity(QuantityFactory.create_quantity("band_gap", 0.0))
         m2 = mp_data["mp-24972"]
-        sm = CompositeMaterial([m1, m2])
+        cm = CompositeMaterial([m1, m2])
+        
+        if cpu_count() >= 4:
+            do_parallel = True
+            workers = 4
+        elif cpu_count() == 1:
+            do_parallel = False
+            workers = None
+        else:
+            do_parallel = True
+            workers = cpu_count()
+            
+        g = Graph(parallel=do_parallel, max_workers=workers)
 
-        g = Graph()
+        cm = g.evaluate_composite(cm, allow_composite_model_failure=False)
 
-        sm = g.super_evaluate(sm, allow_model_failure=False)
-
-        self.assertTrue('pilling_bedworth_ratio' in sm._symbol_to_quantity.keys(),
+        self.assertTrue('pilling_bedworth_ratio' in cm._symbol_to_quantity.keys(),
                         "Super Evaluate failed to derive expected outputs.")
-        self.assertTrue(len(sm._symbol_to_quantity['pilling_bedworth_ratio']) > 0,
+        self.assertTrue(len(cm._symbol_to_quantity['pilling_bedworth_ratio']) > 0,
                         "Super Evaluate failed to derive expected outputs.")
 
     def test_provenance(self):
