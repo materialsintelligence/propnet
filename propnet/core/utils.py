@@ -252,11 +252,12 @@ if os.name == 'posix':
                 signal.alarm(0)
 else:
     class Timeout:
-        def __init__(self, *args, **kwargs):
-            pass
+        def __init__(self, seconds=None, **kwargs):
+            if seconds is not None:
+                logger.warning("Timeout class not implemented on non-Unix machines.")
 
         def __enter__(self):
-            logger.warning("Timeout class not implemented on Windows.")
+            pass
 
         def __exit__(self, type_, value, traceback):
             pass

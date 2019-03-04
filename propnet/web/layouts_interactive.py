@@ -25,6 +25,7 @@ from propnet.core.graph import Graph
 from propnet.ext.matproj import MPRester
 
 MPR = MPRester()
+graph_evaluator = Graph(parallel=True, max_workers=4)
 
 
 # explicitly making this an OrderedDict so we can go back from the
@@ -193,8 +194,7 @@ def interactive_layout(app):
         for quantity in quantities:
             material.add_quantity(quantity)
 
-        graph = Graph()
-        output_material = graph.evaluate(material)
+        output_material = graph_evaluator.evaluate(material)
 
         if aggregate:
             output_quantities = output_material.get_aggregated_quantities().values()

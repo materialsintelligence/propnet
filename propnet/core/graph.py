@@ -75,7 +75,18 @@ class Graph(object):
                  parallel: bool=False,
                  max_workers: int=None) -> None:
         """
-        Creates a Graph instance
+        Creates a graph instance.
+
+        Note: models and symbols are selected from the Registry() class unless specified explicitly.
+            To include all built-in propnet models, import them from propnet.models and propnet.symbols.
+
+        Args:
+            models (dict): models to use for graph evaluation. Default: all registered models.
+            composite_models (dict): composite models to use for graph evaluation. Default: all registered composite models.
+            symbol_types (dict): symbols to use for graph evaluation. Default: all registered symbols
+            parallel (bool): True creates a pool of workers for parallel graph evaluation. Default: False
+            max_workers (int): Number of workers for parallel worker pool. Default: None, for serial evaluation,
+                max number of available CPUs for parallel.
         """
 
         # set our defaults if no models/symbol types supplied
@@ -90,15 +101,14 @@ class Graph(object):
         self._timings = None
 
         if parallel:
-            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
-            if max_workers is None:
+            if max_workers is None or max_workers > cpu_count():
                 self._max_workers = cpu_count()
             else:
                 self._max_workers = max_workers
+            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
         else:
             if max_workers is not None:
                 raise ValueError('Cannot specify max_workers with parallel=False')
-            # self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
             self._executor = None
             self._max_workers = 0
 
@@ -115,9 +125,9 @@ class Graph(object):
         else:
             self.update_composite_models(composite_models)
 
-    def __del__(self):
-        if self._executor:
-            self._executor.shutdown(wait=True)
+    # def __del__(self):
+        # if self._executor:
+            # self._executor.shutdown(wait=True)
 
     def __str__(self):
         """
@@ -129,8 +139,8 @@ class Graph(object):
         """
         summary = ["Propnet Printout", ""]
         summary += ["Properties"]
-        for property in self._symbol_types.keys():
-            summary += ["\t" + property]
+        for property_ in self._symbol_types.keys():
+            summary += ["\t" + property_]
         summary += [""]
         summary += ["Models"]
         for model in self._models.keys():
@@ -463,7 +473,7 @@ class Graph(object):
 
         return derivable
 
-    def required_inputs_for_property(self, property):
+    def required_inputs_for_property(self, property_):
         """
         Determines all potential paths leading to a given symbol
         object. Answers the question: What sets of properties are
@@ -480,7 +490,7 @@ class Graph(object):
         Returns:
             propnet.core.utils.SymbolTree
         """
-        head = TreeElement(None, {property}, None, None)
+        head = TreeElement(None, {property_}, None, None)
         self._tree_builder(head)
         return SymbolTree(head)
 
@@ -683,13 +693,24 @@ class Graph(object):
     def derive_quantities(self, new_quantities, quantity_pool=None,
                           allow_model_failure=True, timeout=None):
         """
-        Algorithm for expanding quantity pool
+        Derives new quantities using at least one quantity from "new_quantities" and the
+        remainder from either "new_quantities" or the specified "quantity_pool" as model inputs.
+
         Args:
             new_quantities ([Quantity]): list of quantities which to
                 consider as new inputs to models
             quantity_pool ({symbol: {Quantity}}): dict of quantity sets
                 keyed by symbol from which to draw additional quantities
                 for model inputs
+            allow_model_failure (bool): True allows graph evaluation to
+                continue if an Exception is thrown during model evaluation for
+                violation of constraints or any other reason. False will
+                throw any Exception encountered during model evaluation.
+                Default: True
+            timeout (int): number of seconds to allow for a model to evaluate.
+                After that time, model evaluation will be canceled and deemed
+                failed. "None" allows for infinite evaluation time. Default: None
+
         Returns:
             additional_quantities ([Quantity]): new derived quantities
             quantity_pool ({symbol: {Quantity}}): augmented version of
@@ -716,18 +737,35 @@ class Graph(object):
 
         # Evaluate model for each input set and add new valid quantities
         if run_serial:
-            added_quantities = Graph._run_serial(inputs_to_calculate,
-                                                 allow_model_failure=allow_model_failure,
-                                                 timeout=timeout)
+            with Timer('_graph_evaluation'):
+                added_quantities, model_timings = Graph._run_serial(inputs_to_calculate,
+                                                                    allow_model_failure=allow_model_failure,
+                                                                    timeout=timeout)
         else:
-            added_quantities = Graph._run_parallel(self._executor, self._max_workers, inputs_to_calculate,
-                                                   allow_model_failure=allow_model_failure,
-                                                   timeout=timeout)
+            with Timer('_graph_evaluation'):
+                added_quantities, model_timings = Graph._run_parallel(self._executor, self._max_workers,
+                                                                      inputs_to_calculate,
+                                                                      allow_model_failure=allow_model_failure,
+                                                                      timeout=timeout)
 
+        self._append_timing_result(model_timings)
+        self._timings = timings['_graph_evaluation']
         return added_quantities, quantity_pool
 
     @staticmethod
     def _generates_noncyclic_output(input_set):
+        """
+        Helper function to determine if an input set of model and input quantities will
+        generate at least one output that is non-cyclic, meaning the output does not have
+        itself as an input in its provenance.
+
+        Args:
+            input_set (tuple(Model, list[Quantity]): input set to evaluate for cyclic outputs
+
+        Returns:
+            (bool) True if at least one output of the model is non-cyclic. False if all outputs
+            are cyclic.
+        """
         model, inputs = input_set
         input_symbols = set(v.symbol for v in inputs)
         outputs = set()
@@ -746,27 +784,54 @@ class Graph(object):
 
     @staticmethod
     def _run_serial(models_and_input_sets, allow_model_failure=True, timeout=None):
+        """
+        Evaluate a list of input sets serially.
+
+        Args:
+            models_and_input_sets (list[tuple(model, list[Quantity])]): input sets to evaluate
+            allow_model_failure (bool): True suppresses exceptions raised during model evaluation. Default: True
+            timeout (int): number of seconds after which to timeout model evaluation. Default: None (infinite)
+
+        Returns:
+            (list[Quantity]) output quantities from input set evaluation.
+        """
         outputs = []
+        model_timings = []
         for model_and_input_set in models_and_input_sets:
-            out = Graph._evaluate_model(model_and_input_set,
+            out, timing_ = Graph._evaluate_model(model_and_input_set,
                                         allow_failure=allow_model_failure,
                                         timeout=timeout)
             if out and isinstance(out[0], Exception):
                 raise out[0]
             outputs.extend(out)
-        return outputs
+            model_timings.append(timing_)
+        return outputs, model_timings
 
     @staticmethod
     def _run_parallel(executor, n_workers, models_and_input_sets,
                       allow_model_failure=True,
                       timeout=None):
+        """
+         Evaluate a list of input sets in parallel.
+
+        Args:
+            executor (concurrent.futures.ProcessPoolExecutor): executor for input sets
+            n_workers (int): number of processes used by executor
+            models_and_input_sets (list[tuple(model, list[Quantity])]): input sets to evaluate
+            allow_model_failure (bool): True suppresses exceptions raised during model evaluation. Default: True
+            timeout (int): number of seconds after which to timeout model evaluation. Default: None (infinite)
+
+        Returns:
+            (list[Quantity]) output quantities from input set evaluation.
+        """
         func = partial(Graph._evaluate_model,
                        allow_failure=allow_model_failure,
                        timeout=timeout)
         chunk_size = int(len(models_and_input_sets) / n_workers) + 1
         results = executor.map(func, models_and_input_sets, chunksize=chunk_size)
         outputs = []
-        for q in chain.from_iterable(results):
+        model_timings = []
+        for q in results:
             if isinstance(q, tuple) and isinstance(q[0], Exception):
                 model, inputs = q[1]
                 exception = q[0]
@@ -775,24 +840,47 @@ class Graph(object):
                                 "Exception raised: {}: {}".format(model.name, inputs,
                                                                   type(exception).__name__, exception))
             else:
-                outputs.append(q)
-        return outputs
+                q_list, timing_ = q
+                outputs.extend(q_list)
+                model_timings.append(timing_)
+        return outputs, model_timings
 
     @staticmethod
     def _evaluate_model(model_and_input_set, allow_failure=True, timeout=None):
+        """
+        Workhorse function to evaluate an input set.
+
+        Args:
+            model_and_input_set (tuple(Model, list[Quantity])): input set to evaluate
+            allow_failure (bool): True suppresses exceptions raised during model evaluation. Default: True
+            timeout: number of seconds after which to timeout model evaluation. Default: None (infinite)
+
+        Returns:
+            (list): List of quantities calculated from model. If model failed and allow_failure = True, will
+                return an empty list. If allow_failure = False, will return a list with a tuple
+                (Exception, input_set) as its only element.
+
+        Note: The exception is returned instead of thrown because in parallel, the exception will be suppressed
+            by the map() function used to execute the model evaluation in parallel.
+        """
+        from chronic import Timer as Timer_
+        from chronic import timings as timings_
         model, inputs = model_and_input_set
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
 
         try:
-            with Timeout(seconds=timeout):
-                with Timer(model.name):
+            with Timer_(model.name):
+                with Timeout(seconds=timeout):
                     result = model.evaluate(input_dict,
                                             allow_failure=allow_failure)
         except TimeoutError:
-            result = {'successful': False,
-                      'message': 'Model evaluation timed out for {}'.format(model.name)}
-            print("Timed out")
+            if allow_failure:
+                result = {'successful': False,
+                          'message': 'Model evaluation timed out for {}'.format(model.name)}
+            else:
+                return [(TimeoutError('Model evaluation timed out for {}'.format(model.name)),
+                         model_and_input_set)]
         except Exception as ex:
             # If we get an exception, then allow_failure should be False
             # or we got some other exception we need to know about
@@ -806,7 +894,7 @@ class Graph(object):
             logger.info("Model evaluation unsuccessful %s",
                         result['message'])
             out = []
-        return out
+        return out, {model.name: timings_.pop(model.name)}
 
     def evaluate(self, material, allow_model_failure=True, timeout=None):
         """
@@ -814,12 +902,18 @@ class Graph(object):
         to include all derivable properties.  Optional argument limits the
         scope of which models or properties are tested. Returns a
         reference to the new, augmented Material object.
+
         Args:
             material (Material): which material's properties will be expanded.
-            allow_model_failure (Bool): whether to continue with graph evaluation
-            if a model fails.
+            allow_model_failure (bool): whether to continue with graph evaluation
+                if a model fails.
+            timeout (int): number of seconds after which model evaluation should
+                quit. This is to cut off long-running models.
+                Default: None (infinite evaluation time)
         Returns:
             (Material) reference to the newly derived material object.
+
+        Note: Model timeout does not work on non-Unix machines based on the implementation.
         """
         logger.debug("Beginning evaluation")
 
@@ -836,9 +930,6 @@ class Graph(object):
                 allow_model_failure=allow_model_failure,
                 timeout=timeout)
 
-        # store model evaluation statistics
-        self._timings = timings
-
         new_material = Material()
         new_material._symbol_to_quantity = quantity_pool
         return new_material
@@ -847,12 +938,20 @@ class Graph(object):
                            allow_composite_model_failure=True,
                            timeout=None):
         """
-        Given a CompositeMaterial object as input, creates a new SuperMaterial
+        Given a CompositeMaterial object as input, creates a new CompositeMaterial
         object to include all derivable properties.  Returns a reference to
-        the new, augmented SuperMaterial object.
+        the new, augmented CompositeMaterial object.
+
         Args:
             material (CompositeMaterial): material for which properties
                 will be expanded.
+            allow_model_failure (bool): True allows non-composite models to fail
+                during graph evaluation of a material. Default: True
+            allow_composite_model_failure (bool): True allows composite model evaluation
+                to fail during evaluation. Default: True
+            timeout (int): number of seconds after which to terminate non-composite
+                model evaluation. Default: None (infinite evaluation time)
+
         Returns:
             (Material) reference to the newly derived material object.
         """
@@ -962,6 +1061,14 @@ class Graph(object):
         return to_return
 
     def clear_statistics(self):
+        """
+        Clears model evaluation timings.
+
+        Note: if you are using chronic.Timer for timing outside this Graph object,
+        this function will clear your timers causing an error if the Timer objects
+        are currently running.
+
+        """
         self._timings = None
         clear()
 
@@ -983,3 +1090,25 @@ class Graph(object):
                                         'Total Evaluation Time /s',
                                         'Number of Evaluations',
                                         'Average Evaluation Time /s'])
+
+    @staticmethod
+    def _append_timing_result(model_timings):
+        if 'timings' not in timings['_graph_evaluation']:
+            timings['_graph_evaluation']['timings'] = dict()
+
+        ge_timings = timings['_graph_evaluation']['timings']
+        for timing_ in model_timings:
+            for model_name, stats in timing_.items():
+                if model_name not in ge_timings.keys():
+                    ge_timings[model_name] = {'total_elapsed': 0.,
+                                              'count': 0,
+                                              'average_elapsed': 0.}
+                ge_timings[model_name]['total_elapsed'] += stats['total_elapsed']
+                ge_timings[model_name]['count'] += stats['count']
+
+        for model_name, stats in ge_timings.items():
+            stats['average_elapsed'] = stats['total_elapsed'] / stats['count']
+
+
+
+
