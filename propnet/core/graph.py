@@ -99,7 +99,8 @@ class Graph(object):
         self._composite_models = dict()
         self._input_to_model = defaultdict(set)
         self._output_to_model = defaultdict(set)
-        self._timings = None
+        self._graph_timings = None
+        self._model_timings = None
 
         if parallel:
             self._parallel = True
@@ -107,8 +108,7 @@ class Graph(object):
                 self._max_workers = cpu_count()
             else:
                 self._max_workers = max_workers
-            # self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
-            self._executor = None
+            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
         else:
             self._parallel = False
             if max_workers is not None:
@@ -129,10 +129,9 @@ class Graph(object):
         else:
             self.update_composite_models(composite_models)
 
-#    def __del__(self):
-#        if self._executor:
-#            print("killing executor")
-#            self._executor.shutdown(wait=True)
+    def __del__(self):
+        if self._executor:
+            self._executor.shutdown(wait=True)
 
     def __str__(self):
         """
@@ -726,11 +725,6 @@ class Graph(object):
         for quantity in new_quantities:
             quantity_pool[quantity.symbol].add(quantity)
 
-        run_parallel = False
-        if self._parallel:
-            run_parallel = True
-            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
-
         # Generate all of the models and input sets to be evaluated
         logger.info("Generating models and input sets for %s", new_quantities)
         models_and_input_sets = self.generate_models_and_input_sets(
@@ -742,24 +736,22 @@ class Graph(object):
                                           input_tuples))
 
         # Evaluate model for each input set and add new valid quantities
-        if not run_parallel:
+        if not self._parallel:
             with Timer('_graph_evaluation'):
                 added_quantities, model_timings = Graph._run_serial(inputs_to_calculate,
                                                                     allow_model_failure=allow_model_failure,
                                                                     timeout=timeout)
         else:
-            added_quantities, model_timings = Graph._run_parallel(self._executor, self._max_workers,
-                                                                  inputs_to_calculate,
-                                                                  allow_model_failure=allow_model_failure,
-                                                                  timeout=timeout)
             with Timer('_graph_evaluation'):
-                print("Garbage")
+                added_quantities, model_timings = Graph._run_parallel(self._executor, self._max_workers,
+                                                                      inputs_to_calculate,
+                                                                      allow_model_failure=allow_model_failure,
+                                                                      timeout=timeout)
 
         self._append_timing_result(model_timings)
-        self._timings = copy.deepcopy(timings['_graph_evaluation'])
+        self._graph_timings = {k: v for k, v in timings['_graph_evaluation'].items() if k != 'timings'}
+        self._model_timings = copy.deepcopy(timings['_graph_evaluation']['timings'])
 
-        if self._parallel:
-            self._executor.shutdown(wait=False)
         return added_quantities, quantity_pool
 
     @staticmethod
@@ -911,7 +903,9 @@ class Graph(object):
             logger.info("Model evaluation unsuccessful %s",
                         result['message'])
             out = []
-        return out, {model.name: copy.deepcopy(timings.pop(model.name))}
+        timing_data = {model.name: {k: v for k, v in timings[model.name].items()}}
+        timings.pop(model.name)
+        return out, timing_data
 
     def evaluate(self, material, allow_model_failure=True, timeout=None):
         """
@@ -1086,11 +1080,12 @@ class Graph(object):
         are currently running.
 
         """
-        self._timings = None
+        self._graph_timings = None
+        self._model_timings = None
         clear()
 
     @property
-    def evaluation_statistics(self):
+    def model_evaluation_statistics(self):
         """
         :return: A Pandas DataFrame containing statistics on how
         many times each model was evaluated, average time per model,
@@ -1101,7 +1096,7 @@ class Graph(object):
                  'Total Evaluation Time /s': stats['total_elapsed'],
                  'Average Evaluation Time /s': stats['average_elapsed'],
                  'Number of Evaluations': stats['count']}
-                for model, stats in self._timings.items()]
+                for model, stats in self._model_timings.items()]
 
         return DataFrame(rows, columns=['Model Name',
                                         'Total Evaluation Time /s',
@@ -1110,6 +1105,13 @@ class Graph(object):
 
     @staticmethod
     def _append_timing_result(model_timings):
+        """
+        Helper function to append model timings collected from parallel processes to
+        the timings module in this thread/process.
+
+        Args:
+            model_timings (list[dict]): list of model timings returned from evaluation
+        """
         if 'timings' not in timings['_graph_evaluation']:
             timings['_graph_evaluation']['timings'] = dict()
 

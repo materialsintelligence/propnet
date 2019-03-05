@@ -129,12 +129,14 @@ class LogSniffer:
         self.assertEqual(output, expected_output)
 
     """
-    def __init__(self, logger):
+    def __init__(self, logger, level='INFO'):
         if not isinstance(logger, logging.Logger):
             raise ValueError("Need valid logger for sniffing")
         self._logger = logger
         self._sniffer = None
         self._sniffer_handler = None
+        self._level = level
+        self._old_logger_level = None
 
     def __enter__(self):
         self.start()
@@ -154,8 +156,11 @@ class LogSniffer:
         if not self.is_started():
             self._sniffer = StringIO()
             self._sniffer_handler = logging.StreamHandler(stream=self._sniffer)
-            self._sniffer_handler.setLevel(logging.INFO)
+            self._sniffer_handler.setLevel(self._level)
             self._logger.addHandler(self._sniffer_handler)
+            if self._logger.getEffectiveLevel() > self._sniffer_handler.level:
+                self._old_logger_level = self._logger.level
+                self._logger.setLevel(self._level)
 
     def is_started(self):
         """
@@ -184,6 +189,9 @@ class LogSniffer:
             self._sniffer_handler = None
             self._sniffer.close()
             self._sniffer = None
+            if self._old_logger_level is not None:
+                self._logger.setLevel(self._old_logger_level)
+                self._old_logger_level = None
         else:
             output = None
         return output
@@ -219,7 +227,7 @@ class LogSniffer:
 #       with version from maggma when it becomes available
 
 
-if os.name != 'posix':
+if os.name == 'posix':
     # signal is not supported by non-Unix systems, and so in turn, cannot
     # timeout models. There are few elegant solutions to killing threads in Python
     # that are cross-platform. If something better comes up, implement it.
