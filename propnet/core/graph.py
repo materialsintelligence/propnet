@@ -11,6 +11,7 @@ from collections import deque
 import concurrent.futures
 from functools import partial
 from multiprocessing import cpu_count
+import copy
 
 import networkx as nx
 
@@ -101,12 +102,15 @@ class Graph(object):
         self._timings = None
 
         if parallel:
+            self._parallel = True
             if max_workers is None or max_workers > cpu_count():
                 self._max_workers = cpu_count()
             else:
                 self._max_workers = max_workers
-            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
+            # self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
+            self._executor = None
         else:
+            self._parallel = False
             if max_workers is not None:
                 raise ValueError('Cannot specify max_workers with parallel=False')
             self._executor = None
@@ -125,9 +129,10 @@ class Graph(object):
         else:
             self.update_composite_models(composite_models)
 
-    # def __del__(self):
-        # if self._executor:
-            # self._executor.shutdown(wait=True)
+#    def __del__(self):
+#        if self._executor:
+#            print("killing executor")
+#            self._executor.shutdown(wait=True)
 
     def __str__(self):
         """
@@ -721,9 +726,10 @@ class Graph(object):
         for quantity in new_quantities:
             quantity_pool[quantity.symbol].add(quantity)
 
-        run_serial = False
-        if self._executor is None:
-            run_serial = True
+        run_parallel = False
+        if self._parallel:
+            run_parallel = True
+            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
 
         # Generate all of the models and input sets to be evaluated
         logger.info("Generating models and input sets for %s", new_quantities)
@@ -736,20 +742,24 @@ class Graph(object):
                                           input_tuples))
 
         # Evaluate model for each input set and add new valid quantities
-        if run_serial:
+        if not run_parallel:
             with Timer('_graph_evaluation'):
                 added_quantities, model_timings = Graph._run_serial(inputs_to_calculate,
                                                                     allow_model_failure=allow_model_failure,
                                                                     timeout=timeout)
         else:
+            added_quantities, model_timings = Graph._run_parallel(self._executor, self._max_workers,
+                                                                  inputs_to_calculate,
+                                                                  allow_model_failure=allow_model_failure,
+                                                                  timeout=timeout)
             with Timer('_graph_evaluation'):
-                added_quantities, model_timings = Graph._run_parallel(self._executor, self._max_workers,
-                                                                      inputs_to_calculate,
-                                                                      allow_model_failure=allow_model_failure,
-                                                                      timeout=timeout)
+                print("Garbage")
 
         self._append_timing_result(model_timings)
-        self._timings = timings['_graph_evaluation']
+        self._timings = copy.deepcopy(timings['_graph_evaluation'])
+
+        if self._parallel:
+            self._executor.shutdown(wait=False)
         return added_quantities, quantity_pool
 
     @staticmethod
@@ -798,13 +808,21 @@ class Graph(object):
         outputs = []
         model_timings = []
         for model_and_input_set in models_and_input_sets:
-            out, timing_ = Graph._evaluate_model(model_and_input_set,
-                                        allow_failure=allow_model_failure,
-                                        timeout=timeout)
-            if out and isinstance(out[0], Exception):
-                raise out[0]
-            outputs.extend(out)
-            model_timings.append(timing_)
+            result = Graph._evaluate_model(model_and_input_set,
+                                           allow_failure=allow_model_failure,
+                                           timeout=timeout)
+
+            if isinstance(result, tuple) and isinstance(result[0], Exception):
+                model, inputs = result[1]
+                exception = result[0]
+                raise Exception("Encountered error with model {}"
+                                " and input set {}:\n"
+                                "Exception raised: {}: {}".format(model.name, inputs,
+                                                                  type(exception).__name__, exception))
+            else:
+                q_list, timing_ = result
+                outputs.extend(q_list)
+                model_timings.append(timing_)
         return outputs, model_timings
 
     @staticmethod
@@ -831,16 +849,16 @@ class Graph(object):
         results = executor.map(func, models_and_input_sets, chunksize=chunk_size)
         outputs = []
         model_timings = []
-        for q in results:
-            if isinstance(q, tuple) and isinstance(q[0], Exception):
-                model, inputs = q[1]
-                exception = q[0]
+        for result in results:
+            if isinstance(result, tuple) and isinstance(result[0], Exception):
+                model, inputs = result[1]
+                exception = result[0]
                 raise Exception("Encountered error with model {}"
                                 " and input set {}:\n"
                                 "Exception raised: {}: {}".format(model.name, inputs,
                                                                   type(exception).__name__, exception))
             else:
-                q_list, timing_ = q
+                q_list, timing_ = result
                 outputs.extend(q_list)
                 model_timings.append(timing_)
         return outputs, model_timings
@@ -863,14 +881,14 @@ class Graph(object):
         Note: The exception is returned instead of thrown because in parallel, the exception will be suppressed
             by the map() function used to execute the model evaluation in parallel.
         """
-        from chronic import Timer as Timer_
-        from chronic import timings as timings_
+        # from chronic import Timer as Timer_
+        # from chronic import timings as timings_
         model, inputs = model_and_input_set
         input_dict = {q.symbol: q for q in inputs}
         logger.info('Evaluating %s with input %s', model, input_dict)
 
         try:
-            with Timer_(model.name):
+            with Timer(model.name):
                 with Timeout(seconds=timeout):
                     result = model.evaluate(input_dict,
                                             allow_failure=allow_failure)
@@ -879,12 +897,11 @@ class Graph(object):
                 result = {'successful': False,
                           'message': 'Model evaluation timed out for {}'.format(model.name)}
             else:
-                return [(TimeoutError('Model evaluation timed out for {}'.format(model.name)),
-                         model_and_input_set)]
+                return TimeoutError('Model evaluation timed out for {}'.format(model.name)), model_and_input_set
         except Exception as ex:
             # If we get an exception, then allow_failure should be False
             # or we got some other exception we need to know about
-            return [(ex, model_and_input_set)]
+            return ex, model_and_input_set
         # TODO: Maybe provenance should be done in evaluate?
 
         success = result.pop('successful')
@@ -894,7 +911,7 @@ class Graph(object):
             logger.info("Model evaluation unsuccessful %s",
                         result['message'])
             out = []
-        return out, {model.name: timings_.pop(model.name)}
+        return out, {model.name: copy.deepcopy(timings.pop(model.name))}
 
     def evaluate(self, material, allow_model_failure=True, timeout=None):
         """

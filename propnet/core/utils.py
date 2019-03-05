@@ -219,7 +219,7 @@ class LogSniffer:
 #       with version from maggma when it becomes available
 
 
-if os.name == 'posix':
+if os.name != 'posix':
     # signal is not supported by non-Unix systems, and so in turn, cannot
     # timeout models. There are few elegant solutions to killing threads in Python
     # that are cross-platform. If something better comes up, implement it.

@@ -698,15 +698,16 @@ class EquationModel(Model, MSONable):
         for connection in self.connections:
             if set(connection['inputs']) <= set(symbol_value_dict.keys()):
                 for output_sym, func in connection['_lambdas'].items():
-                    # We lambdify these expressions on the fly so this
-                    # function can be pickled and run in parallel
                     output_vals = func(**symbol_value_dict)
                     # TODO: this decision to only take max real values should
                     #       should probably be reevaluated at some point
                     # Scrub nan values and take max
                     if isinstance(output_vals, list):
-                        output_val = max([v for v in output_vals
-                                          if not isinstance(v, complex)])
+                        try:
+                            output_val = max([v for v in output_vals
+                                              if not isinstance(v, complex)])
+                        except ValueError:
+                            raise ValueError("No real roots found for model {}".format(self.name))
                     else:
                         output_val = output_vals
                     output.update({output_sym: output_val})
