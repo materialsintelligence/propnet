@@ -644,7 +644,8 @@ class Graph(object):
             aggregated_symbols.append(this_quantity_pool[prop])
         return product(*aggregated_symbols)
 
-    def get_input_sets_for_model(self, model, fixed_quantity, quantity_pool):
+    @staticmethod
+    def get_input_sets_for_model(model, fixed_quantity, quantity_pool):
         """
         Generates all of the valid input sets for a given model, a fixed
         quantity, and a quantity pool from which to draw remaining properties
@@ -664,7 +665,7 @@ class Graph(object):
         for elist in evaluation_lists:
             elist_without_fixed = elist.copy()
             elist_without_fixed.remove(fixed_quantity.symbol)
-            input_sets = self.generate_input_sets(elist_without_fixed, quantity_pool)
+            input_sets = Graph.generate_input_sets(elist_without_fixed, quantity_pool)
             for input_set in input_sets:
                 all_input_sets.append(list(input_set) + [fixed_quantity])
         return all_input_sets
@@ -690,7 +691,7 @@ class Graph(object):
                     model, quantity, quantity_pool)
                 models_and_input_sets += [
                     tuple([model] + sorted(list(input_set), key=lambda x: (x.symbol.name, x.value)))
-                          for input_set in input_sets]
+                    for input_set in input_sets]
         # Filter for duplicates
         return set(models_and_input_sets)
 
@@ -726,6 +727,10 @@ class Graph(object):
             quantity_pool[quantity.symbol].add(quantity)
 
         # Generate all of the models and input sets to be evaluated
+
+        # TODO: With the current implementation of the input set generation, etc.,
+        #       parallelization does not provide any speed-up. Maybe we can look into
+        #       improving the algorithm?
         logger.info("Generating models and input sets for %s", new_quantities)
         models_and_input_sets = self.generate_models_and_input_sets(
             new_quantities, quantity_pool)
