@@ -103,11 +103,11 @@ class PrintToLogger:
 class LogSniffer:
     """
     This class provides a context manager or explicit object to capture output written
-    to an existing logging. Logger and write it to a string. Purpose is for debugging
+    to an existing logging.Logger and write it to a string. Purpose is for debugging
     and verifying warning output in tests.
 
-    Output is only available while within the established context by using get_output()
-    or before the LogSniffer object is stopped with stop().
+    Output is available while within the established context by using get_output(),
+    when the LogSniffer object is stopped using stop(), or after stopping using get_output()
 
     Usage example:
         # Get logger whose messages you want to capture
@@ -137,6 +137,7 @@ class LogSniffer:
         self._sniffer_handler = None
         self._level = level
         self._old_logger_level = None
+        self._last_output = None
 
     def __enter__(self):
         self.start()
@@ -154,12 +155,13 @@ class LogSniffer:
 
         """
         if not self.is_started():
+            self._last_output = None
             self._sniffer = StringIO()
             self._sniffer_handler = logging.StreamHandler(stream=self._sniffer)
             self._sniffer_handler.setLevel(self._level)
             self._logger.addHandler(self._sniffer_handler)
             if self._logger.getEffectiveLevel() > self._sniffer_handler.level:
-                self._old_logger_level = self._logger.level
+                self._old_logger_level = self._logger.getEffectiveLevel()
                 self._logger.setLevel(self._level)
 
     def is_started(self):
@@ -171,20 +173,21 @@ class LogSniffer:
         """
         return self._sniffer is not None
 
-    def stop(self, **kwargs):
+    def stop(self, *args, **kwargs):
         """
         Stops recording messages passed to the logger, removes the sniffer,
         and returns the captured output. Returns None if sniffer is inactive.
 
         Keyword Args:
-            replace_newline: a string with which to replace newline characters.
+            replace_newline (str): a string with which to replace newline characters.
                 default: '\n' (no replacement)
         Returns: (str) the output captured by the sniffer
             or None if sniffer is inactive
 
         """
         if self.is_started():
-            output = self.get_output(**kwargs)
+            output = self.get_output(*args, **kwargs)
+            self._last_output = output
             self._logger.removeHandler(self._sniffer_handler)
             self._sniffer_handler = None
             self._sniffer.close()
@@ -199,19 +202,20 @@ class LogSniffer:
     def get_output(self, replace_newline='\n'):
         """
         Returns the output captured by the sniffer so far. Returns None if
-        sniffer is not started.
+        sniffer has never been started. If the sniffer had been started previously,
+        but is currently stopped, returns the last output stored by the sniffer.
 
         Keyword Args:
-            replace_newline: a string with which to replace newline characters.
+            replace_newline (str): a string with which to replace newline characters.
                 default: '\n' (no replacement)
         Returns: (str) the output captured by the sniffer,
-            or None if sniffer is inactive
+            or None if sniffer has never been started
 
         """
         if self.is_started():
             return self._sniffer.getvalue().replace('\n', replace_newline)
 
-        return None
+        return self._last_output
 
     def clear(self):
         """
@@ -228,8 +232,8 @@ class LogSniffer:
 
 
 if os.name == 'posix':
-    # signal is not supported by non-Unix systems, and so in turn, cannot
-    # timeout models. There are few elegant solutions to killing threads in Python
+    # signal package is not supported by non-Unix systems, and so in turn, we cannot
+    # timeout models on those platforms. There are few elegant solutions to killing threads in Python
     # that are cross-platform. If something better comes up, implement it.
     import signal
 
@@ -239,11 +243,12 @@ if os.name == 'posix':
         def __init__(self, seconds=1, error_message=""):
             """
             Set a maximum running time for functions.
-            :param seconds (int): Seconds before TimeoutError raised, set to None to disable,
-            default is set assuming a maximum running time of 1 day for 100,000 items
-            parallelized across 16 cores, i.e. int(16 * 24 * 60 * 60 / 1e5)
-            :param error_message (str): Error message to display with TimeoutError
+
+            Args:
+                seconds (int): Seconds before TimeoutError raised, set to None to disable
+                error_message (str): Error message to display with TimeoutError
             """
+
             self.seconds = int(seconds) if seconds else None
             self.error_message = error_message
 
@@ -260,7 +265,7 @@ if os.name == 'posix':
                 signal.alarm(0)
 else:
     class Timeout:
-        def __init__(self, seconds=None, **kwargs):
+        def __init__(self, seconds=None, *args, **kwargs):
             if seconds is not None:
                 logger.warning("Timeout class not implemented on non-Unix machines.")
 
