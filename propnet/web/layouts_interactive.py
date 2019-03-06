@@ -217,7 +217,7 @@ def interactive_layout(app):
             [q.symbol.name for q in output_quantities]) - \
                                  set(input_quantity_names)
         material_graph_data = graph_conversion(
-            graph.get_networkx_graph(), nodes_to_highlight_green=input_quantity_names,
+            graph_evaluator.get_networkx_graph(), nodes_to_highlight_green=input_quantity_names,
             nodes_to_highlight_yellow=list(derived_quantity_names))
         options = AESTHETICS['global_options']
         options['edges']['color'] = '#000000'
