@@ -68,7 +68,9 @@ class MPRester(_MPRester):
         else:
             return None
 
-    def get_properties_for_mpids(self, mpids, filter_null_properties=True):
+    def get_properties_for_mpids(self, mpids,
+                                 filter_null_properties=True,
+                                 include_date_created=False):
         """
         Retrieve properties from the Materials Project
         for a given list of Materials Project IDs.
@@ -81,6 +83,8 @@ class MPRester(_MPRester):
 
         """
         all_properties = list(self.mapping.keys())
+        if include_date_created:
+            all_properties.append('created_at')
         property_query = self.query(criteria={'material_id': {'$in': mpids}},
                                     properties=all_properties)
 
@@ -127,14 +131,21 @@ class MPRester(_MPRester):
         """
 
         materials_properties = self.get_properties_for_mpids(
-            mpids, filter_null_properties=filter_null_properties)
+            mpids, filter_null_properties=filter_null_properties,
+            include_date_created=True)
         materials = []
 
         for material_properties in materials_properties:
             material = Material()
+            try:
+                date_created = material_properties.pop('created_at')
+            except KeyError:
+                date_created = None
             for property_name, property_value in material_properties.items():
-                provenance = ProvenanceElement(source={'source': 'Materials Project',
-                                                       'source_key': material_properties.get('material_id', None)})
+                provenance = ProvenanceElement(
+                    source={'source': 'Materials Project',
+                            'source_key': material_properties.get('material_id', None),
+                            'date_created': date_created})
                 quantity = QuantityFactory.create_quantity(self.mapping[property_name], property_value,
                                                            provenance=provenance)
                 material.add_quantity(quantity)
