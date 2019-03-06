@@ -4,7 +4,7 @@ Module containing classes and methods for graph functionality in Propnet code.
 
 import logging
 from collections import defaultdict
-from itertools import product, chain
+from itertools import product
 from chronic import Timer, timings, clear
 from pandas import DataFrame
 from collections import deque
@@ -83,7 +83,8 @@ class Graph(object):
 
         Args:
             models (dict): models to use for graph evaluation. Default: all registered models.
-            composite_models (dict): composite models to use for graph evaluation. Default: all registered composite models.
+            composite_models (dict): composite models to use for graph evaluation.
+                Default: all registered composite models.
             symbol_types (dict): symbols to use for graph evaluation. Default: all registered symbols
             parallel (bool): True creates a pool of workers for parallel graph evaluation. Default: False
             max_workers (int): Number of workers for parallel worker pool. Default: None, for serial evaluation,
@@ -737,7 +738,7 @@ class Graph(object):
 
         input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
 
-        inputs_to_calculate = list(filter(lambda x: Graph._generates_noncyclic_output(x),
+        inputs_to_calculate = list(filter(Graph._generates_noncyclic_output,
                                           input_tuples))
 
         # Evaluate model for each input set and add new valid quantities

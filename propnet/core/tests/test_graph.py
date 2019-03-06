@@ -337,8 +337,8 @@ class GraphTest(unittest.TestCase):
         # Simple one quantity test
         quantity = QuantityFactory.create_quantity("band_gap", 3.2)
         graph = Graph()
-        qpool = graph.derive_quantities([quantity])
-        new_mat = graph.evaluate(Material([quantity]))
+        _ = graph.derive_quantities([quantity])
+        _ = graph.evaluate(Material([quantity]))
 
     def test_evaluate_constraints(self):
         """
@@ -950,7 +950,6 @@ class GraphTest(unittest.TestCase):
         else:
             do_parallel = True
             workers = cpu_count()
-            
         g = Graph(parallel=do_parallel, max_workers=workers)
 
         cm = g.evaluate_composite(cm, allow_composite_model_failure=False)
@@ -1027,6 +1026,6 @@ class GraphTest(unittest.TestCase):
                 qs = jsanitize(m.get_quantities(), strict=True)
                 f.write(json.dumps(qs))
 
+
 if __name__ == "__main__":
     unittest.main()
-
