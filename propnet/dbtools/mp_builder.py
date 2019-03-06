@@ -14,6 +14,7 @@ from propnet.ext.matproj import MPRester
 from pydash import get
 
 # noinspection PyUnresolvedReferences
+import propnet.models
 import propnet.symbols
 from propnet.core.registry import Registry
 
@@ -24,13 +25,28 @@ class PropnetBuilder(Builder):
     """
 
     def __init__(self, materials, propstore, materials_symbol_map=None,
-                 criteria=None, source_name="", **kwargs):
+                 criteria=None, source_name="", parallel=False,
+                 max_workers=None, timeout=None, **kwargs):
         """
         Args:
             materials (Store): store of materials properties
             materials_symbol_map (dict): mapping of keys in materials
                 store docs to symbols
             propstore (Store): store of propnet properties
+            criteria (dict): criteria for Mongodb find() query specifying
+                criteria for records to process
+            source_name (str): identifier for record source
+            parallel (bool): True runs the graph algorithm in parallel with
+                the number of workers specified by max_workers. Default: False (serial)
+            max_workers (int): number of processes to spawn for parallel graph
+                evaluation. Note that graph evaluation speed-up tops out at 3-4
+                parallel processes and to keep in mind that if builder is run in a
+                parallel runner, each will spawn max_workers number of processes
+                to evaluate. For 4 parallel graph processes running on 3 parallel runners,
+                this will spawn: 1 main runner process + 3 parallel runners + (3 parallel
+                runners * 4 graph processes) = 16 total processes
+            timeout (int): number of seconds after which to timeout model evaluation
+                (available only on Unix-based systems). Default: None (no limit)
             **kwargs: kwargs for builder
         """
         self.materials = materials
@@ -43,6 +59,19 @@ class PropnetBuilder(Builder):
             self.source_name = "Materials Project"
         else:
             self.source_name = source_name
+
+        self.parallel = parallel
+        if not parallel and max_workers is not None:
+            raise ValueError("Cannot specify max_workers with parallel=True")
+        self.max_workers = max_workers
+
+        self.timeout = timeout
+
+        self._graph_evaluator = Graph(parallel=parallel, max_workers=max_workers)
+        self._graph_evaluator.remove_models(
+            {"dimensionality_cheon": Registry("models")['dimensionality_cheon'],
+             "dimensionality_gorai": Registry("models")['dimensionality_gorai']})
+
         super(PropnetBuilder, self).__init__(sources=[materials],
                                              targets=[propstore],
                                              **kwargs)
@@ -69,7 +98,7 @@ class PropnetBuilder(Builder):
         if 'created_at' in item.keys():
             date_created = item['created_at']
         else:
-            date_created = ""
+            date_created = None
 
         provenance = ProvenanceElement(source={"source": self.source_name,
                                                "source_key": item['task_id'],
@@ -92,11 +121,13 @@ class PropnetBuilder(Builder):
 
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
-        graph = Graph()
-        graph.remove_models(
-            {"dimensionality_cheon": Registry("models")['dimensionality_cheon'],
-             "dimensionality_gorai": Registry("models")['dimensionality_gorai']})
-        new_material = graph.evaluate(material)
+        # Wish we didn't have to spawn new processes every time, but cannot pickle
+        # process pool objects if we made the graph object a builder property
+        # graph = Graph(parallel=self.parallel, max_workers=self.max_workers)
+        # graph.remove_models(
+        #     {"dimensionality_cheon": Registry("models")['dimensionality_cheon'],
+        #      "dimensionality_gorai": Registry("models")['dimensionality_gorai']})
+        new_material = self._graph_evaluator.evaluate(material, timeout=self.timeout)
 
         # Format document and return
         logger.info("Creating doc for %s", item['task_id'])
