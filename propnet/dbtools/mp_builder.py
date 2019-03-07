@@ -15,6 +15,7 @@ from pydash import get
 
 # noinspection PyUnresolvedReferences
 import propnet.models
+# noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 

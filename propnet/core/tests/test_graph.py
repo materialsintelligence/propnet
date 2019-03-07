@@ -940,7 +940,6 @@ class GraphTest(unittest.TestCase):
         m1.add_quantity(QuantityFactory.create_quantity("band_gap", 0.0))
         m2 = mp_data["mp-24972"]
         cm = CompositeMaterial([m1, m2])
-        
         if cpu_count() >= 4:
             do_parallel = True
             workers = 4
