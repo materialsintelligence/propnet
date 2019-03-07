@@ -599,7 +599,7 @@ class NumQuantity(BaseQuantity):
                     new_tags.add(tag)
             new_provenance.inputs.append(quantity)
 
-        return cls(symbol_type=input_symbol, value=new_value,
+        return cls(symbol_type=input_symbol, value=new_value, units=new_value.units,
                    tags=list(new_tags), provenance=new_provenance,
                    uncertainty=std_dev)
 
