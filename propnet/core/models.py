@@ -265,7 +265,8 @@ class Model(ABC):
         for symbol, value in out.items():
             try:
                 quantity = QuantityFactory.create_quantity(
-                    symbol, value, unit_map_as_properties.get(symbol),
+                    symbol, value,
+                    unit_map_as_properties.get(symbol) or Registry("units").get(symbol),
                     provenance=provenance)
             except SymbolConstraintError as err:
                 if allow_failure:

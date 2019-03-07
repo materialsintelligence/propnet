@@ -38,12 +38,15 @@ class PropnetBuilder(Builder):
             source_name (str): identifier for record source
             parallel (bool): True runs the graph algorithm in parallel with
                 the number of workers specified by max_workers. Default: False (serial)
+                Note: it is NOT recommended that graph evaluation be parallelized
+                if using a parallelized Runner to build the builder.
             max_workers (int): number of processes to spawn for parallel graph
                 evaluation. Note that graph evaluation speed-up tops out at 3-4
-                parallel processes and to keep in mind that if builder is run in a
-                parallel runner, each will spawn max_workers number of processes
-                to evaluate. For 4 parallel graph processes running on 3 parallel runners,
-                this will spawn: 1 main runner process + 3 parallel runners + (3 parallel
+                parallel processes. If the builder is run in a parallel maggma Runner
+                (not recommended with parallel Graph evaluation), each will spawn
+                max_workers number of processes to evaluate. For 4 parallel graph processes
+                running on 3 parallel runners, this will spawn:
+                1 main runner process + 3 parallel runners + (3 parallel
                 runners * 4 graph processes) = 16 total processes
             timeout (int): number of seconds after which to timeout model evaluation
                 (available only on Unix-based systems). Default: None (no limit)
@@ -62,15 +65,12 @@ class PropnetBuilder(Builder):
 
         self.parallel = parallel
         if not parallel and max_workers is not None:
-            raise ValueError("Cannot specify max_workers with parallel=True")
+            raise ValueError("Cannot specify max_workers with parallel=False")
         self.max_workers = max_workers
 
         self.timeout = timeout
 
         self._graph_evaluator = Graph(parallel=parallel, max_workers=max_workers)
-        self._graph_evaluator.remove_models(
-            {"dimensionality_cheon": Registry("models")['dimensionality_cheon'],
-             "dimensionality_gorai": Registry("models")['dimensionality_gorai']})
 
         super(PropnetBuilder, self).__init__(sources=[materials],
                                              targets=[propstore],
@@ -107,8 +107,10 @@ class PropnetBuilder(Builder):
         for mkey, property_name in self.materials_symbol_map.items():
             value = get(item, mkey)
             if value:
-                material.add_quantity(QuantityFactory.create_quantity(property_name, value,
-                                                                      provenance=provenance))
+                material.add_quantity(
+                    QuantityFactory.create_quantity(property_name, value,
+                                                    units=Registry("units").get(property_name, None),
+                                                    provenance=provenance))
 
         # Add custom things, e. g. computed entry
         computed_entry = get_entry(item)

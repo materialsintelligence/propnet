@@ -4,6 +4,10 @@ from propnet.core.provenance import ProvenanceElement
 
 from pymatgen import MPRester as _MPRester
 
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
+
 
 # TODO: Distinguish this from the MP rester proper
 # TODO: do we really need the duplicate methods for lists/single material?
@@ -146,8 +150,10 @@ class MPRester(_MPRester):
                     source={'source': 'Materials Project',
                             'source_key': material_properties.get('material_id', None),
                             'date_created': date_created})
-                quantity = QuantityFactory.create_quantity(self.mapping[property_name], property_value,
-                                                           provenance=provenance)
+                quantity = QuantityFactory.create_quantity(
+                    self.mapping[property_name], property_value,
+                    units=Registry("units").get(self.mapping[property_name], None),
+                    provenance=provenance)
                 material.add_quantity(quantity)
             materials.append(material)
 
