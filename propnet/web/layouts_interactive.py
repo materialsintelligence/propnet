@@ -196,7 +196,7 @@ def interactive_layout(app):
         for quantity in quantities:
             material.add_quantity(quantity)
 
-        output_material = graph_evaluator.evaluate(material)
+        output_material = graph_evaluator.evaluate(material, timeout=5)
 
         if aggregate:
             output_quantities = output_material.get_aggregated_quantities().values()
