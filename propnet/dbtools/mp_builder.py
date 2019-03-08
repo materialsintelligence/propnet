@@ -73,6 +73,7 @@ class PropnetBuilder(Builder):
 
         self._graph_evaluator = Graph(parallel=parallel, max_workers=max_workers)
 
+        # This is for the runner to know how many items we're processing
         self.total = None
 
         super(PropnetBuilder, self).__init__(sources=[materials],
