@@ -405,8 +405,9 @@ class Model(ABC):
         evaluate_inputs = self.map_symbols_to_properties(inputs)
         unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
         evaluate_inputs = {
-            s: QuantityFactory.create_quantity(s, v,
-                                               unit_map_as_properties.get(s))
+            s: QuantityFactory.create_quantity(
+                s, v,
+                units=unit_map_as_properties.get(s) or Registry("units")[s])
             for s, v in evaluate_inputs.items()}
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
@@ -416,7 +417,9 @@ class Model(ABC):
         for k, known_output in outputs.items():
             symbol = self.symbol_property_map[k]
             units = self.unit_map.get(k)
-            known_quantity = QuantityFactory.create_quantity(symbol, known_output, units)
+            known_quantity = QuantityFactory.create_quantity(
+                symbol, known_output,
+                units=units or Registry("units")[symbol])
             evaluate_output = evaluate_outputs[k]
             if not known_quantity.has_eq_value_to(evaluate_output):
                 errmsg = errmsg.format("evaluate", k, evaluate_output,

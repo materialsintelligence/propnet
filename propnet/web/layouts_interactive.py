@@ -102,7 +102,8 @@ def interactive_layout(app):
                      ''
                      'In the graph, input properties are in green and derived properties in '
                      'yellow. Properties shown in grey require additional information to derive.'),
-        dcc.Checklist(id='aggregate', options=[{'label': 'Aggregate', 'value': 'aggregate'}], values=['aggregate'], style={'display': 'inline-block'}),
+        dcc.Checklist(id='aggregate', options=[{'label': 'Aggregate', 'value': 'aggregate'}],
+                      values=['aggregate'], style={'display': 'inline-block'}),
         html.Br(),
         html.Div(id='propnet-output')
     ])
@@ -180,7 +181,8 @@ def interactive_layout(app):
     def evaluate(input_rows, data, aggregate):
 
         quantities = [QuantityFactory.create_quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
-                                                      value=ureg.parse_expression(row['Editable Value']))
+                                                      value=ureg.parse_expression(row['Editable Value']),
+                                                      units=Registry("units").get(ROW_IDX_TO_SYMBOL_NAME[idx]))
                       for idx, row in enumerate(input_rows) if row['Editable Value']]
 
         if data and len(data) > 0:
