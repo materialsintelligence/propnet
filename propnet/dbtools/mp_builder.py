@@ -39,14 +39,14 @@ class PropnetBuilder(Builder):
             source_name (str): identifier for record source
             parallel (bool): True runs the graph algorithm in parallel with
                 the number of workers specified by max_workers. Default: False (serial)
-                Note: it is NOT recommended that graph evaluation be parallelized
-                if using a parallelized Runner to build the builder.
+                Note: there will be no substantial speed-up from using a parallel
+                runner with a parallel builder if there are long-running model evaluations
+                that don't get timed out using the timeout keyword.
             max_workers (int): number of processes to spawn for parallel graph
                 evaluation. Note that graph evaluation speed-up tops out at 3-4
-                parallel processes. If the builder is run in a parallel maggma Runner
-                (not recommended with parallel Graph evaluation), each will spawn
-                max_workers number of processes to evaluate. For 4 parallel graph processes
-                running on 3 parallel runners, this will spawn:
+                parallel processes. If the builder is run in a parallel maggma Runner,
+                each will spawn max_workers number of processes to evaluate.
+                For 4 parallel graph processes running on 3 parallel runners, this will spawn:
                 1 main runner process + 3 parallel runners + (3 parallel
                 runners * 4 graph processes) = 16 total processes
             timeout (int): number of seconds after which to timeout model evaluation
@@ -72,6 +72,8 @@ class PropnetBuilder(Builder):
         self.timeout = timeout
 
         self._graph_evaluator = Graph(parallel=parallel, max_workers=max_workers)
+
+        self.total = None
 
         super(PropnetBuilder, self).__init__(sources=[materials],
                                              targets=[propstore],
@@ -124,12 +126,7 @@ class PropnetBuilder(Builder):
 
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
-        # Wish we didn't have to spawn new processes every time, but cannot pickle
-        # process pool objects if we made the graph object a builder property
-        # graph = Graph(parallel=self.parallel, max_workers=self.max_workers)
-        # graph.remove_models(
-        #     {"dimensionality_cheon": Registry("models")['dimensionality_cheon'],
-        #      "dimensionality_gorai": Registry("models")['dimensionality_gorai']})
+
         new_material = self._graph_evaluator.evaluate(material, timeout=self.timeout)
 
         # Format document and return
@@ -140,11 +137,12 @@ class PropnetBuilder(Builder):
         doc = {"inputs": [StorageQuantity.from_quantity(q) for q in input_quantities]}
         for symbol, quantity in new_material.get_aggregated_quantities().items():
             all_qs = new_material._symbol_to_quantity[symbol]
-            # Only add new quantities
-            # TODO: Condition insufficiently general.
-            #       Can end up with initial quantities added as "new quantities"
+            # If no new quantities of a given symbol were derived (i.e. if the initial
+            # input quantity is the only one listed in the new material) then don't add
+            # that quantity to the propnet entry document as a derived quantity.
             if len(all_qs) == 1 and list(all_qs)[0] in input_quantities:
                 continue
+
             # Write out all quantities as dicts including the
             # internal ID for provenance tracing
             qs = [StorageQuantity.from_quantity(q).as_dict() for q in all_qs]
