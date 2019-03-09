@@ -2,6 +2,7 @@
 
 import six
 import numpy as np
+from copy import copy
 
 from monty.json import MSONable
 from ruamel.yaml import safe_dump
@@ -32,7 +33,8 @@ class Symbol(MSONable):
 
     def __init__(self, name, display_names=None, display_symbols=None,
                  units=None, shape=None, object_type=None, comment=None,
-                 category='property', constraint=None, default_value=None):
+                 category='property', constraint=None, default_value=None,
+                 is_builtin=False):
         """
         Parses and validates a series of inputs into a PropertyMetadata
         tuple, a format that PropNet expects.
@@ -64,6 +66,8 @@ class Symbol(MSONable):
                 name, e. g. bulk_modulus > 0.
             default_value: default value for the symbol, e. g. 300 for
                 temperature or 1 for magnetic permeability
+            is_builtin (bool): True if the model is included with propnet
+                by default. Not intended to be set explicitly by users
         """
 
         # TODO: not sure object should be distinguished
@@ -95,14 +99,15 @@ class Symbol(MSONable):
                     "Shape provided for ({}) is invalid.".format(name))
 
             if units is None:
-                units = 'dimensionless'
-
-            logger.info("Units parsed from a string format automatically, "
-                        "do these look correct? %s", units)
-            if isinstance(units, six.string_types):
+                units = 1 * ureg.dimensionless
+            elif isinstance(units, six.string_types):
                 units = 1 * ureg.parse_expression(units)
-            else:
+            elif isinstance(units, (tuple, list)):
                 units = ureg.Quantity.from_tuple(units)
+            else:
+                raise TypeError("Cannot parse unit format: {}".format(units))
+
+            units = units.units.format_babel()
         else:
             if units is not None:
                 raise ValueError("Cannot define units for generic objects.")
@@ -130,7 +135,7 @@ class Symbol(MSONable):
 
         self.name = name
         self.category = category
-        self.units = units
+        self._units = units
         self.display_names = display_names
         self.display_symbols = display_symbols
         # If a user enters [1] or [1, 1, ...] for shape, treat as a scalar
@@ -142,20 +147,44 @@ class Symbol(MSONable):
         self.shape = shape
         self.comment = comment
         self.default_value = default_value
-
-
+        self._is_builtin = is_builtin
 
         # TODO: This should explicity deal with only numerical symbols
         #       because it uses sympy to evaluate them until we make
         #       a class to evaluate them using either sympy or a custom func
         # Note that symbol constraints are not constraint objects
         # at the moment because using them would result in a circular
-        # dependence, this might be resolved with some reorganization
-        if constraint:
-            expr = parse_expr(constraint)
-            self.constraint = sp.lambdify(self.name, expr)
-        else:
-            self.constraint = None
+
+        if constraint is not None:
+            try:
+                func = sp.lambdify(self.name, parse_expr(constraint))
+                func(0)
+            except Exception:
+                raise ValueError("Constraint expression invalid: {}".format(constraint))
+
+        self._constraint = constraint
+        self._constraint_func = None
+
+    @property
+    def constraint(self):
+        if self._constraint:
+            if self._constraint_func is None:
+                self._constraint_func = sp.lambdify(self.name, parse_expr(self._constraint))
+            return self._constraint_func
+        return None
+
+    def __getstate__(self):
+        d = copy(self.__dict__)
+        d['_constraint_func'] = None
+        return d
+
+    @property
+    def is_builtin(self):
+        return self._is_builtin
+
+    @property
+    def units(self):
+        return ureg.Unit(self._units) if self._units else None
 
     @property
     def object_class(self):
@@ -191,12 +220,8 @@ class Symbol(MSONable):
         if self.units.dimensionless:
             return "dimensionless"
 
-        # self.units has both the units and (sometimes) a
-        # prefactor (its magnitude)
-        unit_str = '{:~P}'.format(self.units.units)
-
-        if self.units.magnitude != 1:
-            unit_str = '{} {}'.format(self.units.magnitude, unit_str)
+        # Below is a special formatting string specific to pint units
+        unit_str = '{:~P}'.format(self.units)
 
         return unit_str
 
@@ -276,6 +301,6 @@ class Symbol(MSONable):
     def as_dict(self):
         d = super().as_dict()
         if self.units:
-            d['units'] = d['units'].to_tuple()
+            d['units'] = (1 * d['units']).to_tuple()
 
         return d

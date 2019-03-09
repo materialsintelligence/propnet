@@ -4,7 +4,7 @@ from pymatgen.analysis.dimensionality import get_dimensionality_cheon
 def plug_in(symbol_values):
     structure = symbol_values['structure']
     return {
-        'dimensionality': get_dimensionality_cheon(structure),
+        'dimensionality': str(get_dimensionality_cheon(structure)),
     }
 
 DESCRIPTION = """

@@ -1,5 +1,6 @@
 import numpy as np
 from monty.json import MSONable
+from monty.serialization import MontyDecoder
 from datetime import datetime
 import sys
 
@@ -211,37 +212,21 @@ class BaseQuantity(ABC, MSONable):
         """
         pass
 
-    def is_cyclic(self, visited=None):
+    def is_cyclic(self):
         """
         Algorithm for determining if there are any cycles in
         the provenance tree, i. e. a repeated quantity in a
         tree branch
 
-        Args:
-            visited (list of visited model/symbols in the built tree
-                that allows for recursion
-
         Returns:
             (bool) whether or not there is a cycle in the quantity
                 provenance, i. e. repeated value in a tree branch
         """
-        if visited is None:
-            visited = set()
-        if self.symbol in visited:
-            return True
-        visited.add(self.symbol)
-        if self.provenance is None:
-            return False
-        # add distinct model hash to distinguish properties from models,
-        # e.g. pugh ratio
-        model_hash = "model_{}".format(self.provenance.model)
-        if model_hash in visited:
-            return True
-        visited.add(model_hash)
-        for p_input in self.provenance.inputs or []:
-            this_visited = visited.copy()
-            if p_input.is_cyclic(this_visited):
-                return True
+
+        if self.provenance and self.provenance.model:
+            return self.provenance.model_in_provenance_tree(self.provenance.model) or \
+                self.provenance.symbol_in_provenance_tree(self.symbol)
+
         return False
 
     def get_provenance_graph(self, start=None, filter_long_labels=True):
@@ -299,14 +284,26 @@ class BaseQuantity(ABC, MSONable):
             (dict): representation of object as a dictionary
         """
         symbol = self._symbol_type
-        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name]:
+        if symbol.name in Registry("symbols").keys() and symbol == Registry("symbols")[symbol.name] and \
+                symbol.is_builtin:
             symbol = self._symbol_type.name
         else:
             symbol = symbol.as_dict()
 
         return {"symbol_type": symbol,
                 "provenance": self.provenance.as_dict() if self.provenance else None,
-                "tags": self.tags}
+                "tags": self.tags,
+                "internal_id": self._internal_id}
+
+    @classmethod
+    def from_dict(cls, d):
+        decoded = {k: MontyDecoder().process_decoded(v) for k, v in d.items() if not k.startswith('@')}
+        internal_id = decoded.pop('internal_id')
+        value = decoded.pop('value')
+        symbol_type = decoded.pop('symbol_type')
+        q = cls(symbol_type, value, **decoded)
+        q._internal_id = internal_id
+        return q
 
     @abstractmethod
     def contains_nan_value(self):
@@ -473,12 +470,15 @@ class NumQuantity(BaseQuantity):
 
         # Set default units if not supplied
         if not units:
-            logger.warning("No units supplied, assuming default units from symbol.")
+            if symbol_type.units is None:
+                raise ValueError("No units specified as keyword and no "
+                                 "units provided by symbol for NumQuantity")
+            logger.warning("WARNING: No units supplied, assuming default units from symbol.")
 
         units = units or symbol_type.units
 
         if isinstance(value, self._ACCEPTABLE_DTYPES):
-            value_in = ureg.Quantity(np.asscalar(value), units)
+            value_in = ureg.Quantity(value.item(), units)
         elif isinstance(value, ureg.Quantity):
             value_in = value.to(units)
         elif self.is_acceptable_type(value):
@@ -492,7 +492,7 @@ class NumQuantity(BaseQuantity):
 
         if uncertainty is not None:
             if isinstance(uncertainty, self._ACCEPTABLE_DTYPES):
-                self._uncertainty = ureg.Quantity(np.asscalar(uncertainty), units)
+                self._uncertainty = ureg.Quantity(uncertainty.item(), units)
             elif isinstance(uncertainty, ureg.Quantity):
                 self._uncertainty = uncertainty.to(units)
             elif isinstance(uncertainty, NumQuantity):
@@ -513,11 +513,13 @@ class NumQuantity(BaseQuantity):
         #       available for numerical symbols because it uses
         #       sympy to evaluate the constraints. Would be better
         #       to make some class for symbol and/or model constraints
-        if symbol_type.constraint is not None:
-            if not symbol_type.constraint(**{symbol_type.name: self.magnitude}):
+
+        symbol_constraint = symbol_type.constraint
+        if symbol_constraint is not None:
+            if not symbol_constraint(**{symbol_type.name: self.magnitude}):
                 raise SymbolConstraintError(
                     "NumQuantity with {} value does not satisfy {}".format(
-                        value, symbol_type.constraint))
+                        value, symbol_constraint))
 
     @staticmethod
     def _is_acceptable_dtype(this_dtype):
@@ -530,7 +532,7 @@ class NumQuantity(BaseQuantity):
         Returns: True if this_dtype is a sub-dtype of the acceptable dtypes.
 
         """
-        return any(np.issubdtype(this_dtype, dt) for dt in NumQuantity._ACCEPTABLE_DTYPES)
+        return any([np.issubdtype(this_dtype, dt) for dt in NumQuantity._ACCEPTABLE_DTYPES])
 
     def to(self, units):
         """
@@ -597,7 +599,7 @@ class NumQuantity(BaseQuantity):
                     new_tags.add(tag)
             new_provenance.inputs.append(quantity)
 
-        return cls(symbol_type=input_symbol, value=new_value,
+        return cls(symbol_type=input_symbol, value=new_value, units=new_value.units,
                    tags=list(new_tags), provenance=new_provenance,
                    uncertainty=std_dev)
 
@@ -869,7 +871,8 @@ class NumQuantity(BaseQuantity):
 
         """
         if not (isinstance(lhs, ureg.Quantity) and isinstance(rhs, ureg.Quantity)):
-            raise TypeError("This method requires two pint Quantity objects")
+            raise TypeError("This method requires two pint Quantity objects. "
+                            "Received:\n{} == {}".format(type(lhs), type(rhs)))
 
         if lhs.units.dimensionality != rhs.units.dimensionality:
             return False
@@ -921,6 +924,19 @@ class NumQuantity(BaseQuantity):
 
         """
         return super().__hash__()
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        d['_value'] = d['_value'].to_tuple()
+        if self._uncertainty is not None:
+            d['_uncertainty'] = d['_uncertainty'].to_tuple()
+        return d
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._value = ureg.Quantity.from_tuple(self._value)
+        if self._uncertainty is not None:
+            self._uncertainty = ureg.Quantity.from_tuple(self._uncertainty)
 
 
 class ObjQuantity(BaseQuantity):

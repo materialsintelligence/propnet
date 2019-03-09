@@ -19,9 +19,8 @@ from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
+from propnet import ureg
 
-# noinspection PyUnresolvedReferences
-import propnet.symbols
 from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
@@ -29,6 +28,7 @@ logger = logging.getLogger(__name__)
 # TODO: maybe this should go somewhere else, like a dedicated settings.py
 TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
                              "models", "tests", "pymodel_test_data")
+
 
 class Model(ABC):
     """
@@ -63,12 +63,15 @@ class Model(ABC):
             'empirical' categories
         test_data (list of {'inputs': [], 'outputs': []): test data with
             which to evaluate the model
+        is_builtin (bool): True if the model is a default model included with propnet
+            (this option not intended to be set by users)
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None, implemented_by=None,
-                 symbol_property_map=None, scrub_units=None, test_data=None):
+                 symbol_property_map=None, scrub_units=None, test_data=None,
+                 is_builtin=False):
         self.name = name
-        self.connections = connections
+        self._connections = connections
         self.description = description
         if isinstance(categories, str):
             categories = [categories]
@@ -77,6 +80,7 @@ class Model(ABC):
             implemented_by = [implemented_by]
         self.implemented_by = implemented_by or []
         self.references = references_to_bib(references or [])
+        self._is_builtin = is_builtin
 
         # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
@@ -89,18 +93,19 @@ class Model(ABC):
 
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
-        self.symbol_property_map = {k: k for k in self.all_properties}
-        self.symbol_property_map.update(symbol_property_map or {})
+        self._symbol_property_map = {k: k for k in self.all_properties}
+        self._symbol_property_map.update(symbol_property_map or {})
 
         if scrub_units is not None or 'empirical' in self.categories:
-            self.unit_map = {prop_name: Registry("units").get(prop_name)
-                             for prop_name in self.all_properties}
+            self._unit_map = {prop_name: Registry("units").get(prop_name)
+                              for prop_name in self.all_properties}
             # Update with explicitly supplied units if specified
             if isinstance(scrub_units, dict):
-                self.unit_map.update(self.map_symbols_to_properties(scrub_units))
-            self.unit_map = self.map_properties_to_symbols(self.unit_map)
+                scrub_units = {k: ureg.Unit(v).format_babel() for k, v in scrub_units.items()}
+                self._unit_map.update(self.map_symbols_to_properties(scrub_units))
+            self._unit_map = self.map_properties_to_symbols(self._unit_map)
         else:
-            self.unit_map = {}
+            self._unit_map = {}
 
         # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
@@ -117,6 +122,23 @@ class Model(ABC):
             test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
                          for data in test_data]
         self._test_data = test_data
+
+    @property
+    def is_builtin(self):
+        return self._is_builtin
+
+    @property
+    def connections(self):
+        return self._connections
+
+    @property
+    def unit_map(self):
+        return {k: ureg.Unit(v) if v is not None else None
+                for k, v in self._unit_map.items()}
+
+    @property
+    def symbol_property_map(self):
+        return self._symbol_property_map
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -177,7 +199,7 @@ class Model(ABC):
         evaluate also handles any requisite unit_mapping
 
         Args:
-            symbol_quantity_dict ({property_name: Quantity}): a mapping of
+            symbol_quantity_dict_in ({property_name: Quantity}): a mapping of
                 symbol names to quantities to be substituted
             allow_failure (bool): whether or not to catch
                 errors in model evaluation
@@ -243,7 +265,8 @@ class Model(ABC):
         for symbol, value in out.items():
             try:
                 quantity = QuantityFactory.create_quantity(
-                    symbol, value, unit_map_as_properties.get(symbol),
+                    symbol, value,
+                    unit_map_as_properties.get(symbol) or Registry("units").get(symbol),
                     provenance=provenance)
             except SymbolConstraintError as err:
                 if allow_failure:
@@ -382,8 +405,9 @@ class Model(ABC):
         evaluate_inputs = self.map_symbols_to_properties(inputs)
         unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
         evaluate_inputs = {
-            s: QuantityFactory.create_quantity(s, v,
-                                               unit_map_as_properties.get(s))
+            s: QuantityFactory.create_quantity(
+                s, v,
+                units=unit_map_as_properties.get(s) or Registry("units")[s])
             for s, v in evaluate_inputs.items()}
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
@@ -393,7 +417,9 @@ class Model(ABC):
         for k, known_output in outputs.items():
             symbol = self.symbol_property_map[k]
             units = self.unit_map.get(k)
-            known_quantity = QuantityFactory.create_quantity(symbol, known_output, units)
+            known_quantity = QuantityFactory.create_quantity(
+                symbol, known_output,
+                units=units or Registry("units")[symbol])
             evaluate_output = evaluate_outputs[k]
             if not known_quantity.has_eq_value_to(evaluate_output):
                 errmsg = errmsg.format("evaluate", k, evaluate_output,
@@ -409,6 +435,9 @@ class Model(ABC):
         Returns:
             True if validation completes successfully
         """
+        if self._test_data is None:
+            return False
+
         for test_dataset in self._test_data:
             self.test(**test_dataset)
         return True
@@ -479,6 +508,8 @@ class Model(ABC):
         Returns: example code for this model
 
         """
+        if self._test_data is None:
+            return ""
         example_inputs = self._test_data[0]['inputs']
         example_outputs = str(self._test_data[0]['outputs'])
 
@@ -579,7 +610,8 @@ class EquationModel(Model, MSONable):
     def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
                  categories=None, references=None, implemented_by=None,
-                 scrub_units=None, solve_for_all_symbols=False, test_data=None):
+                 scrub_units=None, solve_for_all_symbols=False, test_data=None,
+                 is_builtin=False):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -596,7 +628,7 @@ class EquationModel(Model, MSONable):
                         connections.append(
                             {"inputs": inputs,
                              "outputs": [str(symbol)],
-                             "_lambdas": {str(symbol): sp.lambdify(inputs, new)}
+                             "_sympy_exprs": {str(symbol): new}
                              })
             else:
                 for eqn in equations:
@@ -606,7 +638,7 @@ class EquationModel(Model, MSONable):
                     connections.append(
                         {"inputs": inputs,
                          "outputs": outputs,
-                         "_lambdas": {outputs[0]: sp.lambdify(inputs, parse_expr(input_expr))}
+                         "_sympy_exprs": {outputs[0]: parse_expr(input_expr)}
                          })
         else:
             # TODO: I don't think this needs to be supported necessarily
@@ -614,16 +646,43 @@ class EquationModel(Model, MSONable):
             #       and two outputs where you only want one connection
             for connection in connections:
                 new = sp.solve(sympy_expressions, connection['outputs'])
-                lambdas = {str(sym): sp.lambdify(connection['inputs'], solved)
-                           for sym, solved in new.items()}
-                connection["_lambdas"] = lambdas
+                sympy_exprs = {str(sym): solved
+                               for sym, solved in new.items()}
+                connection["_sympy_exprs"] = sympy_exprs
 
-        #self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
             symbol_property_map, scrub_units,
-            test_data=test_data)
+            test_data=test_data,
+            is_builtin=is_builtin)
+
+        self._generate_lambdas()
+
+    @property
+    def connections(self):
+        if not all(['_lambdas' in connection.keys() for connection in self._connections]):
+            self._generate_lambdas()
+        return self._connections
+
+    def _generate_lambdas(self):
+        for connection in self._connections:
+            for output_sym, sympy_expr in connection['_sympy_exprs'].items():
+                sp_lambda = sp.lambdify(connection['inputs'], sympy_expr)
+                if '_lambdas' not in connection.keys():
+                    connection['_lambdas'] = dict()
+                connection['_lambdas'][output_sym] = sp_lambda
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        for connection in d['_connections']:
+            if '_lambdas' in connection.keys():
+                del connection['_lambdas']
+        return d
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._generate_lambdas()
 
     def plug_in(self, symbol_value_dict):
         """
@@ -638,6 +697,7 @@ class EquationModel(Model, MSONable):
         Returns (dict):
             symbol-keyed output dictionary
         """
+
         output = {}
         for connection in self.connections:
             if set(connection['inputs']) <= set(symbol_value_dict.keys()):
@@ -647,8 +707,11 @@ class EquationModel(Model, MSONable):
                     #       should probably be reevaluated at some point
                     # Scrub nan values and take max
                     if isinstance(output_vals, list):
-                        output_val = max([v for v in output_vals
-                                          if not isinstance(v, complex)])
+                        try:
+                            output_val = max([v for v in output_vals
+                                              if not isinstance(v, complex)])
+                        except ValueError:
+                            raise ValueError("No real roots found for model {}".format(self.name))
                     else:
                         output_val = output_vals
                     output.update({output_sym: output_val})
@@ -658,7 +721,7 @@ class EquationModel(Model, MSONable):
             return output
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, is_builtin=False):
         """
         Invokes EquationModel from filename
 
@@ -670,6 +733,7 @@ class EquationModel(Model, MSONable):
         """
         model = loadfn(filename)
         if isinstance(model, dict):
+            model['is_builtin'] = is_builtin
             return cls.from_dict(model)
         return model
 
@@ -684,13 +748,13 @@ class PyModel(Model):
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
                  implemented_by=None, symbol_property_map=None,
-                 scrub_units=True, test_data=None):
+                 scrub_units=True, test_data=None, is_builtin=False):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
             symbol_property_map, scrub_units,
-            test_data=test_data)
+            test_data=test_data, is_builtin=is_builtin)
 
     def plug_in(self, symbol_value_dict):
         """
@@ -715,14 +779,14 @@ class PyModuleModel(PyModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path):
+    def __init__(self, module_path, is_builtin=False):
         """
         Args:
             module_path (str): path to module to instantiate model
         """
         self._module_path = module_path
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
-        super(PyModuleModel, self).__init__(**mod.config)
+        super(PyModuleModel, self).__init__(**mod.config, is_builtin=is_builtin)
 
     def as_dict(self):
         return {"module_path": self._module_path,
@@ -908,14 +972,14 @@ class PyModuleCompositeModel(CompositeModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path):
+    def __init__(self, module_path, is_builtin=False):
         """
         Args:
             module_path (str): path to module to instantiate model
         """
         self._module_path = module_path
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
-        super(PyModuleCompositeModel, self).__init__(**mod.config)
+        super(PyModuleCompositeModel, self).__init__(**mod.config, is_builtin=is_builtin)
 
     def as_dict(self):
         return {"module_path": self._module_path,

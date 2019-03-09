@@ -566,7 +566,8 @@ class QuantityTest(unittest.TestCase):
                                  "provenance": q.provenance.as_dict(),
                                  "symbol_type": self.custom_symbol.as_dict(),
                                  "tags": ['experimental'],
-                                 "uncertainty": (1, ())
+                                 "uncertainty": (1, ()),
+                                 "internal_id": q._internal_id
                                  })
 
         q_from = QuantityFactory.from_dict(d)
@@ -578,6 +579,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.uncertainty, q.uncertainty)
         self.assertEqual(q_from.provenance, q.provenance)
+        self.assertEqual(q_from._internal_id, q._internal_id)
 
         q_from = NumQuantity.from_dict(d)
 
@@ -588,6 +590,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.uncertainty, q.uncertainty)
         self.assertEqual(q_from.provenance, q.provenance)
+        self.assertEqual(q_from._internal_id, q._internal_id)
 
         q = QuantityFactory.create_quantity(Registry("symbols")['debye_temperature'],
                                             500, tags='experimental', uncertainty=10)
@@ -600,7 +603,8 @@ class QuantityTest(unittest.TestCase):
                                  "provenance": q.provenance.as_dict(),
                                  "symbol_type": "debye_temperature",
                                  "tags": ['experimental'],
-                                 "uncertainty": (10, (('kelvin', 1.0),))
+                                 "uncertainty": (10, (('kelvin', 1.0),)),
+                                 "internal_id": q._internal_id
                                  })
 
         q_from = QuantityFactory.from_dict(d)
@@ -612,6 +616,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.uncertainty, q.uncertainty)
         self.assertEqual(q_from.provenance, q.provenance)
+        self.assertEqual(q_from._internal_id, q._internal_id)
 
         q_from = NumQuantity.from_dict(d)
 
@@ -622,6 +627,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.uncertainty, q.uncertainty)
         self.assertEqual(q_from.provenance, q.provenance)
+        self.assertEqual(q_from._internal_id, q._internal_id)
 
         # Test ObjQuantity
         q = QuantityFactory.create_quantity(self.custom_object_symbol, 'test', tags='test_tag')
@@ -632,7 +638,8 @@ class QuantityTest(unittest.TestCase):
                                  "value": 'test',
                                  "provenance": q.provenance.as_dict(),
                                  "symbol_type": self.custom_object_symbol.as_dict(),
-                                 "tags": ['test_tag']
+                                 "tags": ['test_tag'],
+                                 "internal_id": q._internal_id
                                  })
 
         q_from = QuantityFactory.from_dict(d)
@@ -642,6 +649,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.value, q.value)
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.provenance, q.provenance)
+        self.assertEqual(q_from._internal_id, q._internal_id)
 
         q_from = ObjQuantity.from_dict(d)
 
@@ -650,6 +658,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.value, q.value)
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.provenance, q.provenance)
+        self.assertEqual(q_from._internal_id, q._internal_id)
 
         q = QuantityFactory.create_quantity(Registry("symbols")['is_metallic'],
                                             False, tags='dft')
@@ -660,7 +669,8 @@ class QuantityTest(unittest.TestCase):
                                  "value": False,
                                  "provenance": q.provenance.as_dict(),
                                  "symbol_type": "is_metallic",
-                                 "tags": ['dft']
+                                 "tags": ['dft'],
+                                 "internal_id": q._internal_id
                                  })
 
         q_from = QuantityFactory.from_dict(d)
@@ -670,6 +680,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.value, q.value)
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.provenance, q.provenance)
+        self.assertEqual(q_from._internal_id, q._internal_id)
 
         q_from = ObjQuantity.from_dict(d)
 
@@ -678,6 +689,7 @@ class QuantityTest(unittest.TestCase):
         self.assertEqual(q_from.value, q.value)
         self.assertEqual(q_from.tags, q.tags)
         self.assertEqual(q_from.provenance, q.provenance)
+        self.assertEqual(q_from._internal_id, q._internal_id)
 
         # Test failure of QuantityFactory.from_dict() with non BaseQuantity objects
         d_provenance = q.provenance.as_dict()
@@ -853,7 +865,7 @@ class QuantityTest(unittest.TestCase):
             q_joule_close_to_zero.value, q_joule_zero.value))
 
         # Test units for comparison defaults to eV based on symbol unit
-        self.assertEqual(q_ev_zero.symbol.units.units.format_babel(), 'electron_volt')
+        self.assertEqual(q_ev_zero.symbol.units.format_babel(), 'electron_volt')
         self.assertEqual(q_ev_close_to_zero, q_ev_zero)
         self.assertEqual(q_ev_zero, q_ev_close_to_zero)
         self.assertEqual(q_joule_close_to_zero, q_joule_zero)

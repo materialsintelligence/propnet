@@ -25,6 +25,7 @@ from propnet.core.graph import Graph
 from propnet.ext.matproj import MPRester
 
 MPR = MPRester()
+graph_evaluator = Graph(parallel=True, max_workers=4)
 
 
 # explicitly making this an OrderedDict so we can go back from the
@@ -101,7 +102,8 @@ def interactive_layout(app):
                      ''
                      'In the graph, input properties are in green and derived properties in '
                      'yellow. Properties shown in grey require additional information to derive.'),
-        dcc.Checklist(id='aggregate', options=[{'label': 'Aggregate', 'value': 'aggregate'}], values=['aggregate'], style={'display': 'inline-block'}),
+        dcc.Checklist(id='aggregate', options=[{'label': 'Aggregate', 'value': 'aggregate'}],
+                      values=['aggregate'], style={'display': 'inline-block'}),
         html.Br(),
         html.Div(id='propnet-output')
     ])
@@ -179,7 +181,8 @@ def interactive_layout(app):
     def evaluate(input_rows, data, aggregate):
 
         quantities = [QuantityFactory.create_quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
-                                                      value=ureg.parse_expression(row['Editable Value']))
+                                                      value=ureg.parse_expression(row['Editable Value']),
+                                                      units=Registry("units").get(ROW_IDX_TO_SYMBOL_NAME[idx]))
                       for idx, row in enumerate(input_rows) if row['Editable Value']]
 
         if data and len(data) > 0:
@@ -193,8 +196,7 @@ def interactive_layout(app):
         for quantity in quantities:
             material.add_quantity(quantity)
 
-        graph = Graph()
-        output_material = graph.evaluate(material)
+        output_material = graph_evaluator.evaluate(material, timeout=5)
 
         if aggregate:
             output_quantities = output_material.get_aggregated_quantities().values()
@@ -217,7 +219,7 @@ def interactive_layout(app):
             [q.symbol.name for q in output_quantities]) - \
                                  set(input_quantity_names)
         material_graph_data = graph_conversion(
-            graph.get_networkx_graph(), nodes_to_highlight_green=input_quantity_names,
+            graph_evaluator.get_networkx_graph(), nodes_to_highlight_green=input_quantity_names,
             nodes_to_highlight_yellow=list(derived_quantity_names))
         options = AESTHETICS['global_options']
         options['edges']['color'] = '#000000'

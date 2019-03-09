@@ -1,34 +1,39 @@
+import time
+
+
 def plug_in(symbol_values):
-    return {'is_metallic': True if symbol_values['E_g'] <= 0 else False}
+    time.sleep(2)
+    return {
+        'B': 0
+    }
 
 
 DESCRIPTION = """
-This model returns true if band gap is zero.
+Test model which takes a long time to evaluate.
 """
-
 config = {
-    "name": "is_metallic",
+    "name": "sleepy",
     "connections": [
         {
             "inputs": [
-                "E_g"
+                "A"
             ],
             "outputs": [
-                "is_metallic"
+                "B"
             ]
         }
     ],
     "categories": [
-        "classifier"
+        "test"
     ],
     "symbol_property_map": {
-        "E_g": "band_gap",
-        "is_metallic": "is_metallic"
+        "A": "A",
+        "B": "B"
     },
     "description": DESCRIPTION,
     "references": [],
     "implemented_by": [
-        "mkhorton"
+        "clegaspi"
     ],
     "plug_in": plug_in
 }
