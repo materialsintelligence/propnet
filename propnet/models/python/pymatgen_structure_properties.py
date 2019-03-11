@@ -2,7 +2,10 @@ def plug_in(symbol_values):
     structure = symbol_values['structure']
     return {"num_sites": structure.num_sites,
             "volume": structure.volume,
-            "composition": structure.composition}
+            "composition": structure.composition,
+            "lattice": structure.lattice,
+            "atomic_density": len(structure.sites) / structure.volume,
+            "density": float(structure.density)}
 
 
 DESCRIPTION = """
@@ -19,7 +22,11 @@ config = {
             ],
             "outputs": [
                 "num_sites",
-                "volume"
+                "volume",
+                "composition",
+                "lattice",
+                "atomic_density",
+                "density"
             ]
         }
     ],
@@ -30,12 +37,15 @@ config = {
         "structure": "structure",
         "num_sites": "nsites",
         "volume": "volume_unit_cell",
-        "composition": "composition"
+        "composition": "composition",
+        "lattice": "lattice",
+        "atomic_density": "atomic_density",
+        "density": "density"
     },
     "description": DESCRIPTION,
     "references": ["doi:10.1016/j.commatsci.2012.10.028"],
     "implemented_by": [
-        "mkhorton"
+        "mkhorton", "dmrdjenovich"
     ],
     "plug_in": plug_in
 }

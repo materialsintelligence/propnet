@@ -1,0 +1,25 @@
+categories: []
+description: 'Converts atomic and mass density into mass and volume per atom.'
+equations:
+- atom_volume = 1 / d_atomic
+- atom_mass = d_mass / d_atomic
+name: density_relations
+implemented_by:
+- dmrdjenovich
+references: []
+solve_for_all_symbols: true
+symbol_property_map:
+  d_atomic: atomic_density
+  d_mass: density
+  atom_mass: mass_per_atom
+  atom_volume: volume_per_atom
+test_data:
+- inputs:
+    d_atomic: 0.02853579598
+  outputs:
+    atom_volume: 35.0437044301
+- inputs:
+    d_atomic: 0.02853579598
+    d_mass: 3.988
+  outputs:
+    atom_mass: 84.1620170405229

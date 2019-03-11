@@ -1,0 +1,31 @@
+categories:
+- thermal
+- mechanical
+constraints: null
+description: "This model represents the high temperature limit of the formula (17) postulated by
+Cahill et. al. in the associated publication. This model is intended for amorphous or highly-
+disordered materials and provides a lower bound prediction for the thermal conductivity."
+equations:
+- t = 1.3806e-23 / 2.48 * (a_density*1E30)**(2/3) * (sv_long + 2 * sv_trans)
+units_for_evaluation:
+  t: watt / kelvin / meter
+  a_density: amu / atom
+  sv_long: meter / second
+  sv_trans: meter / second
+name: cahill_thermal_conductivity
+implemented_by:
+- dmrdjenovich
+references:
+- url:https://journals.aps.org/prb/abstract/10.1103/PhysRevB.46.6131
+symbol_property_map:
+  t: thermal_conductivity
+  a_density: atomic_density
+  sv_long: sound_velocity_longitudinal
+  sv_trans: sound_velocity_transverse
+test_data:
+- inputs:
+    a_density: 0.02853579598
+    sv_long: 5908.5806864576425
+    sv_trans: 3024.6812029245752
+  outputs:
+    t: 0.6216310009044157

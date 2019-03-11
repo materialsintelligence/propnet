@@ -1,0 +1,6 @@
+name: lattice
+display_names: ['Crystallographic Lattice']
+display_symbols: ['Lattice']
+comment: ''
+category: object
+object_type: pymatgen.core.lattice.Lattice
