@@ -20,6 +20,7 @@ from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
+from pint import DimensionalityError
 
 from propnet.core.registry import Registry
 
@@ -54,7 +55,7 @@ class Model(ABC):
         symbol_property_map ({str: str}): mapping of symbols enumerated
             in the plug-in method to canonical symbols, e. g.
             {"n": "index_of_refraction"} etc.
-        scrub_units (bool or {str: str}): whether or not units should
+        units_for_evaluation (bool or {str: str}): whether or not units should
             be scrubbed in evaluation procedure, if a boolean is specified,
             quantities are converted to default units before scrubbing, if
             a dict, quantities are specified to units corresponding to the
@@ -68,7 +69,7 @@ class Model(ABC):
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None, implemented_by=None,
-                 symbol_property_map=None, scrub_units=None, test_data=None,
+                 symbol_property_map=None, units_for_evaluation=None, test_data=None,
                  is_builtin=False):
         self.name = name
         self._connections = connections
@@ -96,13 +97,13 @@ class Model(ABC):
         self._symbol_property_map = {k: k for k in self.all_properties}
         self._symbol_property_map.update(symbol_property_map or {})
 
-        if scrub_units is not None or 'empirical' in self.categories:
+        if units_for_evaluation or 'empirical' in self.categories:
             self._unit_map = {prop_name: Registry("units").get(prop_name)
                               for prop_name in self.all_properties}
             # Update with explicitly supplied units if specified
-            if isinstance(scrub_units, dict):
-                scrub_units = {k: ureg.Unit(v).format_babel() for k, v in scrub_units.items()}
-                self._unit_map.update(self.map_symbols_to_properties(scrub_units))
+            if isinstance(units_for_evaluation, dict):
+                units_for_evaluation = {k: ureg.Unit(v).format_babel() for k, v in units_for_evaluation.items()}
+                self._unit_map.update(self.map_symbols_to_properties(units_for_evaluation))
             self._unit_map = self.map_properties_to_symbols(self._unit_map)
         else:
             self._unit_map = {}
@@ -116,12 +117,32 @@ class Model(ABC):
             else:
                 self.constraints.append(Constraint(constraint))
 
-        # Ensures our test data is symbol-keyed
+        # Ensures our test data is symbol-keyed and in the correct format
         test_data = test_data or self.load_test_data()
+        clean_test_data = []
         if test_data:
-            test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
-                         for data in test_data]
-        self._test_data = test_data
+            for io_data_set in test_data:
+                clean_data_set = {}
+                for io, data_set in io_data_set.items():
+                    symbol_value = self.map_properties_to_symbols(data_set)
+                    for symbol, value in symbol_value.items():
+                        clean_value = value
+                        prop = self.symbol_property_map[symbol]
+                        if Registry("symbols")[prop].category != 'object':
+                            if isinstance(value, (list, tuple)) and len(value) == 2:
+                                try:
+                                    clean_value = ureg.Quantity(*value)
+                                except TypeError:
+                                    pass
+                            elif isinstance(value, str):
+                                try:
+                                    clean_value = ureg.Quantity(value)
+                                except TypeError:
+                                    pass
+                        symbol_value[symbol] = clean_value
+                    clean_data_set[io] = symbol_value
+                clean_test_data.append(clean_data_set)
+        self._test_data = clean_test_data
 
     @property
     def is_builtin(self):
@@ -185,6 +206,12 @@ class Model(ABC):
         """
         return remap(symbols, getattr(self, "symbol_property_map", {}))
 
+    def _convert_inputs_for_plugin(self, inputs):
+        return {k: v.magnitude for k, v in inputs.items()}
+
+    def _convert_outputs_from_plugin(self, outputs):
+        return outputs
+
     def evaluate(self, symbol_quantity_dict_in, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
@@ -228,16 +255,8 @@ class Model(ABC):
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
         # strip units from input and keep for reassignment
-        symbol_value_dict = {}
 
-        for symbol, quantity in symbol_quantity_dict.items():
-            # If unit map convert and then scrub units
-            if self.unit_map.get(symbol):
-                quantity = quantity.to(self.unit_map[symbol])
-                symbol_value_dict[symbol] = quantity.magnitude
-            # Otherwise use values
-            else:
-                symbol_value_dict[symbol] = quantity.value
+        symbol_value_dict = self._convert_inputs_for_plugin(symbol_quantity_dict)
 
         contains_complex_input = any(NumQuantity.is_complex_type(v) for v in symbol_value_dict.values())
         input_symbol_value_dict = {k: symbol_value_dict[k] for k in input_symbol_quantity_dict.keys()}
@@ -261,6 +280,7 @@ class Model(ABC):
             source="propnet")
 
         out = self.map_symbols_to_properties(out)
+        out = self._convert_outputs_from_plugin(out)
         unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
         for symbol, value in out.items():
             try:
@@ -610,7 +630,7 @@ class EquationModel(Model, MSONable):
     def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
                  categories=None, references=None, implemented_by=None,
-                 scrub_units=None, solve_for_all_symbols=False, test_data=None,
+                 units_for_evaluation=None, solve_for_all_symbols=False, test_data=None,
                  is_builtin=False):
 
         self.equations = equations
@@ -653,7 +673,7 @@ class EquationModel(Model, MSONable):
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
-            symbol_property_map, scrub_units,
+            symbol_property_map, units_for_evaluation,
             test_data=test_data,
             is_builtin=is_builtin)
 
@@ -684,6 +704,35 @@ class EquationModel(Model, MSONable):
         self.__dict__.update(state)
         self._generate_lambdas()
 
+    def _convert_inputs_for_plugin(self, inputs):
+        converted_inputs = {}
+        for symbol, quantity in inputs.items():
+            converted_inputs[symbol] = quantity.value
+            if symbol in self.unit_map.keys():
+                # Units are being assumed by equation and we need to strip them
+                # or pint might get angry if it has to add or subtract quantities
+                # with unmatched dimensions
+                converted_inputs[symbol] = quantity.to(self.unit_map[symbol]).magnitude
+        return converted_inputs
+
+    def _convert_outputs_from_plugin(self, outputs):
+        converted_outputs = {}
+        for symbol, quantity in outputs.items():
+            unit = self.unit_map.get(symbol) or Registry("units").get(symbol)
+            if isinstance(quantity, ureg.Quantity):
+                try:
+                    converted_outputs[symbol] = quantity.to(unit)
+                except DimensionalityError:
+                    # If the equation multiplies by constants with dimensions,
+                    # we'll end up with an output with incorrect dimensions.
+                    # This forces the unit conversion until we can fix inclusion of constants
+                    # TODO: Fix when we add support for constants with dimensions
+                    converted_outputs[symbol] = ureg.Quantity(quantity.magnitude,
+                                                              units=unit)
+            else:
+                converted_outputs[symbol] = ureg.Quantity(quantity, units=unit)
+        return converted_outputs
+
     def plug_in(self, symbol_value_dict):
         """
         Equation plug-in solves the equation for all input
@@ -700,7 +749,7 @@ class EquationModel(Model, MSONable):
 
         output = {}
         for connection in self.connections:
-            if set(connection['inputs']) <= set(symbol_value_dict.keys()):
+            if set(connection['inputs']) == set(symbol_value_dict.keys()):
                 for output_sym, func in connection['_lambdas'].items():
                     output_vals = func(**symbol_value_dict)
                     # TODO: this decision to only take max real values should
@@ -748,12 +797,12 @@ class PyModel(Model):
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
                  implemented_by=None, symbol_property_map=None,
-                 scrub_units=True, test_data=None, is_builtin=False):
+                 units_for_evaluation=True, test_data=None, is_builtin=False):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
-            symbol_property_map, scrub_units,
+            symbol_property_map, units_for_evaluation,
             test_data=test_data, is_builtin=is_builtin)
 
     def plug_in(self, symbol_value_dict):

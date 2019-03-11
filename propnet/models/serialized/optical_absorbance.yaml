@@ -23,7 +23,7 @@ implemented_by:
 - vtshitoyan
 references:
 - url:https://unlcms.unl.edu/cas/physics/tsymbal/teaching/SSP-927/Section%2013_Optical_Properties_of_Solids.pdf
-scrub_units: true
+units_for_evaluation: default
 symbol_property_map:
   A: absorbance
   R: reflectance
