@@ -11,6 +11,7 @@ import propnet.symbols
 from propnet.core.models import EquationModel
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import QuantityFactory
+from propnet.core.registry import Registry
 
 # TODO: test PyModule, PyModel
 # TODO: separate these into specific tests of model functionality
@@ -18,6 +19,15 @@ from propnet.core.quantity import QuantityFactory
 
 
 class ModelTest(unittest.TestCase):
+
+    def tearDown(self):
+        non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
+        for sym in non_builtin_syms:
+            Registry("symbols").pop(sym)
+            Registry("units").pop(sym)
+        non_builtin_models = [k for k, v in Registry("models").items() if not v.is_builtin]
+        for model in non_builtin_models:
+            Registry("models").pop(model)
 
     def test_unit_handling(self):
         """
@@ -33,6 +43,11 @@ class ModelTest(unittest.TestCase):
         """
         L = Symbol('l', ['L'], ['L'], units=[1.0, [['centimeter', 1.0]]], shape=[1])
         A = Symbol('a', ['A'], ['A'], units=[1.0, [['centimeter', 2.0]]], shape=[1])
+
+        for sym in (L, A):
+            Registry("symbol")[sym] = sym
+            Registry("units")[sym] = sym.units
+
         get_area_config = {
             'name': 'area',
             # 'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
@@ -53,6 +68,9 @@ class ModelTest(unittest.TestCase):
 
         A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
+        for sym in (B, A):
+            Registry("symbol")[sym] = sym
+            Registry("units")[sym] = sym.units
         get_config = {
             'name': 'equality',
             # 'connections': [{'inputs': ['b'], 'outputs': ['a']}],
@@ -72,6 +90,9 @@ class ModelTest(unittest.TestCase):
 
         A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
+        for sym in (B, A):
+            Registry("symbol")[sym] = sym
+            Registry("units")[sym] = sym.units
         get_config = {
             'name': 'add_complex_value',
             # 'connections': [{'inputs': ['b'], 'outputs': ['a']}],
@@ -89,6 +110,7 @@ class ModelTest(unittest.TestCase):
                              allow_failure=True)
         self.assertTrue(out['successful'])
         self.assertTrue(np.isclose(out['a'].magnitude, 6j))
+
 
 if __name__ == "__main__":
     unittest.main()

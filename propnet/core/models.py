@@ -719,6 +719,9 @@ class EquationModel(Model, MSONable):
         converted_outputs = {}
         for symbol, quantity in outputs.items():
             unit = self.unit_map.get(symbol) or Registry("units").get(symbol)
+            if unit is None:
+                raise ValueError("Unit for '{}' symbol is not specified by "
+                                 "the model or in the registry".format(symbol.name))
             if isinstance(quantity, ureg.Quantity):
                 try:
                     converted_outputs[symbol] = quantity.to(unit)
