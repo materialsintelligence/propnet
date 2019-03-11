@@ -23,7 +23,10 @@ name: dielectric_figure_of_merit_energy
 implemented_by:
 - dmrdjenovich
 references: []
-scrub_units: true
+units_for_evaluation:
+  E_g: electron_volt
+  c: dimensionless
+  epsilon: dimensionless
 symbol_property_map:
   E_g: band_gap
   c: dielectric_figure_of_merit_energy

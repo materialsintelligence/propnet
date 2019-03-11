@@ -16,16 +16,19 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
-from propnet.symbols import DEFAULT_UNITS
+from propnet import ureg
+from pint import DimensionalityError
+
+from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
 
 # TODO: maybe this should go somewhere else, like a dedicated settings.py
 TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
-                             "models", "test_data")
+                             "models", "tests", "pymodel_test_data")
 
 
 class Model(ABC):
@@ -52,7 +55,7 @@ class Model(ABC):
         symbol_property_map ({str: str}): mapping of symbols enumerated
             in the plug-in method to canonical symbols, e. g.
             {"n": "index_of_refraction"} etc.
-        scrub_units (bool or {str: str}): whether or not units should
+        units_for_evaluation (bool or {str: str}): whether or not units should
             be scrubbed in evaluation procedure, if a boolean is specified,
             quantities are converted to default units before scrubbing, if
             a dict, quantities are specified to units corresponding to the
@@ -61,30 +64,24 @@ class Model(ABC):
             'empirical' categories
         test_data (list of {'inputs': [], 'outputs': []): test data with
             which to evaluate the model
+        is_builtin (bool): True if the model is a default model included with propnet
+            (this option not intended to be set by users)
     """
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None, implemented_by=None,
-                 symbol_property_map=None, scrub_units=None, test_data=None):
+                 symbol_property_map=None, units_for_evaluation=None, test_data=None,
+                 is_builtin=False):
         self.name = name
-        self.connections = connections
+        self._connections = connections
         self.description = description
+        if isinstance(categories, str):
+            categories = [categories]
         self.categories = categories or []
+        if isinstance(implemented_by, str):
+            implemented_by = [implemented_by]
         self.implemented_by = implemented_by or []
         self.references = references_to_bib(references or [])
-        # symbol property map initialized as symbol->symbol, then updated
-        # with any customization of symbol to properties mapping
-        self.symbol_property_map = {k: k for k in self.all_properties}
-        self.symbol_property_map.update(symbol_property_map or {})
-
-        if scrub_units is not None or 'empirical' in self.categories:
-            self.unit_map = {prop_name: DEFAULT_UNITS.get(prop_name)
-                             for prop_name in self.all_properties}
-            # Update with explicitly supplied units if specified
-            if isinstance(scrub_units, dict):
-                self.unit_map.update(self.map_symbols_to_properties(scrub_units))
-            self.unit_map = self.map_properties_to_symbols(self.unit_map)
-        else:
-            self.unit_map = {}
+        self._is_builtin = is_builtin
 
         # Define constraints by constraint objects or invoke from strings
         constraints = constraints or []
@@ -95,12 +92,74 @@ class Model(ABC):
             else:
                 self.constraints.append(Constraint(constraint))
 
-        # Ensures our test data is symbol-keyed
+        # symbol property map initialized as symbol->symbol, then updated
+        # with any customization of symbol to properties mapping
+        self._symbol_property_map = {k: k for k in self.all_properties}
+        self._symbol_property_map.update(symbol_property_map or {})
+
+        if units_for_evaluation or 'empirical' in self.categories:
+            self._unit_map = {prop_name: Registry("units").get(prop_name)
+                              for prop_name in self.all_properties}
+            # Update with explicitly supplied units if specified
+            if isinstance(units_for_evaluation, dict):
+                units_for_evaluation = {k: ureg.Unit(v).format_babel() for k, v in units_for_evaluation.items()}
+                self._unit_map.update(self.map_symbols_to_properties(units_for_evaluation))
+            self._unit_map = self.map_properties_to_symbols(self._unit_map)
+        else:
+            self._unit_map = {}
+
+        # Define constraints by constraint objects or invoke from strings
+        constraints = constraints or []
+        self.constraints = []
+        for constraint in constraints:
+            if isinstance(constraint, Constraint):
+                self.constraints.append(constraint)
+            else:
+                self.constraints.append(Constraint(constraint))
+
+        # Ensures our test data is symbol-keyed and in the correct format
         test_data = test_data or self.load_test_data()
+        clean_test_data = []
         if test_data:
-            test_data = [{k: self.map_properties_to_symbols(v) for k, v in data.items()}
-                         for data in test_data]
-        self._test_data = test_data
+            for io_data_set in test_data:
+                clean_data_set = {}
+                for io, data_set in io_data_set.items():
+                    symbol_value = self.map_properties_to_symbols(data_set)
+                    for symbol, value in symbol_value.items():
+                        clean_value = value
+                        prop = self.symbol_property_map[symbol]
+                        if Registry("symbols")[prop].category != 'object':
+                            if isinstance(value, (list, tuple)) and len(value) == 2:
+                                try:
+                                    clean_value = ureg.Quantity(*value)
+                                except TypeError:
+                                    pass
+                            elif isinstance(value, str):
+                                try:
+                                    clean_value = ureg.Quantity(value)
+                                except TypeError:
+                                    pass
+                        symbol_value[symbol] = clean_value
+                    clean_data_set[io] = symbol_value
+                clean_test_data.append(clean_data_set)
+        self._test_data = clean_test_data
+
+    @property
+    def is_builtin(self):
+        return self._is_builtin
+
+    @property
+    def connections(self):
+        return self._connections
+
+    @property
+    def unit_map(self):
+        return {k: ureg.Unit(v) if v is not None else None
+                for k, v in self._unit_map.items()}
+
+    @property
+    def symbol_property_map(self):
+        return self._symbol_property_map
 
     @abstractmethod
     def plug_in(self, symbol_value_dict):
@@ -147,7 +206,13 @@ class Model(ABC):
         """
         return remap(symbols, getattr(self, "symbol_property_map", {}))
 
-    def evaluate(self, symbol_quantity_dict, allow_failure=True):
+    def _convert_inputs_for_plugin(self, inputs):
+        return {k: v.magnitude for k, v in inputs.items()}
+
+    def _convert_outputs_from_plugin(self, outputs):
+        return outputs
+
+    def evaluate(self, symbol_quantity_dict_in, allow_failure=True):
         """
         Given a set of property_values, performs error checking to see
         if the corresponding input symbol_values represents a valid
@@ -161,7 +226,7 @@ class Model(ABC):
         evaluate also handles any requisite unit_mapping
 
         Args:
-            symbol_quantity_dict ({property_name: Quantity}): a mapping of
+            symbol_quantity_dict_in ({property_name: Quantity}): a mapping of
                 symbol names to quantities to be substituted
             allow_failure (bool): whether or not to catch
                 errors in model evaluation
@@ -172,32 +237,34 @@ class Model(ABC):
             substitution succeeds
         """
         # Remap symbols and units if symbol map isn't none
+
         symbol_quantity_dict = self.map_properties_to_symbols(
-            symbol_quantity_dict)
+            symbol_quantity_dict_in)
+
+        input_symbol_quantity_dict = {k: v for k, v in symbol_quantity_dict.items()
+                                      if not (k in self.constraint_symbols
+                                              and k not in self.all_input_symbols)}
 
         for (k, v) in symbol_quantity_dict.items():
-            replacing = self.symbol_property_map.get(k, k)
-            symbol_quantity_dict[k] = Quantity.to_quantity(replacing, v)
+            # replacing = self.symbol_property_map.get(k, k)
+            replacing = self.symbol_property_map.get(k)
+            # to_quantity() returns original object if it's already a BaseQuantity
+            # unlike Quantity() which will return a deep copy
+            symbol_quantity_dict[k] = QuantityFactory.to_quantity(replacing, v)
 
         # TODO: Is it really necessary to strip these?
         # TODO: maybe this only applies to pymodels or things with objects?
         # strip units from input and keep for reassignment
-        symbol_value_dict = {}
 
-        for symbol, quantity in symbol_quantity_dict.items():
-            # If unit map convert and then scrub units
-            if self.unit_map.get(symbol):
-                quantity = quantity.to(self.unit_map[symbol])
-                symbol_value_dict[symbol] = quantity.magnitude
-            # Otherwise use values
-            else:
-                symbol_value_dict[symbol] = quantity.value
+        symbol_value_dict = self._convert_inputs_for_plugin(symbol_quantity_dict)
 
-        contains_complex_input = any(Quantity.is_complex_type(v) for v in symbol_value_dict.values())
+        contains_complex_input = any(NumQuantity.is_complex_type(v) for v in symbol_value_dict.values())
+        input_symbol_value_dict = {k: symbol_value_dict[k] for k in input_symbol_quantity_dict.keys()}
+
         # Plug in and check constraints
         try:
             with PrintToLogger():
-                out = self.plug_in(symbol_value_dict)
+                out = self.plug_in(input_symbol_value_dict)
         except Exception as err:
             if allow_failure:
                 return {"successful": False,
@@ -209,13 +276,18 @@ class Model(ABC):
                     "message": "Constraints not satisfied"}
 
         provenance = ProvenanceElement(
-            model=self.name, inputs=list(symbol_quantity_dict.values()))
+            model=self.name, inputs=list(input_symbol_quantity_dict.values()),
+            source="propnet")
+
         out = self.map_symbols_to_properties(out)
+        out = self._convert_outputs_from_plugin(out)
         unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
         for symbol, value in out.items():
             try:
-                quantity = Quantity(symbol, value, unit_map_as_properties.get(symbol),
-                                    provenance=provenance)
+                quantity = QuantityFactory.create_quantity(
+                    symbol, value,
+                    unit_map_as_properties.get(symbol) or Registry("units").get(symbol),
+                    provenance=provenance)
             except SymbolConstraintError as err:
                 if allow_failure:
                     errmsg = "{} symbol constraint failed: {}".format(self, err)
@@ -287,7 +359,45 @@ class Model(ABC):
         """
         Returns (set): set of all properties
         """
-        return self.all_inputs.union(self.all_outputs)
+        return self.all_inputs.union(self.all_outputs).union(getattr(self, 'constraint_properties', set()))
+
+    @property
+    def input_symbol_sets(self):
+        """
+        Returns (set): set of input property sets
+        """
+        return [set(d['inputs'])
+                for d in self.connections]
+
+    @property
+    def output_symbol_sets(self):
+        """
+        Returns (set): set of output property sets
+        """
+        return [set(d['outputs'])
+                for d in self.connections]
+
+    @property
+    def all_input_symbols(self):
+        """
+        Returns (set): set of all input properties
+        """
+        return set(chain.from_iterable(self.input_symbol_sets))
+
+    @property
+    def all_output_symbols(self):
+        """
+        Returns (set): set of all output properties
+        """
+        return set(chain.from_iterable(self.output_symbol_sets))
+
+    @property
+    def all_symbols(self):
+        """
+        Returns (set): set of all properties
+        """
+        return self.all_input_symbols.union(self.all_output_symbols,
+                                            getattr(self, 'constraint_symbols', set()))
 
     @property
     def evaluation_list(self):
@@ -314,8 +424,11 @@ class Model(ABC):
         """
         evaluate_inputs = self.map_symbols_to_properties(inputs)
         unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
-        evaluate_inputs = {s: Quantity(s, v, unit_map_as_properties.get(s))
-                           for s, v in evaluate_inputs.items()}
+        evaluate_inputs = {
+            s: QuantityFactory.create_quantity(
+                s, v,
+                units=unit_map_as_properties.get(s) or Registry("units")[s])
+            for s, v in evaluate_inputs.items()}
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
         errmsg = "{} model test failed on ".format(self.name) + "{}\n"
@@ -324,14 +437,11 @@ class Model(ABC):
         for k, known_output in outputs.items():
             symbol = self.symbol_property_map[k]
             units = self.unit_map.get(k)
-            known_quantity = Quantity(symbol, known_output, units)
+            known_quantity = QuantityFactory.create_quantity(
+                symbol, known_output,
+                units=units or Registry("units")[symbol])
             evaluate_output = evaluate_outputs[k]
-            if known_quantity.is_pint or isinstance(known_quantity.value, list):
-                if not np.allclose(known_quantity.value, evaluate_output.value, atol=0.0):
-                    errmsg = errmsg.format("evaluate", k, evaluate_output,
-                                           k, known_quantity)
-                    raise ModelEvaluationError(errmsg)
-            elif known_quantity != evaluate_output:
+            if not known_quantity.has_eq_value_to(evaluate_output):
                 errmsg = errmsg.format("evaluate", k, evaluate_output,
                                        k, known_quantity)
                 raise ModelEvaluationError(errmsg)
@@ -345,6 +455,9 @@ class Model(ABC):
         Returns:
             True if validation completes successfully
         """
+        if self._test_data is None:
+            return False
+
         for test_dataset in self._test_data:
             self.test(**test_dataset)
         return True
@@ -355,7 +468,16 @@ class Model(ABC):
         Returns (set): set of constraint input properties
         """
         # Constraints are defined only in terms of symbols
-        all_syms = [self.map_symbols_to_properties(c.all_inputs)
+
+        return set(self.map_symbols_to_properties(self.constraint_symbols))
+
+    @property
+    def constraint_symbols(self):
+        """
+        Returns (set): set of symbols which are constrained
+        """
+        # Constraints are defined only in terms of symbols
+        all_syms = [c.all_inputs
                     for c in self.constraints]
         return set(chain.from_iterable(all_syms))
 
@@ -406,6 +528,8 @@ class Model(ABC):
         Returns: example code for this model
 
         """
+        if self._test_data is None:
+            return ""
         example_inputs = self._test_data[0]['inputs']
         example_outputs = str(self._test_data[0]['outputs'])
 
@@ -506,7 +630,8 @@ class EquationModel(Model, MSONable):
     def __init__(self, name, equations, connections=None, constraints=None,
                  symbol_property_map=None, description=None,
                  categories=None, references=None, implemented_by=None,
-                 scrub_units=None, solve_for_all_symbols=False, test_data=None):
+                 units_for_evaluation=None, solve_for_all_symbols=False, test_data=None,
+                 is_builtin=False):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -523,7 +648,7 @@ class EquationModel(Model, MSONable):
                         connections.append(
                             {"inputs": inputs,
                              "outputs": [str(symbol)],
-                             "_lambdas": {str(symbol): sp.lambdify(inputs, new)}
+                             "_sympy_exprs": {str(symbol): new}
                              })
             else:
                 for eqn in equations:
@@ -533,7 +658,7 @@ class EquationModel(Model, MSONable):
                     connections.append(
                         {"inputs": inputs,
                          "outputs": outputs,
-                         "_lambdas": {outputs[0]: sp.lambdify(inputs, parse_expr(input_expr))}
+                         "_sympy_exprs": {outputs[0]: parse_expr(input_expr)}
                          })
         else:
             # TODO: I don't think this needs to be supported necessarily
@@ -541,16 +666,75 @@ class EquationModel(Model, MSONable):
             #       and two outputs where you only want one connection
             for connection in connections:
                 new = sp.solve(sympy_expressions, connection['outputs'])
-                lambdas = {str(sym): sp.lambdify(connection['inputs'], solved)
-                           for sym, solved in new.items()}
-                connection["_lambdas"] = lambdas
+                sympy_exprs = {str(sym): solved
+                               for sym, solved in new.items()}
+                connection["_sympy_exprs"] = sympy_exprs
 
-        #self.equations = equations
         super(EquationModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
-            symbol_property_map, scrub_units,
-            test_data=test_data)
+            symbol_property_map, units_for_evaluation,
+            test_data=test_data,
+            is_builtin=is_builtin)
+
+        self._generate_lambdas()
+
+    @property
+    def connections(self):
+        if not all(['_lambdas' in connection.keys() for connection in self._connections]):
+            self._generate_lambdas()
+        return self._connections
+
+    def _generate_lambdas(self):
+        for connection in self._connections:
+            for output_sym, sympy_expr in connection['_sympy_exprs'].items():
+                sp_lambda = sp.lambdify(connection['inputs'], sympy_expr)
+                if '_lambdas' not in connection.keys():
+                    connection['_lambdas'] = dict()
+                connection['_lambdas'][output_sym] = sp_lambda
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        for connection in d['_connections']:
+            if '_lambdas' in connection.keys():
+                del connection['_lambdas']
+        return d
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._generate_lambdas()
+
+    def _convert_inputs_for_plugin(self, inputs):
+        converted_inputs = {}
+        for symbol, quantity in inputs.items():
+            converted_inputs[symbol] = quantity.value
+            if symbol in self.unit_map.keys():
+                # Units are being assumed by equation and we need to strip them
+                # or pint might get angry if it has to add or subtract quantities
+                # with unmatched dimensions
+                converted_inputs[symbol] = quantity.to(self.unit_map[symbol]).magnitude
+        return converted_inputs
+
+    def _convert_outputs_from_plugin(self, outputs):
+        converted_outputs = {}
+        for symbol, quantity in outputs.items():
+            unit = self.unit_map.get(symbol) or Registry("units").get(symbol)
+            if unit is None:
+                raise ValueError("Unit for '{}' symbol is not specified by "
+                                 "the model or in the registry".format(symbol.name))
+            if isinstance(quantity, ureg.Quantity):
+                try:
+                    converted_outputs[symbol] = quantity.to(unit)
+                except DimensionalityError:
+                    # If the equation multiplies by constants with dimensions,
+                    # we'll end up with an output with incorrect dimensions.
+                    # This forces the unit conversion until we can fix inclusion of constants
+                    # TODO: Fix when we add support for constants with dimensions
+                    converted_outputs[symbol] = ureg.Quantity(quantity.magnitude,
+                                                              units=unit)
+            else:
+                converted_outputs[symbol] = ureg.Quantity(quantity, units=unit)
+        return converted_outputs
 
     def plug_in(self, symbol_value_dict):
         """
@@ -565,17 +749,21 @@ class EquationModel(Model, MSONable):
         Returns (dict):
             symbol-keyed output dictionary
         """
+
         output = {}
         for connection in self.connections:
-            if set(connection['inputs']) <= set(symbol_value_dict.keys()):
+            if set(connection['inputs']) == set(symbol_value_dict.keys()):
                 for output_sym, func in connection['_lambdas'].items():
                     output_vals = func(**symbol_value_dict)
                     # TODO: this decision to only take max real values should
                     #       should probably be reevaluated at some point
                     # Scrub nan values and take max
                     if isinstance(output_vals, list):
-                        output_val = max([v for v in output_vals
-                                          if not isinstance(v, complex)])
+                        try:
+                            output_val = max([v for v in output_vals
+                                              if not isinstance(v, complex)])
+                        except ValueError:
+                            raise ValueError("No real roots found for model {}".format(self.name))
                     else:
                         output_val = output_vals
                     output.update({output_sym: output_val})
@@ -585,7 +773,7 @@ class EquationModel(Model, MSONable):
             return output
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, is_builtin=False):
         """
         Invokes EquationModel from filename
 
@@ -597,6 +785,7 @@ class EquationModel(Model, MSONable):
         """
         model = loadfn(filename)
         if isinstance(model, dict):
+            model['is_builtin'] = is_builtin
             return cls.from_dict(model)
         return model
 
@@ -611,13 +800,13 @@ class PyModel(Model):
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
                  implemented_by=None, symbol_property_map=None,
-                 scrub_units=True, test_data=None):
+                 units_for_evaluation=True, test_data=None, is_builtin=False):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
-            symbol_property_map, scrub_units,
-            test_data=test_data)
+            symbol_property_map, units_for_evaluation,
+            test_data=test_data, is_builtin=is_builtin)
 
     def plug_in(self, symbol_value_dict):
         """
@@ -642,14 +831,14 @@ class PyModuleModel(PyModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path):
+    def __init__(self, module_path, is_builtin=False):
         """
         Args:
             module_path (str): path to module to instantiate model
         """
         self._module_path = module_path
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
-        super(PyModuleModel, self).__init__(**mod.config)
+        super(PyModuleModel, self).__init__(**mod.config, is_builtin=is_builtin)
 
     def as_dict(self):
         return {"module_path": self._module_path,
@@ -835,14 +1024,14 @@ class PyModuleCompositeModel(CompositeModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path):
+    def __init__(self, module_path, is_builtin=False):
         """
         Args:
             module_path (str): path to module to instantiate model
         """
         self._module_path = module_path
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
-        super(PyModuleCompositeModel, self).__init__(**mod.config)
+        super(PyModuleCompositeModel, self).__init__(**mod.config, is_builtin=is_builtin)
 
     def as_dict(self):
         return {"module_path": self._module_path,

@@ -1,5 +1,5 @@
 def plug_in(symbol_values):
-    return {'is_metallic': 1 if symbol_values['E_g'] <= 0 else 0}
+    return {'is_metallic': True if symbol_values['E_g'] <= 0 else False}
 
 
 DESCRIPTION = """

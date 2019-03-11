@@ -5,13 +5,19 @@ from maggma.builders import Builder
 from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.entries.compatibility import MaterialsProjectCompatibility
 from propnet import logger
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import QuantityFactory
+from propnet.dbtools.storage import StorageQuantity
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 from propnet.core.provenance import ProvenanceElement
-from propnet.models import DEFAULT_MODEL_DICT
 from propnet.ext.matproj import MPRester
 from pydash import get
+
+# noinspection PyUnresolvedReferences
+import propnet.models
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 
 class PropnetBuilder(Builder):
@@ -20,13 +26,31 @@ class PropnetBuilder(Builder):
     """
 
     def __init__(self, materials, propstore, materials_symbol_map=None,
-                 criteria=None, source_name="", **kwargs):
+                 criteria=None, source_name="", parallel=False,
+                 max_workers=None, timeout=None, **kwargs):
         """
         Args:
             materials (Store): store of materials properties
             materials_symbol_map (dict): mapping of keys in materials
                 store docs to symbols
             propstore (Store): store of propnet properties
+            criteria (dict): criteria for Mongodb find() query specifying
+                criteria for records to process
+            source_name (str): identifier for record source
+            parallel (bool): True runs the graph algorithm in parallel with
+                the number of workers specified by max_workers. Default: False (serial)
+                Note: there will be no substantial speed-up from using a parallel
+                runner with a parallel builder if there are long-running model evaluations
+                that don't get timed out using the timeout keyword.
+            max_workers (int): number of processes to spawn for parallel graph
+                evaluation. Note that graph evaluation speed-up tops out at 3-4
+                parallel processes. If the builder is run in a parallel maggma Runner,
+                each will spawn max_workers number of processes to evaluate.
+                For 4 parallel graph processes running on 3 parallel runners, this will spawn:
+                1 main runner process + 3 parallel runners + (3 parallel
+                runners * 4 graph processes) = 16 total processes
+            timeout (int): number of seconds after which to timeout model evaluation
+                (available only on Unix-based systems). Default: None (no limit)
             **kwargs: kwargs for builder
         """
         self.materials = materials
@@ -39,6 +63,19 @@ class PropnetBuilder(Builder):
             self.source_name = "Materials Project"
         else:
             self.source_name = source_name
+
+        self.parallel = parallel
+        if not parallel and max_workers is not None:
+            raise ValueError("Cannot specify max_workers with parallel=False")
+        self.max_workers = max_workers
+
+        self.timeout = timeout
+
+        self._graph_evaluator = Graph(parallel=parallel, max_workers=max_workers)
+
+        # This is for the runner to know how many items we're processing
+        self.total = None
+
         super(PropnetBuilder, self).__init__(sources=[materials],
                                              targets=[propstore],
                                              **kwargs)
@@ -61,57 +98,60 @@ class PropnetBuilder(Builder):
         item = MontyDecoder().process_decoded(item)
         logger.info("Populating material for %s", item['task_id'])
         material = Material()
+
+        if 'created_at' in item.keys():
+            date_created = item['created_at']
+        else:
+            date_created = None
+
+        provenance = ProvenanceElement(source={"source": self.source_name,
+                                               "source_key": item['task_id'],
+                                               "date_created": date_created})
+
         for mkey, property_name in self.materials_symbol_map.items():
             value = get(item, mkey)
             if value:
-                date_created = ""
-                if 'created_at' in item.keys():
-                    date_created = item['created_at']
-
-                provenance = ProvenanceElement(source={"source": self.source_name,
-                                                       "source_key": item['task_id'],
-                                                       "date_created": date_created})
-                material.add_quantity(Quantity(property_name, value,
-                                               provenance=provenance))
+                material.add_quantity(
+                    QuantityFactory.create_quantity(property_name, value,
+                                                    units=Registry("units").get(property_name, None),
+                                                    provenance=provenance))
 
         # Add custom things, e. g. computed entry
         computed_entry = get_entry(item)
-        material.add_quantity(Quantity("computed_entry", computed_entry,
-                                       provenance=provenance))
-        material.add_quantity(Quantity("external_identifier_mp", item['task_id'],
-                                       provenance=provenance))
+        material.add_quantity(QuantityFactory.create_quantity("computed_entry", computed_entry,
+                                                              provenance=provenance))
+        material.add_quantity(QuantityFactory.create_quantity("external_identifier_mp", item['task_id'],
+                                                              provenance=provenance))
 
         input_quantities = material.get_quantities()
 
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
-        graph = Graph()
-        graph.remove_models(
-            {"dimensionality_cheon": DEFAULT_MODEL_DICT['dimensionality_cheon'],
-             "dimensionality_gorai": DEFAULT_MODEL_DICT['dimensionality_gorai']})
-        new_material = graph.evaluate(material)
+
+        new_material = self._graph_evaluator.evaluate(material, timeout=self.timeout)
 
         # Format document and return
         logger.info("Creating doc for %s", item['task_id'])
         # Gives the initial inputs that were used to derive properties of a
         # certain material.
-        doc = {"inputs": [quantity.as_dict(for_storage=True)
-                          for quantity in input_quantities]}
+
+        doc = {"inputs": [StorageQuantity.from_quantity(q) for q in input_quantities]}
         for symbol, quantity in new_material.get_aggregated_quantities().items():
             all_qs = new_material._symbol_to_quantity[symbol]
-            # Only add new quantities
-            # TODO: Condition insufficiently general.
-            #       Can end up with initial quantities added as "new quantities"
+            # If no new quantities of a given symbol were derived (i.e. if the initial
+            # input quantity is the only one listed in the new material) then don't add
+            # that quantity to the propnet entry document as a derived quantity.
             if len(all_qs) == 1 and list(all_qs)[0] in input_quantities:
                 continue
+
             # Write out all quantities as dicts including the
             # internal ID for provenance tracing
-            qs = [q.as_dict(for_storage=True) for q in all_qs]
+            qs = [StorageQuantity.from_quantity(q).as_dict() for q in all_qs]
             # THE listing of all Quantities of a given symbol.
             sub_doc = {"quantities": qs,
                        "mean": unumpy.nominal_values(quantity.value).tolist(),
                        "std_dev": unumpy.std_devs(quantity.value).tolist(),
-                       "units": qs[0]['units'],
+                       "units": quantity.units.format_babel() if quantity.units else None,
                        "title": quantity._symbol_type.display_names[0]}
             # Symbol Name -> Sub_Document, listing all Quantities of that type.
             doc[symbol.name] = sub_doc

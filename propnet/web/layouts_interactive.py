@@ -2,7 +2,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table_experiments as dt
 
-from mp_dash_components import GraphComponent
+from crystal_toolkit import GraphComponent
 from propnet.web.utils import graph_conversion, AESTHETICS
 
 import json
@@ -13,21 +13,25 @@ from dash.exceptions import PreventUpdate
 
 from collections import OrderedDict
 
-from propnet.symbols import DEFAULT_SYMBOLS
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+from propnet.core.registry import Registry
 
 from propnet import ureg, logger
-from propnet.core.quantity import Quantity
+from propnet.core.quantity import QuantityFactory
 from propnet.core.materials import Material
 from propnet.core.graph import Graph
 
 from propnet.ext.matproj import MPRester
 
 MPR = MPRester()
+graph_evaluator = Graph(parallel=True, max_workers=4)
 
 
 # explicitly making this an OrderedDict so we can go back from the
 # display name to the symbol name
-SCALAR_SYMBOLS = OrderedDict({k: v for k, v in sorted(DEFAULT_SYMBOLS.items(), key=lambda x: x[1].display_names[0])
+SCALAR_SYMBOLS = OrderedDict({k: v for k, v in sorted(Registry("symbols").items(),
+                                                      key=lambda x: x[1].display_names[0])
                               if ((v.category == 'property' or v.category == 'condition')
                                   and v.shape == 1)})
 ROW_IDX_TO_SYMBOL_NAME = [symbol for symbol in SCALAR_SYMBOLS.keys()]
@@ -41,7 +45,8 @@ DEFAULT_ROWS = [
 ]
 
 
-REMAINING_SYMBOLS = OrderedDict({k: v for k, v in sorted(DEFAULT_SYMBOLS.items(), key=lambda x: x[1].display_names[0])
+REMAINING_SYMBOLS = OrderedDict({k: v for k, v in sorted(Registry("symbols").items(),
+                                                         key=lambda x: x[1].display_names[0])
                                 if not ((v.category == 'property' or v.category == 'condition')
                                         and v.shape == 1)})
 REMAINING_ROW_IDX_TO_SYMBOL_NAME = [symbol for symbol in REMAINING_SYMBOLS.keys()]
@@ -53,6 +58,7 @@ REMAINING_DEFAULT_ROWS = [
     }
     for symbol in REMAINING_SYMBOLS.values()
 ]
+
 
 def interactive_layout(app):
 
@@ -96,7 +102,8 @@ def interactive_layout(app):
                      ''
                      'In the graph, input properties are in green and derived properties in '
                      'yellow. Properties shown in grey require additional information to derive.'),
-        dcc.Checklist(id='aggregate', options=[{'label': 'Aggregate', 'value': 'aggregate'}], values=['aggregate'], style={'display': 'inline-block'}),
+        dcc.Checklist(id='aggregate', options=[{'label': 'Aggregate', 'value': 'aggregate'}],
+                      values=['aggregate'], style={'display': 'inline-block'}),
         html.Br(),
         html.Div(id='propnet-output')
     ])
@@ -150,7 +157,7 @@ def interactive_layout(app):
         output_rows = [
             {
                 'Property': symbol_string,
-                'Materials Project Value': quantity.pretty_string(3)
+                'Materials Project Value': quantity.pretty_string(sigfigs=3)
             }
             for symbol_string, quantity in mp_quantities.items()
         ]
@@ -173,9 +180,9 @@ def interactive_layout(app):
     )
     def evaluate(input_rows, data, aggregate):
 
-
-        quantities = [Quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
-                               value=ureg.parse_expression(row['Editable Value']))
+        quantities = [QuantityFactory.create_quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
+                                                      value=ureg.parse_expression(row['Editable Value']),
+                                                      units=Registry("units").get(ROW_IDX_TO_SYMBOL_NAME[idx]))
                       for idx, row in enumerate(input_rows) if row['Editable Value']]
 
         if data and len(data) > 0:
@@ -189,8 +196,7 @@ def interactive_layout(app):
         for quantity in quantities:
             material.add_quantity(quantity)
 
-        graph = Graph()
-        output_material = graph.evaluate(material)
+        output_material = graph_evaluator.evaluate(material, timeout=5)
 
         if aggregate:
             output_quantities = output_material.get_aggregated_quantities().values()
@@ -199,7 +205,7 @@ def interactive_layout(app):
 
         output_rows = [{
             'Property': quantity.symbol.display_names[0],
-            'Value': quantity.pretty_string(3)
+            'Value': quantity.pretty_string(sigfigs=3)
         } for quantity in output_quantities]
 
         output_table = dt.DataTable(id='output-table',
@@ -213,7 +219,7 @@ def interactive_layout(app):
             [q.symbol.name for q in output_quantities]) - \
                                  set(input_quantity_names)
         material_graph_data = graph_conversion(
-            graph.get_networkx_graph(), nodes_to_highlight_green=input_quantity_names,
+            graph_evaluator.get_networkx_graph(), nodes_to_highlight_green=input_quantity_names,
             nodes_to_highlight_yellow=list(derived_quantity_names))
         options = AESTHETICS['global_options']
         options['edges']['color'] = '#000000'

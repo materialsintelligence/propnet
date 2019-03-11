@@ -12,7 +12,10 @@ name: vickers_hardness_tian
 implemented_by:
 - dmrdjenovich
 references: []
-scrub_units: true
+units_for_evaluation:
+  G: gigapascal
+  H: dimensionless
+  k: dimensionless
 symbol_property_map:
   G: shear_modulus
   H: vickers_hardness

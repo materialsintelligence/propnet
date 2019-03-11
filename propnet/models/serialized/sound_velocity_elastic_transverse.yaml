@@ -13,7 +13,7 @@ name: sound_velocity_elastic_transverse
 implemented_by:
 - dmrdjenovich
 references: []
-scrub_units:
+units_for_evaluation:
   G: Pa
   p: kg / m^3
   v_t: m / s
