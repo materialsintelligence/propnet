@@ -9,7 +9,7 @@ implemented_by:
 references:
 - url:https://en.wikipedia.org/wiki/Drude_model
 solve_for_all_symbols: true
-scrub_units:
+units_for_evaluation:
   mu_h: m**2 / volt / s
   m_h: dimensionless
   tau_h: s
