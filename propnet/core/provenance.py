@@ -10,7 +10,7 @@ class ProvenanceElement(MSONable):
     Tree-like data structure for representing provenance.
     """
 
-    __slots__ = ['m', 'inputs']
+    __slots__ = ['_model', '_inputs', '_source']
 
     def __init__(self, model=None, inputs=None, source=None):
         """
@@ -22,15 +22,95 @@ class ProvenanceElement(MSONable):
                 is attached to.
             source: static source, e. g. Materials Project
         """
-        self.model = getattr(model, 'name', model)
-        self.inputs = inputs
-        self.source = source
+        if isinstance(model, str):
+            self._model = model
+        else:
+            self._model = getattr(model, 'name', model)
+
+        if inputs is not None:
+            if not isinstance(inputs, list):
+                try:
+                    inputs = [x for x in inputs]
+                except TypeError:
+                    inputs = [inputs]
+
+        self._inputs = inputs
+        self._source = source
+
+    @property
+    def model(self):
+        return self._model
+
+    @model.setter
+    def model(self, rhv):
+        self._model = rhv
+
+    @property
+    def inputs(self):
+        return self._inputs
+
+    @inputs.setter
+    def inputs(self, rhv):
+        self._inputs = rhv
+
+    @property
+    def source(self):
+        return self._source
+
+    @source.setter
+    def source(self, rhv):
+        self._source = rhv
+
+    def symbol_in_provenance_tree(self, symbol):
+        def rec_symbol_search(symbol_to_find, provenance):
+            for q in provenance.inputs or []:
+                if q.symbol == symbol_to_find:
+                    return True
+                elif rec_symbol_search(symbol_to_find, q.provenance):
+                    return True
+            return False
+
+        return rec_symbol_search(symbol, self)
+
+    def model_in_provenance_tree(self, model):
+        def rec_model_search(model_to_find, provenance):
+            if provenance.model and provenance.model == model_to_find:
+                return True
+            for q in provenance.inputs or []:
+                if rec_model_search(model_to_find, q.provenance):
+                    return True
+            return False
+
+        for q in self.inputs or []:
+            if rec_model_search(model, q.provenance):
+                return True
+        return False
 
     def __str__(self):
         pre = ",".join([
             "<{}, {}, {}>".format(q._symbol_type.name, q.value, q._provenance)
             for q in self.inputs])
         return "{{{}: [{}]}}".format(self.model, pre)
+
+    def __eq__(self, other):
+        if type(other) is not type(self):
+            return NotImplemented
+        # Ignoring metadata in source. May need to revisit?
+        return self.model == other.model and \
+               set(self.inputs or []) == set(other.inputs or [])
+
+    def __hash__(self):
+        hash_value = hash(self.model or 0)
+        for v in self.inputs or []:
+            hash_value = hash_value ^ hash(v)
+        return hash_value
+
+    def as_dict(self):
+        d = super().as_dict()
+        if self.inputs is not None:
+            inputs = [item.as_dict() for item in self.inputs]
+            d['inputs'] = inputs
+        return d
 
 
 class SymbolTree(object):

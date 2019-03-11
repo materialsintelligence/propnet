@@ -8,8 +8,11 @@ import pdb
 from uuid import uuid4
 from os import environ
 from propnet.core.models import EquationModel, PyModel
-from propnet.models import DEFAULT_MODEL_DICT
 from monty.serialization import loadfn
+
+# noinspection PyUnresolvedReferences
+import propnet.models
+from propnet.core.registry import Registry
 
 __author__ = "Joseph Montoya <montoyjh@lbl.gov>"
 __version__ = 0.1
@@ -30,7 +33,7 @@ def run_web_app(args):
 def validate(args):
     """Validates test data"""
     if args.name is not None:
-        model = DEFAULT_MODEL_DICT[args.name]
+        model = Registry("models")[args.name]
         if not args.test_data:
             test_wrapper(model.validate_from_preset_test, pdb)
             print("Model validated with test data")

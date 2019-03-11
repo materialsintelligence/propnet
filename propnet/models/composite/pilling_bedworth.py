@@ -7,9 +7,9 @@ def pre_filter(materials_list):
     metallic1 = {True: 0, False: 0}
     metallic2 = {True: 0, False: 0}
     for val in materials_list[0]._symbol_to_quantity['is_metallic']:
-        metallic1[val._value._magnitude == 1] += 1
+        metallic1[val.value == 1] += 1
     for val in materials_list[1]._symbol_to_quantity['is_metallic']:
-        metallic2[val._value._magnitude == 1] += 1
+        metallic2[val.value == 1] += 1
     metallic1 = metallic1[True] > metallic1[False]
     metallic2 = metallic2[True] > metallic2[False]
     if metallic1 and not metallic2:

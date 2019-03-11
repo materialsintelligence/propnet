@@ -4,7 +4,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from mp_dash_components import GraphComponent
+from crystal_toolkit import GraphComponent
 from propnet.web.utils import graph_conversion, AESTHETICS
 from propnet.core.graph import Graph
 
