@@ -38,7 +38,10 @@ implemented_by:
 - jpalakapilly
 references:
 - url:http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/thercond.html#c2
-scrub_units: true
+units_for_evaluation:
+  T: kelvin
+  k: watt / kelvin / meter
+  o: 1 / meter / ohm
 solve_for_all_symbols: true
 symbol_property_map:
   T: temperature

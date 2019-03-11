@@ -93,6 +93,7 @@ class GraphTest(unittest.TestCase):
         non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
         for sym in non_builtin_syms:
             Registry("symbols").pop(sym)
+            Registry("units").pop(sym)
         non_builtin_models = [k for k, v in Registry("models").items() if not v.is_builtin]
         for model in non_builtin_models:
             Registry("models").pop(model)
@@ -121,6 +122,7 @@ class GraphTest(unittest.TestCase):
 
         for sym in syms.values():
             Registry("symbols")[sym] = sym
+            Registry("units")[sym] = sym.units
 
         return syms
 

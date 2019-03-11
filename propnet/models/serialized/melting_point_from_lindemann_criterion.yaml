@@ -16,7 +16,7 @@ references:
   - doi:10.1063/1.2737054
   - doi:10.1103/PhysRevB.22.3790
   - url:https://en.m.wikipedia.org/wiki/Melting_point
-scrub_units:
+units_for_evaluation:
   T: kelvin
   mbar: amu / atom
   a: angstrom

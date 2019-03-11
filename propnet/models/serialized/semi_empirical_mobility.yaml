@@ -21,7 +21,10 @@ implemented_by:
 - lweston
 references:
 - doi:10.1039/C4EE03157A
-scrub_units: true
+units_for_evaluation:
+  K: gigapascal
+  m_e: dimensionless
+  mu_e: centimeter ** 2 / second / volt
 symbol_property_map:
   K: bulk_modulus
   m_e: electron_effective_mass
