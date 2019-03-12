@@ -117,3 +117,11 @@ demo/test.ipynb
 
 # private files
 propnet_store.json
+propnet/core/alternate_graph_algorithms/graph_async.py
+propnet/core/alternate_graph_algorithms/graph_async_queue_parallel_calc.py
+propnet/core/alternate_graph_algorithms/graph_circular_buffer.py
+propnet/core/alternate_graph_algorithms/graph_no_timing.py
+propnet/core/alternate_graph_algorithms/graph_parallel_recursive.py
+propnet/core/alternate_graph_algorithms/graph_two_threads.py
+propnet/core/alternate_graph_algorithms/old_graph.py
+mpds-api/

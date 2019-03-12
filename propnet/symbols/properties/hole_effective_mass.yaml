@@ -1,0 +1,7 @@
+name: hole_effective_mass
+units: dimensionless
+display_names: ['Hole effective mass']
+display_symbols: ['m_h^*']
+shape: 1
+comment: ''
+category: property

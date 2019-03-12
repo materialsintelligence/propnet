@@ -1,0 +1,7 @@
+name: electron_concentration
+units: 1 / m ** 3
+display_names: ['Electron concentration']
+display_symbols: ['n']
+shape: 1
+comment: ''
+category: property
