@@ -9,7 +9,7 @@ equations:
 - t = 1.3806e-23 / 2.48 * (a_density*1E30)**(2/3) * (sv_long + 2 * sv_trans)
 units_for_evaluation:
   t: watt / kelvin / meter
-  a_density: amu / atom
+  a_density: atom / angstrom ** 3
   sv_long: meter / second
   sv_trans: meter / second
 name: cahill_thermal_conductivity
