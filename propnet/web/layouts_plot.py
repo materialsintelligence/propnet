@@ -29,6 +29,7 @@ try:
 except (ServerSelectionTimeoutError, KeyError):
     from maggma.stores import MemoryStore
     store = MemoryStore()
+    store.connect()
     # layout won't work if database is down, but at least web app will stay up
     scalar_symbols = {k: v for k, v in Registry("symbols").items()
                       if (v.category == 'property' and v.shape == 1)}
