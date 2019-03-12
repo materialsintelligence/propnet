@@ -25,7 +25,6 @@ import copy
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
 
 
 class BaseQuantity(ABC, MSONable):
