@@ -1,0 +1,7 @@
+name: electron_mean_free_time
+units: second
+display_names: ['Electron mean free time']
+display_symbols: ['\tau_e']
+shape: 1
+comment: ''
+category: property

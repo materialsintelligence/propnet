@@ -1,10 +1,10 @@
-from pymatgen.analysis.structure_analyzer import get_dimensionality
+from pymatgen.analysis.dimensionality import get_dimensionality_gorai
 
 
 def plug_in(symbol_values):
     structure = symbol_values['structure']
     return {
-        'dimensionality': get_dimensionality(structure)
+        'dimensionality': str(get_dimensionality_gorai(structure))
     }
 
 DESCRIPTION = """

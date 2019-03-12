@@ -2,14 +2,18 @@ from collections import OrderedDict
 
 import dash_html_components as html
 import dash_core_components as dcc
-from mp_dash_components import GraphComponent
+from crystal_toolkit import GraphComponent
 
 import networkx as nx
 from propnet.core.graph import Graph
-from propnet.models import DEFAULT_MODEL_DICT
 
-from propnet.symbols import DEFAULT_SYMBOLS
 from propnet.web.utils import references_to_markdown, graph_conversion, AESTHETICS
+
+# noinspection PyUnresolvedReferences
+import propnet.symbols
+# noinspection PyUnresolvedReferences
+import propnet.models
+from propnet.core.registry import Registry
 
 
 # layouts for model detail pages
@@ -28,7 +32,7 @@ def model_layout(model_name):
     layouts = OrderedDict()
 
     # instantiate model from name
-    model = DEFAULT_MODEL_DICT[model_name]
+    model = Registry("models")[model_name]
 
     model_title = html.Div(
         className='row',
@@ -80,7 +84,7 @@ def model_layout(model_name):
                     html.Div(
                         className='ten columns',
                         children=[
-                            dcc.Link(DEFAULT_SYMBOLS[prop_name].display_names[0],
+                            dcc.Link(Registry("symbols")[prop_name].display_names[0],
                                      href='/property/{}'.format(prop_name))
                         ]
                     )
@@ -146,7 +150,7 @@ def model_layout(model_name):
 
 
 model_links = {}
-for model_name, model in DEFAULT_MODEL_DICT.items():
+for model_name, model in Registry("models").items():
     # group by tag
     for tag in model.categories:
         if tag not in model_links:

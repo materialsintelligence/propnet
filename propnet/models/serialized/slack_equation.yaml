@@ -26,7 +26,7 @@ symbol_property_map:
     mbar: mass_per_atom
     d: interatomic_spacing
     k: thermal_conductivity
-scrub_units:
+units_for_evaluation:
   d: angstrom
   mbar: amu / atom
 test_data:

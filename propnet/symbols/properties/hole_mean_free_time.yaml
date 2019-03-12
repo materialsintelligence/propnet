@@ -1,0 +1,7 @@
+name: hole_mean_free_time
+units: second
+display_names: ['Hole mean free time']
+display_symbols: ['\tau_h']
+shape: 1
+comment: ''
+category: property

@@ -1,0 +1,30 @@
+categories:
+- electrical
+description: 'Relationship between electron mobility, mean free time and effective mass (Drude).'
+equations:
+- mu_e = tau_e * 1.60217662e-19 / ( m_e * 9.10938356e-31)
+name: electron_mobility_from_mean_free_time
+implemented_by:
+- vtshitoyan
+references:
+- url:https://en.wikipedia.org/wiki/Drude_model
+solve_for_all_symbols: true
+units_for_evaluation:
+  mu_e: m**2 / volt / s
+  m_e: dimensionless
+  tau_e: s
+symbol_property_map:
+  mu_e: electron_mobility
+  m_e: electron_effective_mass
+  tau_e: electron_mean_free_time
+test_data:
+- inputs:
+    tau_e: 3.2e-14
+    m_e: 1.3
+  outputs:
+    mu_e: 0.004329403132858855
+- inputs:
+    mu_e: 0.00438
+    m_e: 1.3
+  outputs:
+    tau_e: 3.237397758971165e-14

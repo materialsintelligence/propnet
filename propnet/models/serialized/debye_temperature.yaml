@@ -37,7 +37,10 @@ name: debye_temperature
 implemented_by:
 - mkhorton
 references: []
-scrub_units: true
+units_for_evaluation:
+  T: kelvin
+  p: atom / angstrom ** 3
+  v: meter / second
 symbol_property_map:
   T: debye_temperature
   p: atomic_density

@@ -1,4 +1,7 @@
-import os, sys
+import os
+import sys
+import logging
+from io import StringIO
 from monty.serialization import loadfn, dumpfn
 from habanero.cn import content_negotiation
 from propnet import print_logger, print_stream
@@ -6,6 +9,9 @@ from propnet import print_logger, print_stream
 _REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__),
                                      '../data/reference_cache.json')
 _REFERENCE_CACHE = loadfn(_REFERENCE_CACHE_PATH)
+
+logger = logging.getLogger(__name__)
+
 
 def references_to_bib(refs):
     """
@@ -72,6 +78,9 @@ class PrintToLogger:
         for line in buf.rstrip().splitlines():
             self.logger.info(line.rstrip())
 
+    def flush(self, *args, **kwargs):
+        pass
+
     @staticmethod
     def get_print_log():
         """
@@ -90,3 +99,178 @@ class PrintToLogger:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout = self._original_stdout
 
+
+class LogSniffer:
+    """
+    This class provides a context manager or explicit object to capture output written
+    to an existing logging.Logger and write it to a string. Purpose is for debugging
+    and verifying warning output in tests.
+
+    Output is available while within the established context by using get_output(),
+    when the LogSniffer object is stopped using stop(), or after stopping using get_output()
+
+    Usage example:
+        # Get logger whose messages you want to capture
+        logger = logging.getLogger('my_logger_name')
+
+        # Context manager usage
+        with LogSniffer(logger) as ls:
+            foo()  # Some statement(s) which write to the logger
+            output = ls.get_output(replace_newline='') # Gets logger output and replaces newline characters
+            expected_output = "Expected output"
+            self.assertEqual(output, expected_output)
+
+        # Explicit object usage
+        ls = LogSniffer(logger)
+        ls.start()      # Start capturing logger output
+        foo()           # Statements which output to logger
+        output = ls.stop()  # Get output and stop sniffer
+        expected_output = "Expected output\n"
+        self.assertEqual(output, expected_output)
+
+    """
+    def __init__(self, logger, level='INFO'):
+        if not isinstance(logger, logging.Logger):
+            raise ValueError("Need valid logger for sniffing")
+        self._logger = logger
+        self._sniffer = None
+        self._sniffer_handler = None
+        self._level = level
+        self._old_logger_level = None
+        self._last_output = None
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+    def __del__(self):
+        self.stop()
+
+    def start(self):
+        """
+        Starts recording messages passed to the logger. If already started, does nothing.
+
+        """
+        if not self.is_started():
+            self._last_output = None
+            self._sniffer = StringIO()
+            self._sniffer_handler = logging.StreamHandler(stream=self._sniffer)
+            self._sniffer_handler.setLevel(self._level)
+            self._logger.addHandler(self._sniffer_handler)
+            if self._logger.getEffectiveLevel() > self._sniffer_handler.level:
+                self._old_logger_level = self._logger.getEffectiveLevel()
+                self._logger.setLevel(self._level)
+
+    def is_started(self):
+        """
+        Checks if the sniffer is actively sniffing.
+
+        Returns: (bool) true if the sniffer is active, false otherwise
+
+        """
+        return self._sniffer is not None
+
+    def stop(self, *args, **kwargs):
+        """
+        Stops recording messages passed to the logger, removes the sniffer,
+        and returns the captured output. Returns None if sniffer is inactive.
+
+        Keyword Args:
+            replace_newline (str): a string with which to replace newline characters.
+                default: '\n' (no replacement)
+        Returns: (str) the output captured by the sniffer
+            or None if sniffer is inactive
+
+        """
+        if self.is_started():
+            output = self.get_output(*args, **kwargs)
+            self._last_output = output
+            self._logger.removeHandler(self._sniffer_handler)
+            self._sniffer_handler = None
+            self._sniffer.close()
+            self._sniffer = None
+            if self._old_logger_level is not None:
+                self._logger.setLevel(self._old_logger_level)
+                self._old_logger_level = None
+        else:
+            output = None
+        return output
+
+    def get_output(self, replace_newline='\n'):
+        """
+        Returns the output captured by the sniffer so far. Returns None if
+        sniffer has never been started. If the sniffer had been started previously,
+        but is currently stopped, returns the last output stored by the sniffer.
+
+        Keyword Args:
+            replace_newline (str): a string with which to replace newline characters.
+                default: '\n' (no replacement)
+        Returns: (str) the output captured by the sniffer,
+            or None if sniffer has never been started
+
+        """
+        if self.is_started():
+            return self._sniffer.getvalue().replace('\n', replace_newline)
+
+        return self._last_output
+
+    def clear(self):
+        """
+        Clears the captured output while keeping the sniffer active.
+
+        """
+        if self.is_started():
+            self._sniffer.truncate(0)
+            self._sniffer.seek(0)
+
+# TODO: This should be exactly the same as maggma.utils.Timeout, but at the time of
+#       writing, the package has not been updated on PyPI. Remove and replace usages
+#       with version from maggma when it becomes available
+
+
+if os.name == 'posix':
+    # signal package is not supported by non-Unix systems, and so in turn, we cannot
+    # timeout models on those platforms. There are few elegant solutions to killing threads in Python
+    # that are cross-platform. If something better comes up, implement it.
+    import signal
+
+    class Timeout:
+        # implementation courtesy of https://stackoverflow.com/a/22348885/637562
+
+        def __init__(self, seconds=1, error_message=""):
+            """
+            Set a maximum running time for functions.
+
+            Args:
+                seconds (int): Seconds before TimeoutError raised, set to None to disable
+                error_message (str): Error message to display with TimeoutError
+            """
+
+            self.seconds = int(seconds) if seconds else None
+            self.error_message = error_message
+
+        def _handle_timeout(self, signum, frame):
+            raise TimeoutError(self.error_message)
+
+        def __enter__(self):
+            if self.seconds:
+                signal.signal(signal.SIGALRM, self._handle_timeout)
+                signal.alarm(self.seconds)
+
+        def __exit__(self, type_, value, traceback):
+            if self.seconds:
+                signal.alarm(0)
+else:
+    class Timeout:
+        def __init__(self, seconds=None, *args, **kwargs):
+            if seconds is not None:
+                logger.warning("Timeout class not implemented on non-Unix machines.")
+
+        def __enter__(self):
+            pass
+
+        def __exit__(self, type_, value, traceback):
+            pass
