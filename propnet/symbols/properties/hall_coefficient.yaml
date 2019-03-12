@@ -1,0 +1,7 @@
+name: hall_coefficient
+units: m**3 / C
+display_names: ['Hall coefficient']
+display_symbols: ['R_H']
+shape: 1
+comment: ''
+category: property

@@ -279,8 +279,9 @@ class Model(ABC):
             model=self.name, inputs=list(input_symbol_quantity_dict.values()),
             source="propnet")
 
-        out = self.map_symbols_to_properties(out)
         out = self._convert_outputs_from_plugin(out)
+        out = self.map_symbols_to_properties(out)
+
         unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
         for symbol, value in out.items():
             try:
@@ -718,10 +719,11 @@ class EquationModel(Model, MSONable):
     def _convert_outputs_from_plugin(self, outputs):
         converted_outputs = {}
         for symbol, quantity in outputs.items():
-            unit = self.unit_map.get(symbol) or Registry("units").get(symbol)
+            symbol_prop = self._symbol_property_map[symbol]
+            unit = self.unit_map.get(symbol) or Registry("units").get(symbol_prop)
             if unit is None:
                 raise ValueError("Unit for '{}' symbol is not specified by "
-                                 "the model or in the registry".format(symbol.name))
+                                 "the model or in the registry".format(symbol_prop))
             if isinstance(quantity, ureg.Quantity):
                 try:
                     converted_outputs[symbol] = quantity.to(unit)
