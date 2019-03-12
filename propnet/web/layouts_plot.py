@@ -26,7 +26,7 @@ from pymongo.errors import ServerSelectionTimeoutError
 try:
     store = loadfn(environ["PROPNET_STORE_FILE"])
     store.connect()
-except ServerSelectionTimeoutError or KeyError:
+except (ServerSelectionTimeoutError, KeyError):
     from maggma.stores import MemoryStore
     store = MemoryStore()
     # layout won't work if database is down, but at least web app will stay up
