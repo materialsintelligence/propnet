@@ -23,11 +23,12 @@ mpr = MPRester()
 
 from pymongo.errors import ServerSelectionTimeoutError
 
-store = loadfn(environ["PROPNET_STORE_FILE"])
-
 try:
+    store = loadfn(environ["PROPNET_STORE_FILE"])
     store.connect()
-except ServerSelectionTimeoutError:
+except ServerSelectionTimeoutError or KeyError:
+    from maggma.stores import MemoryStore
+    store = MemoryStore()
     # layout won't work if database is down, but at least web app will stay up
     scalar_symbols = {k: v for k, v in Registry("symbols").items()
                       if (v.category == 'property' and v.shape == 1)}
@@ -41,7 +42,7 @@ else:
     scalar_symbols = {k: v for k, v in Registry("symbols").items()
                       if (v.category == 'property' and v.shape == 1
                           and store.query(
-                criteria={f'{k}.mean': {'$exists': True}}).count() > cut_off)}
+                              criteria={f'{k}.mean': {'$exists': True}}).count() > cut_off)}
     warning_layout = html.Div()
 
 
