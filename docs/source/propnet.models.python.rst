@@ -4,14 +4,6 @@ propnet.models.python package
 Submodules
 ----------
 
-propnet.models.python.clarke\_thermal\_conductivity module
-----------------------------------------------------------
-
-.. automodule:: propnet.models.python.clarke_thermal_conductivity
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 propnet.models.python.compliance\_from\_elasticity module
 ---------------------------------------------------------
 
@@ -28,14 +20,6 @@ propnet.models.python.cost module
     :undoc-members:
     :show-inheritance:
 
-propnet.models.python.density module
-------------------------------------
-
-.. automodule:: propnet.models.python.density
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 propnet.models.python.dimensionality\_cheon module
 --------------------------------------------------
 
@@ -48,6 +32,14 @@ propnet.models.python.dimensionality\_gorai module
 --------------------------------------------------
 
 .. automodule:: propnet.models.python.dimensionality_gorai
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+propnet.models.python.electromechanical\_coupling module
+--------------------------------------------------------
+
+.. automodule:: propnet.models.python.electromechanical_coupling
     :members:
     :undoc-members:
     :show-inheritance:
@@ -144,6 +136,14 @@ propnet.models.python.pymatgen\_structure\_transformations module
 -----------------------------------------------------------------
 
 .. automodule:: propnet.models.python.pymatgen_structure_transformations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+propnet.models.python.relative\_permittivity module
+---------------------------------------------------
+
+.. automodule:: propnet.models.python.relative_permittivity
     :members:
     :undoc-members:
     :show-inheritance:

@@ -8,6 +8,7 @@ Subpackages
 
     propnet.models.composite
     propnet.models.python
+    propnet.models.serialized
 
 Module contents
 ---------------

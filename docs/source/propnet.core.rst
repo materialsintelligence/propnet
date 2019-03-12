@@ -4,14 +4,6 @@ propnet.core package
 Submodules
 ----------
 
-propnet.core.builder module
----------------------------
-
-.. automodule:: propnet.core.builder
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 propnet.core.exceptions module
 ------------------------------
 
@@ -64,6 +56,14 @@ propnet.core.quantity module
 ----------------------------
 
 .. automodule:: propnet.core.quantity
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+propnet.core.registry module
+----------------------------
+
+.. automodule:: propnet.core.registry
     :members:
     :undoc-members:
     :show-inheritance:

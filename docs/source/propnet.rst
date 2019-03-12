@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
 
     propnet.core
+    propnet.dbtools
     propnet.ext
     propnet.models
     propnet.symbols
