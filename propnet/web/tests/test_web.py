@@ -2,15 +2,12 @@ import unittest
 import json
 
 from propnet.core.graph import Graph
-no_store_file = False
-try:
+import os
+
+no_store_file = os.environ.get('PROPNET_STORE_FILE') is None
+if not no_store_file:
     from propnet.web.app import app, symbol_layout, model_layout
     from propnet.web.utils import graph_conversion
-except KeyError as ex:
-    if ex.args[0] == 'PROPNET_STORE_FILE':
-        no_store_file = True
-    else:
-        raise ex
 
 routes = [
     '/'
