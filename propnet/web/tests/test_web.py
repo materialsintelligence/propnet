@@ -47,7 +47,7 @@ class WebTest(unittest.TestCase):
         self.assertTrue(layout.children[0], "Average grain diameter")
 
     def test_model_layout(self):
-        layout = model_layout("density")
+        layout = model_layout("density_relations")
         self.assertTrue(layout.children[0], "Atomic Density")
 
     def test_graph_conversion(self):

@@ -64,7 +64,11 @@
     },
     "outputs": {
       "num_sites": 1,
-      "volume": 11.55162296798055
+      "volume": 11.55162296798055,
+      "composition": {"@module": "pymatgen.core.composition", "@class": "Composition", "Fe": 1.0},
+      "lattice": {"@module": "pymatgen.core.lattice", "@class": "Lattice", "matrix": [[2.32547694, 0.0, -0.82218026], [-1.16273847, 2.01392211, -0.82218026], [0.0, 0.0, 2.46654077]]},
+      "atomic_density": 0.08656792234059726,
+      "density": 8.027686061589966
     }
   }
 ]

@@ -264,7 +264,7 @@ class Model(ABC):
         # Plug in and check constraints
         try:
             with PrintToLogger():
-                out = self.plug_in(input_symbol_value_dict)
+                out: dict = self.plug_in(input_symbol_value_dict)
         except Exception as err:
             if allow_failure:
                 return {"successful": False,
