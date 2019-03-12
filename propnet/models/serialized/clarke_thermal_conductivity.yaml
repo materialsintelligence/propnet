@@ -1,0 +1,41 @@
+categories:
+- thermal
+- mechanical
+constraints: null
+description: "Based on the model posited in https://doi.org/10.1016/S0257-8972(02)00593-5,
+this relation predicts the thermal conductivity of materials in the high temperature limit.
+Materials that have smaller values of Clarke thermal conductivity should be expected to
+have smaller thermal conductivity at high temperatures.
+
+In particular, this model predicts that a material will have low thermal conductivity at
+high temperatures if it has the following broad characteristics.
+
+1) A large molecular weight
+2) A complex crystal structure
+3) Non-directional bonding
+4) A large number of different atoms per molecule"
+
+equations:
+- t = 0.87*1.38E-23*(1/m_atom*1000)**(2/3)*(6.022E23)**(2/3)*(d_xtl*1000)**(1/6)*(E_young*1E9)**(1/2)
+units_for_evaluation:
+  t: watt / kelvin / meter
+  m_atom: amu / atom
+  d_xtl: g / cm**3
+  E_young: GPa
+name: clarke_thermal_conductivity
+implemented_by:
+- dmrdjenovich
+references:
+- url:https://www.sciencedirect.com/science/article/pii/S0257897202005935
+symbol_property_map:
+  t: thermal_conductivity
+  m_atom: mass_per_atom
+  d_xtl: density
+  E_young: youngs_modulus
+test_data:
+- inputs:
+    m_atom: 12.506
+    d_xtl: 2.905
+    E_young: 365.85
+  outputs:
+    t: 3.630689501289273
