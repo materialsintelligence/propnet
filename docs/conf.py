@@ -15,6 +15,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('.'))
+sys.path.append(os.path.abspath('exts'))
 #sys.path.insert(0, os.path.abspath('../.'))
 
 
@@ -40,6 +41,7 @@ release = u''
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinxcontrib.apidoc',
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
@@ -47,6 +49,15 @@ extensions = [
     'sphinx.ext.napoleon'
 ]
 
+# apidoc config
+apidoc_module_dir = '../propnet'
+apidoc_output_dir = 'source'
+apidoc_excluded_paths = ['../propnet/models/python/[!_]*.py',
+                         '../propnet/models/composite/[!_]*.py',
+                         '../propnet/web']
+apidoc_separate_modules = True
+
+# Napoleon config
 napoleon_google_docstring = True
 
 # Add any paths that contain templates here, relative to this directory.
@@ -82,7 +93,7 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

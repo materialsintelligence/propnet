@@ -1,0 +1,3 @@
+[submodule "docs/exts/apidoc"]
+	path = docs/exts/apidoc
+	url = https://github.com/sphinx-contrib/apidoc.git
