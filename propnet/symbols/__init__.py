@@ -22,16 +22,8 @@ def _update_registry():
         d = loadfn(f)
         d['is_builtin'] = True
         symbol_type = Symbol.from_dict(d)
-        Registry("symbols")[symbol_type.name] = symbol_type
-        if symbol_type.default_value is not None:
-            Registry("symbol_values")[symbol_type] = symbol_type.default_value
         if "{}.yaml".format(symbol_type.name) not in f:
             raise ValueError('Name/filename mismatch in {}'.format(f))
-
-    # Stores all loaded properties' names in a tuple in the global scope.
-    Registry("units").update(
-        {name: symbol.units.format_babel() if symbol.units else None
-         for name, symbol in Registry("symbols").items()})
 
 
 def _update_symbol_type_names():

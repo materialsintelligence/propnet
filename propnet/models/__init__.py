@@ -1,3 +1,5 @@
+# noinspection PyUnresolvedReferences
+import propnet.symbols
 from propnet.models import serialized, python, composite
 from propnet.core.registry import Registry
 

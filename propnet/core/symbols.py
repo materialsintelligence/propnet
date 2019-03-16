@@ -8,6 +8,7 @@ from monty.json import MSONable
 from ruamel.yaml import safe_dump
 
 from propnet import logger, ureg
+from propnet.core.registry import Registry
 from sympy.parsing.sympy_parser import parse_expr
 import sympy as sp
 
@@ -34,7 +35,7 @@ class Symbol(MSONable):
     def __init__(self, name, display_names=None, display_symbols=None,
                  units=None, shape=None, object_type=None, comment=None,
                  category='property', constraint=None, default_value=None,
-                 is_builtin=False):
+                 is_builtin=False, overwrite_registry=True):
         """
         Parses and validates a series of inputs into a PropertyMetadata
         tuple, a format that PropNet expects.
@@ -164,6 +165,17 @@ class Symbol(MSONable):
 
         self._constraint = constraint
         self._constraint_func = None
+
+        if not overwrite_registry and \
+                (self in Registry("symbols").keys() or self in Registry("units").keys()):
+            raise KeyError("Symbol '{}' already exists in the symbol or unit registry".format(self.name))
+        self.register()
+
+    def register(self):
+        Registry("symbols")[self] = self
+        Registry("units")[self] = self.units.format_babel() if self.units else None
+        if self.default_value is not None:
+            Registry("symbol_values")[self] = self.default_value
 
     @property
     def constraint(self):

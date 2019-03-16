@@ -11,10 +11,11 @@ EQUATION_MODULE_FILES = glob(EQUATION_MODEL_DIR + '/*.yaml')
 
 
 def add_builtin_models_to_registry():
+    # noinspection PyUnresolvedReferences
+    import propnet.symbols
     for filename in EQUATION_MODULE_FILES:
         model_path = os.path.join(EQUATION_MODEL_DIR, filename)
-        model = EquationModel.from_file(model_path, is_builtin=True)
-        Registry("models").update({model.name: model})
+        EquationModel.from_file(model_path, is_builtin=True)
 
 
 add_builtin_models_to_registry()

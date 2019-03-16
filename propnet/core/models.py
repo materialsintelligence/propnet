@@ -70,7 +70,8 @@ class Model(ABC):
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None, implemented_by=None,
                  symbol_property_map=None, units_for_evaluation=None, test_data=None,
-                 is_builtin=False):
+                 is_builtin=False, overwrite_registry=True):
+
         self.name = name
         self._connections = connections
         self.description = description
@@ -83,19 +84,11 @@ class Model(ABC):
         self.references = references_to_bib(references or [])
         self._is_builtin = is_builtin
 
-        # Define constraints by constraint objects or invoke from strings
-        constraints = constraints or []
-        self.constraints = []
-        for constraint in constraints:
-            if isinstance(constraint, Constraint):
-                self.constraints.append(constraint)
-            else:
-                self.constraints.append(Constraint(constraint))
-
         # symbol property map initialized as symbol->symbol, then updated
         # with any customization of symbol to properties mapping
         self._symbol_property_map = {k: k for k in self.all_properties}
         self._symbol_property_map.update(symbol_property_map or {})
+        self._verify_properties_are_registered()
 
         if units_for_evaluation or 'empirical' in self.categories:
             self._unit_map = {prop_name: Registry("units").get(prop_name)
@@ -115,34 +108,52 @@ class Model(ABC):
             if isinstance(constraint, Constraint):
                 self.constraints.append(constraint)
             else:
-                self.constraints.append(Constraint(constraint))
+                self.constraints.append(Constraint(constraint,
+                                                   symbol_property_map=self._symbol_property_map))
 
         # Ensures our test data is symbol-keyed and in the correct format
         test_data = test_data or self.load_test_data()
-        clean_test_data = []
         if test_data:
-            for io_data_set in test_data:
-                clean_data_set = {}
-                for io, data_set in io_data_set.items():
-                    symbol_value = self.map_properties_to_symbols(data_set)
-                    for symbol, value in symbol_value.items():
-                        clean_value = value
-                        prop = self.symbol_property_map[symbol]
-                        if Registry("symbols")[prop].category != 'object':
+            test_data = self._clean_test_data(test_data)
+        self._test_data = test_data
+
+        self.register(overwrite_registry=overwrite_registry)
+
+    def register(self, overwrite_registry=True):
+        if not overwrite_registry and self.name in Registry("models").keys():
+            raise KeyError("Model '{}' already exists in the model registry".format(self.name))
+        Registry("models")[self.name] = self
+
+    def _clean_test_data(self, test_data):
+        clean_test_data = []
+        for io_data_set in test_data:
+            clean_data_set = {}
+            for io, data_set in io_data_set.items():
+                symbol_value = self.map_properties_to_symbols(data_set)
+                for symbol, value in symbol_value.items():
+                    prop = self.symbol_property_map[symbol]
+                    clean_value = (value, self.unit_map.get(symbol) or Registry('units').get(prop))
+                    if Registry("symbols")[prop].category != 'object':
+                        # If not an object, check to see if number is specified
+                        # with units as a tuple/list or as a string. If so,
+                        # convert it.
+                        try:
                             if isinstance(value, (list, tuple)) and len(value) == 2:
-                                try:
-                                    clean_value = ureg.Quantity(*value)
-                                except TypeError:
-                                    pass
+                                clean_value = ureg.Quantity(*value).to_tuple()
                             elif isinstance(value, str):
-                                try:
-                                    clean_value = ureg.Quantity(value)
-                                except TypeError:
-                                    pass
-                        symbol_value[symbol] = clean_value
-                    clean_data_set[io] = symbol_value
-                clean_test_data.append(clean_data_set)
-        self._test_data = clean_test_data
+                                clean_value = ureg.Quantity(value).to_tuple()
+                        except TypeError:
+                            pass
+                    symbol_value[symbol] = clean_value
+                clean_data_set[io] = symbol_value
+            clean_test_data.append(clean_data_set)
+        return clean_test_data
+
+    def _verify_properties_are_registered(self):
+        for prop in self.all_properties:
+            if prop not in Registry("symbols").keys():
+                raise KeyError("Symbol '{}' is not registered in "
+                               "symbol registry in model '{}'.".format(prop, self.name))
 
     @property
     def is_builtin(self):
@@ -424,18 +435,18 @@ class Model(ABC):
         Returns (bool): True if test succeeds
         """
         evaluate_inputs = self.map_symbols_to_properties(inputs)
-        unit_map_as_properties = self.map_symbols_to_properties(self.unit_map)
-        evaluate_inputs = {
-            s: QuantityFactory.create_quantity(
-                s, v,
-                units=unit_map_as_properties.get(s) or Registry("units")[s])
-            for s, v in evaluate_inputs.items()}
+        for symbol, value in evaluate_inputs.items():
+            magnitude, unit = value
+            evaluate_inputs[symbol] = QuantityFactory.create_quantity(
+                symbol, magnitude,
+                units=unit)
         evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
         evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
         errmsg = "{} model test failed on ".format(self.name) + "{}\n"
         errmsg += "{}(test data) = {}\n"#.format(k, known_output)
         errmsg += "{}(model output) = {}"#.format(k, plug_in_output)
-        for k, known_output in outputs.items():
+        evaluate_outputs = self.map_symbols_to_properties(outputs)
+        for k, known_output in evaluate_outputs.items():
             symbol = self.symbol_property_map[k]
             units = self.unit_map.get(k)
             known_quantity = QuantityFactory.create_quantity(
@@ -532,13 +543,15 @@ class Model(ABC):
         if self._test_data is None:
             return ""
         example_inputs = self._test_data[0]['inputs']
-        example_outputs = str(self._test_data[0]['outputs'])
+        # Strip units from outputs
+        example_outputs = str({k: v[0] for k, v in self._test_data[0]['outputs'].items()})
 
         symbol_definitions = []
         evaluate_args = []
         imports = []
-        for input_name, input_value in example_inputs.items():
-
+        for input_name, input_value_and_unit in example_inputs.items():
+            # Strip units from inputs
+            input_value, _ = input_value_and_unit
             if hasattr(input_value, 'as_dict'):
                 input_value = input_value.as_dict()
                 # temp fix for ComputedEntry pending pymatgen fix
@@ -632,7 +645,7 @@ class EquationModel(Model, MSONable):
                  symbol_property_map=None, description=None,
                  categories=None, references=None, implemented_by=None,
                  units_for_evaluation=None, solve_for_all_symbols=False, test_data=None,
-                 is_builtin=False):
+                 is_builtin=False, overwrite_registry=True):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -676,7 +689,8 @@ class EquationModel(Model, MSONable):
             categories, references, implemented_by,
             symbol_property_map, units_for_evaluation,
             test_data=test_data,
-            is_builtin=is_builtin)
+            is_builtin=is_builtin,
+            overwrite_registry=overwrite_registry)
 
         self._generate_lambdas()
 
@@ -802,13 +816,15 @@ class PyModel(Model):
     def __init__(self, name, connections, plug_in, constraints=None,
                  description=None, categories=None, references=None,
                  implemented_by=None, symbol_property_map=None,
-                 units_for_evaluation=True, test_data=None, is_builtin=False):
+                 units_for_evaluation=True, test_data=None, is_builtin=False,
+                 overwrite_registry=True):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
             symbol_property_map, units_for_evaluation,
-            test_data=test_data, is_builtin=is_builtin)
+            test_data=test_data, is_builtin=is_builtin,
+            overwrite_registry=overwrite_registry)
 
     def plug_in(self, symbol_value_dict):
         """
@@ -833,14 +849,16 @@ class PyModuleModel(PyModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path, is_builtin=False):
+    def __init__(self, module_path, is_builtin=False, overwrite_registry=True):
         """
         Args:
             module_path (str): path to module to instantiate model
         """
         self._module_path = module_path
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
-        super(PyModuleModel, self).__init__(**mod.config, is_builtin=is_builtin)
+        super(PyModuleModel, self).__init__(**mod.config,
+                                            is_builtin=is_builtin,
+                                            overwrite_registry=overwrite_registry)
 
     def as_dict(self):
         return {"module_path": self._module_path,
@@ -896,15 +914,29 @@ class CompositeModel(PyModel):
                 if mat is not None:
                     self.mat_inputs.append(mat)
 
+    def _verify_properties_are_registered(self):
+        for composite_prop in self.all_properties:
+            split_prop = composite_prop.rsplit('.', maxsplit=1)
+            if len(split_prop) == 2:
+                material_type, prop = split_prop
+            else:
+                material_type = ""
+                prop = split_prop[0]
+            if prop not in Registry("symbols").keys():
+                raise KeyError("Symbol '{}' of material '{}' is not registered in "
+                               "symbol registry in model '{}'.".format(composite_prop,
+                                                                       material_type,
+                                                                       self.name))
+
     @staticmethod
-    def get_material(input):
+    def get_material(input_):
         """
         Args:
-            input (String): inputs entry from the connections instance variable.
+            input_ (String): inputs entry from the connections instance variable.
         Returns:
             String or None only material identifiers from the input argument.
         """
-        separation = input.split('.')
+        separation = input_.split('.')
         components = len(separation)
         if components == 2:
             return separation[0]
@@ -913,17 +945,17 @@ class CompositeModel(PyModel):
         return None
 
     @staticmethod
-    def get_symbol(input):
+    def get_symbol(input_):
         """
         Args:
-            input (String): inputs entry from the connections instance variable.
+            input_ (String): inputs entry from the connections instance variable.
         Returns:
             String only symbol identifiers from the input argument.
         """
-        separation = input.split('.')
+        separation = input_.split('.')
         components = len(separation)
         if components == 1:
-            return input
+            return input_
         elif components == 2:
             return separation[1]
         elif components > 2:
@@ -1026,14 +1058,16 @@ class PyModuleCompositeModel(CompositeModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path, is_builtin=False):
+    def __init__(self, module_path, is_builtin=False, overwrite_registry=True):
         """
         Args:
             module_path (str): path to module to instantiate model
         """
         self._module_path = module_path
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
-        super(PyModuleCompositeModel, self).__init__(**mod.config, is_builtin=is_builtin)
+        super(PyModuleCompositeModel, self).__init__(**mod.config,
+                                                     is_builtin=is_builtin,
+                                                     overwrite_registry=overwrite_registry)
 
     def as_dict(self):
         return {"module_path": self._module_path,
@@ -1043,7 +1077,8 @@ class PyModuleCompositeModel(CompositeModel):
 
 # Right now I don't see much of a use case for pythonic functionality
 # here but maybe there should be
-# TODO: this could use a bit more finesse
+# TODO: Have this not inherit from Model because its functionality is
+#       fundamentally different
 class Constraint(Model):
     """
     Constraint class, resembles a model, but should outputs
@@ -1064,6 +1099,17 @@ class Constraint(Model):
         connections = [{"inputs": inputs, "outputs": ["is_valid"]}]
         Model.__init__(
             self, name=name, connections=connections, **kwargs)
+
+    def _verify_properties_are_registered(self):
+        # Is it possible to not have any outputs for these models instead of "is_valid"?
+        # If so, then we don't have to override this function
+        for prop in self.all_inputs:
+            if prop not in Registry("symbols").keys():
+                raise KeyError("Symbol '{}' is not registered in "
+                               "symbol registry for constraint '{}'.".format(prop, self.expression))
+
+    def register(self, **kwargs):
+        pass
 
     def plug_in(self, symbol_value_dict):
         """
