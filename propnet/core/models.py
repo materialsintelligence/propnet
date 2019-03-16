@@ -16,7 +16,7 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
-from propnet.core.quantity import QuantityFactory, NumQuantity
+from propnet.core.quantity import QuantityFactory, NumQuantity, BaseQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
@@ -132,7 +132,7 @@ class Model(ABC):
                 symbol_value = self.map_properties_to_symbols(data_set)
                 for symbol, value in symbol_value.items():
                     prop = self.symbol_property_map[symbol]
-                    clean_value = (value, self.unit_map.get(symbol) or Registry('units').get(prop))
+                    clean_value = (value, self._unit_map.get(symbol) or Registry('units').get(prop))
                     if Registry("symbols")[prop].category != 'object':
                         # If not an object, check to see if number is specified
                         # with units as a tuple/list or as a string. If so,
@@ -440,19 +440,22 @@ class Model(ABC):
             evaluate_inputs[symbol] = QuantityFactory.create_quantity(
                 symbol, magnitude,
                 units=unit)
-        evaluate_outputs = self.evaluate(evaluate_inputs, allow_failure=False)
-        evaluate_outputs = self.map_properties_to_symbols(evaluate_outputs)
+        outputs_from_model = self.evaluate(evaluate_inputs, allow_failure=False)
+        outputs_from_model = self.map_properties_to_symbols(outputs_from_model)
         errmsg = "{} model test failed on ".format(self.name) + "{}\n"
-        errmsg += "{}(test data) = {}\n"#.format(k, known_output)
-        errmsg += "{}(model output) = {}"#.format(k, plug_in_output)
-        evaluate_outputs = self.map_symbols_to_properties(outputs)
-        for k, known_output in evaluate_outputs.items():
+        errmsg += "{}(test data) = {}\n"
+        errmsg += "{}(model output) = {}"
+        for k, known_output in outputs.items():
             symbol = self.symbol_property_map[k]
-            units = self.unit_map.get(k)
-            known_quantity = QuantityFactory.create_quantity(
-                symbol, known_output,
-                units=units or Registry("units")[symbol])
-            evaluate_output = evaluate_outputs[k]
+            if isinstance(known_output, BaseQuantity):
+                known_quantity = known_output
+            else:
+                # It's a tuple from read-in test data
+                magnitude, units = known_output
+                known_quantity = QuantityFactory.create_quantity(
+                    symbol, magnitude,
+                    units=units)
+            evaluate_output = outputs_from_model[k]
             if not known_quantity.has_eq_value_to(evaluate_output):
                 errmsg = errmsg.format("evaluate", k, evaluate_output,
                                        k, known_quantity)

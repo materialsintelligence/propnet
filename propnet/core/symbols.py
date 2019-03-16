@@ -311,8 +311,18 @@ class Symbol(MSONable):
         return safe_dump(data)
 
     def as_dict(self):
-        d = super().as_dict()
-        if self.units:
-            d['units'] = (1 * d['units']).to_tuple()
+        d = {'@module': self.__module__,
+             '@class': self.__class__.__name__,
+             'name': self.name,
+             'display_names': self.display_names,
+             'display_symbols': self.display_symbols,
+             'units': (1 * self.units).to_tuple() if self.units else None,
+             'shape': self.shape,
+             'object_type': self.object_type,
+             'comment': self.comment,
+             'category': self.category,
+             'constraint': self.constraint,
+             'default_value': self.default_value,
+             'is_builtin': self._is_builtin}
 
         return d
