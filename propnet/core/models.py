@@ -928,6 +928,11 @@ class CompositeModel(PyModel):
                                                                        material_type,
                                                                        self.name))
 
+    def register(self, overwrite_registry=True):
+        if not overwrite_registry and self.name in Registry("composite_models").keys():
+            raise KeyError("Model '{}' already exists in the composite model registry".format(self.name))
+        Registry("composite_models")[self.name] = self
+
     @staticmethod
     def get_material(input_):
         """
