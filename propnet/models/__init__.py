@@ -8,7 +8,10 @@ for name, model in Registry("models").items():
     globals()[name] = model
 
 
-def add_builtin_models_to_registry():
-    serialized.add_builtin_models_to_registry()
-    python.add_builtin_models_to_registry()
-    composite.add_builtin_models_to_registry()
+def add_builtin_models_to_registry(readd_symbols=True):
+    if readd_symbols:
+        from propnet.symbols import add_builtin_symbols_to_registry
+        add_builtin_symbols_to_registry()
+    serialized.add_builtin_models_to_registry(readd_symbols=False)
+    python.add_builtin_models_to_registry(readd_symbols=False)
+    composite.add_builtin_models_to_registry(readd_symbols=False)

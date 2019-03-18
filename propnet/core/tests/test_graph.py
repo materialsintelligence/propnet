@@ -213,7 +213,7 @@ class GraphTest(unittest.TestCase):
     @unittest.skipIf(os.name != 'posix', "Skipping because timeout not implemented on non-Unix systems")
     def test_model_timeout(self):
         sleepy_model = PyModuleModel('propnet.core.tests.sleepy_model')
-        Registry("models")[sleepy_model.name] = sleepy_model
+        # Registry("models")[sleepy_model.name] = sleepy_model
         g = Graph(models={sleepy_model.name: sleepy_model})
         q = QuantityFactory.create_quantity("A", 5, 'dimensionless')
         with Timer('model_timeout'):

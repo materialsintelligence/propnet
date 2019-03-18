@@ -21,6 +21,7 @@ def _update_registry():
     for f in _DEFAULT_SYMBOL_TYPE_FILES:
         d = loadfn(f)
         d['is_builtin'] = True
+        d['overwrite_registry'] = True
         symbol_type = Symbol.from_dict(d)
         if "{}.yaml".format(symbol_type.name) not in f:
             raise ValueError('Name/filename mismatch in {}'.format(f))

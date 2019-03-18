@@ -3,6 +3,10 @@ import unittest
 from propnet.core.graph import Graph
 from propnet.ext.matproj import MPRester
 
+from propnet.models import add_builtin_models_to_registry
+
+add_builtin_models_to_registry()
+
 mpr = MPRester()
 
 

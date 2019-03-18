@@ -2,6 +2,7 @@ import unittest
 import json
 
 from propnet.core.graph import Graph
+from propnet.symbols import add_builtin_symbols_to_registry
 import os
 
 no_store_file = os.environ.get('PROPNET_STORE_FILE') is None
@@ -12,6 +13,8 @@ if not no_store_file:
 routes = [
     '/'
 ]
+
+add_builtin_symbols_to_registry()
 
 
 @unittest.skipIf(no_store_file,

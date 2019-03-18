@@ -45,7 +45,7 @@ class ModelTest(unittest.TestCase):
         A = Symbol('a', ['A'], ['A'], units=[1.0, [['centimeter', 2.0]]], shape=[1])
 
         for sym in (L, A):
-            Registry("symbol")[sym] = sym
+            Registry("symbols")[sym] = sym
             Registry("units")[sym] = sym.units
 
         get_area_config = {
@@ -69,7 +69,7 @@ class ModelTest(unittest.TestCase):
         A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
         for sym in (B, A):
-            Registry("symbol")[sym] = sym
+            Registry("symbols")[sym] = sym
             Registry("units")[sym] = sym.units
         get_config = {
             'name': 'equality',
@@ -91,7 +91,7 @@ class ModelTest(unittest.TestCase):
         A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
         for sym in (B, A):
-            Registry("symbol")[sym] = sym
+            Registry("symbols")[sym] = sym
             Registry("units")[sym] = sym.units
         get_config = {
             'name': 'add_complex_value',

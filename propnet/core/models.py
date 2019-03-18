@@ -70,7 +70,7 @@ class Model(ABC):
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None, implemented_by=None,
                  symbol_property_map=None, units_for_evaluation=None, test_data=None,
-                 is_builtin=False, overwrite_registry=True):
+                 is_builtin=False, register=True, overwrite_registry=False):
 
         self.name = name
         self._connections = connections
@@ -117,7 +117,8 @@ class Model(ABC):
             test_data = self._clean_test_data(test_data)
         self._test_data = test_data
 
-        self.register(overwrite_registry=overwrite_registry)
+        if register:
+            self.register(overwrite_registry=overwrite_registry)
 
     def register(self, overwrite_registry=True):
         if not overwrite_registry and self.name in Registry("models").keys():
@@ -648,7 +649,7 @@ class EquationModel(Model, MSONable):
                  symbol_property_map=None, description=None,
                  categories=None, references=None, implemented_by=None,
                  units_for_evaluation=None, solve_for_all_symbols=False, test_data=None,
-                 is_builtin=False, overwrite_registry=True):
+                 is_builtin=False, register=True, overwrite_registry=False):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -693,6 +694,7 @@ class EquationModel(Model, MSONable):
             symbol_property_map, units_for_evaluation,
             test_data=test_data,
             is_builtin=is_builtin,
+            register=register,
             overwrite_registry=overwrite_registry)
 
         self._generate_lambdas()
@@ -792,7 +794,7 @@ class EquationModel(Model, MSONable):
             return output
 
     @classmethod
-    def from_file(cls, filename, is_builtin=False):
+    def from_file(cls, filename, is_builtin=False, register=True, overwrite_registry=False):
         """
         Invokes EquationModel from filename
 
@@ -805,6 +807,8 @@ class EquationModel(Model, MSONable):
         model = loadfn(filename)
         if isinstance(model, dict):
             model['is_builtin'] = is_builtin
+            model['register'] = register
+            model['overwrite_registry'] = overwrite_registry
             return cls.from_dict(model)
         return model
 
@@ -820,13 +824,14 @@ class PyModel(Model):
                  description=None, categories=None, references=None,
                  implemented_by=None, symbol_property_map=None,
                  units_for_evaluation=True, test_data=None, is_builtin=False,
-                 overwrite_registry=True):
+                 register=True, overwrite_registry=False):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
             categories, references, implemented_by,
             symbol_property_map, units_for_evaluation,
             test_data=test_data, is_builtin=is_builtin,
+            register=register,
             overwrite_registry=overwrite_registry)
 
     def plug_in(self, symbol_value_dict):
@@ -852,7 +857,7 @@ class PyModuleModel(PyModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path, is_builtin=False, overwrite_registry=True):
+    def __init__(self, module_path, is_builtin=False, register=True, overwrite_registry=False):
         """
         Args:
             module_path (str): path to module to instantiate model
@@ -861,6 +866,7 @@ class PyModuleModel(PyModel):
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
         super(PyModuleModel, self).__init__(**mod.config,
                                             is_builtin=is_builtin,
+                                            register=register,
                                             overwrite_registry=overwrite_registry)
 
     def as_dict(self):
@@ -1066,7 +1072,7 @@ class PyModuleCompositeModel(CompositeModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path, is_builtin=False, overwrite_registry=True):
+    def __init__(self, module_path, is_builtin=False, register=True, overwrite_registry=False):
         """
         Args:
             module_path (str): path to module to instantiate model
@@ -1075,6 +1081,7 @@ class PyModuleCompositeModel(CompositeModel):
         mod = __import__(module_path, globals(), locals(), ['config'], 0)
         super(PyModuleCompositeModel, self).__init__(**mod.config,
                                                      is_builtin=is_builtin,
+                                                     register=register,
                                                      overwrite_registry=overwrite_registry)
 
     def as_dict(self):

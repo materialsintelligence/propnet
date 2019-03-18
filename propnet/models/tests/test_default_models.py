@@ -1,8 +1,11 @@
 import unittest
 
 # noinspection PyUnresolvedReferences
-import propnet.models
+from propnet.models import add_builtin_models_to_registry
 from propnet.core.registry import Registry
+
+Registry("models").clear()
+add_builtin_models_to_registry()
 
 
 class DefaultModelsTest(unittest.TestCase):
