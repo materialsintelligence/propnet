@@ -1139,7 +1139,7 @@ class Constraint(Model):
                 raise KeyError("Symbol '{}' is not registered in "
                                "symbol registry for constraint '{}'.".format(prop, self.expression))
 
-    def register(self, **kwargs):
+    def register(self, overwrite_registry=True):
         pass
 
     def plug_in(self, symbol_value_dict):
