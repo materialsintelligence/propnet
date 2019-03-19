@@ -6,6 +6,7 @@ from monty.json import jsanitize
 from maggma.stores import MemoryStore
 from maggma.runner import Runner
 
+from propnet.models import add_builtin_models_to_registry
 from propnet.dbtools.mp_builder import PropnetBuilder
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -14,6 +15,7 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 class BuilderTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        add_builtin_models_to_registry()
         cls.materials = MemoryStore()
         cls.materials.connect()
         materials = loadfn(os.path.join(TEST_DIR, "test_materials.json"))

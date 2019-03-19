@@ -9,6 +9,7 @@ from maggma.runner import Runner
 
 from itertools import product
 
+from propnet.models import add_builtin_models_to_registry
 from propnet.dbtools.correlation import CorrelationBuilder
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,6 +18,7 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 class CorrelationTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        add_builtin_models_to_registry()
         cls.propnet_props = ["band_gap_pbe", "bulk_modulus", "vickers_hardness"]
         cls.mp_query_props = ["magnetism.total_magnetization_normalized_vol"]
         cls.mp_props = ["total_magnetization_normalized_vol"]
