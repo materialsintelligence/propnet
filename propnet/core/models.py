@@ -70,7 +70,7 @@ class Model(ABC):
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None, implemented_by=None,
                  symbol_property_map=None, units_for_evaluation=None, test_data=None,
-                 is_builtin=False, register=True, overwrite_registry=False):
+                 is_builtin=False, register=True, overwrite_registry=True):
 
         self.name = name
         self._connections = connections
@@ -139,10 +139,15 @@ class Model(ABC):
                         # with units as a tuple/list or as a string. If so,
                         # convert it.
                         try:
+                            q = None
                             if isinstance(value, (list, tuple)) and len(value) == 2:
-                                clean_value = ureg.Quantity(*value).to_tuple()
+                                q = ureg.Quantity(*value)
                             elif isinstance(value, str):
-                                clean_value = ureg.Quantity(value).to_tuple()
+                                q = ureg.Quantity(value)
+                            elif isinstance(value, (BaseQuantity, ureg.Quantity)):
+                                q = value
+                            if q is not None:
+                                clean_value = (q.magnitude, q.units.format_babel() if q.units else None)
                         except TypeError:
                             pass
                     symbol_value[symbol] = clean_value
@@ -649,7 +654,7 @@ class EquationModel(Model, MSONable):
                  symbol_property_map=None, description=None,
                  categories=None, references=None, implemented_by=None,
                  units_for_evaluation=None, solve_for_all_symbols=False, test_data=None,
-                 is_builtin=False, register=True, overwrite_registry=False):
+                 is_builtin=False, register=True, overwrite_registry=True):
 
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
@@ -698,6 +703,17 @@ class EquationModel(Model, MSONable):
             overwrite_registry=overwrite_registry)
 
         self._generate_lambdas()
+
+    def as_dict(self):
+        d = {k if not k.startswith("_") else k.split('_', 1)[1]: v for k, v in self.__getstate__().items()}
+        d['units_for_evaluation'] = d.pop('unit_map')
+        return d
+
+    @classmethod
+    def from_dict(cls, d, **kwargs):
+        d_in = d.copy()
+        d_in.update(kwargs)
+        return cls(**d_in)
 
     @property
     def connections(self):
@@ -794,7 +810,7 @@ class EquationModel(Model, MSONable):
             return output
 
     @classmethod
-    def from_file(cls, filename, is_builtin=False, register=True, overwrite_registry=False):
+    def from_file(cls, filename, is_builtin=False, register=True, overwrite_registry=True):
         """
         Invokes EquationModel from filename
 
@@ -824,7 +840,7 @@ class PyModel(Model):
                  description=None, categories=None, references=None,
                  implemented_by=None, symbol_property_map=None,
                  units_for_evaluation=True, test_data=None, is_builtin=False,
-                 register=True, overwrite_registry=False):
+                 register=True, overwrite_registry=True):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
             name, connections, constraints, description,
@@ -857,7 +873,7 @@ class PyModuleModel(PyModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path, is_builtin=False, register=True, overwrite_registry=False):
+    def __init__(self, module_path, is_builtin=False, register=True, overwrite_registry=True):
         """
         Args:
             module_path (str): path to module to instantiate model
@@ -1072,7 +1088,7 @@ class PyModuleCompositeModel(CompositeModel):
     PyModuleModel is a class instantiated by a model path only,
     which exists primarily for the purpose of serializing python models
     """
-    def __init__(self, module_path, is_builtin=False, register=True, overwrite_registry=False):
+    def __init__(self, module_path, is_builtin=False, register=True, overwrite_registry=True):
         """
         Args:
             module_path (str): path to module to instantiate model

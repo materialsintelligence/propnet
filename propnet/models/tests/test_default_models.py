@@ -4,11 +4,13 @@ import unittest
 from propnet.models import add_builtin_models_to_registry
 from propnet.core.registry import Registry
 
-Registry("models").clear()
-add_builtin_models_to_registry()
-
 
 class DefaultModelsTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        Registry.clear_all_registries()
+        add_builtin_models_to_registry()
+
     def test_instantiate_all_models(self):
         models_to_test = []
         for model_name in Registry("models").keys():

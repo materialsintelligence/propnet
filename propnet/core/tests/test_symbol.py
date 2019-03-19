@@ -5,11 +5,14 @@ from propnet.core.registry import Registry
 
 
 class SymbolTest(unittest.TestCase):
-    def setUp(self):
-        self.old_symbol = Registry("symbols").get("youngs_modulus")
+    @classmethod
+    def setUpClass(cls):
+        cls.old_symbol = Registry("symbols").get("youngs_modulus")
 
-    def tearDown(self):
-        Registry("symbol")['youngs_modulus'] = self.old_symbol
+    @classmethod
+    def tearDownClass(cls):
+        if cls.old_symbol is not None:
+            Registry("symbol")['youngs_modulus'] = cls.old_symbol
 
     def test_property_construction(self):
         sample_symbol_type_dict = {

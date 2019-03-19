@@ -5,23 +5,26 @@ from propnet.core.quantity import QuantityFactory
 from propnet.core.graph import Graph
 from propnet.core.provenance import ProvenanceElement
 
-# noinspection PyUnresolvedReferences
-import propnet.symbols
+from propnet.symbols import add_builtin_symbols_to_registry
 from propnet.core.registry import Registry
 
 
 class MaterialTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        add_builtin_symbols_to_registry()
+        # Create some test properties and a few base objects
+        cls.q1 = QuantityFactory.create_quantity(Registry("symbols")['bulk_modulus'],
+                                                 ureg.Quantity.from_tuple([200, [['gigapascals', 1]]]))
+        cls.q2 = QuantityFactory.create_quantity(Registry("symbols")['shear_modulus'],
+                                                 ureg.Quantity.from_tuple([100, [['gigapascals', 1]]]))
+        cls.q3 = QuantityFactory.create_quantity(Registry("symbols")['bulk_modulus'],
+                                                 ureg.Quantity.from_tuple([300, [['gigapascals', 1]]]))
+        cls.material = None
+        cls.graph = Graph()
 
     def setUp(self):
-        # Create some test properties and a few base objects
-        self.q1 = QuantityFactory.create_quantity(Registry("symbols")['bulk_modulus'],
-                                                  ureg.Quantity.from_tuple([200, [['gigapascals', 1]]]))
-        self.q2 = QuantityFactory.create_quantity(Registry("symbols")['shear_modulus'],
-                                                  ureg.Quantity.from_tuple([100, [['gigapascals', 1]]]))
-        self.q3 = QuantityFactory.create_quantity(Registry("symbols")['bulk_modulus'],
-                                                  ureg.Quantity.from_tuple([300, [['gigapascals', 1]]]))
         self.material = Material()
-        self.graph = Graph()
 
     def test_material_setup(self):
         self.assertTrue(len(self.material._symbol_to_quantity) == 0,
@@ -95,7 +98,8 @@ class MaterialTest(unittest.TestCase):
                                                          provenance=ProvenanceElement(model='default')))
         self.assertEqual(list(material['relative_permeability'])[0],
                          QuantityFactory.create_quantity("relative_permeability", 1,
-                         provenance=ProvenanceElement(model='default')))
+                                                         provenance=ProvenanceElement(model='default')))
+
 
 if __name__ == "__main__":
     unittest.main()

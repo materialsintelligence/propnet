@@ -5,22 +5,22 @@ from propnet.ext.matproj import MPRester
 
 from propnet.models import add_builtin_models_to_registry
 
-add_builtin_models_to_registry()
 
 mpr = MPRester()
 
 
 @unittest.skipIf(mpr.api_key == "", "No API key provided. Skipping MPRester tests.")
 class MPResterTest(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        add_builtin_models_to_registry()
+        cls.mpr = mpr
         mpid = 'mp-1153'
-        self.mpr = MPRester()
-        self.mat = self.mpr.get_material_for_mpid(mpid)
+        cls.mat = cls.mpr.get_material_for_mpid(mpid)
 
     def test_load_properties(self):
         mpid = 'mp-1153'
-        mpr = MPRester()
-        mat = mpr.get_material_for_mpid(mpid)
+        mat = self.mpr.get_material_for_mpid(mpid)
         quantity = next(iter(mat['structure']))
         self.assertEqual(quantity.provenance.source['source'], "Materials Project")
         self.assertIn('structure', mat.get_symbols())

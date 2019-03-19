@@ -12,12 +12,16 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class BuilderTest(unittest.TestCase):
-    def setUp(self):
-        self.materials = MemoryStore()
-        self.materials.connect()
+    @classmethod
+    def setUpClass(cls):
+        cls.materials = MemoryStore()
+        cls.materials.connect()
         materials = loadfn(os.path.join(TEST_DIR, "test_materials.json"))
         materials = jsanitize(materials, strict=True, allow_bson=True)
-        self.materials.update(materials)
+        cls.materials.update(materials)
+        cls.propstore = None
+
+    def setUp(self):
         self.propstore = MemoryStore()
         self.propstore.connect()
 
@@ -65,8 +69,6 @@ class BuilderTest(unittest.TestCase):
                                  date_value)
                 at_deepest_level = True
 
-
-
     # @unittest.skipIf(not os.path.isfile("runner.json"), "No runner file")
     # def test_runner_pipeline(self):
     #     from monty.serialization import loadfn
@@ -89,6 +91,7 @@ class BuilderTest(unittest.TestCase):
                                                "e_above_hull": 0})
         builder.connect()
         dumpfn(list(builder.get_items()), "test_materials.json")
+
 
 if __name__ == "__main__":
     unittest.main()

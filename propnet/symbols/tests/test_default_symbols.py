@@ -1,18 +1,20 @@
 import unittest
 
-# noinspection PyUnresolvedReferences
-import propnet.symbols
+from propnet.symbols import add_builtin_symbols_to_registry
 from propnet.core.registry import Registry
 
 
 class SymbolsTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        Registry.clear_all_registries()
+        add_builtin_symbols_to_registry()
+
     def test_property_formatting(self):
         """
         Goes through the Quantity .yaml files and ensures the definitions are complete.
         """
         for st in Registry("symbols").values():
-            if not st.is_builtin:
-                continue
             self.assertTrue(st.name is not None and st.name.isidentifier())
             self.assertTrue(
                 st.category is not None

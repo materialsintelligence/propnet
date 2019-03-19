@@ -3,11 +3,6 @@ import unittest
 import math
 import numpy as np
 
-# noinspection PyUnresolvedReferences
-import propnet.models
-# noinspection PyUnresolvedReferences
-import propnet.symbols
-
 from propnet.core.models import EquationModel
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import QuantityFactory
@@ -19,8 +14,8 @@ from propnet.core.registry import Registry
 
 
 class ModelTest(unittest.TestCase):
-
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
         for sym in non_builtin_syms:
             Registry("symbols").pop(sym)

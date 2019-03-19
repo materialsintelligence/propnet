@@ -9,7 +9,7 @@ import logging
 import re
 
 # noinspection PyUnresolvedReferences
-import propnet.symbols
+import propnet.models
 from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)

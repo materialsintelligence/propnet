@@ -35,7 +35,7 @@ class Symbol(MSONable):
     def __init__(self, name, display_names=None, display_symbols=None,
                  units=None, shape=None, object_type=None, comment=None,
                  category='property', constraint=None, default_value=None,
-                 is_builtin=False, register=True, overwrite_registry=False):
+                 is_builtin=False, register=True, overwrite_registry=True):
         """
         Parses and validates a series of inputs into a PropertyMetadata
         tuple, a format that PropNet expects.
