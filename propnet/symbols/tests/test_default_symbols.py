@@ -10,6 +10,12 @@ class SymbolsTest(unittest.TestCase):
         Registry.clear_all_registries()
         add_builtin_symbols_to_registry()
 
+    def test_reimport_symbols(self):
+        Registry("symbols").pop('youngs_modulus')
+        self.assertNotIn('youngs_modulus', Registry("symbols"))
+        add_builtin_symbols_to_registry()
+        self.assertIn('youngs_modulus', Registry("symbols"))
+
     def test_property_formatting(self):
         """
         Goes through the Quantity .yaml files and ensures the definitions are complete.

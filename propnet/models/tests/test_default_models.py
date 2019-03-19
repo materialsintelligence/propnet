@@ -11,6 +11,29 @@ class DefaultModelsTest(unittest.TestCase):
         Registry.clear_all_registries()
         add_builtin_models_to_registry()
 
+    def test_reimport_models(self):
+        Registry("models").pop('debye_temperature')
+        Registry("models").pop('is_metallic')
+        Registry("composite_models").pop('pilling_bedworth_ratio')
+        self.assertNotIn("debye_temperature", Registry("models"))
+        self.assertNotIn("is_metallic", Registry("models"))
+        self.assertNotIn("pilling_bedworth_ratio", Registry("composite_models"))
+        from propnet.models.serialized import add_builtin_models_to_registry as serialized_add
+        serialized_add()
+        self.assertIn("debye_temperature", Registry("models"))
+        self.assertNotIn("is_metallic", Registry("models"))
+        self.assertNotIn("pilling_bedworth_ratio", Registry("composite_models"))
+        from propnet.models.python import add_builtin_models_to_registry as python_add
+        python_add()
+        self.assertIn("debye_temperature", Registry("models"))
+        self.assertIn("is_metallic", Registry("models"))
+        self.assertNotIn("pilling_bedworth_ratio", Registry("composite_models"))
+        from propnet.models.composite import add_builtin_models_to_registry as composite_add
+        composite_add()
+        self.assertIn("debye_temperature", Registry("models"))
+        self.assertIn("is_metallic", Registry("models"))
+        self.assertIn("pilling_bedworth_ratio", Registry("composite_models"))
+
     def test_instantiate_all_models(self):
         models_to_test = []
         for model_name in Registry("models").keys():
