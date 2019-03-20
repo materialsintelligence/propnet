@@ -106,6 +106,41 @@ class ModelTest(unittest.TestCase):
         self.assertTrue(out['successful'])
         self.assertTrue(np.isclose(out['a'].magnitude, 6j))
 
+    def test_model_register_unregister(self):
+        A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
+        B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
+        C = Symbol('c', ['C'], ['C'], units='dimensionless', shape=1)
+        D = Symbol('d', ['D'], ['D'], units='dimensionless', shape=1)
+        m = EquationModel('equation_model_to_remove', ['a = b * 3'], symbol_property_map={'a': A, 'b': B})
+        self.assertIn(m.name, Registry("models"))
+        self.assertTrue(m.registered)
+        m.unregister()
+        self.assertNotIn(m.name, Registry("models"))
+        self.assertFalse(m.registered)
+        m.register()
+        self.assertTrue(m.registered)
+        with self.assertRaises(KeyError):
+            m.register(overwrite_registry=False)
+
+        m.unregister()
+        m = EquationModel('equation_model_to_remove', ['a = b * 3'], symbol_property_map={'a': A, 'b': B},
+                          register=False)
+        self.assertNotIn(m.name, Registry("models"))
+        self.assertFalse(m.registered)
+
+        m.register()
+        with self.assertRaises(KeyError):
+            _ = EquationModel('equation_model_to_remove', ['a = b * 3'],
+                              symbol_property_map={'a': A, 'b': B},
+                              register=True, overwrite_registry=False)
+
+        m_replacement = EquationModel('equation_model_to_remove', ['c = d * 3'],
+                                      symbol_property_map={'c': C, 'd': D})
+
+        m_registered = Registry("models")['equation_model_to_remove']
+        self.assertIs(m_registered, m_replacement)
+        self.assertIsNot(m_registered, m)
+
 
 if __name__ == "__main__":
     unittest.main()
