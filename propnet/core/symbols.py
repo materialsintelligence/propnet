@@ -179,6 +179,15 @@ class Symbol(MSONable):
         if self.default_value is not None:
             Registry("symbol_values")[self] = self.default_value
 
+    def unregister(self):
+        Registry("symbols").pop(self, None)
+        Registry("units").pop(self, None)
+        Registry("symbol_values").pop(self, None)
+
+    @property
+    def registered(self):
+        return self in Registry("symbols").keys()
+
     @property
     def constraint(self):
         if self._constraint:

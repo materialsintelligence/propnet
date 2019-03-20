@@ -67,6 +67,9 @@ class Model(ABC):
         is_builtin (bool): True if the model is a default model included with propnet
             (this option not intended to be set by users)
     """
+
+    _registry_name = "models"
+
     def __init__(self, name, connections, constraints=None,
                  description=None, categories=None, references=None, implemented_by=None,
                  symbol_property_map=None, units_for_evaluation=None, test_data=None,
@@ -121,9 +124,17 @@ class Model(ABC):
             self.register(overwrite_registry=overwrite_registry)
 
     def register(self, overwrite_registry=True):
-        if not overwrite_registry and self.name in Registry("models").keys():
-            raise KeyError("Model '{}' already exists in the model registry".format(self.name))
-        Registry("models")[self.name] = self
+        if not overwrite_registry and self.name in Registry(self._registry_name).keys():
+            raise KeyError("Model '{}' already exists in the registry '{}'".format(self.name,
+                                                                                   self._registry_name))
+        Registry(self._registry_name)[self.name] = self
+
+    def unregister(self):
+        Registry(self._registry_name).pop(self.name, None)
+
+    @property
+    def registered(self):
+        return self.name in Registry(self._registry_name)
 
     def _clean_test_data(self, test_data):
         clean_test_data = []
@@ -904,6 +915,8 @@ class CompositeModel(PyModel):
     These labeled materials' properties are then referenced.
     """
 
+    _registry_name = "composite_models"
+
     def __init__(self, name, connections, plug_in, pre_filter=None,
                  filter=None, **kwargs):
         """
@@ -952,11 +965,6 @@ class CompositeModel(PyModel):
                                "symbol registry in model '{}'.".format(composite_prop,
                                                                        material_type,
                                                                        self.name))
-
-    def register(self, overwrite_registry=True):
-        if not overwrite_registry and self.name in Registry("composite_models").keys():
-            raise KeyError("Model '{}' already exists in the composite model registry".format(self.name))
-        Registry("composite_models")[self.name] = self
 
     @staticmethod
     def get_material(input_):
