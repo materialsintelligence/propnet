@@ -45,13 +45,13 @@ class Symbol(MSONable):
         Args:
             name (str): string ASCII identifying the property uniquely
                 as an internal identifier.
-            units (str or tuple): units of the property as a Quantity
+            units (str, tuple): units of the property as a Quantity
                 supported by the Pint package.  Can be supplied as a
                 string (e. g. cm^2) or a tuple for Quantity.from_tuple
                 (e. g. [1.0, [['centimeter', 1.0]]])
-            display_names (list<str>): list of strings giving possible
+            display_names (:obj:`list` of :obj:`str`): list of strings giving possible
                 human-readable names for the property.
-            display_symbols (list<str>): list of strings giving possible
+            display_symbols (:obj:`list` of :obj:`str`): list of strings giving possible
                 human-readable symbols for the property.
             shape (id): list giving the order of the tensor as the length,
                 and number of dimensions as individual integers in the list.
@@ -69,6 +69,7 @@ class Symbol(MSONable):
                 temperature or 1 for magnetic permeability
             is_builtin (bool): True if the model is included with propnet
                 by default. Not intended to be set explicitly by users
+            register (bool): Test
         """
 
         # TODO: not sure object should be distinguished
@@ -171,22 +172,22 @@ class Symbol(MSONable):
 
     def register(self, overwrite_registry=False):
         if not overwrite_registry and \
-                (self in Registry("symbols").keys() or self in Registry("units").keys()):
+                (self.name in Registry("symbols").keys() or self.name in Registry("units").keys()):
             raise KeyError("Symbol '{}' already exists in the symbol or unit registry".format(self.name))
 
-        Registry("symbols")[self] = self
-        Registry("units")[self] = self.units.format_babel() if self.units else None
+        Registry("symbols")[self.name] = self
+        Registry("units")[self.name] = self.units.format_babel() if self.units else None
         if self.default_value is not None:
-            Registry("symbol_values")[self] = self.default_value
+            Registry("symbol_values")[self.name] = self.default_value
 
     def unregister(self):
-        Registry("symbols").pop(self, None)
-        Registry("units").pop(self, None)
-        Registry("symbol_values").pop(self, None)
+        Registry("symbols").pop(self.name, None)
+        Registry("units").pop(self.name, None)
+        Registry("symbol_values").pop(self.name, None)
 
     @property
     def registered(self):
-        return self in Registry("symbols").keys()
+        return self.name in Registry("symbols").keys()
 
     @property
     def constraint(self):

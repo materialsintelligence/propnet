@@ -1,22 +1,25 @@
 import os
 from propnet.core.models import EquationModel
-from propnet.core.registry import Registry
 from glob import glob
 
-DEFAULT_MODEL_DICT = Registry("models")
-
-# Load equation models
-EQUATION_MODEL_DIR = os.path.join(os.path.dirname(__file__))
-EQUATION_MODULE_FILES = glob(EQUATION_MODEL_DIR + '/*.yaml')
+# This list is to test if we have models with the same name
+_EQUATION_MODEL_NAMES_LIST = []
 
 
-def add_builtin_models_to_registry(readd_symbols=True):
-    if readd_symbols:
+def add_builtin_models_to_registry(register_symbols=True):
+    _EQUATION_MODEL_NAMES_LIST.clear()
+    # Load equation models
+    equation_model_dir = os.path.join(os.path.dirname(__file__))
+    equation_module_files = glob(equation_model_dir + '/*.yaml')
+
+    if register_symbols:
         from propnet.symbols import add_builtin_symbols_to_registry
         add_builtin_symbols_to_registry()
-    for filename in EQUATION_MODULE_FILES:
-        model_path = os.path.join(EQUATION_MODEL_DIR, filename)
-        EquationModel.from_file(model_path, is_builtin=True, overwrite_registry=True)
+    for filename in equation_module_files:
+        model_path = os.path.join(equation_model_dir, filename)
+        model = EquationModel.from_file(model_path, is_builtin=True, overwrite_registry=True)
+        globals()[model.name] = model
+        _EQUATION_MODEL_NAMES_LIST.append(model.name)
 
 
 add_builtin_models_to_registry()
