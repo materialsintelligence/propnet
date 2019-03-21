@@ -1,5 +1,5 @@
 """
-Module containing classes and methods for Model functionality in Propnet code.
+Module containing classes and methods for Model functionality in propnet code.
 """
 
 import os
@@ -33,36 +33,36 @@ TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
 
 class Model(ABC):
     """
-    Abstract model class for all models appearing in Propnet
+    Abstract model class for all models appearing in propnet
 
     Args:
         name (str): title of the model
-        connections ([dict]): list of connections dictionaries, which take
-            the form {"inputs": [Symbols], "outputs": [Symbols]}, e. g.:
-            connections = [{"inputs": ["p", "T"], "outputs": ["V"]},
-                           {"inputs": ["T", "V"], "outputs": ["p"]}]
-        constraints ([str or Constraint]): string expressions or
+        connections (`list` of `dict`): list of connections dictionaries, which take
+            the form ``{"inputs": [Symbols], "outputs": [Symbols]}``, e. g.:
+            ``connections = [{"inputs": ["p", "T"], "outputs": ["V"]},``
+            ``{"inputs": ["T", "V"], "outputs": ["p"]}]``
+        constraints (str, Constraint): string expressions or
             Constraint objects of some condition on which the model is
-            valid, e. g. "n > 0", note that this must include symbols if
+            valid, e. g. ``"n > 0"``, note that this must include symbols if
             there is a symbol_property_map
         description (str): long form description of the model
-        categories ([str]): list of categories applicable to
+        categories (`list` of `str`): list of categories applicable to
             the model
-        references ([str]): list of the informational links
+        references (`list` of `str`): list of the informational links
             explaining / supporting the model
-        implemented_by ([str]): list of authors of the model by their
+        implemented_by (`list` of `str`): list of authors of the model by their
             github usernames
-        symbol_property_map ({str: str}): mapping of symbols enumerated
+        symbol_property_map (dict): \{`str`\: `str`} - mapping of symbols enumerated
             in the plug-in method to canonical symbols, e. g.
-            {"n": "index_of_refraction"} etc.
-        units_for_evaluation (bool or {str: str}): whether or not units should
-            be scrubbed in evaluation procedure, if a boolean is specified,
+            ``{"n": "index_of_refraction"}`` etc.
+        units_for_evaluation (`str`, `dict`: {`str`: `str`}): whether or not units should
+            be scrubbed in evaluation procedure, if the string ``'default'`` is specified,
             quantities are converted to default units before scrubbing, if
             a dict, quantities are specified to units corresponding to the
             unit assigned to the symbol in the dicts.  Units are scrubbed
             by default for PyModels/PyModule models and EquationModels with
             'empirical' categories
-        test_data (list of {'inputs': [], 'outputs': []): test data with
+        test_data (list of {'inputs': [], 'outputs': []}): test data with
             which to evaluate the model
         is_builtin (bool): True if the model is a default model included with propnet
             (this option not intended to be set by users)
@@ -124,19 +124,53 @@ class Model(ABC):
             self.register(overwrite_registry=overwrite_registry)
 
     def register(self, overwrite_registry=True):
+        """
+        Registers the model with the appropriate model registry.
+
+        Args:
+            overwrite_registry (bool): If a model with the same name
+                as the current is already registered, `True` will overwrite
+                the old model with the current and `False` will raise a
+                KeyError.
+
+        Raises:
+            KeyError: if `overwrite_registry=False` and a model with the same
+                name is already registered, this error is raised.
+
+        """
         if not overwrite_registry and self.name in Registry(self._registry_name).keys():
             raise KeyError("Model '{}' already exists in the registry '{}'".format(self.name,
                                                                                    self._registry_name))
         Registry(self._registry_name)[self.name] = self
 
     def unregister(self):
+        """
+        Removes the symbol from all applicable registries.
+
+        """
         Registry(self._registry_name).pop(self.name, None)
 
     @property
     def registered(self):
+        """
+        Indicates if a model is registered with the model registry.
+
+        Returns:
+            bool: True if the model is registered. False otherwise.
+
+        """
         return self.name in Registry(self._registry_name)
 
     def _clean_test_data(self, test_data):
+        """
+        Coerces test data into a value-unit format.
+
+        Args:
+            test_data (`list` of `dict`): structured test data (see ``__init__()``)
+
+        Returns:
+            `list` of `dict`: test data converted to the value-unit format
+        """
         clean_test_data = []
         for io_data_set in test_data:
             clean_data_set = {}
@@ -167,13 +201,27 @@ class Model(ABC):
         return clean_test_data
 
     def _verify_properties_are_registered(self):
+        """
+        Ensures that all Symbol names associated with this model are
+        registered in the symbol registry.
+
+        Raises:
+            KeyError: if a symbol is not registered, this error is raised
+        """
         for prop in self.all_properties:
-            if prop not in Registry("symbols").keys():
+            if prop not in Registry("symbols"):
                 raise KeyError("Symbol '{}' is not registered in "
                                "symbol registry in model '{}'.".format(prop, self.name))
 
     @property
     def is_builtin(self):
+        """
+        Indicates whether the model is a propnet built-in.
+
+        Returns:
+            bool: ``True`` if the model is a built-in, ``False``
+                if it is a custom-created model
+        """
         return self._is_builtin
 
     @property

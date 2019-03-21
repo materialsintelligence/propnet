@@ -36,24 +36,23 @@ class Symbol(MSONable):
                  category='property', constraint=None, default_value=None,
                  is_builtin=False, register=True, overwrite_registry=True):
         """
-        Parses and validates a series of inputs into a PropertyMetadata
-        tuple, a format that PropNet expects.
-
-        Parameters correspond exactly with those of a PropertyMetadata tuple.
+        Instantiates Symbol object.
 
         Args:
             name (str): string ASCII identifying the property uniquely
                 as an internal identifier.
             units (str, tuple): units of the property as a Quantity
                 supported by the Pint package.  Can be supplied as a
-                string (e. g. cm^2) or a tuple for Quantity.from_tuple
-                (e. g. [1.0, [['centimeter', 1.0]]])
-            display_names (:obj:`list` of :obj:`str`): list of strings giving possible
+                string (e. g. ``cm^2``) or a tuple for ``Quantity.from_tuple``
+                (e. g. ``[1.0, [['centimeter', 1.0]]]``)
+            display_names (`list` of `str`): list of strings giving possible
                 human-readable names for the property.
-            display_symbols (:obj:`list` of :obj:`str`): list of strings giving possible
+            display_symbols (`list` of `str`): list of strings giving possible
                 human-readable symbols for the property.
-            shape (int, list): list giving the order of the tensor as the length,
+            shape (list, int): list giving the order of the tensor as the length,
                 and number of dimensions as individual integers in the list.
+                If an integer is provided, the symbol contains a vector. If ``shape=1``,
+                the symbol contains a scalar.
             comment (str): any useful information on the property including
                 its definitions and possible citations.
             category (str): 'property', for property of a material,
@@ -63,7 +62,7 @@ class Symbol(MSONable):
                 these symbols.
             constraint (str): constraint associated with the symbol, must
                 be a string expression (e. g. inequality) using the symbol
-                name, e. g. bulk_modulus > 0.
+                name, e. g. ``bulk_modulus > 0``.
             default_value (any): default value for the symbol, e. g. 300 for
                 temperature or 1 for magnetic permeability
             is_builtin (bool): True if the model is included with propnet
@@ -180,9 +179,9 @@ class Symbol(MSONable):
 
         Args:
             overwrite_registry (bool): If a symbol with the same name
-                as the current is already registered, True will overwrite
-                the old symbol with the current. False will raise a
-                KeyError if the name is present in the registry.
+                as the current is already registered, `True` will overwrite
+                the old symbol with the current and `False` will raise a
+                KeyError.
 
         Raises:
             KeyError: if `overwrite_registry=False` and a symbol with the same
@@ -220,6 +219,12 @@ class Symbol(MSONable):
 
     @property
     def constraint(self):
+        """
+        Gets callable constraint function for this symbol.
+
+        Returns:
+            callable: sympy lambda function representing the symbol constraint
+        """
         if self._constraint:
             if self._constraint_func is None:
                 self._constraint_func = sp.lambdify(self.name, parse_expr(self._constraint))
@@ -233,6 +238,13 @@ class Symbol(MSONable):
 
     @property
     def is_builtin(self):
+        """
+        Indicates whether the symbol is a propnet built-in.
+
+        Returns:
+            bool: ``True`` if the symbol is a built-in, ``False``
+                if it is a custom-created symbol
+        """
         return self._is_builtin
 
     @property
@@ -250,8 +262,10 @@ class Symbol(MSONable):
     @property
     def dimension_as_string(self):
         """
+        Produces the shape including form factor (scalar, vector, matrix, tensor)
+
         Returns:
-            (str): shape of property (np.shape) as a human-readable string
+            str: shape of property (np.shape) as a human-readable string
         """
 
         if isinstance(self.shape, int):
@@ -267,7 +281,10 @@ class Symbol(MSONable):
     @property
     def unit_as_string(self):
         """
-        Returns: unit of property as human-readable string
+        Produces units of the symbol as a human-readable string
+
+        Returns:
+            str: units
         """
 
         if self.units.dimensionless:
@@ -281,7 +298,10 @@ class Symbol(MSONable):
     @property
     def compatible_units(self):
         """
-        Returns: list of compatible units as strings
+        Gets a list of units with compatible dimensionality to the symbol's unit
+
+        Returns:
+            `list` of `str`: compatible units
         """
         try:
             compatible_units = [str(u) for u in self.units.compatible_units()]
