@@ -25,12 +25,20 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class QuantityTest(unittest.TestCase):
-    def setUp(self):
-        self.custom_symbol = Symbol("A", units='dimensionless')
-        self.constraint_symbol = Symbol("A", constraint="A > 0",
+    @classmethod
+    def setUpClass(cls):
+        cls.custom_symbol = Symbol("A", units='dimensionless')
+        cls.constraint_symbol = Symbol("A", constraint="A > 0",
                                         units='dimensionless')
-        self.custom_object_symbol = Symbol("B", category='object')
-        self.maxDiff = None
+        cls.custom_object_symbol = Symbol("B", category='object')
+        cls.maxDiff = None
+
+    @classmethod
+    def tearDownClass(cls):
+        non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
+        for sym in non_builtin_syms:
+            Registry("symbols").pop(sym)
+            Registry("units").pop(sym)
 
     def test_quantity_construction(self):
         # From custom numerical symbol
@@ -959,6 +967,7 @@ class QuantityTest(unittest.TestCase):
         q = QuantityFactory.create_quantity(self.custom_symbol, 1, 'dimensionless', tags='custom')
         self.assertEqual(str(q), "<A, 1 dimensionless, ['custom']>")
         self.assertEqual(repr(q), "<A, 1 dimensionless, ['custom']>")
+
 
 if __name__ == "__main__":
     unittest.main()

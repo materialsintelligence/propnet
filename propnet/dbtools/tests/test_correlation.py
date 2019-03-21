@@ -9,35 +9,36 @@ from maggma.runner import Runner
 
 from itertools import product
 
+from propnet.models import add_builtin_models_to_registry
 from propnet.dbtools.correlation import CorrelationBuilder
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class CorrelationTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        add_builtin_models_to_registry()
+        cls.propnet_props = ["band_gap_pbe", "bulk_modulus", "vickers_hardness"]
+        cls.mp_query_props = ["magnetism.total_magnetization_normalized_vol"]
+        cls.mp_props = ["total_magnetization_normalized_vol"]
 
-    def setUp(self):
-        self.propnet_props = ["band_gap_pbe", "bulk_modulus", "vickers_hardness"]
-        self.mp_query_props = ["magnetism.total_magnetization_normalized_vol"]
-        self.mp_props = ["total_magnetization_normalized_vol"]
-
-        self.propstore = MemoryStore()
-        self.propstore.connect()
+        cls.propstore = MemoryStore()
+        cls.propstore.connect()
         with open(os.path.join(TEST_DIR, "correlation_propnet_data.json"), 'r') as f:
             materials = json.load(f)
         materials = jsanitize(materials, strict=True, allow_bson=True)
-        self.propstore.update(materials)
-        self.materials = MemoryStore()
-        self.materials.connect()
+        cls.propstore.update(materials)
+        cls.materials = MemoryStore()
+        cls.materials.connect()
         with open(os.path.join(TEST_DIR, "correlation_mp_data.json"), 'r') as f:
             materials = json.load(f)
         materials = jsanitize(materials, strict=True, allow_bson=True)
-        self.materials.update(materials)
-        self.correlation = MemoryStore()
-        self.correlation.connect()
+        cls.materials.update(materials)
+        cls.correlation = None
 
         # vickers hardness (x-axis) vs. bulk modulus (y-axis)
-        self.correlation_values_vickers_bulk = {
+        cls.correlation_values_vickers_bulk = {
             'linlsq': 0.07030669243379202,
             'pearson': 0.2651540918669593,
             'spearman': 0.6759408985224631,
@@ -45,7 +46,7 @@ class CorrelationTest(unittest.TestCase):
             'theilsen': -3.9351770244782456,
             'ransac': -4.528702228127463}
 
-        self.correlation_values_bulk_vickers = {
+        cls.correlation_values_bulk_vickers = {
             'linlsq': 0.07030669243379202,
             'pearson': 0.2651540918669593,
             'spearman': 0.6759408985224631,
@@ -53,9 +54,14 @@ class CorrelationTest(unittest.TestCase):
             'theilsen': 0.040612225849504746,
             'ransac': 0.04576997520687298}
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         if os.path.exists(os.path.join(TEST_DIR, "test_output.json")):
             os.remove(os.path.join(TEST_DIR, "test_output.json"))
+
+    def setUp(self):
+        self.correlation = MemoryStore()
+        self.correlation.connect()
 
     def test_serial_runner(self):
         builder = CorrelationBuilder(self.propstore, self.materials, self.correlation)

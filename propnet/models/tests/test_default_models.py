@@ -1,11 +1,91 @@
 import unittest
 
 # noinspection PyUnresolvedReferences
-import propnet.models
+from propnet.models import add_builtin_models_to_registry
 from propnet.core.registry import Registry
+from collections import defaultdict
 
 
 class DefaultModelsTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        Registry.clear_all_registries()
+        add_builtin_models_to_registry()
+
+    def test_models_have_unique_names(self):
+        add_builtin_models_to_registry()
+        from propnet.models.serialized import _EQUATION_MODEL_NAMES_LIST
+        serialized_model_names_set = set(_EQUATION_MODEL_NAMES_LIST)
+        serialized_model_names_list = _EQUATION_MODEL_NAMES_LIST.copy()
+        for name in serialized_model_names_set:
+            serialized_model_names_list.remove(name)
+        self.assertTrue(len(serialized_model_names_list) == 0,
+                        msg="Two or more equation models have the "
+                            "same name(s): {}".format(serialized_model_names_list))
+
+        from propnet.models.python import _PYTHON_MODEL_NAMES_LIST
+        python_model_names_set = set(_PYTHON_MODEL_NAMES_LIST)
+        python_model_names_list = _PYTHON_MODEL_NAMES_LIST.copy()
+        for name in python_model_names_set:
+            python_model_names_list.remove(name)
+        self.assertTrue(len(python_model_names_list) == 0,
+                        msg="Two or more python models have the "
+                            "same name(s): {}".format(python_model_names_list))
+
+        from propnet.models.composite import _COMPOSITE_MODEL_NAMES_LIST
+        composite_model_names_set = set(_COMPOSITE_MODEL_NAMES_LIST)
+        composite_model_names_list = _COMPOSITE_MODEL_NAMES_LIST.copy()
+        for name in composite_model_names_set:
+            composite_model_names_list.remove(name)
+        self.assertTrue(len(composite_model_names_list) == 0,
+                        msg="Two or more composite models have the "
+                            "same name(s): {}".format(composite_model_names_list))
+
+        all_models_set = set.union(serialized_model_names_set,
+                                   python_model_names_set,
+                                   composite_model_names_set)
+        all_models_list = \
+            _EQUATION_MODEL_NAMES_LIST + \
+            _PYTHON_MODEL_NAMES_LIST + \
+            _COMPOSITE_MODEL_NAMES_LIST
+        for name in all_models_set:
+            all_models_list.remove(name)
+
+        sources = defaultdict(list)
+        for name in all_models_list:
+            for model_type, name_list in zip(('serialized', 'python', 'composite'),
+                                             (_EQUATION_MODEL_NAMES_LIST,
+                                              _PYTHON_MODEL_NAMES_LIST,
+                                              _COMPOSITE_MODEL_NAMES_LIST)):
+                if name in name_list:
+                    sources[name].append(model_type)
+        self.assertTrue(len(all_models_list) == 0,
+                        msg="Two or more models of different types"
+                            " have the same name {{name: [model types]}}:\n{}".format(dict(sources)))
+
+    def test_reimport_models(self):
+        Registry("models").pop('debye_temperature')
+        Registry("models").pop('is_metallic')
+        Registry("composite_models").pop('pilling_bedworth_ratio')
+        self.assertNotIn("debye_temperature", Registry("models"))
+        self.assertNotIn("is_metallic", Registry("models"))
+        self.assertNotIn("pilling_bedworth_ratio", Registry("composite_models"))
+        from propnet.models.serialized import add_builtin_models_to_registry as serialized_add
+        serialized_add()
+        self.assertIn("debye_temperature", Registry("models"))
+        self.assertNotIn("is_metallic", Registry("models"))
+        self.assertNotIn("pilling_bedworth_ratio", Registry("composite_models"))
+        from propnet.models.python import add_builtin_models_to_registry as python_add
+        python_add()
+        self.assertIn("debye_temperature", Registry("models"))
+        self.assertIn("is_metallic", Registry("models"))
+        self.assertNotIn("pilling_bedworth_ratio", Registry("composite_models"))
+        from propnet.models.composite import add_builtin_models_to_registry as composite_add
+        composite_add()
+        self.assertIn("debye_temperature", Registry("models"))
+        self.assertIn("is_metallic", Registry("models"))
+        self.assertIn("pilling_bedworth_ratio", Registry("composite_models"))
+
     def test_instantiate_all_models(self):
         models_to_test = []
         for model_name in Registry("models").keys():

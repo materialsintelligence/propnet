@@ -23,10 +23,6 @@ from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.symbols import Symbol
 from propnet.core.utils import Timeout
 
-# noinspection PyUnresolvedReferences
-import propnet.models
-# noinspection PyUnresolvedReferences
-import propnet.symbols
 from propnet.core.registry import Registry
 
 from typing import Set, Dict, Union

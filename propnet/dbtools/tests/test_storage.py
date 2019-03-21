@@ -14,14 +14,16 @@ import copy
 from itertools import chain
 
 # noinspection PyUnresolvedReferences
-import propnet.models
+from propnet.models import add_builtin_models_to_registry
 from propnet.core.registry import Registry
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class StorageTest(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        add_builtin_models_to_registry()
         # Inspiration was taken from the GraphTest class
         # I tried to construct the dictionaries for comparison
         # without writing out every one explicitly by reusing
@@ -31,7 +33,7 @@ class StorageTest(unittest.TestCase):
         # still need to replace some fields dynamically.
         symbols = StorageTest.generate_symbols()
 
-        self.custom_syms_as_dicts = {
+        cls.custom_syms_as_dicts = {
             k: {'@module': 'propnet.core.symbols',
                 '@class': 'Symbol',
                 'name': k,
@@ -46,15 +48,15 @@ class StorageTest(unittest.TestCase):
                 'default_value': None,
                 'is_builtin': False} for k in ['A', 'B', 'C']
         }
-        self.custom_syms_as_dicts['C'].update(
+        cls.custom_syms_as_dicts['C'].update(
             {"units": None,
              "shape": None,
              "object_type": "str",
              "category": "object"})
 
-        self.custom_symbols_json = copy.deepcopy(self.custom_syms_as_dicts)
+        cls.custom_symbols_json = copy.deepcopy(cls.custom_syms_as_dicts)
         for k in ['A', 'B']:
-            self.custom_symbols_json[k]['units'] = [1, []]
+            cls.custom_symbols_json[k]['units'] = [1, []]
 
         a = [QuantityFactory.create_quantity(symbols['A'], 19),
              QuantityFactory.create_quantity(symbols['A'], 23)]
@@ -64,10 +66,10 @@ class StorageTest(unittest.TestCase):
              QuantityFactory.create_quantity(symbols['B'], 46,
                                              provenance=ProvenanceElement(model='model1',
                                                                           inputs=[a[1]]))]
-        self.quantities_custom_symbol = {"A": a,
+        cls.quantities_custom_symbol = {"A": a,
                                          "B": b}
 
-        self.sq_custom_sym_as_dicts = {
+        cls.sq_custom_sym_as_dicts = {
             k: [{'@module': 'propnet.dbtools.storage',
                  '@class': 'StorageQuantity',
                  'internal_id': vv._internal_id,
@@ -77,7 +79,7 @@ class StorageTest(unittest.TestCase):
                  'units': 'dimensionless',
                  'provenance': ProvenanceStore.from_provenance_element(vv.provenance),
                  'tags': [],
-                 'uncertainty': None} for vv in v] for k, v in self.quantities_custom_symbol.items()
+                 'uncertainty': None} for vv in v] for k, v in cls.quantities_custom_symbol.items()
         }
 
         provenances_json = {
@@ -93,16 +95,16 @@ class StorageTest(unittest.TestCase):
              'inputs': [{'@module': 'propnet.dbtools.storage',
                          '@class': 'ProvenanceStoreQuantity',
                          'data_type': 'NumQuantity',
-                         'symbol_type': self.custom_symbols_json['A'],
+                         'symbol_type': cls.custom_symbols_json['A'],
                          'internal_id': q.provenance.inputs[0]._internal_id,
                          'tags': [],
                          'provenance': p}],
              'source': q.provenance.source} for q, p in zip(b, provenances_json['A'])]
 
-        self.sq_custom_sym_json = copy.deepcopy(self.sq_custom_sym_as_dicts)
+        cls.sq_custom_sym_json = copy.deepcopy(cls.sq_custom_sym_as_dicts)
         for sym in ['A', 'B']:
-            for q, p in zip(self.sq_custom_sym_json[sym], provenances_json[sym]):
-                q['symbol_type'] = self.custom_symbols_json[sym]
+            for q, p in zip(cls.sq_custom_sym_json[sym], provenances_json[sym]):
+                q['symbol_type'] = cls.custom_symbols_json[sym]
                 q['provenance'] = p
 
         band_gaps = [QuantityFactory.create_quantity('band_gap', 3.3, 'eV'),
@@ -111,14 +113,14 @@ class StorageTest(unittest.TestCase):
         bg_ri_model = Registry("models")['band_gap_refractive_index_moss']
         refractive_indices = [bg_ri_model.evaluate({"Eg": bg}).pop('refractive_index') for bg in band_gaps]
 
-        self.quantities_canonical_symbol = {"band_gaps": band_gaps,
+        cls.quantities_canonical_symbol = {"band_gaps": band_gaps,
                                             "refractive_indices": refractive_indices}
 
-        self.sq_canonical_sym_as_dicts_no_value = copy.deepcopy(self.sq_custom_sym_as_dicts)
-        self.sq_canonical_sym_as_dicts_no_value['band_gaps'] = self.sq_canonical_sym_as_dicts_no_value.pop('A')
-        self.sq_canonical_sym_as_dicts_no_value['refractive_indices'] = self.sq_canonical_sym_as_dicts_no_value.pop('B')
+        cls.sq_canonical_sym_as_dicts_no_value = copy.deepcopy(cls.sq_custom_sym_as_dicts)
+        cls.sq_canonical_sym_as_dicts_no_value['band_gaps'] = cls.sq_canonical_sym_as_dicts_no_value.pop('A')
+        cls.sq_canonical_sym_as_dicts_no_value['refractive_indices'] = cls.sq_canonical_sym_as_dicts_no_value.pop('B')
 
-        for d, sq in zip(self.sq_canonical_sym_as_dicts_no_value['band_gaps'], band_gaps):
+        for d, sq in zip(cls.sq_canonical_sym_as_dicts_no_value['band_gaps'], band_gaps):
             d.update({
                 "internal_id": sq._internal_id,
                 "symbol_type": "band_gap",
@@ -127,7 +129,7 @@ class StorageTest(unittest.TestCase):
             })
             d.pop('value')
 
-        for d, sq in zip(self.sq_canonical_sym_as_dicts_no_value['refractive_indices'], refractive_indices):
+        for d, sq in zip(cls.sq_canonical_sym_as_dicts_no_value['refractive_indices'], refractive_indices):
             d.update({
                 "internal_id": sq._internal_id,
                 "symbol_type": "refractive_index",
@@ -136,7 +138,7 @@ class StorageTest(unittest.TestCase):
             })
             d.pop('value')
 
-        self.sq_canonical_sym_values = {"band_gaps": [3.3, 2.1],
+        cls.sq_canonical_sym_values = {"band_gaps": [3.3, 2.1],
                                         "refractive_indices": [2.316340583741216, 2.593439239956374]}
 
         provenances_json['band_gaps'] = [
@@ -165,22 +167,22 @@ class StorageTest(unittest.TestCase):
                                   refractive_indices)
         ]
 
-        self.sq_canonical_sym_json_no_value = copy.deepcopy(self.sq_canonical_sym_as_dicts_no_value)
+        cls.sq_canonical_sym_json_no_value = copy.deepcopy(cls.sq_canonical_sym_as_dicts_no_value)
 
         for sym in ["band_gaps", "refractive_indices"]:
-            for q, p in zip(self.sq_canonical_sym_json_no_value[sym], provenances_json[sym]):
+            for q, p in zip(cls.sq_canonical_sym_json_no_value[sym], provenances_json[sym]):
                 q['provenance'] = p
 
-        self.quantity_with_uncertainty = NumQuantity.from_weighted_mean(b)
-        self.sq_with_uncertainty_as_dict_no_numbers = {
+        cls.quantity_with_uncertainty = NumQuantity.from_weighted_mean(b)
+        cls.sq_with_uncertainty_as_dict_no_numbers = {
             '@module': 'propnet.dbtools.storage',
             '@class': 'StorageQuantity',
-            'internal_id': self.quantity_with_uncertainty._internal_id,
+            'internal_id': cls.quantity_with_uncertainty._internal_id,
             'data_type': 'NumQuantity',
             'symbol_type': symbols['B'],
             'units': 'dimensionless',
             'provenance': ProvenanceStore.from_provenance_element(
-                self.quantity_with_uncertainty.provenance),
+                cls.quantity_with_uncertainty.provenance),
             'tags': []}
 
         provenances_json = {
@@ -191,45 +193,46 @@ class StorageTest(unittest.TestCase):
                 {'@module': 'propnet.dbtools.storage',
                  '@class': 'ProvenanceStoreQuantity',
                  'data_type': 'NumQuantity',
-                 'symbol_type': self.custom_symbols_json['B'],
+                 'symbol_type': cls.custom_symbols_json['B'],
                  'internal_id': b['internal_id'],
                  'tags': [],
                  'provenance': b['provenance']}
-                for b in self.sq_custom_sym_json['B']],
-            'source': self.quantity_with_uncertainty.provenance.source
+                for b in cls.sq_custom_sym_json['B']],
+            'source': cls.quantity_with_uncertainty.provenance.source
         }
 
-        self.sq_with_uncertainty_json_no_numbers = copy.deepcopy(self.sq_with_uncertainty_as_dict_no_numbers)
-        self.sq_with_uncertainty_json_no_numbers.update({"symbol_type": self.custom_symbols_json['B'],
+        cls.sq_with_uncertainty_json_no_numbers = copy.deepcopy(cls.sq_with_uncertainty_as_dict_no_numbers)
+        cls.sq_with_uncertainty_json_no_numbers.update({"symbol_type": cls.custom_symbols_json['B'],
                                                          "provenance": provenances_json})
-        self.sq_with_uncertainty_numbers = {"value": 42.0,
+        cls.sq_with_uncertainty_numbers = {"value": 42.0,
                                             "uncertainty": 4.0}
 
         obj_symbol = symbols['C']
-        self.object_quantity = QuantityFactory.create_quantity(obj_symbol, "Test string")
-        self.sq_object_as_dict = copy.deepcopy(self.sq_custom_sym_as_dicts['A'][0])
-        self.sq_object_as_dict.update({
+        cls.object_quantity = QuantityFactory.create_quantity(obj_symbol, "Test string")
+        cls.sq_object_as_dict = copy.deepcopy(cls.sq_custom_sym_as_dicts['A'][0])
+        cls.sq_object_as_dict.update({
             "data_type": "ObjQuantity",
             "symbol_type": symbols['C'],
-            "internal_id": self.object_quantity._internal_id,
+            "internal_id": cls.object_quantity._internal_id,
             "value": "Test string",
             "units": None,
-            "provenance": ProvenanceStore.from_provenance_element(self.object_quantity.provenance)
+            "provenance": ProvenanceStore.from_provenance_element(cls.object_quantity.provenance)
         })
-        self.sq_object_json = copy.deepcopy(self.sq_object_as_dict)
-        self.sq_object_json.update(
-            {"symbol_type": self.custom_syms_as_dicts['C'],
+        cls.sq_object_json = copy.deepcopy(cls.sq_object_as_dict)
+        cls.sq_object_json.update(
+            {"symbol_type": cls.custom_syms_as_dicts['C'],
              "provenance": {'@module': 'propnet.dbtools.storage',
                             '@class': 'ProvenanceStore',
                             'model': None,
                             'inputs': None,
-                            'source': self.object_quantity.provenance.source}}
+                            'source': cls.object_quantity.provenance.source}}
         )
 
         # This setting allows dict differences to be shown in full
-        self.maxDiff = None
+        cls.maxDiff = None
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
         for sym in non_builtin_syms:
             Registry("symbols").pop(sym)

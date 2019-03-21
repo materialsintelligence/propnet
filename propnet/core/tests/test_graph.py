@@ -14,8 +14,7 @@ import os
 import json
 from monty.json import MontyDecoder, jsanitize
 
-# noinspection PyUnresolvedReferences
-import propnet.symbols
+from propnet.models import add_builtin_models_to_registry
 from propnet.core.registry import Registry
 
 # TODO: I think the expansion/tree traversal methods are very cool
@@ -31,7 +30,9 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class GraphTest(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        add_builtin_models_to_registry()
         symbols = GraphTest.generate_canonical_symbols()
         _ = GraphTest.generate_canonical_models()
 
@@ -61,35 +62,38 @@ class GraphTest(unittest.TestCase):
              QuantityFactory.create_quantity(symbols['F'], 322,
                                              provenance=ProvenanceElement(model='model3',
                                                                           inputs=[b[1]]))]
-        d_model4 = [QuantityFactory.create_quantity(symbols['D'], 23826,
-                                             provenance=ProvenanceElement(model='model4',
-                                                                          inputs=[b[0], c[0]])),
-             QuantityFactory.create_quantity(symbols['D'], 28842,
-                                             provenance=ProvenanceElement(model='model4',
-                                                                          inputs=[b[0], c[1]])),
-             QuantityFactory.create_quantity(symbols['D'], 28842,
-                                             provenance=ProvenanceElement(model='model4',
-                                                                          inputs=[b[1], c[0]])),
-             QuantityFactory.create_quantity(symbols['D'], 34914,
-                                             provenance=ProvenanceElement(model='model4',
-                                                                          inputs=[b[1], c[1]]))]
+        d_model4 = [
+            QuantityFactory.create_quantity(symbols['D'], 23826,
+                                            provenance=ProvenanceElement(model='model4',
+                                                                         inputs=[b[0], c[0]])),
+            QuantityFactory.create_quantity(symbols['D'], 28842,
+                                            provenance=ProvenanceElement(model='model4',
+                                                                         inputs=[b[0], c[1]])),
+            QuantityFactory.create_quantity(symbols['D'], 28842,
+                                            provenance=ProvenanceElement(model='model4',
+                                                                         inputs=[b[1], c[0]])),
+            QuantityFactory.create_quantity(symbols['D'], 34914,
+                                            provenance=ProvenanceElement(model='model4',
+                                                                         inputs=[b[1], c[1]]))]
 
-        d_model5 = [QuantityFactory.create_quantity(symbols['D'], 70395,
-                                             provenance=ProvenanceElement(model='model5',
-                                                                          inputs=[c[0], g[0]])),
-             QuantityFactory.create_quantity(symbols['D'], 85215,
-                                             provenance=ProvenanceElement(model='model5',
-                                                                          inputs=[c[0], g[1]])),
-             QuantityFactory.create_quantity(symbols['D'], 85215,
-                                             provenance=ProvenanceElement(model='model5',
-                                                                          inputs=[c[1], g[0]])),
-             QuantityFactory.create_quantity(symbols['D'], 103155,
-                                             provenance=ProvenanceElement(model='model5',
-                                                                          inputs=[c[1], g[1]]))]
-        self.expected_quantities = a + b + c + d_model4 + d_model5 + f + g
-        self.expected_constrained_quantities = a + b + c + d_model5 + f + g
+        d_model5 = [
+            QuantityFactory.create_quantity(symbols['D'], 70395,
+                                            provenance=ProvenanceElement(model='model5',
+                                                                         inputs=[c[0], g[0]])),
+            QuantityFactory.create_quantity(symbols['D'], 85215,
+                                            provenance=ProvenanceElement(model='model5',
+                                                                         inputs=[c[0], g[1]])),
+            QuantityFactory.create_quantity(symbols['D'], 85215,
+                                            provenance=ProvenanceElement(model='model5',
+                                                                         inputs=[c[1], g[0]])),
+            QuantityFactory.create_quantity(symbols['D'], 103155,
+                                            provenance=ProvenanceElement(model='model5',
+                                                                         inputs=[c[1], g[1]]))]
+        cls.expected_quantities = a + b + c + d_model4 + d_model5 + f + g
+        cls.expected_constrained_quantities = a + b + c + d_model5 + f + g
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
         for sym in non_builtin_syms:
             Registry("symbols").pop(sym)
@@ -119,10 +123,6 @@ class GraphTest(unittest.TestCase):
             'G': G,
             'F': F
         }
-
-        for sym in syms.values():
-            Registry("symbols")[sym] = sym
-            Registry("units")[sym] = sym.units
 
         return syms
 
@@ -155,7 +155,6 @@ class GraphTest(unittest.TestCase):
 
         models = [model1, model2, model3, model4, model5, model6]
         models_dict = {x.name: x for x in models}
-        Registry("models").update(models_dict)
 
         return models_dict
 
@@ -213,7 +212,6 @@ class GraphTest(unittest.TestCase):
     @unittest.skipIf(os.name != 'posix', "Skipping because timeout not implemented on non-Unix systems")
     def test_model_timeout(self):
         sleepy_model = PyModuleModel('propnet.core.tests.sleepy_model')
-        Registry("models")[sleepy_model.name] = sleepy_model
         g = Graph(models={sleepy_model.name: sleepy_model})
         q = QuantityFactory.create_quantity("A", 5, 'dimensionless')
         with Timer('model_timeout'):

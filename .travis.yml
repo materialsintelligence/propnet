@@ -23,6 +23,6 @@ install:
   - pip install coverage
   - pip install python-coveralls
 script:
-  - nosetests --with-coverage --cover-package=propnet
+  - nosetests ./ docs/ --with-coverage --cover-package=propnet
 after_success:
   - coveralls

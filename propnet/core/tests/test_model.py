@@ -3,11 +3,6 @@ import unittest
 import math
 import numpy as np
 
-# noinspection PyUnresolvedReferences
-import propnet.models
-# noinspection PyUnresolvedReferences
-import propnet.symbols
-
 from propnet.core.models import EquationModel
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import QuantityFactory
@@ -19,8 +14,8 @@ from propnet.core.registry import Registry
 
 
 class ModelTest(unittest.TestCase):
-
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
         for sym in non_builtin_syms:
             Registry("symbols").pop(sym)
@@ -45,7 +40,7 @@ class ModelTest(unittest.TestCase):
         A = Symbol('a', ['A'], ['A'], units=[1.0, [['centimeter', 2.0]]], shape=[1])
 
         for sym in (L, A):
-            Registry("symbol")[sym] = sym
+            Registry("symbols")[sym] = sym
             Registry("units")[sym] = sym.units
 
         get_area_config = {
@@ -69,7 +64,7 @@ class ModelTest(unittest.TestCase):
         A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
         for sym in (B, A):
-            Registry("symbol")[sym] = sym
+            Registry("symbols")[sym] = sym
             Registry("units")[sym] = sym.units
         get_config = {
             'name': 'equality',
@@ -91,7 +86,7 @@ class ModelTest(unittest.TestCase):
         A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
         for sym in (B, A):
-            Registry("symbol")[sym] = sym
+            Registry("symbols")[sym] = sym
             Registry("units")[sym] = sym.units
         get_config = {
             'name': 'add_complex_value',
@@ -110,6 +105,41 @@ class ModelTest(unittest.TestCase):
                              allow_failure=True)
         self.assertTrue(out['successful'])
         self.assertTrue(np.isclose(out['a'].magnitude, 6j))
+
+    def test_model_register_unregister(self):
+        A = Symbol('a', ['A'], ['A'], units='dimensionless', shape=1)
+        B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
+        C = Symbol('c', ['C'], ['C'], units='dimensionless', shape=1)
+        D = Symbol('d', ['D'], ['D'], units='dimensionless', shape=1)
+        m = EquationModel('equation_model_to_remove', ['a = b * 3'], symbol_property_map={'a': A, 'b': B})
+        self.assertIn(m.name, Registry("models"))
+        self.assertTrue(m.registered)
+        m.unregister()
+        self.assertNotIn(m.name, Registry("models"))
+        self.assertFalse(m.registered)
+        m.register()
+        self.assertTrue(m.registered)
+        with self.assertRaises(KeyError):
+            m.register(overwrite_registry=False)
+
+        m.unregister()
+        m = EquationModel('equation_model_to_remove', ['a = b * 3'], symbol_property_map={'a': A, 'b': B},
+                          register=False)
+        self.assertNotIn(m.name, Registry("models"))
+        self.assertFalse(m.registered)
+
+        m.register()
+        with self.assertRaises(KeyError):
+            _ = EquationModel('equation_model_to_remove', ['a = b * 3'],
+                              symbol_property_map={'a': A, 'b': B},
+                              register=True, overwrite_registry=False)
+
+        m_replacement = EquationModel('equation_model_to_remove', ['c = d * 3'],
+                                      symbol_property_map={'c': C, 'd': D})
+
+        m_registered = Registry("models")['equation_model_to_remove']
+        self.assertIs(m_registered, m_replacement)
+        self.assertIsNot(m_registered, m)
 
 
 if __name__ == "__main__":

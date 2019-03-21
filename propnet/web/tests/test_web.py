@@ -2,6 +2,7 @@ import unittest
 import json
 
 from propnet.core.graph import Graph
+from propnet.models import add_builtin_models_to_registry
 import os
 
 no_store_file = os.environ.get('PROPNET_STORE_FILE') is None
@@ -20,6 +21,10 @@ class WebTest(unittest.TestCase):
     """
     Base class for dash unittests
     """
+    @classmethod
+    def setUpClass(cls):
+        add_builtin_models_to_registry()
+
     def setUp(self):
         self.app = app
         self.client = self.app.server.test_client()
