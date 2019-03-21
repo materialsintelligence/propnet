@@ -8,7 +8,11 @@ from propnet import print_logger, print_stream
 
 _REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__),
                                      '../data/reference_cache.json')
-_REFERENCE_CACHE = loadfn(_REFERENCE_CACHE_PATH)
+
+if os.path.exists(_REFERENCE_CACHE_PATH):
+    _REFERENCE_CACHE = loadfn(_REFERENCE_CACHE_PATH)
+else:
+    _REFERENCE_CACHE = dict()
 
 logger = logging.getLogger(__name__)
 
