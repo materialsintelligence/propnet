@@ -17,7 +17,7 @@ implemented_by:
 references:
   - doi:10.1007/0-387-25100-6_2
   - doi:10.1002/adfm.201600718
-  - url:https://link.springer.com/article/10.1134/1.1666949
+  - doi:10.1134/1.1666949
 symbol_property_map:
     y: gruneisen_parameter
     n: nsites

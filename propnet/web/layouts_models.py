@@ -15,6 +15,10 @@ import propnet.symbols
 import propnet.models
 from propnet.core.registry import Registry
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 # layouts for model detail pages
 def model_layout(model_name):
@@ -65,8 +69,14 @@ def model_layout(model_name):
         layouts['Tags'] = tags
 
     if model.references:
-        references = html.Div([dcc.Markdown(references_to_markdown(ref))
-                               for ref in model.references])
+        markdown = []
+        for ref in model.references:
+            try:
+                markdown.append(references_to_markdown(ref))
+            except ValueError as ex:
+                logger.error("Error with reference:\n{}\nReference:\n{}".format(ex, ref))
+        references = html.Div([dcc.Markdown(ref)
+                               for ref in markdown])
 
         layouts['References'] = references
 

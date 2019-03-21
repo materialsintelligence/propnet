@@ -5,6 +5,7 @@ from io import StringIO
 
 from pybtex.database.input.bibtex import Parser
 from pybtex.plugin import find_plugin
+from pybtex.style.template import FieldIsMissing
 
 from propnet.core.symbols import Symbol
 from propnet.core.models import Model
@@ -151,9 +152,12 @@ def references_to_markdown(references):
     pybtex_md_backend = pybtex_md_backend()
 
     data = pybtex_parser.parse_stream(StringIO(references))
-    data_formatted = pybtex_style.format_entries(data.entries.itervalues())
+    data_formatted = pybtex_style.format_entries(data.entries.values())
     output = StringIO()
-    pybtex_md_backend.write_to_stream(data_formatted, output)
+    try:
+        pybtex_md_backend.write_to_stream(data_formatted, output)
+    except FieldIsMissing as ex:
+        raise ValueError("Reference is missing '{}' field".format(ex.field_name))
 
     # add blockquote style
     references_md = '> {}'.format(output.getvalue())
