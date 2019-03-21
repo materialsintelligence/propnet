@@ -12,7 +12,6 @@ from propnet.core.registry import Registry
 from sympy.parsing.sympy_parser import parse_expr
 import sympy as sp
 
-
 # TODO: This could be split into separate classes
 #       or a base class + subclasses for symbols with
 #       units vs those without
@@ -53,23 +52,28 @@ class Symbol(MSONable):
                 human-readable names for the property.
             display_symbols (:obj:`list` of :obj:`str`): list of strings giving possible
                 human-readable symbols for the property.
-            shape (id): list giving the order of the tensor as the length,
+            shape (int, list): list giving the order of the tensor as the length,
                 and number of dimensions as individual integers in the list.
             comment (str): any useful information on the property including
                 its definitions and possible citations.
             category (str): 'property', for property of a material,
                             'condition', for other variables,
                             'object', for a value that is a python object.
-            object_type (class): class representing the object stored in
+            object_type (type, str): class or name of a class representing the object stored in
                 these symbols.
             constraint (str): constraint associated with the symbol, must
                 be a string expression (e. g. inequality) using the symbol
                 name, e. g. bulk_modulus > 0.
-            default_value: default value for the symbol, e. g. 300 for
+            default_value (any): default value for the symbol, e. g. 300 for
                 temperature or 1 for magnetic permeability
             is_builtin (bool): True if the model is included with propnet
                 by default. Not intended to be set explicitly by users
-            register (bool): Test
+            register (bool): True if the model should be registered in the symbol registry
+                upon instantiation
+            overwrite_registry (bool): True if the value in the symbol registry should be
+                overwritten if it exists. False will raise a KeyError if a symbol with the
+                same name is already registered.
+
         """
 
         # TODO: not sure object should be distinguished
@@ -171,6 +175,20 @@ class Symbol(MSONable):
             self.register(overwrite_registry=overwrite_registry)
 
     def register(self, overwrite_registry=False):
+        """
+        Registers the symbol with the symbol registry.
+
+        Args:
+            overwrite_registry (bool): If a symbol with the same name
+                as the current is already registered, True will overwrite
+                the old symbol with the current. False will raise a
+                KeyError if the name is present in the registry.
+
+        Raises:
+            KeyError: if `overwrite_registry=False` and a symbol with the same
+                name is already registered, this error is raised.
+
+        """
         if not overwrite_registry and \
                 (self.name in Registry("symbols").keys() or self.name in Registry("units").keys()):
             raise KeyError("Symbol '{}' already exists in the symbol or unit registry".format(self.name))
@@ -181,12 +199,23 @@ class Symbol(MSONable):
             Registry("symbol_values")[self.name] = self.default_value
 
     def unregister(self):
+        """
+        Removes the symbol from all applicable registries.
+
+        """
         Registry("symbols").pop(self.name, None)
         Registry("units").pop(self.name, None)
         Registry("symbol_values").pop(self.name, None)
 
     @property
     def registered(self):
+        """
+        Indicates if a symbol is registered with the symbol registry.
+
+        Returns:
+            bool: True if the symbol is registered. False otherwise.
+
+        """
         return self.name in Registry("symbols").keys()
 
     @property
