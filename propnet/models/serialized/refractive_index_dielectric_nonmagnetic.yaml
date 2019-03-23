@@ -1,0 +1,25 @@
+categories:
+- optical
+description: 'Refractive index relationship with relative permittivity (dielectric constant) for non-magnetic materials.
+
+  '
+equations:
+- n = sqrt(Er)
+name: refractive_index_dielectric_nonmagnetic
+implemented_by:
+- clegaspi
+references:
+- url:https://www.doitpoms.ac.uk/tlplib/dielectrics/dielectric_refractive_index.php
+solve_for_all_symbols: true
+symbol_property_map:
+  Er: relative_permeability
+  n: refractive_index
+  mag_order: magnetic_order
+test_data:
+- inputs:
+    mag_order: NM
+    n: 13.00
+  outputs:
+    R: 3.605551275463989
+constraints:
+- mag_order = 'NM'
