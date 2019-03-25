@@ -71,7 +71,8 @@ def references_to_bib(refs, check_if_valid_citation=True):
             try:
                 _ = references_to_markdown(parsed_ref)
             except Exception as ex:
-                raise ValueError("Reference '{}' returned the following error:\n"
+                raise ValueError("Reference '{}' returned the following error.\n"
+                                 "You may need to manually generate a bibtex string:\n"
                                  "{}".format(ref, ex))
         if ref not in _REFERENCE_CACHE:
             _REFERENCE_CACHE[ref] = parsed_ref
