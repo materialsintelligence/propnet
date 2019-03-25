@@ -6,6 +6,14 @@ from monty.serialization import loadfn, dumpfn
 from habanero.cn import content_negotiation
 from propnet import print_logger, print_stream
 
+from isbnlib import meta
+from isbnlib.registry import bibformatters
+
+from pybtex.database.input.bibtex import Parser
+from pybtex.plugin import find_plugin
+from pybtex.style.template import FieldIsMissing
+
+
 _REFERENCE_CACHE_PATH = os.path.join(os.path.dirname(__file__),
                                      '../data/reference_cache.json')
 
@@ -17,7 +25,7 @@ else:
 logger = logging.getLogger(__name__)
 
 
-def references_to_bib(refs):
+def references_to_bib(refs, check_if_valid_citation=True):
     """
     Takes a list of reference strings and converts them to bibtex
     entries
@@ -26,6 +34,9 @@ def references_to_bib(refs):
         refs ([str]): list of string references, which can be
             bibtex entries, digital object identifiers ("doi:DOI_GOES_HERE")
             or urls ("url:URL_GOES_HERE")
+        check_if_valid_citation (bool): True checks to see if the
+            reference generates a valid markdown-style citation. Throws ValueError
+            if conversion is not successful.
 
     Returns:
         (list): list of bibtex formatted strings
@@ -46,17 +57,65 @@ def references_to_bib(refs):
         elif ref.startswith('doi:'):
             doi = ref.split('doi:')[1]
             parsed_ref = content_negotiation(doi, format='bibentry')
+        elif ref.startswith('isbn:'):
+            isbn = ref.split('isbn:')[1]
+            parsed_ref = bibformatters['bibtex'](meta(isbn))
         else:
             raise ValueError('Unknown reference style for '
                              'reference: {} (please either '
                              'supply a BibTeX string, or a string '
                              'starting with url: followed by a URL or '
                              'starting with doi: followed by a DOI)'.format(ref))
+
+        if check_if_valid_citation:
+            try:
+                _ = references_to_markdown(parsed_ref)
+            except Exception as ex:
+                raise ValueError("Reference '{}' returned the following error.\n"
+                                 "You may need to manually generate a bibtex string:\n"
+                                 "{}".format(ref, ex))
         if ref not in _REFERENCE_CACHE:
             _REFERENCE_CACHE[ref] = parsed_ref
             dumpfn(_REFERENCE_CACHE, _REFERENCE_CACHE_PATH)
         parsed_refs.append(parsed_ref)
     return parsed_refs
+
+
+def references_to_markdown(references):
+    """Utility function to convert a BibTeX string containing
+    references into a Markdown string.
+
+    Args:
+      references: BibTeX string
+
+    Returns:
+      Markdown string
+
+    """
+
+    pybtex_style = find_plugin('pybtex.style.formatting', 'plain')()
+    pybtex_md_backend = find_plugin('pybtex.backends', 'markdown')
+    pybtex_parser = Parser()
+
+    # hack to not print labels (may remove this later)
+    def write_entry(self, key, label, text):
+        self.output(u'%s  \n' % text)
+    pybtex_md_backend.write_entry = write_entry
+    pybtex_md_backend = pybtex_md_backend()
+
+    data = pybtex_parser.parse_stream(StringIO(references))
+    data_formatted = pybtex_style.format_entries(data.entries.values())
+    output = StringIO()
+    try:
+        pybtex_md_backend.write_to_stream(data_formatted, output)
+    except FieldIsMissing as ex:
+        raise ValueError("Reference is missing '{}' field".format(ex.field_name))
+
+    # add blockquote style
+    references_md = '> {}'.format(output.getvalue())
+    references_md.replace('\n', '\n> ')
+
+    return references_md
 
 
 class PrintToLogger:

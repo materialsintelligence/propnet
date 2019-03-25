@@ -15,7 +15,15 @@ name: slack_equation
 implemented_by:
 - montoyjh
 references:
-  - doi:10.1007/0-387-25100-6_2
+  - "@incollection{Morelli,
+  doi = {10.1007/0-387-25100-6_2},
+  url = {https://doi.org/10.1007%2F0-387-25100-6_2},
+  publisher = {Springer-Verlag},
+  pages = {37--68},
+  year = {2006},
+  author = {Donald T. Morelli and Glen A. Slack},
+  title = {High Lattice Thermal Conductivity Solids},
+  booktitle = {High Thermal Conductivity Materials}}"
   - doi:10.1002/adfm.201600718
   - doi:10.1134/1.1666949
 symbol_property_map:

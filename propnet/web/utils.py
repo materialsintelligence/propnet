@@ -1,11 +1,6 @@
 import logging
 
 from os import path
-from io import StringIO
-
-from pybtex.database.input.bibtex import Parser
-from pybtex.plugin import find_plugin
-from pybtex.style.template import FieldIsMissing
 
 from propnet.core.symbols import Symbol
 from propnet.core.models import Model
@@ -14,8 +9,6 @@ from monty.serialization import loadfn
 
 # noinspection PyUnresolvedReferences
 import propnet.models
-# noinspection PyUnresolvedReferences
-import propnet.symbols
 from propnet.core.registry import Registry
 
 log = logging.getLogger(__name__)
@@ -127,43 +120,6 @@ def graph_conversion(graph,
     }
 
     return graph_data
-
-
-def references_to_markdown(references):
-    """Utility function to convert a BibTeX string containing
-    references into a Markdown string.
-
-    Args:
-      references: BibTeX string
-
-    Returns:
-      Markdown string
-
-    """
-
-    pybtex_style = find_plugin('pybtex.style.formatting', 'plain')()
-    pybtex_md_backend = find_plugin('pybtex.backends', 'markdown')
-    pybtex_parser = Parser()
-
-    # hack to not print labels (may remove this later)
-    def write_entry(self, key, label, text):
-        self.output(u'%s  \n' % text)
-    pybtex_md_backend.write_entry = write_entry
-    pybtex_md_backend = pybtex_md_backend()
-
-    data = pybtex_parser.parse_stream(StringIO(references))
-    data_formatted = pybtex_style.format_entries(data.entries.values())
-    output = StringIO()
-    try:
-        pybtex_md_backend.write_to_stream(data_formatted, output)
-    except FieldIsMissing as ex:
-        raise ValueError("Reference is missing '{}' field".format(ex.field_name))
-
-    # add blockquote style
-    references_md = '> {}'.format(output.getvalue())
-    references_md.replace('\n', '\n> ')
-
-    return references_md
 
 
 def parse_path(pathname):
