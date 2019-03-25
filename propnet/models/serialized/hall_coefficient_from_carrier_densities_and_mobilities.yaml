@@ -12,7 +12,7 @@ name: hall_coefficient_from_carrier_densities_and_mobilities
 implemented_by:
 - vtshitoyan
 references:
-- '@article{kasap2001hall,title={Hall effect in semiconductors},author={Kasap, Safa}}'
+  - isbn:0471847488
 solve_for_all_symbols: true
 units_for_evaluation:
   mu_e: m**2 / volt / second

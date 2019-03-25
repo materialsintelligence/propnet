@@ -7,7 +7,8 @@ from crystal_toolkit import GraphComponent
 import networkx as nx
 from propnet.core.graph import Graph
 
-from propnet.web.utils import references_to_markdown, graph_conversion, AESTHETICS
+from propnet.web.utils import graph_conversion, AESTHETICS
+from propnet.core.utils import references_to_markdown
 
 # noinspection PyUnresolvedReferences
 import propnet.symbols
