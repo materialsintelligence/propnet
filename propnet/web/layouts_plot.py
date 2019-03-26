@@ -19,9 +19,9 @@ from pymatgen.util.string import unicodeify
 import propnet.symbols
 from propnet.core.registry import Registry
 
-mpr = MPRester()
-
 from pymongo.errors import ServerSelectionTimeoutError
+
+mpr = MPRester()
 
 try:
     store = loadfn(environ["PROPNET_STORE_FILE"])
