@@ -13,14 +13,14 @@ implemented_by:
 - vtshitoyan
 references:
   - isbn:0471847488
-solve_for_all_symbols: true
+solve_for_all_variables: true
 units_for_evaluation:
   mu_e: m**2 / volt / second
   mu_h: m**2 / volt / second
   p: 1 / m**3
   n: 1 / m**3
   R_H: m**3 / C
-symbol_property_map:
+variable_symbol_map:
   mu_e: electron_mobility
   mu_h: hole_mobility
   p: hole_concentration

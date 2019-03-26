@@ -7,8 +7,8 @@ name: density_relations
 implemented_by:
 - dmrdjenovich
 references: []
-solve_for_all_symbols: true
-symbol_property_map:
+solve_for_all_variables: true
+variable_symbol_map:
   d_atomic: atomic_density
   d_mass: density
   atom_mass: mass_per_atom

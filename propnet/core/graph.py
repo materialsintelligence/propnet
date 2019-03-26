@@ -288,7 +288,7 @@ class Graph(object):
             added[model.name] = model
             for input_set in model.input_sets:
                 for input_ in input_set:
-                    input_ = CompositeModel.get_symbol(input_)
+                    input_ = CompositeModel.get_variable(input_)
                     if input_ not in self._symbol_types.keys():
                         raise KeyError("Attempted to add a model to the property "
                                        "network with an unrecognized Symbol. "
@@ -444,7 +444,7 @@ class Graph(object):
                     continue
                 # Check if model has all constraint Symbols provided.
                 has_inputs = True
-                for s in model.constraint_properties:
+                for s in model.constraint_symbols:
                     if s not in working:
                         has_inputs = False
                         break
@@ -542,7 +542,7 @@ class Graph(object):
                             break
                     if not can_continue:
                         continue
-                    input_set = input_set | model.constraint_properties
+                    input_set = input_set | model.constraint_symbols
                     new_types = (to_expand.inputs - output_set)
                     new_types.update(input_set)
                     new_types = {self._symbol_types[x] for x in new_types}
@@ -774,8 +774,8 @@ class Graph(object):
         input_symbols = set(v.symbol for v in inputs)
         outputs = set()
         for s in model.connections:
-            if set(model.map_symbols_to_properties(s['inputs'])) == input_symbols:
-                outputs = outputs.union(model.map_symbols_to_properties(s['outputs']))
+            if set(model.map_variables_to_symbols(s['inputs'])) == input_symbols:
+                outputs = outputs.union(model.map_variables_to_symbols(s['outputs']))
 
         model_in_all_trees = all(input_q.provenance.model_in_provenance_tree(model)
                                  for input_q in inputs)
@@ -1028,7 +1028,7 @@ class Graph(object):
                 for item in property_input_sets:
                     combined_list.append(item)
                     mat_list.append(CompositeModel.get_material(item))
-                    symbol_list.append(CompositeModel.get_symbol(item))
+                    symbol_list.append(CompositeModel.get_variable(item))
                 for i in range(0,len(mat_list)):
                     if mat_list[i] is None:     # Draw symbol from the CompositeMaterial
                         mat = to_return

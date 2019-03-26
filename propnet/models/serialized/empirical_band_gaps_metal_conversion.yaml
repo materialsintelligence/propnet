@@ -8,7 +8,7 @@ name: empirical_band_gaps_metal_conversion
 implemented_by:
 - montoyjh
 references: []
-symbol_property_map:
+variable_symbol_map:
   E_g_pbe: band_gap_pbe
   E_g: band_gap
 constraints: [E_g_pbe==0]

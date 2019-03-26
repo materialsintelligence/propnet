@@ -136,22 +136,22 @@ class GraphTest(unittest.TestCase):
         # TODO: Resolve the connections issue here
         model1 = EquationModel(name="model1", equations=['B=2*A', 'C=3*A'],
                                connections=[{"inputs": ["A"], "outputs": ['B', 'C']}],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
         model2 = EquationModel(name="model2", equations=['G=5*A'],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
         model3 = EquationModel(name="model3", equations=['F=7*B'],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
         model5 = EquationModel(name="model5", equations=['D=C*G*13'],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
         model6 = EquationModel(name="model6", equations=['A=F*D*17'],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
 
         if constrain_model_4:
             model4 = EquationModel(name="model4", equations=['D=B*C*11'],
-                                   constraints=["G==0"], symbol_property_map=sym_map)
+                                   constraints=["G==0"], variable_symbol_map=sym_map)
         else:
             model4 = EquationModel(name="model4", equations=['D=B*C*11'],
-                                   symbol_property_map=sym_map)
+                                   variable_symbol_map=sym_map)
 
         models = [model1, model2, model3, model4, model5, model6]
         models_dict = {x.name: x for x in models}

@@ -13,7 +13,7 @@ implemented_by:
 - montoyjh
 references:
 - url:https://link.springer.com/article/10.1134/1.1666949
-symbol_property_map:
+variable_symbol_map:
   gamma_d: gruneisen_parameter
   v_l: sound_velocity_longitudinal
   v_t: sound_velocity_transverse

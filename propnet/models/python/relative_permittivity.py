@@ -14,7 +14,7 @@ config = {
         "outputs": ["eps_r"]
     }],
     "categories": ["mechanical"],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "diel": "dielectric_tensor",
         "eps_r": "relative_permittivity"
     },

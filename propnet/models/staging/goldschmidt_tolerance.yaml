@@ -10,7 +10,7 @@ name: goldschmidt_tolerance
 implemented_by:
 - jpalakapilly
 references: []
-symbol_property_map:
+variable_symbol_map:
   r_anion: ionic_radius
   r_cation_A: ionic_radius
   r_cation_B: ionic_radius

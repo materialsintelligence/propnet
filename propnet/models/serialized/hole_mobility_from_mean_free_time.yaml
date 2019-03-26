@@ -8,12 +8,12 @@ implemented_by:
 - vtshitoyan
 references:
 - url:https://en.wikipedia.org/wiki/Drude_model
-solve_for_all_symbols: true
+solve_for_all_variables: true
 units_for_evaluation:
   mu_h: m**2 / volt / s
   m_h: dimensionless
   tau_h: s
-symbol_property_map:
+variable_symbol_map:
   mu_h: hole_mobility
   m_h: hole_effective_mass
   tau_h: hole_mean_free_time

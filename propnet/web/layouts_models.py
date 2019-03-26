@@ -101,7 +101,7 @@ def model_layout(model_name):
                     )
                 ]
             )
-            for symbol, prop_name in model.symbol_property_map.items()
+            for symbol, prop_name in model.variable_symbol_map.items()
         ]
     )
 
