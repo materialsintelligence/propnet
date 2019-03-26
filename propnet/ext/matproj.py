@@ -72,8 +72,8 @@ class MPRester(_MPRester):
         else:
             return None
 
-    def get_properties_for_mpids(self, mpids,
-                                 filter_null_properties=True,
+    def get_quantities_for_mpids(self, mpids,
+                                 filter_null_values=True,
                                  include_date_created=False):
         """
         Retrieve properties from the Materials Project
@@ -86,25 +86,25 @@ class MPRester(_MPRester):
             ([Dict]) a list of property dictionaries
 
         """
-        all_properties = list(self.mapping.keys())
+        all_symbols = list(self.mapping.keys())
         if include_date_created:
-            all_properties.append('created_at')
-        property_query = self.query(criteria={'material_id': {'$in': mpids}},
-                                    properties=all_properties)
+            all_symbols.append('created_at')
+        cursor = self.query(criteria={'material_id': {'$in': mpids}},
+                            properties=all_symbols)
 
-        q = {doc['material_id']: doc for doc in property_query}
+        q = {doc['material_id']: doc for doc in cursor}
 
         entry_query = self.get_entries({'material_id': {'$in': mpids}})
         computed_entries = {e.entry_id: e for e in entry_query}
 
         for mpid, doc in q.items():
             doc['computed_entry'] = computed_entries[mpid]
-            if filter_null_properties:
+            if filter_null_values:
                 q[mpid] = {k: v for k, v in doc.items() if v is not None}
 
         return list(q.values())
 
-    def get_properties_for_mpid(self, mpid, filter_null_properties=True):
+    def get_quantities_for_mpid(self, mpid, filter_null_values=True):
         """
         A version of get_properties_for_mpids for a single
         mpid.
@@ -116,13 +116,13 @@ class MPRester(_MPRester):
             (Dict) a dictionary of property values keyed by property names
 
         """
-        if len(self.get_properties_for_mpids([mpid])) > 0:
-            return self.get_properties_for_mpids(
-                [mpid], filter_null_properties=filter_null_properties)[0]
+        if len(self.get_quantities_for_mpids([mpid])) > 0:
+            return self.get_quantities_for_mpids(
+                [mpid], filter_null_values=filter_null_values)[0]
         else:
             return []
 
-    def get_materials_for_mpids(self, mpids, filter_null_properties=True):
+    def get_materials_for_mpids(self, mpids, filter_null_values=True):
         """
         Retrieve a list of Materials from the materials
         Project for a given list of Materials Project IDs.
@@ -134,32 +134,32 @@ class MPRester(_MPRester):
 
         """
 
-        materials_properties = self.get_properties_for_mpids(
-            mpids, filter_null_properties=filter_null_properties,
+        materials_quantities = self.get_quantities_for_mpids(
+            mpids, filter_null_values=filter_null_values,
             include_date_created=True)
         materials = []
 
-        for material_properties in materials_properties:
+        for material_quantities in materials_quantities:
             material = Material()
             try:
-                date_created = material_properties.pop('created_at')
+                date_created = material_quantities.pop('created_at')
             except KeyError:
                 date_created = None
-            for property_name, property_value in material_properties.items():
+            for symbol_name, value in material_quantities.items():
                 provenance = ProvenanceElement(
                     source={'source': 'Materials Project',
-                            'source_key': material_properties.get('material_id', None),
+                            'source_key': material_quantities.get('material_id', None),
                             'date_created': date_created})
                 quantity = QuantityFactory.create_quantity(
-                    self.mapping[property_name], property_value,
-                    units=Registry("units").get(self.mapping[property_name], None),
+                    self.mapping[symbol_name], value,
+                    units=Registry("units").get(self.mapping[symbol_name], None),
                     provenance=provenance)
                 material.add_quantity(quantity)
             materials.append(material)
 
         return materials
 
-    def get_material_for_mpid(self, mpid, filter_null_properties=True):
+    def get_material_for_mpid(self, mpid, filter_null_values=True):
         """
         A version of get_materials for a single mpid.
 
@@ -171,6 +171,6 @@ class MPRester(_MPRester):
         """
         if len(self.get_materials_for_mpids([mpid])) > 0:
             return self.get_materials_for_mpids(
-                [mpid], filter_null_properties=filter_null_properties)[0]
+                [mpid], filter_null_values=filter_null_values)[0]
         else:
             return None
