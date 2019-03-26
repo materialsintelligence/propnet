@@ -19,19 +19,19 @@ from pydash import get
 from pymatgen import MPRester
 from pymatgen.util.string import unicodeify
 
-mpr = MPRester()
-
 from pymongo.errors import ServerSelectionTimeoutError
 
-store = loadfn(
-    environ.get("PROPNET_CORRELATION_STORE_FILE", "propnet_correlation_store.json")
-)
+mpr = MPRester()
 
 try:
+    store = loadfn(
+        environ["PROPNET_CORRELATION_STORE_FILE"])
     store.connect()
-except ServerSelectionTimeoutError:
+except (ServerSelectionTimeoutError, KeyError):
+    from maggma.stores import MemoryStore
+    store = MemoryStore()
+    store.connect()
     # layout won't work if database is down, but at least web app will stay up
-    pass
 
 
 correlation_funcs = store.query().distinct("correlation_func")
