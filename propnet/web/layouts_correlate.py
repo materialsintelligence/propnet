@@ -7,7 +7,8 @@ from os import environ
 from random import choice
 from monty.serialization import loadfn
 
-from propnet.symbols import DEFAULT_SYMBOLS
+# noinspection PyUnresolvedReferences
+import propnet.symbols
 
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -47,11 +48,11 @@ def violin_plot(correlation_func="mic"):
         properties=["property_x", "property_y", "shortest_path_length", "correlation"],
     )
 
-    all_correlations = [d['correlation'] for d in store.query(criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
-        properties=["correlation"])]
+    all_correlations = [d['correlation']
+                        for d in store.query(criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
+                                             properties=["correlation"])]
     ymax = np.nanpercentile(all_correlations, 90)
     ymin = np.nanpercentile(all_correlations, 10)
-
 
     points = {p: [] for p in path_lengths}
     for d in docs:
