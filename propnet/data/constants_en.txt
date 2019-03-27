@@ -49,3 +49,6 @@ neutron_mass = 1.674927351e-27 kg = m_n
 
 # 0.000 000 074 e-27
 proton_mass = 1.672621777e-27 kg = m_p
+
+# propnet additions
+rydberg_constant = Rhy
