@@ -36,7 +36,8 @@ equations:
 name: debye_temperature
 implemented_by:
 - mkhorton
-references: []
+references:
+- url:https://en.wikipedia.org/wiki/Debye_frequency
 units_for_evaluation:
   T: kelvin
   p: atom / angstrom ** 3
