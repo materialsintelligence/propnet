@@ -118,8 +118,12 @@ class PropnetBuilder(Builder):
 
         # Add custom things, e. g. computed entry
         computed_entry = get_entry(item)
-        material.add_quantity(QuantityFactory.create_quantity("computed_entry", computed_entry,
-                                                              provenance=provenance))
+        if computed_entry:
+            material.add_quantity(QuantityFactory.create_quantity("computed_entry", computed_entry,
+                                                                  provenance=provenance))
+        else:
+            logger.warning(
+                "Expected computed entry, but was unable to create one for {}".format(item['task_id']))
         material.add_quantity(QuantityFactory.create_quantity("external_identifier_mp", item['task_id'],
                                                               provenance=provenance))
 
@@ -161,9 +165,6 @@ class PropnetBuilder(Builder):
         return jsanitize(doc, strict=True)
 
     def update_targets(self, items):
-        if not isinstance(items, list):
-            raise TypeError("Expected list of items, "
-                            "instead received {}".format(type(items)))
         self.propstore.update(items)
 
 
@@ -188,5 +189,7 @@ def get_entry(doc):
                           parameters={k: doc[k] for k in params},
                           data={"oxide_type": doc['oxide_type']},
                           entry_id=doc["task_id"])
-    entry = MaterialsProjectCompatibility().process_entries([entry])[0]
-    return entry
+    processed_entries = MaterialsProjectCompatibility().process_entries([entry])
+    if processed_entries:
+        return processed_entries[0]
+    return None
