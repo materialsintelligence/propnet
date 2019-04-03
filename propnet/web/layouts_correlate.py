@@ -21,13 +21,22 @@ from pymatgen.util.string import unicodeify
 
 from pymongo.errors import ServerSelectionTimeoutError
 
+import logging
+
+logger = logging.getLogger(__name__)
 mpr = MPRester()
 
 try:
     store = loadfn(
         environ["PROPNET_CORRELATION_STORE_FILE"])
     store.connect()
-except (ServerSelectionTimeoutError, KeyError):
+except ServerSelectionTimeoutError:
+    logger.warning("Unable to connect to propnet correlation db!")
+except KeyError:
+    logger.warning("PROPNET_CORRELATION_STORE_FILE var not set!")
+except FileNotFoundError:
+    logger.warning("File specified in PROPNET_CORRELATION_STORE_FILE not found!")
+except (ServerSelectionTimeoutError, KeyError, FileNotFoundError):
     from maggma.stores import MemoryStore
     store = MemoryStore()
     store.connect()
