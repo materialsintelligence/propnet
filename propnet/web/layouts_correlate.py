@@ -21,21 +21,28 @@ from pymatgen.util.string import unicodeify
 
 from pymongo.errors import ServerSelectionTimeoutError
 
+import logging
+
+logger = logging.getLogger(__name__)
 mpr = MPRester()
 
 try:
     store = loadfn(
         environ["PROPNET_CORRELATION_STORE_FILE"])
     store.connect()
-except (ServerSelectionTimeoutError, KeyError):
+except (ServerSelectionTimeoutError, KeyError, FileNotFoundError) as ex:
+    if isinstance(ex, ServerSelectionTimeoutError):
+        logger.warning("Unable to connect to propnet correlation db!")
+    if isinstance(ex, KeyError):
+        logger.warning("PROPNET_CORRELATION_STORE_FILE var not set!")
+    if isinstance(ex, FileNotFoundError):
+        logger.warning("File specified in PROPNET_CORRELATION_STORE_FILE not found!")
     from maggma.stores import MemoryStore
     store = MemoryStore()
     store.connect()
     # layout won't work if database is down, but at least web app will stay up
 
-
 correlation_funcs = store.query().distinct("correlation_func")
-
 
 def violin_plot(correlation_func="mic"):
 
