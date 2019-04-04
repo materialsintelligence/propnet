@@ -14,7 +14,7 @@ from propnet.web.layouts_interactive import interactive_layout
 from propnet.web.layouts_correlate import correlate_layout
 from propnet.web.layouts_explore import explore_layout
 
-from crystal_toolkit import GraphComponent
+import dash_cytoscape as cyto
 
 from propnet.web.utils import parse_path
 
@@ -22,6 +22,8 @@ from flask_caching import Cache
 import logging
 
 log = logging.getLogger(__name__)
+
+cyto.load_extra_layouts()
 
 # TODO: Fix math rendering
 
@@ -60,7 +62,7 @@ app.layout = html.Div(
               html.Div(id='page-content'),
               # hidden table to make sure table component loads
               # (Dash limitation; may be removed in future)
-              html.Div(children=[dt.DataTable(rows=[{}]), GraphComponent(graph={'nodes':[], 'edges': []})],
+              html.Div(children=[dt.DataTable(rows=[{}]), cyto.Cytoscape()],
                        style={'display': 'none'})],
     style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 30})
 

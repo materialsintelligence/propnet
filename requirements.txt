@@ -6,7 +6,7 @@ dash-renderer>=0.12.1
 dash-table-experiments>=0.6.0
 gunicorn>=19.7.1
 plotly>=2.0.15
-crystal-toolkit>=0.0.1
+dash-cytoscape>=0.0.5
 Flask-Caching==1.3.3
 
 # core, utilities

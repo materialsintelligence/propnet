@@ -13,7 +13,7 @@ from propnet.core.registry import Registry
 
 log = logging.getLogger(__name__)
 AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
-
+STYLESHEET = loadfn(path.join(path.dirname(__file__), 'graph_stylesheet.yaml'))
 
 # TODO: use the attributes of the graph class, rather than networkx
 def graph_conversion(graph,
@@ -26,20 +26,15 @@ def graph_conversion(graph,
     from Graph.graph for use in GraphComponent
 
     Args:
-      graph: from Graph.graph
+        graph (networkx.graph): from Graph.graph
 
     Returns: graph dict
     """
 
-    aesthetics = aesthetics or AESTHETICS
-
     nodes = []
     edges = []
-    log.info(aesthetics['node_aesthetics']['Symbol'])
-    log.info(aesthetics['node_aesthetics']['Model'])
-    for n in graph.nodes():
 
-        name = None
+    for n in graph.nodes():
 
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
@@ -48,15 +43,27 @@ def graph_conversion(graph,
             # property
             name = n.name
             label = n.display_names[0]
-            node_type = 'Symbol'
+            node_type = 'symbol'
         elif isinstance(n, Model):
             # model
             name = n.title
             label = n.title
-            node_type = 'Model'
+            node_type = 'model'
+        else:
+            name = None
+            label = None
+            node_type = None
+
         if name:
             # Get node, labels, name, and title
-            node = aesthetics['node_aesthetics'][node_type].copy()
+            node = {
+                'data': {'id': name,
+                         'label': label
+                         },
+                'locked': False,
+                'classes': node_type
+            }
+            '''
             if node.get("show_labels"):
                 node.update({"label": label,
                              # "title": label,
@@ -71,10 +78,10 @@ def graph_conversion(graph,
                              "shape": "diamond",
                              "label": "",
                              "title": ""})
+            '''
 
-            node['id'] = name
             nodes.append(node)
-
+    '''
     log.info("Nodes to highlight green: {}".format(
             nodes_to_highlight_green))
     highlight_nodes = any([nodes_to_highlight_green, nodes_to_highlight_yellow,
@@ -91,11 +98,13 @@ def graph_conversion(graph,
                 node['color'] = '#FD9998'
             else:
                 node['color'] = '#BDBDBD'
+    '''
 
     connected_nodes = set()
+
     # TODO: need to clean up after model refactor
-    def get_node_id(node):
-        return node.title if isinstance(node, Model) else node.name
+    def get_node_id(node_):
+        return node_.title if isinstance(node_, Model) else node_.name
 
     for n1, n2 in graph.edges():
         id_n1 = get_node_id(n1)
@@ -104,20 +113,14 @@ def graph_conversion(graph,
         if id_n1 and id_n2:
             connected_nodes.add(id_n1)
             connected_nodes.add(id_n2)
-            edges.append({
-                'from': id_n1,
-                'to': id_n2
-            })
+            edges.append({'data': {'source': id_n1, 'target': id_n2}},)
 
     if hide_unconnected_nodes:
         for node in nodes:
-            if node['id'] not in connected_nodes:
-                node['hidden'] = True
+            if node['data']['id'] not in connected_nodes:
+                node['display'] = 'none'
 
-    graph_data = {
-        'nodes': nodes,
-        'edges': edges
-    }
+    graph_data = nodes + edges
 
     return graph_data
 

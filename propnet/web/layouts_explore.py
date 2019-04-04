@@ -4,8 +4,8 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from crystal_toolkit import GraphComponent
-from propnet.web.utils import graph_conversion, AESTHETICS
+from dash_cytoscape import Cytoscape
+from propnet.web.utils import graph_conversion, STYLESHEET
 from propnet.core.graph import Graph
 
 from propnet.web.layouts_models import models_index
@@ -23,8 +23,12 @@ def explore_layout(app):
     graph_data = graph_conversion(g)
     graph_component = html.Div(
         id='graph_component',
-        children=[GraphComponent(id='propnet-graph', graph=graph_data,
-                                 options=AESTHETICS['global_options'])],
+        children=[Cytoscape(id='propnet-graph', elements=graph_data,
+                            stylesheet=STYLESHEET,
+                            layout={'name': 'cose',
+                                    'animate': True,
+                                    'animationThreshold': 10000,
+                                    'randomize': True})],
         style={'width': '100%', 'height': '800px'})
 
     graph_layout = html.Div(
@@ -42,9 +46,11 @@ def explore_layout(app):
 
     # Define default graph component
     # TODO: this looks bad, re-evaluate
+    '''
     @app.callback(Output('graph_explorer', 'children'),
                   [Input('graph_options', 'values')])
     def get_graph_component(props):
+        
         aesthetics = AESTHETICS.copy()
         show_properties = 'show_properties' in props
         show_models = 'show_models' in props
@@ -53,10 +59,11 @@ def explore_layout(app):
         graph_data = graph_conversion(g, aesthetics=aesthetics)
         graph_component = html.Div(
             id=str(uuid4()),
-            children=[GraphComponent(id=str(uuid4()), graph=graph_data,
-                                     options=AESTHETICS['global_options'])],
+            children=[Cytoscape(id=str(uuid4()), elements=graph_data,
+                                layout=AESTHETICS['global_options'])],
             style={'width': '100%', 'height': '800px'})
         return [graph_component]
+    '''
 
     layout = html.Div([html.Div([graph_layout], className='row'),
                        html.Div([html.Div([models_index], className='six columns'),
