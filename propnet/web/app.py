@@ -14,7 +14,7 @@ from propnet.web.layouts_interactive import interactive_layout
 from propnet.web.layouts_correlate import correlate_layout
 from propnet.web.layouts_explore import explore_layout
 
-import dash_cytoscape as cyto
+from dash_cytoscape import load_extra_layouts
 
 from propnet.web.utils import parse_path
 
@@ -23,7 +23,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-cyto.load_extra_layouts()
+load_extra_layouts()
 
 # TODO: Fix math rendering
 
@@ -59,11 +59,7 @@ app.layout = html.Div(
     children=[route,
               html.Div([html.H3(app.title), layout_menu, html.Br()],
                        style={'textAlign': 'center'}),
-              html.Div(id='page-content'),
-              # hidden table to make sure table component loads
-              # (Dash limitation; may be removed in future)
-              html.Div(children=[dt.DataTable(rows=[{}]), cyto.Cytoscape()],
-                       style={'display': 'none'})],
+              html.Div(id='page-content')],
     style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 30})
 
 # standard Dash css, fork this for a custom theme
@@ -115,7 +111,8 @@ def display_page(pathname):
             else:
                 return symbols_index()
         elif path_info['mode'] == 'explore':
-            return EXPLORE_LAYOUT
+            # return EXPLORE_LAYOUT
+            return explore_layout(app)
         elif path_info['mode'] == 'plot':
             return PLOT_LAYOUT
         elif path_info['mode'] == 'generate':

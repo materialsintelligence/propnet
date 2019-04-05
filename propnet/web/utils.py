@@ -6,6 +6,7 @@ from propnet.core.symbols import Symbol
 from propnet.core.models import Model
 
 from monty.serialization import loadfn
+import networkx as nx
 
 # noinspection PyUnresolvedReferences
 import propnet.models
@@ -16,7 +17,8 @@ AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
 STYLESHEET = loadfn(path.join(path.dirname(__file__), 'graph_stylesheet.yaml'))
 
 # TODO: use the attributes of the graph class, rather than networkx
-def graph_conversion(graph,
+def graph_conversion(graph: nx.DiGraph,
+                     graph_size_pixels=800,
                      nodes_to_highlight_green=(),
                      nodes_to_highlight_yellow=(),
                      nodes_to_highlight_red=(),
@@ -31,10 +33,13 @@ def graph_conversion(graph,
     Returns: graph dict
     """
 
+    node_xy = nx.drawing.layout.kamada_kawai_layout(graph, scale=graph_size_pixels)
+
     nodes = []
     edges = []
 
     for n in graph.nodes():
+        x_pos, y_pos = node_xy[n]
 
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
@@ -60,9 +65,17 @@ def graph_conversion(graph,
                 'data': {'id': name,
                          'label': label
                          },
+                'position': {'x': x_pos,
+                             'y': y_pos
+                             },
                 'locked': False,
                 'classes': node_type
             }
+
+            if node_type == 'model':
+                node['classes'] += " labeloff"
+            else:
+                node['classes'] += " labelon"
             '''
             if node.get("show_labels"):
                 node.update({"label": label,
@@ -116,9 +129,7 @@ def graph_conversion(graph,
             edges.append({'data': {'source': id_n1, 'target': id_n2}},)
 
     if hide_unconnected_nodes:
-        for node in nodes:
-            if node['data']['id'] not in connected_nodes:
-                node['display'] = 'none'
+        nodes = [n for n in nodes if n['data']['id'] in connected_nodes]
 
     graph_data = nodes + edges
 

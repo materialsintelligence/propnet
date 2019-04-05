@@ -15,21 +15,26 @@ from pydash import set_
 
 from uuid import uuid4
 
+from monty.serialization import loadfn
+from os import path
+
+GRAPH_LAYOUT_FILE = path.join(path.dirname(__file__), 'cose_layout.json')
+
 
 def explore_layout(app):
-
+    graph_height_px = 800
     g = Graph().get_networkx_graph()
 
-    graph_data = graph_conversion(g)
+    graph_data = graph_conversion(g, graph_size_pixels=graph_height_px)
+    layout = loadfn(GRAPH_LAYOUT_FILE)
     graph_component = html.Div(
         id='graph_component',
         children=[Cytoscape(id='propnet-graph', elements=graph_data,
+                            style={'width': '100%',
+                                   'height': str(graph_height_px) + "px"},
                             stylesheet=STYLESHEET,
-                            layout={'name': 'cose',
-                                    'animate': True,
-                                    'animationThreshold': 10000,
-                                    'randomize': True})],
-        style={'width': '100%', 'height': '800px'})
+                            layout=layout)],
+        )
 
     graph_layout = html.Div(
         id='graph_top_level',
