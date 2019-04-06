@@ -18,11 +18,11 @@ from uuid import uuid4
 from monty.serialization import loadfn
 from os import path
 
-GRAPH_LAYOUT_FILE = path.join(path.dirname(__file__), 'cose_layout.json')
+GRAPH_LAYOUT_FILE = path.join(path.dirname(__file__), 'graph_layout.yaml')
 
 
 def explore_layout(app):
-    graph_height_px = 800
+    graph_height_px = 1000
     g = Graph().get_networkx_graph()
 
     graph_data = graph_conversion(g, graph_size_pixels=graph_height_px)
@@ -33,7 +33,8 @@ def explore_layout(app):
                             style={'width': '100%',
                                    'height': str(graph_height_px) + "px"},
                             stylesheet=STYLESHEET,
-                            layout=layout)],
+                            layout=layout,
+                            boxSelectionEnabled=True)],
         )
 
     graph_layout = html.Div(
