@@ -1,0 +1,26 @@
+- selector: .symbol
+  style:
+    background-color: "#43A1F8"
+    line-color: "#43A1F8"
+    shape: rectangle
+    padding: 10px
+- selector: .model
+  style:
+    background-color: orange
+    line-color: orange
+    shape: rectangle
+    padding: 10px
+- selector: .labelon
+  style:
+    text-halign: center
+    text-valign: center
+    text-wrap: ellipsis
+    font-family: "Helvetica"
+    font-size: 20
+    color: white
+    content: "data(label)"
+    width: label
+- selector: .labeloff
+  style:
+    content: ""
+    shape: diamond

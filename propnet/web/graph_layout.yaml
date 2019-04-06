@@ -1,0 +1,14 @@
+name: euler
+animate: true
+randomize: true
+fit: true
+ungrabifyWhileSimulating: true
+maxIterations: 100000
+maxSimulationTime: 3000
+springCoeff: 0.04
+springLength: 150
+gravity: -3000
+pull: 0.15
+theta: 0.9
+dragCoeff: 0.01
+movementThreshold: 0.5
