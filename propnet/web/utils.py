@@ -24,7 +24,7 @@ propnet_nx_graph = Graph().get_networkx_graph()
 
 # TODO: use the attributes of the graph class, rather than networkx
 def graph_conversion(graph: nx.DiGraph,
-                     highlight_derivation_pathway=None,
+                     derivation_pathway=None,
                      hide_unconnected_nodes=True,
                      show_symbol_labels=True,
                      show_model_labels=False):
@@ -98,7 +98,7 @@ def graph_conversion(graph: nx.DiGraph,
                     'data': {'source': id_n1, 'target': id_n2},
                     'classes': ['is-input']}
 
-    if not hide_unconnected_nodes or not highlight_derivation_pathway:
+    if not hide_unconnected_nodes or not derivation_pathway:
         unconnected_edges = {
             (node['data']['id'], 'unattached_symbols'):
                 {'data': {'source': node['data']['id'],
@@ -118,11 +118,11 @@ def graph_conversion(graph: nx.DiGraph,
         nodes = [node for node in nodes if node['data']['id'] in connected_nodes]
 
     # For highlighting graph derivation
-    if highlight_derivation_pathway:
-        symbols_in = [get_node_id(s) for s in highlight_derivation_pathway['inputs']]
-        symbols_out = [get_node_id(s) for s in highlight_derivation_pathway['outputs']]
+    if derivation_pathway:
+        symbols_in = [get_node_id(s) for s in derivation_pathway['inputs']]
+        symbols_out = [get_node_id(s) for s in derivation_pathway['outputs']]
         models_evaluated = [get_node_id(m)
-                            for m in highlight_derivation_pathway['models']]
+                            for m in derivation_pathway['models']]
 
         symbol_nodes_in_path = set.union(set(symbols_in),
                                          set(symbols_out))

@@ -235,7 +235,7 @@ def interactive_layout(app):
 
         material_graph_data = graph_conversion(
             propnet_nx_graph,
-            highlight_derivation_pathway={'inputs': input_quantity_names,
+            derivation_pathway={'inputs': input_quantity_names,
                                           'outputs': list(derived_quantity_names),
                                           'models': models_evaluated})
 
