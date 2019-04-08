@@ -1,3 +1,0 @@
-[submodule "dash-cytoscape"]
-	path = dash-cytoscape
-	url = https://github.com/plotly/dash-cytoscape.git
