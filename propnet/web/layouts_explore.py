@@ -6,7 +6,7 @@ from dash.exceptions import PreventUpdate
 
 from dash_cytoscape import Cytoscape
 from propnet.web.utils import graph_conversion, GRAPH_STYLESHEET, \
-    GRAPH_CONFIG, GRAPH_HEIGHT_PX, propnet_nx_graph
+    GRAPH_CONFIG, GRAPH_HEIGHT_PX, propnet_nx_graph, update_labels
 
 
 from propnet.web.layouts_models import models_index
@@ -20,9 +20,8 @@ from monty.serialization import loadfn
 from os import path
 
 
-
 def explore_layout(app):
-    graph_data = graph_conversion(propnet_nx_graph, graph_size_pixels=GRAPH_HEIGHT_PX)
+    graph_data = graph_conversion(propnet_nx_graph, hide_unconnected_nodes=False)
     graph_component = html.Div(
         id='graph_component',
         children=[Cytoscape(id='pn-graph', elements=graph_data,
@@ -53,35 +52,7 @@ def explore_layout(app):
         show_properties = 'show_properties' in props
         show_models = 'show_models' in props
 
-        for elem in elements:
-            group = elem['group']
-            if group == 'edge':
-                # applies to nodes only
-                continue
-            classes = elem.get('classes')
-            if not classes:
-                # if there is no classes specified, not sure what it is otherwise
-                continue
-            classes_list = classes.split(" ")
-            is_model = any(c.startswith("model") for c in classes_list)
-            is_symbol = any(c.startswith("symbol") for c in classes_list)
-
-            if not is_model and not is_symbol:
-                # is some other element on the graph, like the "unattached" model
-                continue
-
-            class_to_add = 'label-off'
-            if (is_model and show_models) or (is_symbol and show_properties):
-                class_to_add = 'label-on'
-
-            for val in ('label-on', 'label-off'):
-                try:
-                    classes_list.remove(val)
-                except ValueError:
-                    pass
-            classes_list.append(class_to_add)
-
-            elem['classes'] = " ".join(classes_list)
+        update_labels(elements, show_models=show_models, show_symbols=show_properties)
 
         return elements
 

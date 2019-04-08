@@ -17,20 +17,17 @@ log = logging.getLogger(__name__)
 
 GRAPH_CONFIG = loadfn(path.join(path.dirname(__file__), 'graph_config.yaml'))
 GRAPH_STYLESHEET = loadfn(path.join(path.dirname(__file__), 'graph_stylesheet.yaml'))
-GRAPH_HEIGHT_PX = 1000
+GRAPH_HEIGHT_PX = 800
 SUBGRAPH_HEIGHT_PX = 500
 propnet_nx_graph = Graph().get_networkx_graph()
 
 
 # TODO: use the attributes of the graph class, rather than networkx
 def graph_conversion(graph: nx.DiGraph,
-                     graph_size_pixels=800,
-                     nodes_to_highlight_green=(),
-                     nodes_to_highlight_yellow=(),
-                     nodes_to_highlight_red=(),
+                     highlight_derivation_pathway=None,
                      hide_unconnected_nodes=True,
-                     show_symbols=True,
-                     show_models=False):
+                     show_symbol_labels=True,
+                     show_model_labels=False):
     """Utility function to render a networkx graph
     from Graph.graph for use in GraphComponent
 
@@ -40,13 +37,10 @@ def graph_conversion(graph: nx.DiGraph,
     Returns: graph dict
     """
 
-    node_xy = nx.drawing.layout.kamada_kawai_layout(graph, scale=graph_size_pixels)
-
     nodes = []
     edges = {}
 
     for n in graph.nodes():
-        x_pos, y_pos = node_xy[n]
 
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
@@ -72,38 +66,17 @@ def graph_conversion(graph: nx.DiGraph,
                 'data': {'id': name,
                          'label': label
                          },
-                'position': {'x': x_pos,
-                             'y': y_pos
-                             },
                 'locked': False,
                 'classes': [node_type]
             }
 
-            if (node_type == 'model' and show_models) or \
-                    (node_type == 'symbol' and show_symbols):
+            if (node_type == 'model' and show_model_labels) or \
+                    (node_type == 'symbol' and show_symbol_labels):
                 node['classes'].append('label-on')
             else:
                 node['classes'].append('label-off')
 
             nodes.append(node)
-    '''
-    log.info("Nodes to highlight green: {}".format(
-            nodes_to_highlight_green))
-    highlight_nodes = any([nodes_to_highlight_green, nodes_to_highlight_yellow,
-                           nodes_to_highlight_red])
-    if highlight_nodes:
-        log.debug("Nodes to highlight green: {}".format(
-            nodes_to_highlight_green))
-        for node in nodes:
-            if node['id'] in nodes_to_highlight_green:
-                node['color'] = '#9CDC90'
-            elif node['id'] in nodes_to_highlight_yellow:
-                node['color'] = '#FFBF00'
-            elif node['id'] in nodes_to_highlight_red:
-                node['color'] = '#FD9998'
-            else:
-                node['color'] = '#BDBDBD'
-    '''
 
     connected_nodes = set()
 
@@ -125,7 +98,7 @@ def graph_conversion(graph: nx.DiGraph,
                     'data': {'source': id_n1, 'target': id_n2},
                     'classes': ['is-input']}
 
-    if hide_unconnected_nodes:
+    if not hide_unconnected_nodes or not highlight_derivation_pathway:
         unconnected_edges = {
             (node['data']['id'], 'unattached_symbols'):
                 {'data': {'source': node['data']['id'],
@@ -141,6 +114,36 @@ def graph_conversion(graph: nx.DiGraph,
                 'locked': False,
                 'classes': ['unattached', 'label-on']
             })
+    else:
+        nodes = [node for node in nodes if node['data']['id'] in connected_nodes]
+
+    # For highlighting graph derivation
+    if highlight_derivation_pathway:
+        symbols_in = [get_node_id(s) for s in highlight_derivation_pathway['inputs']]
+        symbols_out = [get_node_id(s) for s in highlight_derivation_pathway['outputs']]
+        models_evaluated = [get_node_id(m)
+                            for m in highlight_derivation_pathway['models']]
+
+        symbol_nodes_in_path = set.union(set(symbols_in),
+                                         set(symbols_out))
+
+        for edge in edges.values():
+            if (edge['data']['source'] in symbol_nodes_in_path and
+                    edge['data']['target'] in models_evaluated) or \
+                    (edge['data']['target'] in symbol_nodes_in_path and
+                     edge['data']['source'] in models_evaluated):
+                edge['classes'].append('on-derivation-path')
+
+        for node in nodes:
+            node_id = node['data']['id']
+            if node_id in symbols_in:
+                node['classes'].append('symbol-input')
+            elif node_id in symbols_out:
+                node['classes'].append('symbol-derived')
+            elif node_id in models_evaluated:
+                node['classes'].append('model-derived')
+            else:
+                node['classes'].append('untraversed')
 
     for node in nodes:
         node['group'] = 'nodes'
@@ -207,3 +210,35 @@ def parse_path(pathname):
         'mode': mode,
         'value': value
     }
+
+
+def update_labels(elements, show_models=True, show_symbols=True):
+    for elem in elements:
+        group = elem['group']
+        if group == 'edge':
+            # applies to nodes only
+            continue
+        classes = elem.get('classes')
+        if not classes:
+            # if there is no classes specified, not sure what it is otherwise
+            continue
+        classes_list = classes.split(" ")
+        is_model = any(c.startswith("model") for c in classes_list)
+        is_symbol = any(c.startswith("symbol") for c in classes_list)
+
+        if not is_model and not is_symbol:
+            # is some other element on the graph, like the "unattached" model
+            continue
+
+        class_to_add = 'label-off'
+        if (is_model and show_models) or (is_symbol and show_symbols):
+            class_to_add = 'label-on'
+
+        for val in ('label-on', 'label-off'):
+            try:
+                classes_list.remove(val)
+            except ValueError:
+                pass
+        classes_list.append(class_to_add)
+
+        elem['classes'] = " ".join(classes_list)

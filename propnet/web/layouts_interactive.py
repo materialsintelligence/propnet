@@ -2,8 +2,9 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table_experiments as dt
 
-from crystal_toolkit import GraphComponent
-from propnet.web.utils import graph_conversion
+from dash_cytoscape import Cytoscape
+from propnet.web.utils import graph_conversion, GRAPH_CONFIG, \
+    GRAPH_HEIGHT_PX, GRAPH_STYLESHEET, propnet_nx_graph, update_labels
 
 import json
 from monty.json import MontyEncoder, MontyDecoder
@@ -214,25 +215,65 @@ def interactive_layout(app):
 
         # TODO: clean up
 
-        input_quantity_names = [q.symbol.name for q in quantities]
+        input_quantity_names = [q.symbol for q in quantities]
         derived_quantity_names = set(
-            [q.symbol.name for q in output_quantities]) - \
+            [q.symbol for q in output_quantities]) - \
                                  set(input_quantity_names)
+
+        # This is pretty inefficient...maybe a better way?
+        def get_models_in_provenance_tree(qty, model_set=None):
+            model_set = model_set or set()
+            model_set.add(qty.provenance.model)
+            for q in qty.provenance.inputs or []:
+                model_set = get_models_in_provenance_tree(q, model_set)
+            return model_set
+
+        models_evaluated = set.union(*[get_models_in_provenance_tree(output_q)
+                                       for output_q in output_quantities])
+        models_evaluated = [Registry("models").get(m) for m in models_evaluated
+                            if Registry("models").get(m) is not None]
+
         material_graph_data = graph_conversion(
-            graph_evaluator.get_networkx_graph(), nodes_to_highlight_green=input_quantity_names,
-            nodes_to_highlight_yellow=list(derived_quantity_names))
-        # options = AESTHETICS['global_options']
-        # options['edges']['color'] = '#000000'
-        output_graph = html.Div(GraphComponent(
-            id='material-graph',
-            graph=material_graph_data,
-            options={}
-        ), style={'width': '100%', 'height': '400px'})
+            propnet_nx_graph,
+            highlight_derivation_pathway={'inputs': input_quantity_names,
+                                          'outputs': list(derived_quantity_names),
+                                          'models': models_evaluated})
+
+        output_graph = html.Div(
+            children=[
+                dcc.Checklist(id='material-graph-options',
+                              options=[{'label': 'Show models',
+                                        'value': 'show_models'},
+                                       {'label': 'Show properties',
+                                        'value': 'show_properties'}],
+                              values=['show_properties'],
+                              labelStyle={'display': 'inline-block'}),
+                Cytoscape(
+                    id='material-graph',
+                    elements=material_graph_data,
+                    style={'width': '100%',
+                           'height': str(GRAPH_HEIGHT_PX) + "px"},
+                    stylesheet=GRAPH_STYLESHEET,
+                    layout=GRAPH_CONFIG,
+                    boxSelectionEnabled=True)
+            ]
+        )
 
         return [
             output_graph,
             html.Br(),
             output_table
         ]
+
+    @app.callback(Output('material-graph', 'elements'),
+                      [Input('material-graph-options', 'values')],
+                      [State('material-graph', 'elements')])
+    def get_material_graph_component(props, elements):
+        show_properties = 'show_properties' in props
+        show_models = 'show_models' in props
+
+        update_labels(elements, show_models=show_models, show_symbols=show_properties)
+
+        return elements
 
     return layout

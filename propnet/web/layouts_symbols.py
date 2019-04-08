@@ -36,8 +36,8 @@ def symbol_layout(symbol_name):
     layouts.append(html.H6('Graph'))
     # TODO: costly, should just construct subgraph directly?
     subgraph = nx.ego_graph(propnet_nx_graph, symbol, undirected=True, radius=2)
-    subgraph_data = graph_conversion(subgraph, graph_size_pixels=SUBGRAPH_HEIGHT_PX,
-                                     show_models=True, show_symbols=True)
+    subgraph_data = graph_conversion(subgraph,
+                                     show_model_labels=True, show_symbol_labels=True)
 
     if len(subgraph_data) < 50:
         graph_config = GRAPH_CONFIG.copy()

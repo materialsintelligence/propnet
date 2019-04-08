@@ -14,9 +14,15 @@
 - selector: .symbol-derived
   style:
     background-color: "#FFBF00"
-- selector: .model-derived
+- selector: .symbol-input
   style:
     background-color: "#9CDC90"
+- selector: .model-derived
+  style:
+    background-color: "#32CFFF"
+- selector: .untraversed
+  style:
+    background-color: "#BDBDBD"
 - selector: .unattached
   style:
     background-color: "#FF7777"
@@ -49,3 +55,9 @@
     source-arrow-shape: triangle
     source-endpoint: outside-to-node
     arrow-scale: 2
+- selector: .on-derivation-path
+  style:
+    target-arrow-color: black
+    source-arrow-color: black
+    line-color: black
+    width: 5px

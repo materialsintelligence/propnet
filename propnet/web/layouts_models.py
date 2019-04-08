@@ -49,8 +49,8 @@ def model_layout(model_name):
     # TODO: costly, should just construct subgraph directly?
 
     subgraph = nx.ego_graph(propnet_nx_graph, model, undirected=True)
-    subgraph_data = graph_conversion(subgraph, graph_size_pixels=SUBGRAPH_HEIGHT_PX,
-                                     show_symbols=True, show_models=True)
+    subgraph_data = graph_conversion(subgraph,
+                                     show_symbol_labels=True, show_model_labels=True)
     if len(subgraph_data) < 50:
         graph_config = GRAPH_CONFIG.copy()
         graph_config['maxSimulationTime'] = 1500
