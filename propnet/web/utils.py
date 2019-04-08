@@ -13,8 +13,8 @@ import propnet.models
 from propnet.core.registry import Registry
 
 log = logging.getLogger(__name__)
-AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
-STYLESHEET = loadfn(path.join(path.dirname(__file__), 'graph_stylesheet.yaml'))
+# AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
+STYLESHEET_FILE = path.join(path.dirname(__file__), 'graph_stylesheet.yaml')
 
 # TODO: use the attributes of the graph class, rather than networkx
 def graph_conversion(graph: nx.DiGraph,
@@ -23,7 +23,8 @@ def graph_conversion(graph: nx.DiGraph,
                      nodes_to_highlight_yellow=(),
                      nodes_to_highlight_red=(),
                      hide_unconnected_nodes=True,
-                     aesthetics=None):
+                     show_symbols=True,
+                     show_models=False):
     """Utility function to render a networkx graph
     from Graph.graph for use in GraphComponent
 
@@ -36,7 +37,7 @@ def graph_conversion(graph: nx.DiGraph,
     node_xy = nx.drawing.layout.kamada_kawai_layout(graph, scale=graph_size_pixels)
 
     nodes = []
-    edges = []
+    edges = {}
 
     for n in graph.nodes():
         x_pos, y_pos = node_xy[n]
@@ -69,29 +70,14 @@ def graph_conversion(graph: nx.DiGraph,
                              'y': y_pos
                              },
                 'locked': False,
-                'classes': node_type
+                'classes': [node_type]
             }
 
-            if node_type == 'model':
-                node['classes'] += " labeloff"
+            if (node_type == 'model' and show_models) or \
+                    (node_type == 'symbol' and show_symbols):
+                node['classes'].append('label-on')
             else:
-                node['classes'] += " labelon"
-            '''
-            if node.get("show_labels"):
-                node.update({"label": label,
-                             # "title": label,
-                             "shape": "box",
-                             "font": {"color": "#ffffff",
-                                      "face": "Helvetica",
-                                      "size": 20},
-                             "size": 30})
-            # Pop labels if they exist
-            else:
-                node.update({"size": 8.0,
-                             "shape": "diamond",
-                             "label": "",
-                             "title": ""})
-            '''
+                node['classes'].append('label-off')
 
             nodes.append(node)
     '''
@@ -126,12 +112,38 @@ def graph_conversion(graph: nx.DiGraph,
         if id_n1 and id_n2:
             connected_nodes.add(id_n1)
             connected_nodes.add(id_n2)
-            edges.append({'data': {'source': id_n1, 'target': id_n2}},)
+            if (id_n2, id_n1) in edges:
+                edges[(id_n2, id_n1)]['classes'].append('is-output')
+            else:
+                edges[(id_n1, id_n2)] = {
+                    'data': {'source': id_n1, 'target': id_n2},
+                    'classes': ['is-input']}
 
     if hide_unconnected_nodes:
-        nodes = [n for n in nodes if n['data']['id'] in connected_nodes]
+        edges.update({
+            (node['data']['id'], 'unattached_symbols'):
+                {'data': {'source': node['data']['id'],
+                          'target': 'unattached_symbols'},
+                 'classes': ['is-output']}
+            for node in nodes if node['data']['id'] not in connected_nodes})
+        nodes.append({
+            'data': {'id': 'unattached_symbols',
+                     'label': "Unattached symbols"
+                     },
+            'locked': False,
+            'classes': ['unattached', 'label-on']
+        })
 
-    graph_data = nodes + edges
+    for node in nodes:
+        node['group'] = 'nodes'
+    for edge in edges.values():
+        edge['group'] = 'edges'
+
+    graph_data = nodes + list(edges.values())
+
+    for v in graph_data:
+        if isinstance(v.get('classes'), list):
+            v['classes'] = " ".join(v['classes'])
 
     return graph_data
 

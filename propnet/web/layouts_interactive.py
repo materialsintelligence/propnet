@@ -3,7 +3,7 @@ import dash_html_components as html
 import dash_table_experiments as dt
 
 from crystal_toolkit import GraphComponent
-from propnet.web.utils import graph_conversion, AESTHETICS
+from propnet.web.utils import graph_conversion
 
 import json
 from monty.json import MontyEncoder, MontyDecoder
@@ -221,12 +221,12 @@ def interactive_layout(app):
         material_graph_data = graph_conversion(
             graph_evaluator.get_networkx_graph(), nodes_to_highlight_green=input_quantity_names,
             nodes_to_highlight_yellow=list(derived_quantity_names))
-        options = AESTHETICS['global_options']
-        options['edges']['color'] = '#000000'
+        # options = AESTHETICS['global_options']
+        # options['edges']['color'] = '#000000'
         output_graph = html.Div(GraphComponent(
             id='material-graph',
             graph=material_graph_data,
-            options=options
+            options={}
         ), style={'width': '100%', 'height': '400px'})
 
         return [

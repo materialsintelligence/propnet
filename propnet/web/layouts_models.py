@@ -7,7 +7,7 @@ from crystal_toolkit import GraphComponent
 import networkx as nx
 from propnet.core.graph import Graph
 
-from propnet.web.utils import graph_conversion, AESTHETICS
+from propnet.web.utils import graph_conversion
 from propnet.core.utils import references_to_markdown
 
 # noinspection PyUnresolvedReferences
@@ -49,14 +49,14 @@ def model_layout(model_name):
     # TODO: costly, should just construct subgraph directly?
     g = Graph()
     subgraph = nx.ego_graph(g.get_networkx_graph(), model, undirected=True)
-    options = AESTHETICS['global_options']
-    if "arrows" in options["edges"]:
-        options["edges"]["arrows"] = "to"
+    # options = AESTHETICS['global_options']
+    # if "arrows" in options["edges"]:
+    #     options["edges"]["arrows"] = "to"
     layouts['Graph'] = html.Div(
         GraphComponent(
             id="model_graph",
             graph=graph_conversion(subgraph),
-            options=AESTHETICS['global_options']
+            options={}
         ),
         style={'width': '100%', 'height': '300px'}
     )

@@ -6,7 +6,7 @@ from pydash import set_
 import networkx as nx
 from propnet.core.graph import Graph
 
-from propnet.web.utils import graph_conversion, AESTHETICS
+from propnet.web.utils import graph_conversion
 
 # noinspection PyUnresolvedReferences
 import propnet.symbols
@@ -24,8 +24,8 @@ def symbol_layout(symbol_name, aesthetics=None):
       Dash layout
 
     """
-    aesthetics = aesthetics or AESTHETICS.copy()
-
+    # aesthetics = aesthetics or AESTHETICS.copy()
+    aesthetics = {}
     # list to hold layouts for each section
     layouts = []
 
@@ -37,15 +37,15 @@ def symbol_layout(symbol_name, aesthetics=None):
     # TODO: costly, should just construct subgraph directly?
     g = Graph()
     subgraph = nx.ego_graph(g.get_networkx_graph(), symbol, undirected=True, radius=2)
-    options=AESTHETICS['global_options']
-    if "arrows" in options["edges"]:
-        options["edges"]["arrows"] = "to"
+    # options=AESTHETICS['global_options']
+    # if "arrows" in options["edges"]:
+    #     options["edges"]["arrows"] = "to"
     set_(aesthetics, "node_options.show_model_labels", True)
     layouts.append(html.Div(
         GraphComponent(
             id="model_graph",
-            graph=graph_conversion(subgraph, aesthetics=AESTHETICS),
-            options=AESTHETICS['global_options']
+            graph=graph_conversion(subgraph),
+            options={}
         ),
         style={'width': '100%', 'height': '300px'}
     ))

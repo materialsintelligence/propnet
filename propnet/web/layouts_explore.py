@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 from dash_cytoscape import Cytoscape
-from propnet.web.utils import graph_conversion, STYLESHEET
+from propnet.web.utils import graph_conversion, STYLESHEET_FILE
 from propnet.core.graph import Graph
 
 from propnet.web.layouts_models import models_index
@@ -19,20 +19,20 @@ from monty.serialization import loadfn
 from os import path
 
 GRAPH_LAYOUT_FILE = path.join(path.dirname(__file__), 'graph_layout.yaml')
+propnet_nx_graph = Graph().get_networkx_graph()
+graph_height_px = 1000
 
 
 def explore_layout(app):
-    graph_height_px = 1000
-    g = Graph().get_networkx_graph()
-
-    graph_data = graph_conversion(g, graph_size_pixels=graph_height_px)
+    graph_data = graph_conversion(propnet_nx_graph, graph_size_pixels=graph_height_px)
     layout = loadfn(GRAPH_LAYOUT_FILE)
+    stylesheet = loadfn(STYLESHEET_FILE)
     graph_component = html.Div(
         id='graph_component',
-        children=[Cytoscape(id='propnet-graph', elements=graph_data,
+        children=[Cytoscape(id='pn-graph', elements=graph_data,
                             style={'width': '100%',
                                    'height': str(graph_height_px) + "px"},
-                            stylesheet=STYLESHEET,
+                            stylesheet=stylesheet,
                             layout=layout,
                             boxSelectionEnabled=True)],
         )
@@ -50,26 +50,44 @@ def explore_layout(app):
             html.Div(id='graph_explorer',
                      children=[graph_component])])
 
-    # Define default graph component
-    # TODO: this looks bad, re-evaluate
-    '''
-    @app.callback(Output('graph_explorer', 'children'),
-                  [Input('graph_options', 'values')])
-    def get_graph_component(props):
-        
-        aesthetics = AESTHETICS.copy()
+    @app.callback(Output('pn-graph', 'elements'),
+                  [Input('graph_options', 'values')],
+                  [State('pn-graph', 'elements')])
+    def get_graph_component(props, elements):
         show_properties = 'show_properties' in props
         show_models = 'show_models' in props
-        set_(aesthetics, "node_aesthetics.Symbol.show_labels", show_properties)
-        set_(aesthetics, "node_aesthetics.Model.show_labels", show_models)
-        graph_data = graph_conversion(g, aesthetics=aesthetics)
-        graph_component = html.Div(
-            id=str(uuid4()),
-            children=[Cytoscape(id=str(uuid4()), elements=graph_data,
-                                layout=AESTHETICS['global_options'])],
-            style={'width': '100%', 'height': '800px'})
-        return [graph_component]
-    '''
+
+        for elem in elements:
+            group = elem['group']
+            if group == 'edge':
+                # applies to nodes only
+                continue
+            classes = elem.get('classes')
+            if not classes:
+                # if there is no classes specified, not sure what it is otherwise
+                continue
+            classes_list = classes.split(" ")
+            is_model = any(c.startswith("model") for c in classes_list)
+            is_symbol = any(c.startswith("symbol") for c in classes_list)
+
+            if not is_model and not is_symbol:
+                # is some other element on the graph, like the "unattached" model
+                continue
+
+            class_to_add = 'label-off'
+            if (is_model and show_models) or (is_symbol and show_properties):
+                class_to_add = 'label-on'
+
+            for val in ('label-on', 'label-off'):
+                try:
+                    classes_list.remove(val)
+                except ValueError:
+                    pass
+            classes_list.append(class_to_add)
+
+            elem['classes'] = " ".join(classes_list)
+
+        return elements
 
     layout = html.Div([html.Div([graph_layout], className='row'),
                        html.Div([html.Div([models_index], className='six columns'),
