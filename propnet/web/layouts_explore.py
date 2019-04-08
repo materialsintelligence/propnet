@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 from dash_cytoscape import Cytoscape
-from propnet.web.utils import graph_conversion, STYLESHEET_FILE
+from propnet.web.utils import graph_conversion, GRAPH_STYLESHEET, GRAPH_CONFIG
 from propnet.core.graph import Graph
 
 from propnet.web.layouts_models import models_index
@@ -18,22 +18,19 @@ from uuid import uuid4
 from monty.serialization import loadfn
 from os import path
 
-GRAPH_LAYOUT_FILE = path.join(path.dirname(__file__), 'graph_layout.yaml')
 propnet_nx_graph = Graph().get_networkx_graph()
-graph_height_px = 1000
+GRAPH_HEIGHT_PX = 1000
 
 
 def explore_layout(app):
-    graph_data = graph_conversion(propnet_nx_graph, graph_size_pixels=graph_height_px)
-    layout = loadfn(GRAPH_LAYOUT_FILE)
-    stylesheet = loadfn(STYLESHEET_FILE)
+    graph_data = graph_conversion(propnet_nx_graph, graph_size_pixels=GRAPH_HEIGHT_PX)
     graph_component = html.Div(
         id='graph_component',
         children=[Cytoscape(id='pn-graph', elements=graph_data,
                             style={'width': '100%',
-                                   'height': str(graph_height_px) + "px"},
-                            stylesheet=stylesheet,
-                            layout=layout,
+                                   'height': str(GRAPH_HEIGHT_PX) + "px"},
+                            stylesheet=GRAPH_STYLESHEET,
+                            layout=GRAPH_CONFIG,
                             boxSelectionEnabled=True)],
         )
 

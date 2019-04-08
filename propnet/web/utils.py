@@ -13,8 +13,9 @@ import propnet.models
 from propnet.core.registry import Registry
 
 log = logging.getLogger(__name__)
-# AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
-STYLESHEET_FILE = path.join(path.dirname(__file__), 'graph_stylesheet.yaml')
+
+GRAPH_CONFIG = loadfn(path.join(path.dirname(__file__), 'graph_layout.yaml'))
+GRAPH_STYLESHEET = loadfn(path.join(path.dirname(__file__), 'graph_stylesheet.yaml'))
 
 # TODO: use the attributes of the graph class, rather than networkx
 def graph_conversion(graph: nx.DiGraph,
@@ -120,19 +121,21 @@ def graph_conversion(graph: nx.DiGraph,
                     'classes': ['is-input']}
 
     if hide_unconnected_nodes:
-        edges.update({
+        unconnected_edges = {
             (node['data']['id'], 'unattached_symbols'):
                 {'data': {'source': node['data']['id'],
                           'target': 'unattached_symbols'},
                  'classes': ['is-output']}
-            for node in nodes if node['data']['id'] not in connected_nodes})
-        nodes.append({
-            'data': {'id': 'unattached_symbols',
-                     'label': "Unattached symbols"
-                     },
-            'locked': False,
-            'classes': ['unattached', 'label-on']
-        })
+            for node in nodes if node['data']['id'] not in connected_nodes}
+        if unconnected_edges:
+            edges.update(unconnected_edges)
+            nodes.append({
+                'data': {'id': 'unattached_symbols',
+                         'label': "Unattached symbols"
+                         },
+                'locked': False,
+                'classes': ['unattached', 'label-on']
+            })
 
     for node in nodes:
         node['group'] = 'nodes'

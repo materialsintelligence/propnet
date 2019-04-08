@@ -1,19 +1,20 @@
 import dash_html_components as html
 import dash_core_components as dcc
-from crystal_toolkit import GraphComponent
+from dash_cytoscape import Cytoscape
 from pydash import set_
 
 import networkx as nx
 from propnet.core.graph import Graph
 
-from propnet.web.utils import graph_conversion
+from propnet.web.utils import graph_conversion, GRAPH_CONFIG, GRAPH_STYLESHEET
 
 # noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 
+SUBGRAPH_SIZE_PX = 500
 # layouts for symbol detail pages
-def symbol_layout(symbol_name, aesthetics=None):
+def symbol_layout(symbol_name):
     """Create a Dash layout for a provided symbol.
 
     Args:
@@ -37,17 +38,19 @@ def symbol_layout(symbol_name, aesthetics=None):
     # TODO: costly, should just construct subgraph directly?
     g = Graph()
     subgraph = nx.ego_graph(g.get_networkx_graph(), symbol, undirected=True, radius=2)
-    # options=AESTHETICS['global_options']
-    # if "arrows" in options["edges"]:
-    #     options["edges"]["arrows"] = "to"
-    set_(aesthetics, "node_options.show_model_labels", True)
+    subgraph_data = graph_conversion(subgraph, graph_size_pixels=SUBGRAPH_SIZE_PX,
+                                     show_models=True, show_symbols=True)
+
     layouts.append(html.Div(
-        GraphComponent(
+        Cytoscape(
             id="model_graph",
-            graph=graph_conversion(subgraph),
-            options={}
-        ),
-        style={'width': '100%', 'height': '300px'}
+            elements=subgraph_data,
+            style={'width': '100%',
+                   'height': str(SUBGRAPH_SIZE_PX) + "px"},
+            stylesheet=GRAPH_STYLESHEET,
+            layout=GRAPH_CONFIG,
+            boxSelectionEnabled=True
+        )
     ))
 
     if len(symbol.display_names) > 1:
