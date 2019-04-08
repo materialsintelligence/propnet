@@ -8,14 +8,19 @@ from propnet.core.models import Model
 from monty.serialization import loadfn
 import networkx as nx
 
+from propnet.core.graph import Graph
 # noinspection PyUnresolvedReferences
 import propnet.models
 from propnet.core.registry import Registry
 
 log = logging.getLogger(__name__)
 
-GRAPH_CONFIG = loadfn(path.join(path.dirname(__file__), 'graph_layout.yaml'))
+GRAPH_CONFIG = loadfn(path.join(path.dirname(__file__), 'graph_config.yaml'))
 GRAPH_STYLESHEET = loadfn(path.join(path.dirname(__file__), 'graph_stylesheet.yaml'))
+GRAPH_HEIGHT_PX = 1000
+SUBGRAPH_HEIGHT_PX = 500
+propnet_nx_graph = Graph().get_networkx_graph()
+
 
 # TODO: use the attributes of the graph class, rather than networkx
 def graph_conversion(graph: nx.DiGraph,

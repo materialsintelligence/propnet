@@ -4,15 +4,14 @@ from dash_cytoscape import Cytoscape
 from pydash import set_
 
 import networkx as nx
-from propnet.core.graph import Graph
 
-from propnet.web.utils import graph_conversion, GRAPH_CONFIG, GRAPH_STYLESHEET
+from propnet.web.utils import graph_conversion, GRAPH_CONFIG, \
+    GRAPH_STYLESHEET, SUBGRAPH_HEIGHT_PX, propnet_nx_graph
 
 # noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 
-SUBGRAPH_SIZE_PX = 500
 # layouts for symbol detail pages
 def symbol_layout(symbol_name):
     """Create a Dash layout for a provided symbol.
@@ -36,19 +35,24 @@ def symbol_layout(symbol_name):
 
     layouts.append(html.H6('Graph'))
     # TODO: costly, should just construct subgraph directly?
-    g = Graph()
-    subgraph = nx.ego_graph(g.get_networkx_graph(), symbol, undirected=True, radius=2)
-    subgraph_data = graph_conversion(subgraph, graph_size_pixels=SUBGRAPH_SIZE_PX,
+    subgraph = nx.ego_graph(propnet_nx_graph, symbol, undirected=True, radius=2)
+    subgraph_data = graph_conversion(subgraph, graph_size_pixels=SUBGRAPH_HEIGHT_PX,
                                      show_models=True, show_symbols=True)
+
+    if len(subgraph_data) < 50:
+        graph_config = GRAPH_CONFIG.copy()
+        graph_config['maxSimulationTime'] = 1500
+    else:
+        graph_config = GRAPH_CONFIG
 
     layouts.append(html.Div(
         Cytoscape(
             id="model_graph",
             elements=subgraph_data,
             style={'width': '100%',
-                   'height': str(SUBGRAPH_SIZE_PX) + "px"},
+                   'height': str(SUBGRAPH_HEIGHT_PX) + "px"},
             stylesheet=GRAPH_STYLESHEET,
-            layout=GRAPH_CONFIG,
+            layout=graph_config,
             boxSelectionEnabled=True
         )
     ))

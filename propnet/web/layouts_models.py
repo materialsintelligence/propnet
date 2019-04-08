@@ -2,12 +2,12 @@ from collections import OrderedDict
 
 import dash_html_components as html
 import dash_core_components as dcc
-from crystal_toolkit import GraphComponent
+from dash_cytoscape import Cytoscape
 
 import networkx as nx
-from propnet.core.graph import Graph
 
-from propnet.web.utils import graph_conversion
+from propnet.web.utils import graph_conversion, GRAPH_CONFIG, \
+    GRAPH_STYLESHEET, SUBGRAPH_HEIGHT_PX, propnet_nx_graph
 from propnet.core.utils import references_to_markdown
 
 # noinspection PyUnresolvedReferences
@@ -47,18 +47,26 @@ def model_layout(model_name):
     )
 
     # TODO: costly, should just construct subgraph directly?
-    g = Graph()
-    subgraph = nx.ego_graph(g.get_networkx_graph(), model, undirected=True)
-    # options = AESTHETICS['global_options']
-    # if "arrows" in options["edges"]:
-    #     options["edges"]["arrows"] = "to"
+
+    subgraph = nx.ego_graph(propnet_nx_graph, model, undirected=True)
+    subgraph_data = graph_conversion(subgraph, graph_size_pixels=SUBGRAPH_HEIGHT_PX,
+                                     show_symbols=True, show_models=True)
+    if len(subgraph_data) < 50:
+        graph_config = GRAPH_CONFIG.copy()
+        graph_config['maxSimulationTime'] = 1500
+    else:
+        graph_config = GRAPH_CONFIG
+
     layouts['Graph'] = html.Div(
-        GraphComponent(
+        Cytoscape(
             id="model_graph",
-            graph=graph_conversion(subgraph),
-            options={}
-        ),
-        style={'width': '100%', 'height': '300px'}
+            elements=subgraph_data,
+            style={'width': '100%',
+                   'height': str(SUBGRAPH_HEIGHT_PX) + "px"},
+            stylesheet=GRAPH_STYLESHEET,
+            layout=graph_config,
+            boxSelectionEnabled=True
+        )
     )
 
     if model.categories:
