@@ -165,17 +165,7 @@ def interactive_layout(app):
                          for quantity in material.get_quantities()}
 
         return json.dumps(mp_quantities, cls=MontyEncoder)
-    '''
-    @app.callback(
-        Output('mp-container', 'style'),
-        [Input('mp-data', 'data')]
-    )
-    def show_mp_table(data):
-        if (data is None) or (len(data) == 0):
-            return {'display': 'none'}
-        else:
-            return {}
-    '''
+
     @app.callback(
         Output('mp-table', 'data'),
         [Input('mp-data', 'data')]
