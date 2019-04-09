@@ -25,7 +25,7 @@ load_extra_layouts()
 
 # TODO: Fix math rendering
 
-app = dash.Dash()
+app = dash.Dash(__name__)
 server = app.server
 app.config.supress_callback_exceptions = True  # TODO: remove this?
 app.scripts.config.serve_locally = True
@@ -55,15 +55,6 @@ app.layout = html.Div(
                        style={'textAlign': 'center'}),
               html.Div(id='page-content')],
     style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 30})
-
-# standard Dash css, fork this for a custom theme
-# we real web devs now
-app.css.append_css(
-    {'external_url': 'https://codepen.io/mkhorton-the-reactor/pen/oQbddV.css'})
-# app.css.append_css(
-#     {'external_url': 'https://codepen.io/montoyjh/pen/YjPKae.css'})
-app.css.append_css(
-    {'external_url': 'https://codepen.io/mikesmith1611/pen/QOKgpG.css'})
 
 PLOT_LAYOUT = plot_layout(app)
 CORRELATE_LAYOUT = correlate_layout(app)
