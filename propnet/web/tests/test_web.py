@@ -58,9 +58,10 @@ class WebTest(unittest.TestCase):
         serialized = json.dumps(converted)
         self.assertIsNotNone(serialized)
         # Ensure that there are both nodes and proper edges
-        self.assertIn('Band gap', [n['label'] for n in converted['nodes']])
-        self.assertIn({'from': 'band_gap', "to": "Is Metallic"},
-                      converted['edges'])
+        self.assertIn('Band gap', [n['data']['label']
+                                   for n in converted if n['group'] == 'nodes'])
+        self.assertIn({'source': 'band_gap', "target": "Is Metallic"},
+                      [n['data'] for n in converted if n['group'] == 'edges'])
 
     def tearDown(self):
         pass

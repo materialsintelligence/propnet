@@ -5,6 +5,7 @@ import dash_core_components as dcc
 from dash_cytoscape import Cytoscape
 
 import networkx as nx
+from propnet.core.graph import Graph
 
 from propnet.web.utils import graph_conversion, GRAPH_CONFIG, \
     GRAPH_STYLESHEET, SUBGRAPH_HEIGHT_PX, propnet_nx_graph
