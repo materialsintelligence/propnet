@@ -97,7 +97,6 @@ def display_page(pathname):
                 return symbols_index()
         elif path_info['mode'] == 'explore':
             return EXPLORE_LAYOUT
-            # return explore_layout(app)
         elif path_info['mode'] == 'plot':
             return PLOT_LAYOUT
         elif path_info['mode'] == 'generate':

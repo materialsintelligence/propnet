@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output, State
 
 from dash_cytoscape import Cytoscape
 from propnet.web.utils import graph_conversion, GRAPH_STYLESHEET, \
-    GRAPH_CONFIG, GRAPH_HEIGHT_PX, propnet_nx_graph, update_labels
+    GRAPH_LAYOUT_CONFIG, GRAPH_SETTINGS, propnet_nx_graph, update_labels
 
 
 from propnet.web.layouts_models import models_index
@@ -17,11 +17,9 @@ def explore_layout(app):
     graph_component = html.Div(
         id='graph_component',
         children=[Cytoscape(id='pn-graph', elements=graph_data,
-                            style={'width': '100%',
-                                   'height': str(GRAPH_HEIGHT_PX) + "px"},
                             stylesheet=GRAPH_STYLESHEET,
-                            layout=GRAPH_CONFIG,
-                            boxSelectionEnabled=True)],
+                            layout=GRAPH_LAYOUT_CONFIG,
+                            **GRAPH_SETTINGS['full_view'])],
         )
 
     graph_layout = html.Div(
@@ -40,7 +38,7 @@ def explore_layout(app):
     @app.callback(Output('pn-graph', 'elements'),
                   [Input('graph_options', 'values')],
                   [State('pn-graph', 'elements')])
-    def get_graph_component(props, elements):
+    def change_propnet_graph_label_selection(props, elements):
         show_properties = 'show_properties' in props
         show_models = 'show_models' in props
 

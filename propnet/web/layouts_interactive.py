@@ -1,10 +1,10 @@
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table_experiments as dt
+import dash_table as dt
 
 from dash_cytoscape import Cytoscape
-from propnet.web.utils import graph_conversion, GRAPH_CONFIG, \
-    GRAPH_HEIGHT_PX, GRAPH_STYLESHEET, propnet_nx_graph, update_labels
+from propnet.web.utils import graph_conversion, GRAPH_LAYOUT_CONFIG, \
+    GRAPH_SETTINGS, GRAPH_STYLESHEET, propnet_nx_graph, update_labels
 
 import json
 from monty.json import MontyEncoder, MontyDecoder
@@ -40,7 +40,7 @@ ROW_IDX_TO_SYMBOL_NAME = [symbol for symbol in SCALAR_SYMBOLS.keys()]
 DEFAULT_ROWS = [
     {
         'Property': symbol.display_names[0],
-        'Editable Value': None
+        'Editable Value': ""
     }
     for symbol in SCALAR_SYMBOLS.values()
 ]
@@ -55,10 +55,35 @@ REMAINING_ROW_IDX_TO_SYMBOL_NAME = [symbol for symbol in REMAINING_SYMBOLS.keys(
 REMAINING_DEFAULT_ROWS = [
     {
         'Property': symbol.display_names[0],
-        'Value': None
+        'Value': ""
     }
     for symbol in REMAINING_SYMBOLS.values()
 ]
+
+# I'm sure that the font stuff can be handled by css, but I can't css as of now...
+DATA_TABLE_STYLE = dict(
+    n_fixed_rows=1,
+    style_table={
+        'maxHeight': '400px',
+        'overflowY': 'scroll'
+    },
+    style_cell={
+        'minWidth': '400px', 'width': '400px', 'maxWidth': '400px',
+        'whiteSpace': 'no-wrap',
+        'overflow': 'hidden',
+        'textOverflow': 'clip',
+        'font-family': 'HelveticaNeue',
+        'text-align': 'left'
+    },
+    style_data={
+        'whiteSpace': 'normal'
+    },
+    style_header={
+        'fontWeight': 'bold',
+        'font-family': 'HelveticaNeue',
+        'text-align': 'left'
+    }
+)
 
 
 def interactive_layout(app):
@@ -86,27 +111,33 @@ def interactive_layout(app):
         ]),
         html.Br(),
         html.Div(children=[dt.DataTable(id='mp-table',
-                               rows=[{'Property': None, 'Materials Project Value': None}],
-                               editable=False)], id='mp-container'),
+                                        data=[{'Property': "", 'Materials Project Value': ""}],
+                                        columns=[{'id': val, 'name': val}
+                                                 for val in ('Property', 'Materials Project Value')],
+                                        editable=False, **DATA_TABLE_STYLE)], id='mp-container'),
         dcc.Store(id='mp-data', storage_type='memory'),
         html.Br(),
         dcc.Markdown(
             'You can also enter your own values of properties below. If units are not '
             'specified, default propnet units will be assigned, but you can '
             'also enter your own units.'),
-        dt.DataTable(id='input-table', rows=DEFAULT_ROWS),
+        dt.DataTable(id='input-table', data=DEFAULT_ROWS,
+                     columns=[{'id': val, 'name': val}
+                              for val in ('Property', 'Editable Value')],
+                     editable=True, **DATA_TABLE_STYLE
+        ),
         html.Br(),
         dcc.Markdown('## propnet-derived output'),
         dcc.Markdown('Properties derived by propnet will be show below. If there are multiple '
-                     'values for the same property, you can choose to aggregate them together.'
-                     ''
-                     ''
-                     'In the graph, input properties are in green and derived properties in '
-                     'yellow. Properties shown in grey require additional information to derive.'),
+                     'values for the same property, you can choose to aggregate them together.'),
+        dcc.Markdown('In the graph, input properties are in green and derived properties in '
+                     'yellow. Models used to derive these properties are in blue. Properties '
+                     'shown in grey require additional information to derive.'),
         dcc.Checklist(id='aggregate', options=[{'label': 'Aggregate', 'value': 'aggregate'}],
                       values=['aggregate'], style={'display': 'inline-block'}),
         html.Br(),
-        html.Div(id='propnet-output')
+        html.Div(id='propnet-output'),
+        html.Br()
     ])
 
     @app.callback(Output('mp-data', 'data'),
@@ -134,7 +165,7 @@ def interactive_layout(app):
                          for quantity in material.get_quantities()}
 
         return json.dumps(mp_quantities, cls=MontyEncoder)
-
+    '''
     @app.callback(
         Output('mp-container', 'style'),
         [Input('mp-data', 'data')]
@@ -144,9 +175,9 @@ def interactive_layout(app):
             return {'display': 'none'}
         else:
             return {}
-
+    '''
     @app.callback(
-        Output('mp-table', 'rows'),
+        Output('mp-table', 'data'),
         [Input('mp-data', 'data')]
     )
     def show_mp_table(data):
@@ -165,6 +196,12 @@ def interactive_layout(app):
 
         return output_rows
 
+    @app.callback(
+        Output('mp-table', 'style_cell'),
+        [Input('mp-table', 'data')]
+    )
+    def update_mp_table_style(data):
+        return DATA_TABLE_STYLE['style_cell']
 
     @app.callback(Output('storage', 'clear_data'),
                   [Input('clear-mp', 'n_clicks')])
@@ -175,7 +212,7 @@ def interactive_layout(app):
 
     @app.callback(
         Output('propnet-output', 'children'),
-        [Input('input-table', 'rows'),
+        [Input('input-table', 'data'),
          Input('mp-data', 'data'),
          Input('aggregate', 'values')]
     )
@@ -210,34 +247,28 @@ def interactive_layout(app):
         } for quantity in output_quantities]
 
         output_table = dt.DataTable(id='output-table',
-                                    rows=output_rows,
-                                    editable=False)
+                                    data=output_rows,
+                                    columns=[{'id': val, 'name': val}
+                                             for val in ('Property', 'Value')],
+                                    editable=False, **DATA_TABLE_STYLE)
 
         # TODO: clean up
 
         input_quantity_names = [q.symbol for q in quantities]
-        derived_quantity_names = set(
-            [q.symbol for q in output_quantities]) - \
-                                 set(input_quantity_names)
+        derived_quantity_names = \
+            set([q.symbol for q in output_quantities]) - \
+            set(input_quantity_names)
 
-        # This is pretty inefficient...maybe a better way?
-        def get_models_in_provenance_tree(qty, model_set=None):
-            model_set = model_set or set()
-            model_set.add(qty.provenance.model)
-            for q in qty.provenance.inputs or []:
-                model_set = get_models_in_provenance_tree(q, model_set)
-            return model_set
-
-        models_evaluated = set.union(*[get_models_in_provenance_tree(output_q)
-                                       for output_q in output_quantities])
+        models_evaluated = set(output_q.provenance.model
+                               for output_q in output_material.get_quantities())
         models_evaluated = [Registry("models").get(m) for m in models_evaluated
                             if Registry("models").get(m) is not None]
 
         material_graph_data = graph_conversion(
             propnet_nx_graph,
             derivation_pathway={'inputs': input_quantity_names,
-                                          'outputs': list(derived_quantity_names),
-                                          'models': models_evaluated})
+                                'outputs': list(derived_quantity_names),
+                                'models': models_evaluated})
 
         output_graph = html.Div(
             children=[
@@ -251,11 +282,10 @@ def interactive_layout(app):
                 Cytoscape(
                     id='material-graph',
                     elements=material_graph_data,
-                    style={'width': '100%',
-                           'height': str(GRAPH_HEIGHT_PX) + "px"},
                     stylesheet=GRAPH_STYLESHEET,
-                    layout=GRAPH_CONFIG,
-                    boxSelectionEnabled=True)
+                    layout=GRAPH_LAYOUT_CONFIG,
+                    **GRAPH_SETTINGS['full_view']
+                    )
             ]
         )
 
@@ -268,7 +298,7 @@ def interactive_layout(app):
     @app.callback(Output('material-graph', 'elements'),
                   [Input('material-graph-options', 'values')],
                   [State('material-graph', 'elements')])
-    def get_material_graph_component(props, elements):
+    def change_material_graph_label_selection(props, elements):
         show_properties = 'show_properties' in props
         show_models = 'show_models' in props
 

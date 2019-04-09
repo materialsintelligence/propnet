@@ -4,8 +4,8 @@ from dash_cytoscape import Cytoscape
 
 import networkx as nx
 
-from propnet.web.utils import graph_conversion, GRAPH_CONFIG, \
-    GRAPH_STYLESHEET, SUBGRAPH_HEIGHT_PX, propnet_nx_graph
+from propnet.web.utils import graph_conversion, GRAPH_LAYOUT_CONFIG, \
+    GRAPH_STYLESHEET, GRAPH_SETTINGS, propnet_nx_graph
 
 # noinspection PyUnresolvedReferences
 import propnet.symbols
@@ -38,20 +38,18 @@ def symbol_layout(symbol_name):
                                      show_model_labels=True, show_symbol_labels=True)
 
     if len(subgraph_data) < 50:
-        graph_config = GRAPH_CONFIG.copy()
+        graph_config = GRAPH_LAYOUT_CONFIG.copy()
         graph_config['maxSimulationTime'] = 1500
     else:
-        graph_config = GRAPH_CONFIG
+        graph_config = GRAPH_LAYOUT_CONFIG
 
     layouts.append(html.Div(
         Cytoscape(
             id="model_graph",
             elements=subgraph_data,
-            style={'width': '100%',
-                   'height': str(SUBGRAPH_HEIGHT_PX) + "px"},
             stylesheet=GRAPH_STYLESHEET,
             layout=graph_config,
-            boxSelectionEnabled=True
+            **GRAPH_SETTINGS['model_symbol_view']
         )
     ))
 

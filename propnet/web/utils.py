@@ -1,6 +1,7 @@
 import logging
 
 from os import path
+import re
 
 from propnet.core.symbols import Symbol
 from propnet.core.models import Model
@@ -15,10 +16,15 @@ from propnet.core.registry import Registry
 
 log = logging.getLogger(__name__)
 
-GRAPH_CONFIG = loadfn(path.join(path.dirname(__file__), 'graph_config.yaml'))
+GRAPH_LAYOUT_CONFIG = loadfn(path.join(path.dirname(__file__), 'graph_layout_config.yaml'))
 GRAPH_STYLESHEET = loadfn(path.join(path.dirname(__file__), 'graph_stylesheet.yaml'))
-GRAPH_HEIGHT_PX = 800
-SUBGRAPH_HEIGHT_PX = 500
+GRAPH_SETTINGS = loadfn(path.join(path.dirname(__file__), 'graph_settings.yaml'))
+
+GRAPH_HEIGHT_PX = re.match(r'^([0-9]+)[^0-9]*',
+                           GRAPH_SETTINGS['full_view']['style']['height']).group(1)
+SUBGRAPH_HEIGHT_PX = re.match(r'^([0-9]+)[^0-9]*',
+                              GRAPH_SETTINGS['model_symbol_view']['style']['height']).group(1)
+
 propnet_nx_graph = Graph().get_networkx_graph()
 
 
@@ -136,12 +142,19 @@ def graph_conversion(graph: nx.DiGraph,
 
         for node in nodes:
             node_id = node['data']['id']
+            is_symbol = any(v.startswith("symbol") for v in node['classes'])
+            is_model = any(v.startswith("model") for v in node['classes'])
+
             if node_id in symbols_in:
                 node['classes'].append('symbol-input')
             elif node_id in symbols_out:
                 node['classes'].append('symbol-derived')
             elif node_id in models_evaluated:
                 node['classes'].append('model-derived')
+            elif is_symbol:
+                node['classes'].append('symbol-untraversed')
+            elif is_model:
+                node['classes'].append('model-untraversed')
             else:
                 node['classes'].append('untraversed')
 
