@@ -332,6 +332,7 @@ class Symbol(MSONable):
             return self.name == other.name
         elif isinstance(other, str):
             return self.name == other
+        return NotImplemented
 
     def __str__(self):
         return "Symbol: {}".format(self.name)
