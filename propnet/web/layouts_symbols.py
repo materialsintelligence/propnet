@@ -1,7 +1,6 @@
 import dash_html_components as html
 import dash_core_components as dcc
 from dash_cytoscape import Cytoscape
-from pydash import set_
 
 import networkx as nx
 
@@ -11,6 +10,7 @@ from propnet.web.utils import graph_conversion, GRAPH_CONFIG, \
 # noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
+
 
 # layouts for symbol detail pages
 def symbol_layout(symbol_name):
@@ -24,8 +24,6 @@ def symbol_layout(symbol_name):
       Dash layout
 
     """
-    # aesthetics = aesthetics or AESTHETICS.copy()
-    aesthetics = {}
     # list to hold layouts for each section
     layouts = []
 

@@ -2,7 +2,6 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
 
 from dash_cytoscape import Cytoscape
 from propnet.web.utils import graph_conversion, GRAPH_STYLESHEET, \
@@ -11,13 +10,6 @@ from propnet.web.utils import graph_conversion, GRAPH_STYLESHEET, \
 
 from propnet.web.layouts_models import models_index
 from propnet.web.layouts_symbols import symbols_index
-
-from pydash import set_
-
-from uuid import uuid4
-
-from monty.serialization import loadfn
-from os import path
 
 
 def explore_layout(app):

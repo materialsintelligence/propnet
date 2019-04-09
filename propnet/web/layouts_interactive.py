@@ -266,8 +266,8 @@ def interactive_layout(app):
         ]
 
     @app.callback(Output('material-graph', 'elements'),
-                      [Input('material-graph-options', 'values')],
-                      [State('material-graph', 'elements')])
+                  [Input('material-graph-options', 'values')],
+                  [State('material-graph', 'elements')])
     def get_material_graph_component(props, elements):
         show_properties = 'show_properties' in props
         show_models = 'show_models' in props
