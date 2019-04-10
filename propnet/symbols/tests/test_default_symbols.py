@@ -10,6 +10,12 @@ class SymbolsTest(unittest.TestCase):
         Registry.clear_all_registries()
         add_builtin_symbols_to_registry()
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        Registry.clear_all_registries()
+        from propnet.models import add_builtin_models_to_registry
+        add_builtin_models_to_registry()
+
     def test_reimport_symbols(self):
         Registry("symbols").pop('youngs_modulus')
         self.assertNotIn('youngs_modulus', Registry("symbols"))

@@ -2,6 +2,7 @@ import unittest
 import json
 
 from propnet.core.graph import Graph
+from propnet.core.registry import Registry
 from propnet.models import add_builtin_models_to_registry
 import os
 
@@ -23,6 +24,7 @@ class WebTest(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
+        Registry.clear_all_registries()
         add_builtin_models_to_registry()
 
     def setUp(self):
