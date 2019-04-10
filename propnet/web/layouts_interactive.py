@@ -129,7 +129,7 @@ def interactive_layout(app):
         html.Br(),
         dcc.Markdown('## propnet-derived output'),
         dcc.Markdown('Properties derived by propnet will be show below. If there are multiple '
-                     'values for the same property, you can choose to aggregate them together.'),
+                     'values for the same (scalar) property, you can choose to aggregate them together.'),
         dcc.Markdown('In the graph, input properties are in green and derived properties in '
                      'yellow. Models used to derive these properties are in blue. Properties '
                      'shown in grey require additional information to derive.'),
@@ -186,13 +186,6 @@ def interactive_layout(app):
 
         return output_rows
 
-    @app.callback(
-        Output('mp-table', 'style_cell'),
-        [Input('mp-table', 'data')]
-    )
-    def update_mp_table_style(data):
-        return DATA_TABLE_STYLE['style_cell']
-
     @app.callback(Output('storage', 'clear_data'),
                   [Input('clear-mp', 'n_clicks')])
     def clear_data(n_clicks):
@@ -227,7 +220,10 @@ def interactive_layout(app):
         output_material = graph_evaluator.evaluate(material, timeout=5)
 
         if aggregate:
-            output_quantities = output_material.get_aggregated_quantities().values()
+            aggregated_quantities = output_material.get_aggregated_quantities()
+            non_aggregatable_quantities = [v for v in output_material.get_quantities()
+                                           if v.symbol not in aggregated_quantities]
+            output_quantities = list(aggregated_quantities.values()) + non_aggregatable_quantities
         else:
             output_quantities = output_material.get_quantities()
 
