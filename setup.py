@@ -15,7 +15,7 @@ setup(
     install_requires=["dash-core-components>=0.22.1",
                       "dash-html-components>=0.10.1",
                       "dash-renderer>=0.12.1",
-                      "dash-table-experiments>=0.6.0",
+                      "dash-table==3.6.0",
                       "frozendict==1.2",
                       "gunicorn>=19.7.1",
                       "habanero==0.6.0",

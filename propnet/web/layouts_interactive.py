@@ -186,13 +186,6 @@ def interactive_layout(app):
 
         return output_rows
 
-    @app.callback(
-        Output('mp-table', 'style_cell'),
-        [Input('mp-table', 'data')]
-    )
-    def update_mp_table_style(data):
-        return DATA_TABLE_STYLE['style_cell']
-
     @app.callback(Output('storage', 'clear_data'),
                   [Input('clear-mp', 'n_clicks')])
     def clear_data(n_clicks):
