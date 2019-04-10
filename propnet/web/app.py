@@ -1,11 +1,9 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table_experiments as dt
 
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 
-from propnet import log_stream
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_symbols import symbol_layout, symbols_index
 from propnet.web.layouts_plot import plot_layout
@@ -14,7 +12,7 @@ from propnet.web.layouts_interactive import interactive_layout
 from propnet.web.layouts_correlate import correlate_layout
 from propnet.web.layouts_explore import explore_layout
 
-from crystal_toolkit import GraphComponent
+from dash_cytoscape import load_extra_layouts
 
 from propnet.web.utils import parse_path
 
@@ -22,6 +20,8 @@ from flask_caching import Cache
 import logging
 
 log = logging.getLogger(__name__)
+
+load_extra_layouts()
 
 # TODO: Fix math rendering
 
@@ -42,10 +42,6 @@ layout_menu = html.Div(
               html.Span(' • '),
               dcc.Link('Explore', href='/explore'),
               html.Span(' • '),
-              #dcc.Link('Models', href='/model'),
-              #html.Span(' • '),
-              #dcc.Link('Properties', href='/property'),
-              #html.Span(' • '),
               dcc.Link('Generate', href='/generate'),
               html.Span(' • '),
               dcc.Link('Correlate', href='/correlate'),

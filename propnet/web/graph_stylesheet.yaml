@@ -1,0 +1,75 @@
+- selector: .symbol
+  style:
+    background-color: "#43A1F8"
+    line-color: "#43A1F8"
+    shape: rectangle
+- selector: .model
+  style:
+    background-color: orange
+    line-color: orange
+    shape: rectangle
+- selector: .underived
+  style:
+    background-color: gray
+- selector: .symbol-derived
+  style:
+    background-color: "#FFBF00"
+- selector: .symbol-input
+  style:
+    background-color: "#9CDC90"
+- selector: .model-derived
+  style:
+    background-color: "#32CFFF"
+- selector: .model-untraversed
+  style:
+    background-color: "#BDBDBD"
+    border-color: "#32CFFF"
+    border-width: 2px
+    border-style: solid
+- selector: .symbol-untraversed
+  style:
+    background-color: "#BDBDBD"
+    border-color: "#FFBF00"
+    border-width: 2px
+    border-style: solid
+- selector: .untraversed
+  style:
+    background-color: "#000000"
+- selector: .unattached
+  style:
+    background-color: "#FF7777"
+    shape: rectangle
+- selector: .label-on
+  style:
+    text-halign: center
+    text-valign: center
+    text-wrap: ellipsis
+    font-family: "Helvetica"
+    font-size: 20
+    color: white
+    content: "data(label)"
+    width: label
+    padding: 10px
+- selector: .label-off
+  style:
+    content: ""
+    shape: diamond
+- selector: edge
+  style:
+    curve-style: bezier
+- selector: .is-input
+  style:
+    target-arrow-shape: triangle
+    target-endpoint: outside-to-node
+    arrow-scale: 2
+- selector: .is-output
+  style:
+    source-arrow-shape: triangle
+    source-endpoint: outside-to-node
+    arrow-scale: 2
+- selector: .on-derivation-path
+  style:
+    target-arrow-color: black
+    source-arrow-color: black
+    line-color: black
+    width: 5px

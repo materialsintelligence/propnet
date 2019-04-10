@@ -1,0 +1,16 @@
+full_view:
+  boxSelectionEnabled: true
+  minZoom: 0.1
+  maxZoom: 2
+  style:
+    width: "100%"
+    height: "800px"
+    border: "1px #BDBDBD solid"
+model_symbol_view:
+  boxSelectionEnabled: true
+  minZoom: 0.1
+  maxZoom: 2
+  style:
+    width: "100%"
+    height: "500px"
+    border: "1px #BDBDBD solid"

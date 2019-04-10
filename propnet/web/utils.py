@@ -1,45 +1,52 @@
 import logging
 
 from os import path
+import re
 
 from propnet.core.symbols import Symbol
 from propnet.core.models import Model
 
 from monty.serialization import loadfn
+import networkx as nx
 
+from propnet.core.graph import Graph
 # noinspection PyUnresolvedReferences
 import propnet.models
 from propnet.core.registry import Registry
 
 log = logging.getLogger(__name__)
-AESTHETICS = loadfn(path.join(path.dirname(__file__), 'aesthetics.yaml'))
+
+GRAPH_LAYOUT_CONFIG = loadfn(path.join(path.dirname(__file__), 'graph_layout_config.yaml'))
+GRAPH_STYLESHEET = loadfn(path.join(path.dirname(__file__), 'graph_stylesheet.yaml'))
+GRAPH_SETTINGS = loadfn(path.join(path.dirname(__file__), 'graph_settings.yaml'))
+
+GRAPH_HEIGHT_PX = re.match(r'^([0-9]+)[^0-9]*',
+                           GRAPH_SETTINGS['full_view']['style']['height']).group(1)
+SUBGRAPH_HEIGHT_PX = re.match(r'^([0-9]+)[^0-9]*',
+                              GRAPH_SETTINGS['model_symbol_view']['style']['height']).group(1)
+
+propnet_nx_graph = Graph().get_networkx_graph()
 
 
 # TODO: use the attributes of the graph class, rather than networkx
-def graph_conversion(graph,
-                     nodes_to_highlight_green=(),
-                     nodes_to_highlight_yellow=(),
-                     nodes_to_highlight_red=(),
+def graph_conversion(graph: nx.DiGraph,
+                     derivation_pathway=None,
                      hide_unconnected_nodes=True,
-                     aesthetics=None):
+                     show_symbol_labels=True,
+                     show_model_labels=False):
     """Utility function to render a networkx graph
     from Graph.graph for use in GraphComponent
 
     Args:
-      graph: from Graph.graph
+        graph (networkx.graph): from Graph.graph
 
     Returns: graph dict
     """
 
-    aesthetics = aesthetics or AESTHETICS
-
     nodes = []
-    edges = []
-    log.info(aesthetics['node_aesthetics']['Symbol'])
-    log.info(aesthetics['node_aesthetics']['Model'])
-    for n in graph.nodes():
+    edges = {}
 
-        name = None
+    for n in graph.nodes():
 
         # should do better parsing of nodes here
         # TODO: this is also horrific code for demo, change
@@ -48,54 +55,40 @@ def graph_conversion(graph,
             # property
             name = n.name
             label = n.display_names[0]
-            node_type = 'Symbol'
+            node_type = 'symbol'
         elif isinstance(n, Model):
             # model
             name = n.title
             label = n.title
-            node_type = 'Model'
+            node_type = 'model'
+        else:
+            name = None
+            label = None
+            node_type = None
+
         if name:
             # Get node, labels, name, and title
-            node = aesthetics['node_aesthetics'][node_type].copy()
-            if node.get("show_labels"):
-                node.update({"label": label,
-                             # "title": label,
-                             "shape": "box",
-                             "font": {"color": "#ffffff",
-                                      "face": "Helvetica",
-                                      "size": 20},
-                             "size": 30})
-            # Pop labels if they exist
-            else:
-                node.update({"size": 8.0,
-                             "shape": "diamond",
-                             "label": "",
-                             "title": ""})
+            node = {
+                'data': {'id': name,
+                         'label': label
+                         },
+                'locked': False,
+                'classes': [node_type]
+            }
 
-            node['id'] = name
+            if (node_type == 'model' and show_model_labels) or \
+                    (node_type == 'symbol' and show_symbol_labels):
+                node['classes'].append('label-on')
+            else:
+                node['classes'].append('label-off')
+
             nodes.append(node)
 
-    log.info("Nodes to highlight green: {}".format(
-            nodes_to_highlight_green))
-    highlight_nodes = any([nodes_to_highlight_green, nodes_to_highlight_yellow,
-                           nodes_to_highlight_red])
-    if highlight_nodes:
-        log.debug("Nodes to highlight green: {}".format(
-            nodes_to_highlight_green))
-        for node in nodes:
-            if node['id'] in nodes_to_highlight_green:
-                node['color'] = '#9CDC90'
-            elif node['id'] in nodes_to_highlight_yellow:
-                node['color'] = '#FFBF00'
-            elif node['id'] in nodes_to_highlight_red:
-                node['color'] = '#FD9998'
-            else:
-                node['color'] = '#BDBDBD'
-
     connected_nodes = set()
+
     # TODO: need to clean up after model refactor
-    def get_node_id(node):
-        return node.title if isinstance(node, Model) else node.name
+    def get_node_id(node_):
+        return node_.title if isinstance(node_, Model) else node_.name
 
     for n1, n2 in graph.edges():
         id_n1 = get_node_id(n1)
@@ -104,20 +97,77 @@ def graph_conversion(graph,
         if id_n1 and id_n2:
             connected_nodes.add(id_n1)
             connected_nodes.add(id_n2)
-            edges.append({
-                'from': id_n1,
-                'to': id_n2
+            if (id_n2, id_n1) in edges:
+                edges[(id_n2, id_n1)]['classes'].append('is-output')
+            else:
+                edges[(id_n1, id_n2)] = {
+                    'data': {'source': id_n1, 'target': id_n2},
+                    'classes': ['is-input']}
+
+    if not hide_unconnected_nodes or not derivation_pathway:
+        unconnected_edges = {
+            (node['data']['id'], 'unattached_symbols'):
+                {'data': {'source': node['data']['id'],
+                          'target': 'unattached_symbols'},
+                 'classes': ['is-output']}
+            for node in nodes if node['data']['id'] not in connected_nodes}
+        if unconnected_edges:
+            edges.update(unconnected_edges)
+            nodes.append({
+                'data': {'id': 'unattached_symbols',
+                         'label': "Unattached symbols"
+                         },
+                'locked': False,
+                'classes': ['unattached', 'label-on']
             })
+    else:
+        nodes = [node for node in nodes if node['data']['id'] in connected_nodes]
 
-    if hide_unconnected_nodes:
+    # For highlighting graph derivation
+    if derivation_pathway:
+        symbols_in = [get_node_id(s) for s in derivation_pathway['inputs']]
+        symbols_out = [get_node_id(s) for s in derivation_pathway['outputs']]
+        models_evaluated = [get_node_id(m)
+                            for m in derivation_pathway['models']]
+
+        symbol_nodes_in_path = set.union(set(symbols_in),
+                                         set(symbols_out))
+
+        for edge in edges.values():
+            if (edge['data']['source'] in symbol_nodes_in_path and
+                    edge['data']['target'] in models_evaluated) or \
+                    (edge['data']['target'] in symbol_nodes_in_path and
+                     edge['data']['source'] in models_evaluated):
+                edge['classes'].append('on-derivation-path')
+
         for node in nodes:
-            if node['id'] not in connected_nodes:
-                node['hidden'] = True
+            node_id = node['data']['id']
+            is_symbol = any(v.startswith("symbol") for v in node['classes'])
+            is_model = any(v.startswith("model") for v in node['classes'])
 
-    graph_data = {
-        'nodes': nodes,
-        'edges': edges
-    }
+            if node_id in symbols_in:
+                node['classes'].append('symbol-input')
+            elif node_id in symbols_out:
+                node['classes'].append('symbol-derived')
+            elif node_id in models_evaluated:
+                node['classes'].append('model-derived')
+            elif is_symbol:
+                node['classes'].append('symbol-untraversed')
+            elif is_model:
+                node['classes'].append('model-untraversed')
+            else:
+                node['classes'].append('untraversed')
+
+    for node in nodes:
+        node['group'] = 'nodes'
+    for edge in edges.values():
+        edge['group'] = 'edges'
+
+    graph_data = nodes + list(edges.values())
+
+    for v in graph_data:
+        if isinstance(v.get('classes'), list):
+            v['classes'] = " ".join(v['classes'])
 
     return graph_data
 
@@ -173,3 +223,35 @@ def parse_path(pathname):
         'mode': mode,
         'value': value
     }
+
+
+def update_labels(elements, show_models=True, show_symbols=True):
+    for elem in elements:
+        group = elem['group']
+        if group == 'edge':
+            # applies to nodes only
+            continue
+        classes = elem.get('classes')
+        if not classes:
+            # if there is no classes specified, not sure what it is otherwise
+            continue
+        classes_list = classes.split(" ")
+        is_model = any(c.startswith("model") for c in classes_list)
+        is_symbol = any(c.startswith("symbol") for c in classes_list)
+
+        if not is_model and not is_symbol:
+            # is some other element on the graph, like the "unattached" model
+            continue
+
+        class_to_add = 'label-off'
+        if (is_model and show_models) or (is_symbol and show_symbols):
+            class_to_add = 'label-on'
+
+        for val in ('label-on', 'label-off'):
+            try:
+                classes_list.remove(val)
+            except ValueError:
+                pass
+        classes_list.append(class_to_add)
+
+        elem['classes'] = " ".join(classes_list)

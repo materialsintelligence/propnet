@@ -2,12 +2,13 @@ from collections import OrderedDict
 
 import dash_html_components as html
 import dash_core_components as dcc
-from crystal_toolkit import GraphComponent
+from dash_cytoscape import Cytoscape
 
 import networkx as nx
 from propnet.core.graph import Graph
 
-from propnet.web.utils import graph_conversion, AESTHETICS
+from propnet.web.utils import graph_conversion, GRAPH_LAYOUT_CONFIG, \
+    GRAPH_STYLESHEET, GRAPH_SETTINGS, propnet_nx_graph
 from propnet.core.utils import references_to_markdown
 
 # noinspection PyUnresolvedReferences
@@ -47,25 +48,31 @@ def model_layout(model_name):
     )
 
     # TODO: costly, should just construct subgraph directly?
-    g = Graph()
-    subgraph = nx.ego_graph(g.get_networkx_graph(), model, undirected=True)
-    options = AESTHETICS['global_options']
-    if "arrows" in options["edges"]:
-        options["edges"]["arrows"] = "to"
+
+    subgraph = nx.ego_graph(propnet_nx_graph, model, undirected=True)
+    subgraph_data = graph_conversion(subgraph,
+                                     show_symbol_labels=True, show_model_labels=True)
+    if len(subgraph_data) < 50:
+        graph_config = GRAPH_LAYOUT_CONFIG.copy()
+        graph_config['maxSimulationTime'] = 1500
+    else:
+        graph_config = GRAPH_LAYOUT_CONFIG
+
     layouts['Graph'] = html.Div(
-        GraphComponent(
+        Cytoscape(
             id="model_graph",
-            graph=graph_conversion(subgraph),
-            options=AESTHETICS['global_options']
-        ),
-        style={'width': '100%', 'height': '300px'}
+            elements=subgraph_data,
+            stylesheet=GRAPH_STYLESHEET,
+            layout=graph_config,
+            **GRAPH_SETTINGS['model_symbol_view']
+        )
     )
 
     if model.categories:
         tags = html.Ul(
             className="tags",
-            children=[html.Li(tag, className="tag")
-                      for tag in model.categories]
+            children=[html.Li(tag_, className="tag")
+                      for tag_ in model.categories]
         )
         layouts['Tags'] = tags
 

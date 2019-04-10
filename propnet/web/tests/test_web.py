@@ -2,6 +2,7 @@ import unittest
 import json
 
 from propnet.core.graph import Graph
+from propnet.core.registry import Registry
 from propnet.models import add_builtin_models_to_registry
 import os
 
@@ -23,6 +24,7 @@ class WebTest(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
+        Registry.clear_all_registries()
         add_builtin_models_to_registry()
 
     def setUp(self):
@@ -58,9 +60,10 @@ class WebTest(unittest.TestCase):
         serialized = json.dumps(converted)
         self.assertIsNotNone(serialized)
         # Ensure that there are both nodes and proper edges
-        self.assertIn('Band gap', [n['label'] for n in converted['nodes']])
-        self.assertIn({'from': 'band_gap', "to": "Is Metallic"},
-                      converted['edges'])
+        self.assertIn('Band gap', [n['data']['label']
+                                   for n in converted if n['group'] == 'nodes'])
+        self.assertIn({'source': 'band_gap', "target": "Is Metallic"},
+                      [n['data'] for n in converted if n['group'] == 'edges'])
 
     def tearDown(self):
         pass
