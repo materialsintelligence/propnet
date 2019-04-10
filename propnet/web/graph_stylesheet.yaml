@@ -34,7 +34,7 @@
     border-style: solid
 - selector: .untraversed
   style:
-    background-color: "#000000"
+    background-color: "#BDBDBD"
 - selector: .unattached
   style:
     background-color: "#FF7777"
