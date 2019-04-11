@@ -17,7 +17,7 @@ implemented_by:
 - dmrdjenovich
 references:
 - url:https://journals.aps.org/prb/abstract/10.1103/PhysRevB.46.6131
-symbol_property_map:
+variable_symbol_map:
   t: thermal_conductivity
   a_density: atomic_density
   sv_long: sound_velocity_longitudinal

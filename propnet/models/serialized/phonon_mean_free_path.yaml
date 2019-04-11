@@ -10,8 +10,8 @@ implemented_by:
 - jdagdelen
 references:
 - url:https://link.aps.org/doi/10.1103/PhysRev.98.1751
-solve_for_all_symbols: true
-symbol_property_map:
+solve_for_all_variables: true
+variable_symbol_map:
     A_0: interatomic_spacing
     a: thermal_expansion_coefficient
     y: gruneisen_parameter

@@ -16,7 +16,7 @@ units_for_evaluation:
   G: gigapascal
   H: dimensionless
   k: dimensionless
-symbol_property_map:
+variable_symbol_map:
   G: shear_modulus
   H: vickers_hardness
   k: pugh_ratio

@@ -33,7 +33,7 @@ config = {
     "categories": [
         "pymatgen"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "structure": "structure",
         "num_sites": "nsites",
         "volume": "volume_unit_cell",

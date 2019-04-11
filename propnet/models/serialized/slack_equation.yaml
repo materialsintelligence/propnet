@@ -26,7 +26,7 @@ references:
   booktitle = {High Thermal Conductivity Materials}}"
   - doi:10.1002/adfm.201600718
   - doi:10.1134/1.1666949
-symbol_property_map:
+variable_symbol_map:
     y: gruneisen_parameter
     n: nsites
     T: temperature

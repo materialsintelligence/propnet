@@ -27,7 +27,7 @@ units_for_evaluation:
   E_g: electron_volt
   c: dimensionless
   epsilon: dimensionless
-symbol_property_map:
+variable_symbol_map:
   E_g: band_gap
   c: dielectric_figure_of_merit_energy
   epsilon: relative_permittivity

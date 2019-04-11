@@ -17,7 +17,7 @@ units_for_evaluation:
   G: Pa
   p: kg / m^3
   v_t: m / s
-symbol_property_map:
+variable_symbol_map:
   G: shear_modulus
   p: density
   v_t: sound_velocity_transverse

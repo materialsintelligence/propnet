@@ -45,7 +45,7 @@ config = {
         "outputs": ["k"]
     }],
     "categories": ["mechanical", "electrical"],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "S": "compliance_tensor_voigt",
         "e": "dielectric_tensor",
         "d": "piezoelectric_tensor_converse",

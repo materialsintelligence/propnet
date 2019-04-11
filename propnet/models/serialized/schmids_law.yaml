@@ -14,8 +14,8 @@ implemented_by:
 - jpalakapilly
 references:
 - url:https://en.wikipedia.org/wiki/Schmid%27s_law
-solve_for_all_symbols: true
-symbol_property_map:
+solve_for_all_variables: true
+variable_symbol_map:
   m: schmid_factor
   sigma: applied_stress
   tau: resolved_shear_stress

@@ -23,7 +23,7 @@ config = {
     "categories": [
         "mechanical"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "S": "compliance_tensor_voigt",
         "B": "bulk_modulus"
     },

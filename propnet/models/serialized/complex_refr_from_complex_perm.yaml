@@ -19,7 +19,7 @@ implemented_by:
 - vtshitoyan
 references:
 - url:https://en.wikipedia.org/wiki/Refractive_index#Complex_refractive_index
-symbol_property_map:
+variable_symbol_map:
   e1: relative_permittivity
   e2: relative_permittivity_im
   k: extinction_coefficient

@@ -16,8 +16,8 @@ name: optical_transmittance
 implemented_by:
 - vtshitoyan
 references: []
-solve_for_all_symbols: true
-symbol_property_map:
+solve_for_all_variables: true
+variable_symbol_map:
   A: absorbance
   R: reflectance
   T: transmittance
