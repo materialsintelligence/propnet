@@ -11,7 +11,7 @@ name: interatomic_spacing_average
 implemented_by:
 - montoyjh
 references: null
-symbol_property_map:
+variable_symbol_map:
   d: interatomic_spacing
   p: atomic_density
 test_data:

@@ -14,8 +14,8 @@ implemented_by:
 - montoyjh
 references:
 - url:https://en.wikipedia.org/wiki/Gr%C3%BCneisen_parameter
-solve_for_all_symbols: true
-symbol_property_map:
+solve_for_all_variables: true
+variable_symbol_map:
     y: gruneisen_parameter
     a: thermal_expansion_coefficient
     c_v: specific_heat_capacity_constant_volume
@@ -23,7 +23,7 @@ symbol_property_map:
     k: bulk_modulus
 # This really breaks the graph evaluation, it would be
 # nice if it worked though
-# solve_for_all_symbols: True
+# solve_for_all_variables: True
 test_data:
 - inputs:
     c_v: 385

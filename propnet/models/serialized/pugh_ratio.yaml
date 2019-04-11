@@ -12,7 +12,7 @@ name: pugh_ratio
 implemented_by:
 - dmrdjenovich
 references: []
-symbol_property_map:
+variable_symbol_map:
   B: bulk_modulus
   G: shear_modulus
   k: pugh_ratio

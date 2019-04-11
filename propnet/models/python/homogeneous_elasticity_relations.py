@@ -321,7 +321,7 @@ config = {
     "categories": [
         "mechanical"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "v": "poisson_ratio",
         "G": "shear_modulus",
         "Y": "youngs_modulus",

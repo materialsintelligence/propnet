@@ -25,7 +25,7 @@ units_for_evaluation:
   K: gigapascal
   m_e: dimensionless
   mu_e: centimeter ** 2 / second / volt
-symbol_property_map:
+variable_symbol_map:
   K: bulk_modulus
   m_e: electron_effective_mass
   mu_e: electron_mobility

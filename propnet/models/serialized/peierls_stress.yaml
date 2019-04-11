@@ -12,7 +12,7 @@ implemented_by:
 - jpalakapilly
 references:
 - url:https://en.wikipedia.org/wiki/Peierls_stress}
-symbol_property_map:
+variable_symbol_map:
   G: shear_modulus
   T_pn: peierls_stress
   a: interplanar_spacing

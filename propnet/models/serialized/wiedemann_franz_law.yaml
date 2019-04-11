@@ -42,8 +42,8 @@ units_for_evaluation:
   T: kelvin
   k: watt / kelvin / meter
   o: 1 / meter / ohm
-solve_for_all_symbols: true
-symbol_property_map:
+solve_for_all_variables: true
+variable_symbol_map:
   T: temperature
   is_metallic: is_metallic
   k: electronic_thermal_conductivity

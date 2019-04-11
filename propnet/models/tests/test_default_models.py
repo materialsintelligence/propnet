@@ -110,16 +110,16 @@ class DefaultModelsTest(unittest.TestCase):
             msg = "{} has invalid property".format(model.name)
             self.assertIsNotNone(model.categories, msg=msg)
             self.assertIsNotNone(model.description, msg=msg)
-            self.assertIsNotNone(model.symbol_property_map, msg=msg)
+            self.assertIsNotNone(model.variable_symbol_map, msg=msg)
             self.assertIsNotNone(model.implemented_by, msg=msg)
             self.assertNotEqual(model.implemented_by, [], msg=msg)
-            self.assertTrue(isinstance(model.symbol_property_map, dict), msg=msg)
-            self.assertTrue(len(model.symbol_property_map.keys()) > 0, msg=msg)
-            for key in model.symbol_property_map.keys():
-                self.assertTrue(isinstance(key, str), 'Invalid symbol_property_map key: ' + str(key))
+            self.assertTrue(isinstance(model.variable_symbol_map, dict), msg=msg)
+            self.assertTrue(len(model.variable_symbol_map.keys()) > 0, msg=msg)
+            for key in model.variable_symbol_map.keys():
+                self.assertTrue(isinstance(key, str), 'Invalid variable_symbol_map key: ' + str(key))
                 self.assertTrue(
-                    isinstance(model.symbol_property_map[key], str)
-                    and model.symbol_property_map[key] in Registry("symbols").keys(), msg=msg)
+                    isinstance(model.variable_symbol_map[key], str)
+                    and model.variable_symbol_map[key] in Registry("symbols").keys(), msg=msg)
             self.assertTrue(
                 model.connections is not None and isinstance(model.connections, list) and len(model.connections) > 0,
                 msg=msg)
@@ -139,11 +139,11 @@ class DefaultModelsTest(unittest.TestCase):
                 for in_symb in item['inputs']:
                     self.assertIsNotNone(in_symb, msg=msg)
                     self.assertTrue(isinstance(in_symb, str), msg=msg)
-                    self.assertTrue(in_symb in model.symbol_property_map.keys(), msg=msg)
+                    self.assertTrue(in_symb in model.variable_symbol_map.keys(), msg=msg)
                 for out_symb in item['outputs']:
                     self.assertIsNotNone(out_symb, msg=msg)
                     self.assertIsNotNone(isinstance(out_symb, str), msg=msg)
-                    self.assertTrue(out_symb in model.symbol_property_map.keys(), msg=msg)
+                    self.assertTrue(out_symb in model.variable_symbol_map.keys(), msg=msg)
 
     def test_validate_all_models(self):
         for model in Registry("models").values():

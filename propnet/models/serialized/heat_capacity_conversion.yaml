@@ -9,8 +9,8 @@ name: heat_capacity_conversion
 implemented_by:
 - jdagdelen
 references: []
-solve_for_all_symbols: true
-symbol_property_map:
+solve_for_all_variables: true
+variable_symbol_map:
   c_v_molar: molar_heat_capacity_constant_volume
   c_v_specific: specific_heat_capacity_constant_volume
   molar_mass: molar_mass

@@ -34,7 +34,7 @@ config = {
     "categories": [
         "meta"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "hhi_production": "hhi_production",
         "hhi_reserve": "hhi_reserve",
         "formula": "formula"

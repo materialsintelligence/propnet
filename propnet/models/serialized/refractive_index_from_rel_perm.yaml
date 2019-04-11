@@ -24,8 +24,8 @@ implemented_by:
 - jpalakapilly
 references:
 - url:https://en.wikipedia.org/wiki/Refractive_index#Relative_permittivity_and_permeability}
-solve_for_all_symbols: true
-symbol_property_map:
+solve_for_all_variables: true
+variable_symbol_map:
   Er: relative_permeability
   Ur: relative_permittivity
   n: refractive_index
