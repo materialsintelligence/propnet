@@ -1,0 +1,7 @@
+name: universal_anisotropy
+units: dimensionless
+display_names: ['Universal Anisotropy Index']
+display_symbols: ['A^U']
+shape: 1
+comment: 'Universal anisotropy index'
+category: property

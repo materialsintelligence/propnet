@@ -24,7 +24,7 @@ class MPRester(_MPRester):
         "diel.poly_total": "relative_permittivity",
         # "diel.e_electronic": "null_symbol",
         "diel.e_total": "dielectric_tensor",
-        # "diel.poly_electronic": "null_symbol",
+        "diel.poly_electronic": "relative_permittivity_electronic",
         "diel.pot_ferroelectric": "potentially_ferroelectric",
         "pretty_formula": "formula",
         "e_above_hull": "energy_above_hull",
@@ -35,16 +35,17 @@ class MPRester(_MPRester):
         # "elasticity.K_Reuss": "bulk_modulus",
         # "elasticity.K_VRH": "bulk_modulus",
         # "elasticity.K_Voigt": "bulk_modulus",
-        # "elasticity.elastic_anisotropy": "elastic_anisotropy",
+        "elasticity.elastic_anisotropy": "elastic_anisotropy",
+        "elasticity.universal_anisotropy": "universal_anisotropy",
         # "elasticity.poisson_ratio": "poisson_ratio",
         "formation_energy_per_atom": "formation_energy_per_atom",
         "magnetic_type": "magnetic_order",
         "oxide_type": "oxide_type",
         "piezo.piezoelectric_tensor": "piezoelectric_tensor",
-        # "piezo.v_max": "null_symbol", # TODO": "add property
-        # "piezo.eij_max": "null_symbol", # TODO": "add property
+        "piezo.v_max": "piezoelectric_modulus_longitudinal_max_direction",
+        "piezo.eij_max": "piezoelectric_modulus_longitudinal_max",
         "structure": "structure",
-        # "total_magnetization": "null_symbol",
+        "magnetism.total_magnetization": "total_magnetization",
         #  TODO": "add property total_magnetization_per_unit_cell
     }
 
