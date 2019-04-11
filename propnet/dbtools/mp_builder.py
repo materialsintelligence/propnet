@@ -123,7 +123,7 @@ class PropnetBuilder(Builder):
                                                                   provenance=provenance))
         else:
             logger.warning(
-                "Expected computed entry, but was unable to create one for {}".format(item['task_id']))
+                "Unable to create computed entry for {}".format(item['task_id']))
         material.add_quantity(QuantityFactory.create_quantity("external_identifier_mp", item['task_id'],
                                                               provenance=provenance))
 
@@ -170,6 +170,7 @@ class PropnetBuilder(Builder):
 
 # This is a PITA, but right now there's no way to get this data from the
 # built collection itself
+# MPRester does build this entry for you, but requires a database query.
 def get_entry(doc):
     """
     Helper function to get a processed computed entry from the document
