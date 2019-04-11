@@ -1,19 +1,19 @@
 import dash_html_components as html
 import dash_core_components as dcc
-from crystal_toolkit import GraphComponent
-from pydash import set_
+from dash_cytoscape import Cytoscape
 
 import networkx as nx
-from propnet.core.graph import Graph
 
-from propnet.web.utils import graph_conversion, AESTHETICS
+from propnet.web.utils import graph_conversion, GRAPH_LAYOUT_CONFIG, \
+    GRAPH_STYLESHEET, GRAPH_SETTINGS, propnet_nx_graph
 
 # noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
 
+
 # layouts for symbol detail pages
-def symbol_layout(symbol_name, aesthetics=None):
+def symbol_layout(symbol_name):
     """Create a Dash layout for a provided symbol.
 
     Args:
@@ -24,8 +24,6 @@ def symbol_layout(symbol_name, aesthetics=None):
       Dash layout
 
     """
-    aesthetics = aesthetics or AESTHETICS.copy()
-
     # list to hold layouts for each section
     layouts = []
 
@@ -35,19 +33,24 @@ def symbol_layout(symbol_name, aesthetics=None):
 
     layouts.append(html.H6('Graph'))
     # TODO: costly, should just construct subgraph directly?
-    g = Graph()
-    subgraph = nx.ego_graph(g.get_networkx_graph(), symbol, undirected=True, radius=2)
-    options=AESTHETICS['global_options']
-    if "arrows" in options["edges"]:
-        options["edges"]["arrows"] = "to"
-    set_(aesthetics, "node_options.show_model_labels", True)
+    subgraph = nx.ego_graph(propnet_nx_graph, symbol, undirected=True, radius=2)
+    subgraph_data = graph_conversion(subgraph,
+                                     show_model_labels=True, show_symbol_labels=True)
+
+    if len(subgraph_data) < 50:
+        graph_config = GRAPH_LAYOUT_CONFIG.copy()
+        graph_config['maxSimulationTime'] = 1500
+    else:
+        graph_config = GRAPH_LAYOUT_CONFIG
+
     layouts.append(html.Div(
-        GraphComponent(
+        Cytoscape(
             id="model_graph",
-            graph=graph_conversion(subgraph, aesthetics=AESTHETICS),
-            options=AESTHETICS['global_options']
-        ),
-        style={'width': '100%', 'height': '300px'}
+            elements=subgraph_data,
+            stylesheet=GRAPH_STYLESHEET,
+            layout=graph_config,
+            **GRAPH_SETTINGS['model_symbol_view']
+        )
     ))
 
     if len(symbol.display_names) > 1:

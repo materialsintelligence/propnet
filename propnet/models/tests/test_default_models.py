@@ -12,6 +12,11 @@ class DefaultModelsTest(unittest.TestCase):
         Registry.clear_all_registries()
         add_builtin_models_to_registry()
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        Registry.clear_all_registries()
+        add_builtin_models_to_registry()
+
     def test_models_have_unique_names(self):
         add_builtin_models_to_registry()
         from propnet.models.serialized import _EQUATION_MODEL_NAMES_LIST

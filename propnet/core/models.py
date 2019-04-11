@@ -684,6 +684,16 @@ class Model(ABC):
     def __repr__(self):
         return self.__str__()
 
+    def __hash__(self):
+        return hash(self.__str__())
+
+    def __eq__(self, rhs):
+        if isinstance(rhs, Model):
+            return self.name == rhs.name
+        elif isinstance(rhs, str):
+            return self.name == rhs
+        return NotImplemented
+
 
 CODE_EXAMPLE_TEMPLATE = """
 from propnet.models import {model_name}
@@ -1245,6 +1255,16 @@ class Constraint(Model):
 
     def __repr__(self):
         return "Constraint: {}".format(self.expression)
+
+    def __hash__(self):
+        return hash(self.expression)
+
+    def __eq__(self, rhs):
+        if isinstance(rhs, Model):
+            return self.expression == rhs.expression
+        elif isinstance(rhs, str):
+            return self.expression == rhs
+        return NotImplemented
 
 
 def will_it_float(input_to_test):
