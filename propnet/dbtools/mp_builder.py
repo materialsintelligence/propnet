@@ -161,7 +161,7 @@ class PropnetBuilder(Builder):
             doc[symbol.name] = sub_doc
 
         doc.update({"task_id": item["task_id"],
-                    "pretty_formula": item["pretty_formula"]})
+                    "pretty_formula": item.get("pretty_formula")})
         return jsanitize(doc, strict=True)
 
     def update_targets(self, items):
