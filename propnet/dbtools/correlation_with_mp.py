@@ -14,6 +14,12 @@ from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
 
+'''
+WARNING: This class is only here for backwards compatibility.
+Use propnet.dbtools.correlation.CorrelationBuilder instead.
+Will likely be removed in the near future.
+'''
+
 
 class CorrelationBuilder(Builder):
     """
@@ -25,10 +31,14 @@ class CorrelationBuilder(Builder):
     interactive use does support them.
 
     """
+    # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
+    MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.universal_anisotropy",
+                      "diel.poly_electronic", "total_magnetization", "efermi",
+                      "magnetism.total_magnetization_normalized_vol"]
     PROPNET_PROPS = [v.name for v in Registry("symbols").values()
                      if (v.category == 'property' and v.shape == 1)]
 
-    def __init__(self, propnet_store,
+    def __init__(self, propnet_store, mp_store,
                  correlation_store, out_file=None,
                  funcs='linlsq', props=None, **kwargs):
         """
@@ -37,6 +47,7 @@ class CorrelationBuilder(Builder):
         Args:
             propnet_store: (Mongolike Store) store instance pointing to propnet collection
                 with read access
+            mp_store: (Mongolike Store) store instance pointing to Materials Project collection with read access
             correlation_store: (Mongolike Store) store instance pointing to collection with write access
             out_file: (str) optional, filename to output data in JSON format (useful if using a MemoryStore
                 for correlation_store)
@@ -54,6 +65,7 @@ class CorrelationBuilder(Builder):
         """
 
         self.propnet_store = propnet_store
+        self.mp_store = mp_store
         self.correlation_store = correlation_store
         self.out_file = out_file
 
@@ -80,9 +92,26 @@ class CorrelationBuilder(Builder):
         if not self._funcs:
             raise ValueError("No valid correlation functions selected")
 
-        self._props = props or self.PROPNET_PROPS
+        mp_prop_map = {(p.split(".")[1] if len(p.split(".")) == 2 else p): p for p in self.MP_QUERY_PROPS}
+        self._props = props
+        if not props:
+            self.mp_query_props = self.MP_QUERY_PROPS
+            self.mp_props = list(mp_prop_map.keys())
+            self.propnet_props = self.PROPNET_PROPS
+        else:
+            self.propnet_props = []
+            self.mp_props = []
+            self.mp_query_props = []
+            if isinstance(props, str):
+                props = [props]
+            for p in props:
+                if p in self.PROPNET_PROPS:
+                    self.propnet_props.append(p)
+                elif p in mp_prop_map.keys():
+                    self.mp_props.append(p)
+                    self.mp_query_props.append(mp_prop_map[p])
 
-        super(CorrelationBuilder, self).__init__(sources=[propnet_store],
+        super(CorrelationBuilder, self).__init__(sources=[propnet_store, mp_store],
                                                  targets=[correlation_store],
                                                  **kwargs)
 
@@ -101,53 +130,81 @@ class CorrelationBuilder(Builder):
              }
 
         """
+        data = defaultdict(dict)
+
+        propnet_data = self.propnet_store.query(
+            criteria={},
+            properties=[p + '.mean' for p in self.propnet_props] +
+                       [p + '.units' for p in self.propnet_props] +
+                       [p + '.quantities' for p in self.propnet_props] +
+                       ['task_id', 'inputs'])
+
+        for material in propnet_data:
+            mpid = material['task_id']
+
+            input_d = defaultdict(list)
+            for q in material['inputs']:
+                if q['symbol_type'] in self.propnet_props:
+                    this_q = ureg.Quantity(q['value'], q['units'])
+                    input_d[q['symbol_type']].append(this_q)
+
+            for prop, values in material.items():
+                if prop in self.propnet_props:
+                    if prop in input_d.keys():
+                        for q in values['quantities']:
+                            input_d[prop].append(ureg.Quantity(q['value'], q['units']))
+                    else:
+                        this_q = ureg.Quantity(values['mean'], values['units'])
+                        input_d[prop] = [this_q]
+
+            data[mpid].update(
+                {k: sum(v) / len(v) for k, v in input_d.items()})
+
+        # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
+
+        mp_data = self.mp_store.query(
+            criteria={},
+            properties=self.mp_query_props + ['task_id']
+        )
+
+        for material in mp_data:
+            mpid = material['task_id']
+            for prop, value in material.items():
+                if isinstance(value, dict):
+                    for sub_prop, sub_value in value.items():
+                        if prop + '.' + sub_prop in self.mp_query_props and sub_value is not None:
+                            data[mpid][sub_prop] = sub_value
+                elif prop in self.mp_query_props and value is not None:
+                    data[mpid][prop] = value
 
         # product() produces all possible combinations of properties
-        for prop_x, prop_y in product(self._props, repeat=2):
-            # Get all materials which have both properties in the inputs or outputs
-            pn_data = self.propnet_store.query(
-                criteria={
-                    '$and': [
-                        {'$or': [
-                            {'inputs.symbol_type': prop_x},
-                            {prop_x: {'$exists': True}}]},
-                        {'$or': [
-                            {'inputs.symbol_type': prop_y},
-                            {prop_y: {'$exists': True}}]}
-                    ]},
-                properties=[prop_x + '.quantities', prop_y + '.quantities', 'inputs'])
+        for prop_x, prop_y in product(self.propnet_props + self.mp_props, repeat=2):
+            x = []
+            y = []
+            for props_data in data.values():
+                if prop_x in props_data.keys() and prop_y in props_data.keys():
+                    x.append(props_data[prop_x])
+                    y.append(props_data[prop_y])
 
-            x_unit = Registry("units")[prop_x]
-            y_unit = Registry("units")[prop_y]
-            data = defaultdict(list)
-            for material in pn_data:
-                # Collect all data with units for this material
-                # and calculate the mean, convert units, store magnitude of mean
-                if prop_x == prop_y:
-                    # This is to avoid duplicating the work and the data
-                    props = (prop_x,)
-                    units = (x_unit,)
-                else:
-                    props = (prop_x, prop_y)
-                    units = (x_unit, y_unit)
-                for prop, unit in zip(props, units):
-                    qs = [ureg.Quantity(q['value'], q['units'])
-                          for q in material['inputs']
-                          if q['symbol_type'] == prop]
-                    if prop in material:
-                        qs.extend([ureg.Quantity(q['value'], q['units'])
-                                   for q in material[prop]['quantities']])
-
-                    if len(qs) == 0:
-                        raise ValueError("Query for property {} gave no results"
-                                         "".format(prop))
-                    prop_mean = sum(qs) / len(qs)
-                    data[prop].append(prop_mean.to(unit).magnitude)
+            # MP data does not have units listed in database, so will be floats. propnet
+            # data may not have the same units as the MP data, so is stored as pint
+            # quantities. Here, the quantities are coerced into the units of MP data
+            # as stored in symbols and coverts them to floats.
+            if x and any(isinstance(v, ureg.Quantity) for v in x):
+                x_float = [xx.to(Registry("symbols")[prop_x].units).magnitude
+                           if isinstance(xx, ureg.Quantity) else xx for xx in x]
+            else:
+                x_float = x
+            if y and any(isinstance(v, ureg.Quantity) for v in y):
+                y_float = [yy.to(Registry("symbols")[prop_y].units).magnitude
+                           if isinstance(yy, ureg.Quantity) else yy for yy in y]
+            else:
+                y_float = y
 
             for name, func in self._funcs.items():
-                data_dict = {'x_data': data[prop_x],
+                data_dict = {'x_data': x_float,
                              'x_name': prop_x,
-                             'y_data': data[prop_y],
+                             'y_data': y_float,
                              'y_name': prop_y,
                              'func': (name, func)}
                 yield data_dict
@@ -178,13 +235,10 @@ class CorrelationBuilder(Builder):
         n_points = len(data_x)
 
         g = Graph()
-        path_length_xy = g.get_degree_of_separation(prop_x, prop_y)
-        path_length_yx = g.get_degree_of_separation(prop_y, prop_x)
-
         try:
-            path_length = min(path_length_xy, path_length_yx)
-        except TypeError:
-            path_length = path_length_xy or path_length_yx
+            path_length = g.get_degree_of_separation(prop_x, prop_y)
+        except ValueError:
+            path_length = None
 
         if n_points < 2:
             correlation = 0.0
