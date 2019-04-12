@@ -12,6 +12,7 @@ from propnet.core.graph import Graph
 from propnet.core.provenance import ProvenanceElement
 from propnet.ext.matproj import MPRester
 import pydash
+from multiprocessing import current_process
 
 # noinspection PyUnresolvedReferences
 import propnet.models
@@ -26,8 +27,9 @@ class PropnetBuilder(MapBuilder):
     """
 
     def __init__(self, materials, propstore, materials_symbol_map=None,
-                 criteria=None, source_name="", parallel=False,
-                 max_workers=None, graph_timeout=None, **kwargs):
+                 criteria=None, source_name="", graph_parallel=False,
+                 max_workers=None, graph_timeout=None,
+                 allow_child_process=False, **kwargs):
         """
         Args:
             materials (Store): store of materials properties
@@ -37,7 +39,7 @@ class PropnetBuilder(MapBuilder):
             criteria (dict): criteria for Mongodb find() query specifying
                 criteria for records to process
             source_name (str): identifier for record source
-            parallel (bool): True runs the graph algorithm in parallel with
+            graph_parallel (bool): True runs the graph algorithm in parallel with
                 the number of workers specified by max_workers. Default: False (serial)
                 Note: there will be no substantial speed-up from using a parallel
                 runner with a parallel builder if there are long-running model evaluations
@@ -51,6 +53,11 @@ class PropnetBuilder(MapBuilder):
                 runners * 4 graph processes) = 16 total processes
             graph_timeout (int): number of seconds after which to timeout per property
                 (available only on Unix-based systems). Default: None (no limit)
+            allow_child_process (bool): If True, the user will be warned when graph_parallel
+                is True and the builder is being run in a child process, usually
+                indicating the builder is being run in a parallelized Runner, which is
+                not recommended due to inefficiency in having to re-fork the graph processes
+                with every new material. False suppresses this warning.
             **kwargs: kwargs for builder
         """
         self.materials = materials
@@ -64,14 +71,14 @@ class PropnetBuilder(MapBuilder):
         else:
             self.source_name = source_name
 
-        self.parallel = parallel
-        if not parallel and max_workers is not None:
+        self.parallel = graph_parallel
+        if not graph_parallel and max_workers is not None:
             raise ValueError("Cannot specify max_workers with parallel=False")
         self.max_workers = max_workers
 
         self.graph_timeout = graph_timeout
-
-        self._graph_evaluator = Graph(parallel=parallel, max_workers=max_workers)
+        self.allow_child_process = allow_child_process
+        self._graph_evaluator = Graph(parallel=graph_parallel, max_workers=max_workers)
 
         props = list(self.materials_symbol_map.keys())
         props += ["task_id", "pretty_formula", "run_type", "is_hubbard",
@@ -86,6 +93,12 @@ class PropnetBuilder(MapBuilder):
                                              **kwargs)
 
     def process(self, item):
+        if not self.allow_child_process and \
+                current_process().name != "MainProcess":
+            logger.warning("It appears derive_quantities() is running "
+                           "in a child process, possibly in a parallelized "
+                           "Runner.\nThis is not recommended and will deteriorate "
+                           "performance.")
         # Define quantities corresponding to materials doc fields
         # Attach quantities to materials
         item = MontyDecoder().process_decoded(item)
