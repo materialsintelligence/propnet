@@ -1,7 +1,7 @@
 from monty.json import jsanitize, MontyDecoder
 from uncertainties import unumpy
 
-from maggma.builders import Builder
+from maggma.builders import MapBuilder
 from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.entries.compatibility import MaterialsProjectCompatibility
 from propnet import logger
@@ -11,7 +11,7 @@ from propnet.core.materials import Material
 from propnet.core.graph import Graph
 from propnet.core.provenance import ProvenanceElement
 from propnet.ext.matproj import MPRester
-from pydash import get
+import pydash
 
 # noinspection PyUnresolvedReferences
 import propnet.models
@@ -20,14 +20,14 @@ import propnet.symbols
 from propnet.core.registry import Registry
 
 
-class PropnetBuilder(Builder):
+class PropnetBuilder(MapBuilder):
     """
     Basic builder for running propnet derivations on various properties
     """
 
     def __init__(self, materials, propstore, materials_symbol_map=None,
                  criteria=None, source_name="", parallel=False,
-                 max_workers=None, timeout=None, **kwargs):
+                 max_workers=None, graph_timeout=None, **kwargs):
         """
         Args:
             materials (Store): store of materials properties
@@ -49,7 +49,7 @@ class PropnetBuilder(Builder):
                 For 4 parallel graph processes running on 3 parallel runners, this will spawn:
                 1 main runner process + 3 parallel runners + (3 parallel
                 runners * 4 graph processes) = 16 total processes
-            timeout (int): number of seconds after which to timeout model evaluation
+            graph_timeout (int): number of seconds after which to timeout per property
                 (available only on Unix-based systems). Default: None (no limit)
             **kwargs: kwargs for builder
         """
@@ -69,30 +69,23 @@ class PropnetBuilder(Builder):
             raise ValueError("Cannot specify max_workers with parallel=False")
         self.max_workers = max_workers
 
-        self.timeout = timeout
+        self.graph_timeout = graph_timeout
 
         self._graph_evaluator = Graph(parallel=parallel, max_workers=max_workers)
 
-        # This is for the runner to know how many items we're processing
-        self.total = None
-
-        super(PropnetBuilder, self).__init__(sources=[materials],
-                                             targets=[propstore],
-                                             **kwargs)
-
-    def get_items(self):
         props = list(self.materials_symbol_map.keys())
         props += ["task_id", "pretty_formula", "run_type", "is_hubbard",
                   "pseudo_potential", "hubbards", "potcar_symbols", "oxide_type",
                   "final_energy", "unit_cell_formula", "created_at"]
         props = list(set(props))
-        docs = self.materials.query(criteria=self.criteria, properties=props)
-        self.total = docs.count()
-        for doc in docs:
-            logger.info("Processing %s", doc['task_id'])
-            yield doc
 
-    def process_item(self, item):
+        super(PropnetBuilder, self).__init__(source=materials,
+                                             target=propstore,
+                                             ufn=self.process,
+                                             projection=props,
+                                             **kwargs)
+
+    def process(self, item):
         # Define quantities corresponding to materials doc fields
         # Attach quantities to materials
         item = MontyDecoder().process_decoded(item)
@@ -109,7 +102,7 @@ class PropnetBuilder(Builder):
                                                "date_created": date_created})
 
         for mkey, property_name in self.materials_symbol_map.items():
-            value = get(item, mkey)
+            value = pydash.get(item, mkey)
             if value:
                 material.add_quantity(
                     QuantityFactory.create_quantity(property_name, value,
@@ -132,7 +125,7 @@ class PropnetBuilder(Builder):
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
 
-        new_material = self._graph_evaluator.evaluate(material, timeout=self.timeout)
+        new_material = self._graph_evaluator.evaluate(material, timeout=self.graph_timeout)
 
         # Format document and return
         logger.info("Creating doc for %s", item['task_id'])
@@ -164,9 +157,6 @@ class PropnetBuilder(Builder):
                     "pretty_formula": item.get("pretty_formula")})
         return jsanitize(doc, strict=True)
 
-    def update_targets(self, items):
-        self.propstore.update(items)
-
 
 # This is a PITA, but right now there's no way to get this data from the
 # built collection itself
@@ -182,15 +172,16 @@ def get_entry(doc):
         (ComputedEntry) computed entry derived from doc
 
     """
+
+    required_fields = ["run_type", "is_hubbard", "pseudo_potential", "hubbards",
+                       "oxide_type", "unit_cell_formula", "final_energy", "task_id",
+                       "pseudo_potential.functional", "pseudo_potential.labels"]
+
+    if any(not pydash.has(doc, field) for field in required_fields):
+        return None
+
     params = ["run_type", "is_hubbard", "pseudo_potential", "hubbards",
               "potcar_symbols", "oxide_type"]
-
-    required_fields = \
-        params + ["unit_cell_formula", "final_energy", "task_id",
-                  "pseudo_potential.functional", "pseudo_potential.labels"]
-
-    if any(get(doc, field) is None for field in required_fields):
-        return None
 
     doc["potcar_symbols"] = ["%s %s" % (doc["pseudo_potential"]["functional"], l)
                              for l in doc["pseudo_potential"]["labels"]]
