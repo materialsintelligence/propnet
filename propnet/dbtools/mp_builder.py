@@ -122,7 +122,7 @@ class PropnetBuilder(Builder):
             material.add_quantity(QuantityFactory.create_quantity("computed_entry", computed_entry,
                                                                   provenance=provenance))
         else:
-            logger.warning(
+            logger.info(
                 "Unable to create computed entry for {}".format(item['task_id']))
         material.add_quantity(QuantityFactory.create_quantity("external_identifier_mp", item['task_id'],
                                                               provenance=provenance))
