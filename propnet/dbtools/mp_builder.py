@@ -184,6 +184,14 @@ def get_entry(doc):
     """
     params = ["run_type", "is_hubbard", "pseudo_potential", "hubbards",
               "potcar_symbols", "oxide_type"]
+
+    required_fields = \
+        params + ["unit_cell_formula", "final_energy", "task_id",
+                  "pseudo_potential.functional", "pseudo_potential.labels"]
+
+    if any(get(doc, field) is None for field in required_fields):
+        return None
+
     doc["potcar_symbols"] = ["%s %s" % (doc["pseudo_potential"]["functional"], l)
                              for l in doc["pseudo_potential"]["labels"]]
     entry = ComputedEntry(doc["unit_cell_formula"], doc["final_energy"],
