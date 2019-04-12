@@ -28,7 +28,7 @@ class PropnetBuilder(MapBuilder):
 
     def __init__(self, materials, propstore, materials_symbol_map=None,
                  criteria=None, source_name="", graph_parallel=False,
-                 max_workers=None, graph_timeout=None,
+                 max_graph_workers=None, graph_timeout=None,
                  allow_child_process=False, **kwargs):
         """
         Args:
@@ -44,7 +44,7 @@ class PropnetBuilder(MapBuilder):
                 Note: there will be no substantial speed-up from using a parallel
                 runner with a parallel builder if there are long-running model evaluations
                 that don't get timed out using the timeout keyword.
-            max_workers (int): number of processes to spawn for parallel graph
+            max_graph_workers (int): number of processes to spawn for parallel graph
                 evaluation. Note that graph evaluation speed-up tops out at 3-4
                 parallel processes. If the builder is run in a parallel maggma Runner,
                 each will spawn max_workers number of processes to evaluate.
@@ -71,14 +71,14 @@ class PropnetBuilder(MapBuilder):
         else:
             self.source_name = source_name
 
-        self.parallel = graph_parallel
-        if not graph_parallel and max_workers is not None:
+        self.graph_parallel = graph_parallel
+        if not graph_parallel and max_graph_workers is not None:
             raise ValueError("Cannot specify max_workers with parallel=False")
-        self.max_workers = max_workers
+        self.max_graph_workers = max_graph_workers
 
         self.graph_timeout = graph_timeout
         self.allow_child_process = allow_child_process
-        self._graph_evaluator = Graph(parallel=graph_parallel, max_workers=max_workers)
+        self._graph_evaluator = Graph(parallel=graph_parallel, max_workers=max_graph_workers)
 
         props = list(self.materials_symbol_map.keys())
         props += ["task_id", "pretty_formula", "run_type", "is_hubbard",
