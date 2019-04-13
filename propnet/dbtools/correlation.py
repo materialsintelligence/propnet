@@ -82,6 +82,8 @@ class CorrelationBuilder(Builder):
 
         self._props = props or self.PROPNET_PROPS
 
+        self.total = len(self._props)**2 * len(self._funcs)
+
         super(CorrelationBuilder, self).__init__(sources=[propnet_store],
                                                  targets=[correlation_store],
                                                  **kwargs)
@@ -101,6 +103,8 @@ class CorrelationBuilder(Builder):
              }
 
         """
+        # Update total in case we changed something between instantiation and running
+        self.total = len(self._props)**2 * len(self._funcs)
 
         # combinations_with_replacement() produces all possible pairs of properties
         # without repeating, i.e. will give AB but not BA. Code below manually
