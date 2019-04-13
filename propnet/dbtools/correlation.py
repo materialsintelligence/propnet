@@ -186,8 +186,13 @@ class CorrelationBuilder(Builder):
         n_points = len(data_x)
 
         g = Graph()
-        path_length_xy = g.get_degree_of_separation(prop_x, prop_y)
-        path_length_yx = g.get_degree_of_separation(prop_y, prop_x)
+        try:
+            path_length_xy = g.get_degree_of_separation(prop_x, prop_y)
+            path_length_yx = g.get_degree_of_separation(prop_y, prop_x)
+        except ValueError:
+            # This shouldn't happen...but just in case
+            path_length_xy = None
+            path_length_yx = None
 
         try:
             path_length = min(path_length_xy, path_length_yx)
@@ -197,7 +202,11 @@ class CorrelationBuilder(Builder):
         if n_points < 2:
             correlation = 0.0
         else:
-            correlation = func(data_x, data_y)
+            try:
+                correlation = func(data_x, data_y)
+            except Exception as ex:
+                # If correlation fails, catch the error, save it, and move on
+                correlation = ex
         return prop_x, prop_y, correlation, func_name, n_points, path_length
 
     @staticmethod
@@ -312,13 +321,19 @@ class CorrelationBuilder(Builder):
         data = []
         for item in items:
             prop_x, prop_y, correlation, func_name, n_points, path_length = item
-            data.append({'property_x': prop_x,
-                         'property_y': prop_y,
-                         'correlation': correlation,
-                         'correlation_func': func_name,
-                         'n_points': n_points,
-                         'shortest_path_length': path_length,
-                         'id': hash((prop_x, prop_y)) ^ hash(func_name)})
+            d = {'property_x': prop_x,
+                 'property_y': prop_y,
+                 'correlation_func': func_name,
+                 'n_points': n_points,
+                 'shortest_path_length': path_length,
+                 'id': hash((prop_x, prop_y)) ^ hash(func_name)}
+            if not isinstance(correlation, Exception):
+                d['correlation'] = correlation
+            else:
+                d['correlation'] = None
+                d['error'] = (correlation.__class__.__name__,
+                              correlation.args)
+            data.append(d)
         self.correlation_store.update(data, key='id')
 
     def finalize(self, cursor=None):
