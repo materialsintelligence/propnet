@@ -93,7 +93,7 @@ class PropnetBuilder(MapBuilder):
                                              **kwargs)
 
     def process(self, item):
-        if not self.allow_child_process and \
+        if self.graph_parallel and not self.allow_child_process and \
                 current_process().name != "MainProcess":
             logger.warning("It appears derive_quantities() is running "
                            "in a child process, possibly in a parallelized "
