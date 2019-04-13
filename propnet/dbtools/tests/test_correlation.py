@@ -82,7 +82,7 @@ class CorrelationTest(unittest.TestCase):
                         item['y_name'] == prop_y:
                     processed = builder.process_item(item)
                     break
-            print(processed)
+            # print(processed)
             self.assertIsNotNone(processed)
             self.assertIsInstance(processed, tuple)
             px, py, correlation, func_name, n_points, path_length = processed
