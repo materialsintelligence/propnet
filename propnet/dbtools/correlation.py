@@ -1,5 +1,5 @@
 from maggma.builders import Builder
-from itertools import product
+from itertools import combinations_with_replacement
 import numpy as np
 import json
 from collections import defaultdict
@@ -102,8 +102,10 @@ class CorrelationBuilder(Builder):
 
         """
 
-        # product() produces all possible combinations of properties
-        for prop_x, prop_y in product(self._props, repeat=2):
+        # combinations_with_replacement() produces all possible pairs of properties
+        # without repeating, i.e. will give AB but not BA. Code below manually
+        # produces "BA" so that we don't have to re-query the database.
+        for prop_x, prop_y in combinations_with_replacement(self._props, 2):
             # Get all materials which have both properties in the inputs or outputs
             pn_data = self.propnet_store.query(
                 criteria={
@@ -144,13 +146,19 @@ class CorrelationBuilder(Builder):
                     prop_mean = sum(qs) / len(qs)
                     data[prop].append(prop_mean.to(unit).magnitude)
 
-            for name, func in self._funcs.items():
-                data_dict = {'x_data': data[prop_x],
-                             'x_name': prop_x,
-                             'y_data': data[prop_y],
-                             'y_name': prop_y,
-                             'func': (name, func)}
-                yield data_dict
+            # So we get AB and BA without re-querying, but not two AA
+            if prop_x == prop_y:
+                prop_combos = ((prop_x, prop_x),)
+            else:
+                prop_combos = ((prop_x, prop_y), (prop_y, prop_x))
+            for x, y in prop_combos:
+                for name, func in self._funcs.items():
+                    data_dict = {'x_data': data[x],
+                                 'x_name': x,
+                                 'y_data': data[y],
+                                 'y_name': y,
+                                 'func': (name, func)}
+                    yield data_dict
 
     def process_item(self, item):
         """
