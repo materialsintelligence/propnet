@@ -1,0 +1,22 @@
+categories:
+- magnetic
+description: 'Calculates normalized magnetic moment per unit cell volume.
+
+  '
+equations:
+- M_vol = M / V_cell
+name: magnetization_normalized_volume
+solve_for_all_variables: true
+implemented_by:
+- clegaspi
+references: []
+variable_symbol_map:
+  M_vol: total_magnetization_per_volume
+  M: total_magnetization
+  V_cell: volume_unit_cell
+test_data:
+- inputs:
+    M: 4.5128492 bohr_magneton
+    V_cell: 87.7628136900676 angstrom**3
+  outputs:
+    M_vol: 0.0514209721663782 bohr_magneton / angstrom**3

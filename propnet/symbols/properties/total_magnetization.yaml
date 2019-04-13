@@ -1,0 +1,7 @@
+name: total_magnetization
+units: bohr_magneton
+display_names: ['Total Magnetization', 'Magnetic Moment']
+display_symbols: ['M']
+shape: 1
+comment: 'Magnetic moment'
+category: property

@@ -19,9 +19,7 @@ class CorrelationTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         add_builtin_models_to_registry()
-        cls.propnet_props = ["band_gap_pbe", "bulk_modulus", "vickers_hardness"]
-        cls.mp_query_props = ["magnetism.total_magnetization_normalized_vol"]
-        cls.mp_props = ["total_magnetization_normalized_vol"]
+        cls.propnet_props = ["band_gap_pbe", "atomic_density", "bulk_modulus", "vickers_hardness"]
 
         cls.propstore = MemoryStore()
         cls.propstore.connect()
@@ -29,30 +27,24 @@ class CorrelationTest(unittest.TestCase):
             materials = json.load(f)
         materials = jsanitize(materials, strict=True, allow_bson=True)
         cls.propstore.update(materials)
-        cls.materials = MemoryStore()
-        cls.materials.connect()
-        with open(os.path.join(TEST_DIR, "correlation_mp_data.json"), 'r') as f:
-            materials = json.load(f)
-        materials = jsanitize(materials, strict=True, allow_bson=True)
-        cls.materials.update(materials)
         cls.correlation = None
 
         # vickers hardness (x-axis) vs. bulk modulus (y-axis)
         cls.correlation_values_vickers_bulk = {
-            'linlsq': 0.07030669243379202,
-            'pearson': 0.2651540918669593,
-            'spearman': 0.6759408985224631,
-            'mic': 0.5529971905082182,
-            'theilsen': -3.9351770244782456,
-            'ransac': -4.528702228127463}
+            'linlsq': 0.609064764013383,
+            'pearson': 0.7804260144391548,
+            'spearman': 0.8263016575414387,
+            'mic': 0.7702655041826725,
+            'theilsen': 0.5931446188624948,
+            'ransac': 0.5799056238559421}
 
         cls.correlation_values_bulk_vickers = {
-            'linlsq': 0.07030669243379202,
-            'pearson': 0.2651540918669593,
-            'spearman': 0.6759408985224631,
-            'mic': 0.5529971905082182,
-            'theilsen': 0.040612225849504746,
-            'ransac': 0.04576997520687298}
+            'linlsq': 0.609064764013383,
+            'pearson': 0.7804260144391548,
+            'spearman': 0.8263016575414387,
+            'mic': 0.7702655041826725,
+            'theilsen': 0.5569071036185801,
+            'ransac': 0.5113782981429206}
 
     @classmethod
     def tearDownClass(cls):
@@ -64,24 +56,24 @@ class CorrelationTest(unittest.TestCase):
         self.correlation.connect()
 
     def test_serial_runner(self):
-        builder = CorrelationBuilder(self.propstore, self.materials, self.correlation)
+        builder = CorrelationBuilder(self.propstore, self.correlation)
         runner = Runner([builder])
         runner.run()
 
     def test_multiproc_runner(self):
-        builder = CorrelationBuilder(self.propstore, self.materials, self.correlation)
+        builder = CorrelationBuilder(self.propstore, self.correlation)
         runner = Runner([builder], max_workers=2)
         runner.run()
 
     def test_process_item(self):
-        test_props = [['band_gap_pbe', 'total_magnetization_normalized_vol'],
+        test_props = [['band_gap_pbe', 'atomic_density'],
                       ['bulk_modulus', 'vickers_hardness']]
-        linlsq_correlation_values = [0.03522007675120975, 0.07030669243379202]
+        linlsq_correlation_values = [0.05219124923380024, 0.609064764013383]
         path_lengths = [None, 2]
 
         for props, expected_correlation_val, expected_path_length in \
                 zip(test_props, linlsq_correlation_values, path_lengths):
-            builder = CorrelationBuilder(self.propstore, self.materials, self.correlation,
+            builder = CorrelationBuilder(self.propstore, self.correlation,
                                          props=props)
             processed = None
             prop_x, prop_y = props
@@ -90,7 +82,7 @@ class CorrelationTest(unittest.TestCase):
                         item['y_name'] == prop_y:
                     processed = builder.process_item(item)
                     break
-
+            # print(processed)
             self.assertIsNotNone(processed)
             self.assertIsInstance(processed, tuple)
             px, py, correlation, func_name, n_points, path_length = processed
@@ -108,7 +100,7 @@ class CorrelationTest(unittest.TestCase):
         correlation_values = {k: v for k, v in self.correlation_values_bulk_vickers.items()}
         correlation_values['test_correlation.custom_correlation_func'] = 0.5
 
-        builder = CorrelationBuilder(self.propstore, self.materials, self.correlation,
+        builder = CorrelationBuilder(self.propstore, self.correlation,
                                      props=['vickers_hardness', 'bulk_modulus'],
                                      funcs=['all', custom_correlation_func])
 
@@ -129,8 +121,8 @@ class CorrelationTest(unittest.TestCase):
                 self.assertEqual(path_length, 2)
 
     def test_database_and_file_write(self):
-        builder = CorrelationBuilder(self.propstore, self.materials, self.correlation,
-                                     props=self.propnet_props + self.mp_props,
+        builder = CorrelationBuilder(self.propstore, self.correlation,
+                                     props=self.propnet_props,
                                      funcs='all',
                                      out_file=os.path.join(TEST_DIR, "test_output.json"))
 
@@ -192,27 +184,27 @@ class CorrelationTest(unittest.TestCase):
     def create_test_docs(self):
         from maggma.advanced_stores import MongograntStore
         from monty.serialization import dumpfn
+        n_materials = 200
         pnstore = MongograntStore("ro:knowhere.lbl.gov/mp_core", "propnet")
         pnstore.connect()
-        mpstore = MongograntStore("ro:knowhere.lbl.gov/mp_core", "materials")
-        mpstore.connect()
         cursor = pnstore.query(
             criteria={'$and': [
                 {'$or': [{p: {'$exists': True}},
                          {'inputs.symbol_type': p}]}
                 for p in self.propnet_props]},
-            properties=['task_id'])
-        pn_mpids = [item['task_id'] for item in cursor]
-        cursor = mpstore.query(criteria={p: {'$exists': True} for p in self.mp_query_props},
-                               properties=['task_id'])
-        mp_mpids = [item['task_id'] for item in cursor]
-        mpids = list(set(pn_mpids).intersection(set(mp_mpids)))[:200]
-        pn_data = pnstore.query(criteria={'task_id': {'$in': mpids}},
-                                properties=['task_id', 'inputs'] +
-                                           [p + '.mean' for p in self.propnet_props] +
-                                           [p + '.units' for p in self.propnet_props] +
-                                           [p + '.quantities' for p in self.propnet_props])
-        dumpfn(list(pn_data), os.path.join(TEST_DIR, "correlation_propnet_data.json"))
-        mp_data = mpstore.query(criteria={'task_id': {'$in': mpids}},
-                                properties=['task_id'] + self.mp_query_props)
-        dumpfn(list(mp_data), os.path.join(TEST_DIR, "correlation_mp_data.json"))
+            properties=['task_id', 'inputs'] +
+                       [p + '.mean' for p in self.propnet_props] +
+                       [p + '.units' for p in self.propnet_props] +
+                       [p + '.quantities' for p in self.propnet_props])
+        data = []
+        for item in cursor:
+            if len(data) < n_materials:
+                data.append(item)
+            else:
+                cursor.close()
+                break
+        dumpfn(data, os.path.join(TEST_DIR, "correlation_propnet_data.json"))
+
+
+if __name__ == "__main__":
+    unittest.main()

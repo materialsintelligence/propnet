@@ -40,7 +40,7 @@ class BuilderTest(unittest.TestCase):
     def test_process_item(self):
         item = self.materials.query_one(criteria={"pretty_formula": "Cs"})
         builder = PropnetBuilder(self.materials, self.propstore)
-        processed = builder.process_item(item)
+        processed = builder.process(item)
         self.assertIsNotNone(processed)
         # Ensure vickers hardness gets populated
         self.assertIn("vickers_hardness", processed)

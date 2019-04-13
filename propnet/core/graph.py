@@ -105,7 +105,7 @@ class Graph(object):
                 self._max_workers = cpu_count()
             else:
                 self._max_workers = max_workers
-            self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
+            self._executor = None
         else:
             self._parallel = False
             if max_workers is not None:
@@ -744,6 +744,8 @@ class Graph(object):
                                                                     allow_model_failure=allow_model_failure,
                                                                     timeout=timeout)
         else:
+            if self._executor is None:
+                self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
             with Timer('_graph_evaluation'):
                 added_quantities, model_timings = Graph._run_parallel(self._executor, self._max_workers,
                                                                       inputs_to_calculate,

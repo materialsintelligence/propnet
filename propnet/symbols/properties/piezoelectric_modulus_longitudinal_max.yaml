@@ -1,0 +1,7 @@
+name: piezoelectric_modulus_longitudinal_max
+units: coulomb / meter**2
+display_names: ['Max Longitudinal Piezoelectric Modulus', 'D_33']
+display_symbols: ['||e_{ij}||_{max}']
+shape: 1
+comment: ''
+category: property

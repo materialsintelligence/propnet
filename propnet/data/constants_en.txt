@@ -39,7 +39,8 @@ stefan_boltzmann_constant = 5.670373e-8 W m^-2 K^-4 = σ
 wien_frequency_displacement_law_constant = 5.8789254e10 Hz K^-1
 
 # 0.000 055
-rydberg_constant = 10973731.568539 m^-1
+# propnet added Rhy abbreviation
+rydberg_constant = 10973731.568539 m^-1 = Rhy
 
 # 0.000 000 40 e-31
 electron_mass = 9.10938291e-31 kg = m_e
@@ -50,5 +51,3 @@ neutron_mass = 1.674927351e-27 kg = m_n
 # 0.000 000 074 e-27
 proton_mass = 1.672621777e-27 kg = m_p
 
-# propnet additions
-rydberg_constant = Rhy
