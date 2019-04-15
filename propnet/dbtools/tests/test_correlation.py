@@ -203,6 +203,9 @@ class CorrelationTest(unittest.TestCase):
             # Because sample size > total docs, should just be total docs
             self.assertEqual(d['n_points'], 200)
 
+        with self.assertRaises(ValueError):
+            _ = CorrelationBuilder(self.propstore, self.correlation, sample_size=1)
+
     # Just here for reference, in case anyone wants to create a new set
     # of test materials. Requires mongogrant read access to knowhere.lbl.gov.
     @unittest.skipIf(True, "Skipping test materials creation")
