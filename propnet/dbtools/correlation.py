@@ -368,6 +368,12 @@ class CorrelationBuilder(Builder):
             cursor: (Mongo Store cursor) optional, cursor to close if not automatically closed.
 
         """
+
+        props_to_index = ['property_x', 'property_y', 'correlation_func']
+        for prop in props_to_index:
+            if not self.correlation_store.ensure_index(prop):
+                logger.warning("Could not add index for property {}".format(prop))
+
         if self.out_file:
             try:
                 self.write_correlation_data_file(self.out_file)
