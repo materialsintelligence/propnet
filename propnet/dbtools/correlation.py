@@ -223,14 +223,14 @@ class CorrelationBuilder(Builder):
             path_length = path_length_xy or path_length_yx
 
         if n_points < 2:
-            correlation = 0.0
+            result = 0.0
         else:
             try:
-                correlation = func(data_x, data_y)
+                result = func(data_x, data_y)
             except Exception as ex:
                 # If correlation fails, catch the error, save it, and move on
-                correlation = ex
-        return prop_x, prop_y, correlation, func_name, n_points, path_length
+                result = ex
+        return prop_x, prop_y, result, func_name, n_points, path_length
 
     @staticmethod
     def _cfunc_mic(x, y):
@@ -343,19 +343,19 @@ class CorrelationBuilder(Builder):
         """
         data = []
         for item in items:
-            prop_x, prop_y, correlation, func_name, n_points, path_length = item
+            prop_x, prop_y, result, func_name, n_points, path_length = item
             d = {'property_x': prop_x,
                  'property_y': prop_y,
                  'correlation_func': func_name,
                  'n_points': n_points,
                  'shortest_path_length': path_length,
                  'id': hash((prop_x, prop_y)) ^ hash(func_name)}
-            if not isinstance(correlation, Exception):
-                d['correlation'] = correlation
+            if not isinstance(result, Exception):
+                d['correlation'] = result
             else:
                 d['correlation'] = None
-                d['error'] = (correlation.__class__.__name__,
-                              correlation.args)
+                d['error'] = (result.__class__.__name__,
+                              result.args)
             data.append(d)
         self.correlation_store.update(data, key='id')
 
