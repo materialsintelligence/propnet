@@ -178,6 +178,31 @@ class CorrelationTest(unittest.TestCase):
                 self.assertAlmostEqual(actual_file_data['correlation'][f][iax][iay],
                                        expected_file_data['correlation'][f][iex][iey])
 
+    def test_sample_size_limit(self):
+        # Test sample_size < total docs
+        builder = CorrelationBuilder(self.propstore, self.correlation,
+                                     props=['bulk_modulus', 'vickers_hardness'],
+                                     funcs='linlsq', sample_size=50)
+        runner = Runner([builder])
+        runner.run()
+
+        data = list(self.correlation.query(criteria={}))
+        for d in data:
+            self.assertEqual(d['n_points'], 50)
+
+        # Test sample_size > total docs
+        self.correlation = MemoryStore()
+        builder = CorrelationBuilder(self.propstore, self.correlation,
+                                     props=['bulk_modulus', 'vickers_hardness'],
+                                     funcs='linlsq', sample_size=300)
+        runner = Runner([builder])
+        runner.run()
+
+        data = list(self.correlation.query(criteria={}))
+        for d in data:
+            # Because sample size > total docs, should just be total docs
+            self.assertEqual(d['n_points'], 200)
+
     # Just here for reference, in case anyone wants to create a new set
     # of test materials. Requires mongogrant read access to knowhere.lbl.gov.
     @unittest.skipIf(True, "Skipping test materials creation")
