@@ -86,7 +86,7 @@ class CorrelationBuilder(Builder):
             raise ValueError("No valid correlation functions selected")
 
         self._props = props or self.PROPNET_PROPS
-        if sample_size < 2:
+        if sample_size is not None and sample_size < 2:
             raise ValueError("Sample size must be greater than 1")
         self.sample_size = sample_size
         self.total = len(self._props)**2 * len(self._funcs)
