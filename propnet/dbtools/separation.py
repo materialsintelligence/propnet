@@ -63,7 +63,7 @@ class SeparationBuilder(Builder):
                       if pydash.get(material, c)] + ['inputs']
 
         for container in containers:
-            for q in pydash.get(material, container):
+            for q in pydash.get(material, container) or []:
                 this_q = q.copy()
                 this_q['material_key'] = material['task_id']
                 prov_inputs = pydash.get(this_q, 'provenance.inputs')
@@ -76,7 +76,7 @@ class SeparationBuilder(Builder):
 
             pydash.set_(material, container,
                         [q['internal_id']
-                         for q in pydash.get(material, container)])
+                         for q in pydash.get(material, container) or []])
 
             if container != 'inputs':
                 prop = container.split(".")[0]
@@ -86,9 +86,9 @@ class SeparationBuilder(Builder):
                                             material[prop]['units']).to(units)
                     pq_std = ureg.Quantity(material[prop]['std'],
                                            material[prop]['units']).to(units)
-                    q['mean'] = pq_mean.magnitude
-                    q['std'] = pq_std.magnitude
-                    q['units'] = pq_mean.units.format_babel()
+                    material[prop]['mean'] = pq_mean.magnitude
+                    material[prop]['std'] = pq_std.magnitude
+                    material[prop]['units'] = pq_mean.units.format_babel()
             
         for q in quantities:
             units = Registry("units").get(q['symbol_type'])
