@@ -30,18 +30,19 @@ class CorrelationBuilder(Builder):
 
     def __init__(self, propnet_store,
                  correlation_store, out_file=None,
-                 funcs='linlsq', props=None, **kwargs):
+                 funcs='linlsq', props=None,
+                 sample_size=None, **kwargs):
         """
         Constructor for the correlation builder.
 
         Args:
-            propnet_store: (Mongolike Store) store instance pointing to propnet collection
+            propnet_store (Mongolike Store): store instance pointing to propnet collection
                 with read access
-            correlation_store: (Mongolike Store) store instance pointing to collection with write access
-            out_file: (str) optional, filename to output data in JSON format (useful if using a MemoryStore
+            correlation_store (Mongolike Store): store instance pointing to collection with write access
+            out_file (str): optional, filename to output data in JSON format (useful if using a MemoryStore
                 for correlation_store)
-            funcs: (str, function, list<str, function>) functions to use for correlation. Built-in functions can
-                be specified by the following strings:
+            funcs (`str`, `callable`, list of `str` or `callable`) functions to use for correlation.
+                Built-in functions can be specified by the following strings:
 
                 linlsq (default): linear least-squares, reports R^2
                 pearson: Pearson r-correlation, reports r
@@ -50,6 +51,10 @@ class CorrelationBuilder(Builder):
                 ransac: random sample consensus (RANSAC) regression, reports score
                 theilsen: Theil-Sen regression, reports score
                 all: runs all correlation functions above
+            props (`list` of `str`): optional, list of properties for which to calculate the correlation.
+                Default is to calculate for all possible pairs (props=None)
+            sample_size (int): optional, limits correlation calculation data to a random sample of size
+                `sample_size`. Default: None (no limit)
             **kwargs: arguments to the Builder superclass
         """
 
@@ -81,6 +86,10 @@ class CorrelationBuilder(Builder):
             raise ValueError("No valid correlation functions selected")
 
         self._props = props or self.PROPNET_PROPS
+
+        if sample_size is not None and sample_size < 2:
+            raise ValueError("Sample size must be greater than 1")
+        self.sample_size = sample_size
         self.total = None
 
         super(CorrelationBuilder, self).__init__(sources=[propnet_store],
@@ -161,14 +170,15 @@ class CorrelationBuilder(Builder):
              }
 
         """
+        # Update total in case we changed something between instantiation and running
+        self.total = len(self._props)**2 * len(self._funcs)
 
         # combinations_with_replacement() produces all possible pairs of properties
         # without repeating, i.e. will give AB but not BA. Code below manually
         # produces "BA" so that we don't have to re-query the database.
         for prop_x, prop_y in combinations_with_replacement(self._props, 2):
             # Get all materials which have both properties in the inputs or outputs
-            pn_data = self.propnet_store.query(
-                criteria={
+            criteria = {
                     '$and': [
                         {'$or': [
                             {'inputs.symbol_type': prop_x},
@@ -176,8 +186,21 @@ class CorrelationBuilder(Builder):
                         {'$or': [
                             {'inputs.symbol_type': prop_y},
                             {prop_y: {'$exists': True}}]}
-                    ]},
-                properties=[prop_x + '.quantities', prop_y + '.quantities', 'inputs'])
+                    ]}
+            properties = [prop_x + '.quantities', prop_y + '.quantities', 'inputs']
+
+            if self.sample_size is None:
+                pn_data = self.propnet_store.query(criteria=criteria,
+                                                   properties=properties)
+            else:
+                pipeline = [
+                    {'$match': criteria},
+                    {'$sample': {'size': self.sample_size}},
+                    {'$project': {p: True for p in properties}},
+                ]
+                pn_data = self.propnet_store.collection.aggregate(
+                    pipeline, allowDiskUse=True
+                )
 
             x_unit = Registry("units")[prop_x]
             y_unit = Registry("units")[prop_y]
@@ -246,8 +269,13 @@ class CorrelationBuilder(Builder):
         n_points = len(data_x)
 
         g = Graph()
-        path_length_xy = g.get_degree_of_separation(prop_x, prop_y)
-        path_length_yx = g.get_degree_of_separation(prop_y, prop_x)
+        try:
+            path_length_xy = g.get_degree_of_separation(prop_x, prop_y)
+            path_length_yx = g.get_degree_of_separation(prop_y, prop_x)
+        except ValueError:
+            # This shouldn't happen...but just in case
+            path_length_xy = None
+            path_length_yx = None
 
         try:
             path_length = min(path_length_xy, path_length_yx)
@@ -255,10 +283,14 @@ class CorrelationBuilder(Builder):
             path_length = path_length_xy or path_length_yx
 
         if n_points < 2:
-            correlation = 0.0
+            result = 0.0
         else:
-            correlation = func(data_x, data_y)
-        return prop_x, prop_y, correlation, func_name, n_points, path_length
+            try:
+                result = func(data_x, data_y)
+            except Exception as ex:
+                # If correlation fails, catch the error, save it, and move on
+                result = ex
+        return prop_x, prop_y, result, func_name, n_points, path_length
 
     @staticmethod
     def _cfunc_mic(x, y):
@@ -371,14 +403,20 @@ class CorrelationBuilder(Builder):
         """
         data = []
         for item in items:
-            prop_x, prop_y, correlation, func_name, n_points, path_length = item
-            data.append({'property_x': prop_x,
-                         'property_y': prop_y,
-                         'correlation': correlation,
-                         'correlation_func': func_name,
-                         'n_points': n_points,
-                         'shortest_path_length': path_length,
-                         'id': hash((prop_x, prop_y)) ^ hash(func_name)})
+            prop_x, prop_y, result, func_name, n_points, path_length = item
+            d = {'property_x': prop_x,
+                 'property_y': prop_y,
+                 'correlation_func': func_name,
+                 'n_points': n_points,
+                 'shortest_path_length': path_length,
+                 'id': hash((prop_x, prop_y)) ^ hash(func_name)}
+            if not isinstance(result, Exception):
+                d['correlation'] = result
+            else:
+                d['correlation'] = None
+                d['error'] = (result.__class__.__name__,
+                              result.args)
+            data.append(d)
         self.correlation_store.update(data, key='id')
 
     def finalize(self, cursor=None):
@@ -390,6 +428,12 @@ class CorrelationBuilder(Builder):
             cursor: (Mongo Store cursor) optional, cursor to close if not automatically closed.
 
         """
+
+        props_to_index = ['property_x', 'property_y', 'correlation_func']
+        for prop in props_to_index:
+            if not self.correlation_store.ensure_index(prop):
+                logger.warning("Could not add index for property {}".format(prop))
+
         if self.out_file:
             try:
                 self.write_correlation_data_file(self.out_file)
