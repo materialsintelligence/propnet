@@ -1,5 +1,7 @@
 from maggma.builders import Builder
 from maggma.utils import grouper
+from pymongo import InsertOne
+from pymongo.collection import Collection
 import pydash
 from itertools import chain
 from propnet import ureg
@@ -15,7 +17,7 @@ class SeparationBuilder(Builder):
     """
 
     def __init__(self, propnet_store, quantity_store, material_store=None,
-                 criteria=None, props=None, chunk_size=100):
+                 criteria=None, props=None, chunk_size=100, insert_only=False):
         """
 
         Args:
@@ -31,6 +33,7 @@ class SeparationBuilder(Builder):
         self.criteria = criteria
         self.total = None
         self.props = props or list(Registry("symbols").keys())
+        self.insert_only = insert_only
 
         super(SeparationBuilder, self).__init__(sources=[propnet_store],
                                                 targets=[quantity_store, material_store],
@@ -101,7 +104,12 @@ class SeparationBuilder(Builder):
         qs = list(chain.from_iterable(qs))
         ms = [v[1] for v in items]
 
-        self.quantity_store.update(qs, key='internal_id')
+        if self.insert_only:
+            self.quantity_store.collection.bulk_write(
+                [InsertOne(d) for d in items]
+            )
+        else:
+            self.quantity_store.update(qs, key='internal_id')
         self.material_store.update(ms, key='task_id')
 
     def finalize(self, cursor=None):
