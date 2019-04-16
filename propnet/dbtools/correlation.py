@@ -89,38 +89,39 @@ class CorrelationBuilder(Builder):
         for prop_x, prop_y in combinations_with_replacement(self._props, 2):
             # This aggregation query collects the quantities, groups them by
             # material and averages the values for that material
-            pn_data = self.propnet_store.collection.aggregate([
-                {'$match':
-                    {'$or': [
-                        {'symbol_type': prop_x},
-                        {'symbol_type': prop_y}]
-                    }
-                },
-                {'$group':
-                    {
-                        '_id': '$material_key',
-                        prop_x: {
-                            '$avg': {
-                                '$cond': [
-                                    {"$eq": ['$symbol_type', prop_x]},
-                                    '$value',
-                                    None
-                                ]
-                            }
-                        },
-                        prop_y: {
-                            '$avg': {
-                                '$cond': [
-                                    {"$eq": ['$symbol_type', prop_y]},
-                                    '$value',
-                                    None
-                                ]
+            pn_data = self.propnet_store.collection.aggregate(
+                pipeline=[
+                    {'$match':
+                        {'$or': [
+                            {'symbol_type': prop_x},
+                            {'symbol_type': prop_y}]
+                        }
+                    },
+                    {'$group':
+                        {
+                            '_id': '$material_key',
+                            prop_x: {
+                                '$avg': {
+                                    '$cond': [
+                                        {"$eq": ['$symbol_type', prop_x]},
+                                        '$value',
+                                        None
+                                    ]
+                                }
+                            },
+                            prop_y: {
+                                '$avg': {
+                                    '$cond': [
+                                        {"$eq": ['$symbol_type', prop_y]},
+                                        '$value',
+                                        None
+                                    ]
+                                }
                             }
                         }
                     }
-                }
-            ],
-                {'allowDiskUse': True}
+                ],
+                allowDiskUse=True
             )
             x_data = []
             y_data = []
