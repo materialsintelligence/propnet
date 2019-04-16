@@ -85,8 +85,63 @@ class CorrelationBuilder(Builder):
         super(CorrelationBuilder, self).__init__(sources=[propnet_store],
                                                  targets=[correlation_store],
                                                  **kwargs)
-
     def get_items(self):
+        for prop_x, prop_y in combinations_with_replacement(self._props, 2):
+            # This aggregation query collects the quantities, groups them by
+            # material and averages the values for that material
+            pn_data = self.propnet_store.collection.aggregate([
+                {'$match':
+                    {'$or': [
+                        {'symbol_type': prop_x},
+                        {'symbol_type': prop_y}]
+                    }
+                },
+                {'$group':
+                    {
+                        '_id': '$material_key',
+                        prop_x: {
+                            '$avg': {
+                                '$cond': [
+                                    {"$eq": ['$symbol_type', prop_x]},
+                                    '$value',
+                                    None
+                                ]
+                            }
+                        },
+                        prop_y: {
+                            '$avg': {
+                                '$cond': [
+                                    {"$eq": ['$symbol_type', prop_y]},
+                                    '$value',
+                                    None
+                                ]
+                            }
+                        }
+                    }
+                }
+            ],
+                {'allowDiskUse': True}
+            )
+            x_data = []
+            y_data = []
+            for m in pn_data:
+                x_data.append(m[prop_x])
+                y_data.append(m[prop_y])
+
+            if prop_x == prop_y:
+                prop_combos = ((prop_x, prop_x),)
+            else:
+                prop_combos = ((prop_x, prop_y), (prop_y, prop_x))
+            for x, y in prop_combos:
+                for name, func in self._funcs.items():
+                    data_dict = {'x_data': x_data,
+                                 'x_name': x,
+                                 'y_data': y_data,
+                                 'y_name': y,
+                                 'func': (name, func)}
+                    yield data_dict
+
+    def get_items_old_style(self):
         """
         Collects scalar data from propnet and MP databases, aggregates it by property, and creates
         a generator to iterate over all pairs of properties, including pairing of the same property
