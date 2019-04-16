@@ -146,7 +146,10 @@ class PropnetBuilder(MapBuilder):
         # certain material.
 
         doc = {"inputs": [StorageQuantity.from_quantity(q) for q in input_quantities]}
-        for symbol, quantity in new_material.get_aggregated_quantities().items():
+        aggregated_quantities = new_material.get_aggregated_quantities()
+        non_aggregatable_quantities = {k: v for k, v in new_material._symbol_to_quantity.items()
+                                       if k not in aggregated_quantities.keys()}
+        for symbol, quantity in aggregated_quantities.items():
             all_qs = new_material._symbol_to_quantity[symbol]
             # If no new quantities of a given symbol were derived (i.e. if the initial
             # input quantity is the only one listed in the new material) then don't add
@@ -165,6 +168,9 @@ class PropnetBuilder(MapBuilder):
                        "title": quantity._symbol_type.display_names[0]}
             # Symbol Name -> Sub_Document, listing all Quantities of that type.
             doc[symbol.name] = sub_doc
+            
+        for symbol, quantities in non_aggregatable_quantities.items():
+            # Do stuff here
 
         doc.update({"task_id": item["task_id"],
                     "pretty_formula": item.get("pretty_formula")})
