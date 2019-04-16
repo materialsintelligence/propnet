@@ -33,7 +33,7 @@ pylatexenc==1.2
 # materials project codes
 matminer>=0.4.3
 pymatgen>=2018.5.22
-maggma>=0.11.0
+maggma>=0.13.0
 
 # analysis
 minepy>=1.2.3
