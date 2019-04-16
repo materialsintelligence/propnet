@@ -106,7 +106,7 @@ class SeparationBuilder(Builder):
 
         if self.insert_only:
             self.quantity_store.collection.bulk_write(
-                [InsertOne(d) for d in items]
+                [InsertOne(d) for d in qs]
             )
         else:
             self.quantity_store.update(qs, key='internal_id')
