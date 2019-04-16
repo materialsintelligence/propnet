@@ -81,11 +81,14 @@ class CorrelationBuilder(Builder):
             raise ValueError("No valid correlation functions selected")
 
         self._props = props or self.PROPNET_PROPS
+        self.total = None
 
         super(CorrelationBuilder, self).__init__(sources=[propnet_store],
                                                  targets=[correlation_store],
                                                  **kwargs)
+
     def get_items(self):
+        self.total = len(self._props)**2 * len(self._funcs)
         for prop_x, prop_y in combinations_with_replacement(self._props, 2):
             # This aggregation query collects the quantities, groups them by
             # material and averages the values for that material
