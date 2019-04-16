@@ -105,7 +105,7 @@ class SeparationBuilder(Builder):
         self.material_store.update(ms, key='task_id')
 
     def finalize(self, cursor=None):
-        q_indices = ['internal_id', 'symbol_type', 'data_type']
+        q_indices = ['internal_id', 'symbol_type', 'data_type', 'material_key']
         m_indices = ['task_id']
         for idx in q_indices:
             self.quantity_store.ensure_index(idx)
