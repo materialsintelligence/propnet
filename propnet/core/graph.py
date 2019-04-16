@@ -946,7 +946,7 @@ class Graph(object):
                 timeout=timeout)
 
         new_material = Material()
-        new_material._symbol_to_quantity = quantity_pool
+        new_material._quantities_by_symbol = quantity_pool
         return new_material
 
     def evaluate_composite(self, material, allow_model_failure=True,
@@ -992,11 +992,11 @@ class Graph(object):
         # Run all CompositeModels in the graph on this SuperMaterial if
         # a material mapping can be established.  Store any derived quantities.
         all_quantities = defaultdict(set)
-        for (k, v) in material._symbol_to_quantity:
+        for (k, v) in material._quantities_by_symbol:
             all_quantities[k].add(v)
 
         to_return = CompositeMaterial(evaluated_materials)
-        to_return._symbol_to_quantity = all_quantities
+        to_return._quantities_by_symbol = all_quantities
 
         logger.debug("Evaluating CompositeMaterial")
 
@@ -1036,7 +1036,7 @@ class Graph(object):
                         mat = to_return
                     else:
                         mat = mat_mapping[mat_list[i]]
-                    for q in mat._symbol_to_quantity[symbol_list[i]]:
+                    for q in mat._quantities_by_symbol[symbol_list[i]]:
                         temp_pool[combined_list[i]].add(q)
                 input_sets = self.generate_input_sets(combined_list, temp_pool)
 
@@ -1067,12 +1067,12 @@ class Graph(object):
                             raise ValueError(
                                 "Symbol type {} not found".format(symbol))
                         q = QuantityFactory.create_quantity(st, quantity)
-                        to_return._symbol_to_quantity[st].add(q)
+                        to_return._quantities_by_symbol[st].add(q)
                         logger.debug("\t\t\tNew output: " + str(q))
 
         # Evaluate the CompositeMaterial's quantities and return the result.
-        mappings = self.evaluate(to_return)._symbol_to_quantity
-        to_return._symbol_to_quantity = mappings
+        mappings = self.evaluate(to_return)._quantities_by_symbol
+        to_return._quantities_by_symbol = mappings
         return to_return
 
     def clear_statistics(self):

@@ -28,7 +28,7 @@ class Material(object):
     differentiate between different materials at runtime.
 
     Attributes:
-        _symbol_to_quantity (dict<Symbol, set<Quantity>>): data structure mapping Symbols to a list of corresponding
+        _quantities_by_symbol (dict<Symbol, set<Quantity>>): data structure mapping Symbols to a list of corresponding
                                                            Quantity objects of that type.
 
     """
@@ -42,7 +42,7 @@ class Material(object):
             add_default_quantities (bool): whether to add default
                 quantities (e. g. room temperature) to the graph
         """
-        self._symbol_to_quantity = defaultdict(set)
+        self._quantities_by_symbol = defaultdict(set)
         if quantities is not None:
             for quantity in quantities:
                 self.add_quantity(quantity)
@@ -60,7 +60,7 @@ class Material(object):
         Returns:
             None
         """
-        self._symbol_to_quantity[quantity.symbol].add(quantity)
+        self._quantities_by_symbol[quantity.symbol].add(quantity)
 
     def remove_quantity(self, quantity):
         """
@@ -73,10 +73,10 @@ class Material(object):
         Returns:
             None
         """
-        if quantity.symbol not in self._symbol_to_quantity:
+        if quantity.symbol not in self._quantities_by_symbol:
             raise Exception("Attempting to remove quantity not present in "
                             "the material.")
-        self._symbol_to_quantity[quantity.symbol].remove(quantity)
+        self._quantities_by_symbol[quantity.symbol].remove(quantity)
 
     def add_default_quantities(self):
         """
@@ -86,7 +86,7 @@ class Material(object):
             None
         """
         new_syms = set(Registry("symbol_values").keys())
-        new_syms -= set(self._symbol_to_quantity.keys())
+        new_syms -= set(self._quantities_by_symbol.keys())
         for sym in new_syms:
             quantity = QuantityFactory.from_default(sym)
             warnings.warn("Adding default {} quantity with value {}".format(
@@ -104,9 +104,9 @@ class Material(object):
         Returns:
             None
         """
-        if symbol not in self._symbol_to_quantity:
+        if symbol not in self._quantities_by_symbol:
             raise Exception("Attempting to remove Symbol not present in the material.")
-        del self._symbol_to_quantity[symbol]
+        del self._quantities_by_symbol[symbol]
 
     def get_symbols(self):
         """
@@ -115,7 +115,7 @@ class Material(object):
         Returns:
             (set<Symbol>) set containing all symbols bound to this Material.
         """
-        return set(self._symbol_to_quantity.keys())
+        return set(self._quantities_by_symbol.keys())
 
     def get_quantities(self):
         """
@@ -123,8 +123,12 @@ class Material(object):
         Returns:
             (list<Quantity>) list of all Quantity objects bound to this Material.
         """
-        return list(chain.from_iterable(self._symbol_to_quantity.values()))
-
+        return list(chain.from_iterable(self._quantities_by_symbol.values()))
+    
+    @property
+    def symbol_quantities_dict(self):
+        return self._quantities_by_symbol.copy()
+    
     def get_aggregated_quantities(self):
         """
         Return mean values for all quantities for each symbol.
@@ -135,7 +139,7 @@ class Material(object):
         """
         # TODO: proper weighting system, and more flexibility in object handling
         aggregated = {}
-        for symbol, quantities in self._symbol_to_quantity.items():
+        for symbol, quantities in self._quantities_by_symbol.items():
             if not symbol.category == 'object':
                 aggregated[symbol] = NumQuantity.from_weighted_mean(list(quantities))
         return aggregated
@@ -144,9 +148,9 @@ class Material(object):
         QUANTITY_LENGTH_CAP = 50
         building = []
         building += ["Material: " + str(hex(id(self))), ""]
-        for symbol in self._symbol_to_quantity.keys():
+        for symbol in self._quantities_by_symbol.keys():
             building += ["\t" + symbol.name]
-            for quantity in self._symbol_to_quantity[symbol]:
+            for quantity in self._quantities_by_symbol[symbol]:
                 qs = str(quantity)
                 if "\n" in qs or len(qs) > QUANTITY_LENGTH_CAP:
                     qs = "..."
@@ -157,24 +161,24 @@ class Material(object):
     def __eq__(self, other):
         if not isinstance(other, Material):
             return False
-        if len(self._symbol_to_quantity) != len(other._symbol_to_quantity):
+        if len(self._quantities_by_symbol) != len(other._quantities_by_symbol):
             return False
-        for symbol in self._symbol_to_quantity.keys():
-            if symbol not in other._symbol_to_quantity.keys():
+        for symbol in self._quantities_by_symbol.keys():
+            if symbol not in other._quantities_by_symbol.keys():
                 return False
-            if len(self._symbol_to_quantity[symbol]) != len(other._symbol_to_quantity[symbol]):
+            if len(self._quantities_by_symbol[symbol]) != len(other._quantities_by_symbol[symbol]):
                 return False
-            for quantity in self._symbol_to_quantity[symbol]:
-                if quantity not in other._symbol_to_quantity[symbol]:
+            for quantity in self._quantities_by_symbol[symbol]:
+                if quantity not in other._quantities_by_symbol[symbol]:
                     return False
         return True
 
     @property
     def quantity_types(self):
-        return list(self._symbol_to_quantity.keys())
+        return list(self._quantities_by_symbol.keys())
 
     def __getitem__(self, item):
-        return self._symbol_to_quantity[item]
+        return self._quantities_by_symbol[item]
 
 
 class CompositeMaterial(Material):
