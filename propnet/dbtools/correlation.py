@@ -485,7 +485,8 @@ class CorrelationBuilder(Builder):
 
         """
 
-        props_to_index = ['property_x', 'property_y', 'correlation_func']
+        props_to_index = ['property_x', 'property_y', 'correlation_func',
+                          'correlation', 'shortest_path_length']
         for prop in props_to_index:
             if not self.correlation_store.ensure_index(prop):
                 logger.warning("Could not add index for property {}".format(prop))
