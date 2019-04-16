@@ -126,8 +126,9 @@ class CorrelationBuilder(Builder):
             x_data = []
             y_data = []
             for m in pn_data:
-                x_data.append(m[prop_x])
-                y_data.append(m[prop_y])
+                if m[prop_x] is not None and m[prop_y] is not None:
+                    x_data.append(m[prop_x])
+                    y_data.append(m[prop_y])
 
             if prop_x == prop_y:
                 prop_combos = ((prop_x, prop_x),)
