@@ -27,11 +27,12 @@ class CorrelationBuilder(Builder):
     """
     PROPNET_PROPS = [v.name for v in Registry("symbols").values()
                      if (v.category == 'property' and v.shape == 1)]
-
+    
     def __init__(self, propnet_store,
                  correlation_store, out_file=None,
                  funcs='linlsq', props=None,
-                 sample_size=None, **kwargs):
+                 sample_size=None, from_quantity_db=True,
+                 **kwargs):
         """
         Constructor for the correlation builder.
 
@@ -55,16 +56,19 @@ class CorrelationBuilder(Builder):
                 Default is to calculate for all possible pairs (props=None)
             sample_size (int): optional, limits correlation calculation data to a random sample of size
                 `sample_size`. Default: None (no limit)
+            from_quantity_db (bool): True means propnet_store follows the quantity-indexed database
+                schema, False means the full, material-indexed database schema. Note: querying quantity-indexed
+                databases is considerably faster than material-indexed.
+                Default: True (quantity schema)
             **kwargs: arguments to the Builder superclass
         """
 
         self.propnet_store = propnet_store
+        self.from_quantity_db = from_quantity_db
         self.correlation_store = correlation_store
         self.out_file = out_file
 
-        self._correlation_funcs = {f.replace('_cfunc_', ''): getattr(self, f)
-                                   for f in dir(self)
-                                   if re.match(r'^_cfunc_.+$', f) and callable(getattr(self, f))}
+        self._correlation_funcs = self.get_correlation_funcs()
 
         self._funcs = {}
 
@@ -96,70 +100,181 @@ class CorrelationBuilder(Builder):
                                                  targets=[correlation_store],
                                                  **kwargs)
 
-    def get_items(self):
-        self.total = len(self._props)**2 * len(self._funcs)
-        for prop_x, prop_y in combinations_with_replacement(self._props, 2):
-            # This aggregation query collects the quantities, groups them by
-            # material and averages the values for that material
-            pn_data = self.propnet_store.collection.aggregate(
-                pipeline=[
-                    {'$match':
-                        {'$or': [
-                            {'symbol_type': prop_x},
-                            {'symbol_type': prop_y}]
-                        }
-                    },
-                    {'$group':
-                        {
-                            '_id': '$material_key',
-                            prop_x: {
-                                '$avg': {
-                                    '$cond': [
-                                        {"$eq": ['$symbol_type', prop_x]},
-                                        '$value',
-                                        None
-                                    ]
-                                }
-                            },
-                            prop_y: {
-                                '$avg': {
-                                    '$cond': [
-                                        {"$eq": ['$symbol_type', prop_y]},
-                                        '$value',
-                                        None
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                ],
-                allowDiskUse=True
-            )
-            x_data = []
-            y_data = []
-            for m in pn_data:
-                if m[prop_x] is not None and m[prop_y] is not None:
-                    x_data.append(m[prop_x])
-                    y_data.append(m[prop_y])
-
-            if prop_x == prop_y:
-                prop_combos = ((prop_x, prop_x),)
-            else:
-                prop_combos = ((prop_x, prop_y), (prop_y, prop_x))
-            for x, y in prop_combos:
-                for name, func in self._funcs.items():
-                    data_dict = {'x_data': x_data,
-                                 'x_name': x,
-                                 'y_data': y_data,
-                                 'y_name': y,
-                                 'func': (name, func)}
-                    yield data_dict
-
-    def get_items_old_style(self):
+    @classmethod
+    def get_correlation_funcs(cls):
         """
-        Collects scalar data from propnet and MP databases, aggregates it by property, and creates
-        a generator to iterate over all pairs of properties, including pairing of the same property
-        with itself for sanity check, and correlation functions.
+        Gets built-in correlation functions and their names.
+
+        Returns:
+            dict: dict of function handles keyed by name
+
+        """
+        return {f.replace('_cfunc_', ''): getattr(cls, f)
+                for f in dir(cls)
+                if re.match(r'^_cfunc_.+$', f) and callable(getattr(cls, f))}
+    
+    def get_items(self):
+        """
+        Accumulates data and generates data sets for pairs of properties coupled
+        with correlation functions.
+
+        Returns:
+            (generator): yields dicts of data (see _make_data_combinations())
+        """
+        self.total = len(self._props) ** 2 * len(self._funcs)
+
+        # combinations_with_replacement() produces all possible pairs of properties
+        # without repeating, i.e. will give AB but not BA. Code below manually
+        # produces "BA" so that we don't have to re-query the database.
+        for prop_x, prop_y in combinations_with_replacement(self._props, 2):
+            if self.from_quantity_db:
+                data = self._get_data_from_quantity_db(prop_x, prop_y)
+            else:
+                data = self._get_data_from_full_db(prop_x, prop_y)
+
+            yield from self._make_data_combinations(prop_x, prop_y, data)
+
+    def _get_data_from_quantity_db(self, prop_x, prop_y):
+        """
+        Collects scalar data from the quantity-onlu propnet database,
+        aggregates it by material and property, and samples it if desired.
+
+        Args:
+            prop_x (str): name of property x
+            prop_y (str): name of property y
+
+        Returns:
+            dict: dictionary of data keyed by property name
+
+        """
+
+        # This aggregation query collects the quantities, groups them by material
+        # and averages the values for that material, then samples them (if specified)
+        pipeline = [{
+            '$match': {
+                '$or': [
+                    {'symbol_type': prop_x},
+                    {'symbol_type': prop_y}
+                ]}
+            }, {
+            '$group': {
+                '_id': '$material_key',
+                prop_x: {
+                    '$avg': {
+                        '$cond': [
+                            {"$eq": ['$symbol_type', prop_x]},
+                            '$value',
+                            None
+                        ]
+                    }
+                },
+                prop_y: {
+                    '$avg': {
+                        '$cond': [
+                            {"$eq": ['$symbol_type', prop_y]},
+                            '$value',
+                            None
+                        ]
+                    }
+                }
+            }
+        }]
+
+        if self.sample_size is not None:
+            pipeline.append(
+                {'$sample': {'size': self.sample_size}}
+            )
+
+        pn_data = self.propnet_store.collection.aggregate(
+            pipeline=pipeline,
+            allowDiskUse=True
+        )
+        x_data = []
+        y_data = []
+        for m in pn_data:
+            if m[prop_x] is not None and m[prop_y] is not None and \
+                    np.isfinite(m[prop_x]) and np.isfinite(m[prop_y]):
+                x_data.append(m[prop_x])
+                y_data.append(m[prop_y])
+
+        return {prop_x: x_data, prop_y: y_data}
+
+    def _get_data_from_full_db(self, prop_x, prop_y):
+        """
+        Collects scalar data from full propnet database, aggregates it by property,
+        and samples it if desired.
+
+        Args:
+            prop_x (str): name of property x
+            prop_y (str): name of property y
+
+        Returns:
+            dict: dictionary of data keyed by property name
+
+        """
+
+        # Get all materials which have both properties in the inputs or outputs
+        criteria = {
+                '$and': [
+                    {'$or': [
+                        {'inputs.symbol_type': prop_x},
+                        {prop_x: {'$exists': True}}]},
+                    {'$or': [
+                        {'inputs.symbol_type': prop_y},
+                        {prop_y: {'$exists': True}}]}
+                ]}
+        properties = [prop_x + '.quantities', prop_y + '.quantities', 'inputs']
+
+        if self.sample_size is None:
+            pn_data = self.propnet_store.query(criteria=criteria,
+                                               properties=properties)
+        else:
+            pipeline = [
+                {'$match': criteria},
+                {'$sample': {'size': self.sample_size}},
+                {'$project': {p: True for p in properties}},
+            ]
+            pn_data = self.propnet_store.collection.aggregate(
+                pipeline, allowDiskUse=True
+            )
+
+        x_unit = Registry("units")[prop_x]
+        y_unit = Registry("units")[prop_y]
+        data = defaultdict(list)
+        for material in pn_data:
+            # Collect all data with units for this material
+            # and calculate the mean, convert units, store magnitude of mean
+            if prop_x == prop_y:
+                # This is to avoid duplicating the work and the data
+                props = (prop_x,)
+                units = (x_unit,)
+            else:
+                props = (prop_x, prop_y)
+                units = (x_unit, y_unit)
+            for prop, unit in zip(props, units):
+                qs = [ureg.Quantity(q['value'], q['units'])
+                      for q in material['inputs']
+                      if q['symbol_type'] == prop]
+                if prop in material:
+                    qs.extend([ureg.Quantity(q['value'], q['units'])
+                               for q in material[prop]['quantities']])
+
+                if len(qs) == 0:
+                    raise ValueError("Query for property {} gave no results"
+                                     "".format(prop))
+                prop_mean = sum(qs) / len(qs)
+                data[prop].append(prop_mean.to(unit).magnitude)
+
+        return data
+
+    def _make_data_combinations(self, prop_x, prop_y, data):
+        """
+        Generates combinations of properties and desired correlation functions for evaluation.
+
+        Args:
+            prop_x (str): name of property x
+            prop_y (str): name of property y
+            data (dict): dictionary of data keyed by property name
 
         Returns: (generator) a generator providing a dictionary with the data for correlation:
             {'x_data': (list<float>) data for independent property (x-axis),
@@ -170,78 +285,19 @@ class CorrelationBuilder(Builder):
              }
 
         """
-        # Update total in case we changed something between instantiation and running
-        self.total = len(self._props)**2 * len(self._funcs)
-
-        # combinations_with_replacement() produces all possible pairs of properties
-        # without repeating, i.e. will give AB but not BA. Code below manually
-        # produces "BA" so that we don't have to re-query the database.
-        for prop_x, prop_y in combinations_with_replacement(self._props, 2):
-            # Get all materials which have both properties in the inputs or outputs
-            criteria = {
-                    '$and': [
-                        {'$or': [
-                            {'inputs.symbol_type': prop_x},
-                            {prop_x: {'$exists': True}}]},
-                        {'$or': [
-                            {'inputs.symbol_type': prop_y},
-                            {prop_y: {'$exists': True}}]}
-                    ]}
-            properties = [prop_x + '.quantities', prop_y + '.quantities', 'inputs']
-
-            if self.sample_size is None:
-                pn_data = self.propnet_store.query(criteria=criteria,
-                                                   properties=properties)
-            else:
-                pipeline = [
-                    {'$match': criteria},
-                    {'$sample': {'size': self.sample_size}},
-                    {'$project': {p: True for p in properties}},
-                ]
-                pn_data = self.propnet_store.collection.aggregate(
-                    pipeline, allowDiskUse=True
-                )
-
-            x_unit = Registry("units")[prop_x]
-            y_unit = Registry("units")[prop_y]
-            data = defaultdict(list)
-            for material in pn_data:
-                # Collect all data with units for this material
-                # and calculate the mean, convert units, store magnitude of mean
-                if prop_x == prop_y:
-                    # This is to avoid duplicating the work and the data
-                    props = (prop_x,)
-                    units = (x_unit,)
-                else:
-                    props = (prop_x, prop_y)
-                    units = (x_unit, y_unit)
-                for prop, unit in zip(props, units):
-                    qs = [ureg.Quantity(q['value'], q['units'])
-                          for q in material['inputs']
-                          if q['symbol_type'] == prop]
-                    if prop in material:
-                        qs.extend([ureg.Quantity(q['value'], q['units'])
-                                   for q in material[prop]['quantities']])
-
-                    if len(qs) == 0:
-                        raise ValueError("Query for property {} gave no results"
-                                         "".format(prop))
-                    prop_mean = sum(qs) / len(qs)
-                    data[prop].append(prop_mean.to(unit).magnitude)
-
-            # So we get AB and BA without re-querying, but not two AA
-            if prop_x == prop_y:
-                prop_combos = ((prop_x, prop_x),)
-            else:
-                prop_combos = ((prop_x, prop_y), (prop_y, prop_x))
-            for x, y in prop_combos:
-                for name, func in self._funcs.items():
-                    data_dict = {'x_data': data[x],
-                                 'x_name': x,
-                                 'y_data': data[y],
-                                 'y_name': y,
-                                 'func': (name, func)}
-                    yield data_dict
+        # So we get AB and BA without re-querying, but not two AA
+        if prop_x == prop_y:
+            prop_combos = ((prop_x, prop_x),)
+        else:
+            prop_combos = ((prop_x, prop_y), (prop_y, prop_x))
+        for x, y in prop_combos:
+            for name, func in self._funcs.items():
+                data_dict = {'x_data': data[x],
+                             'x_name': x,
+                             'y_data': data[y],
+                             'y_name': y,
+                             'func': (name, func)}
+                yield data_dict
 
     def process_item(self, item):
         """
