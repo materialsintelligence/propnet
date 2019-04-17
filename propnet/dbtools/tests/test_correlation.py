@@ -23,10 +23,22 @@ class CorrelationTest(unittest.TestCase):
 
         cls.propstore = MemoryStore()
         cls.propstore.connect()
-        with open(os.path.join(TEST_DIR, "correlation_propnet_data.json"), 'r') as f:
-            materials = json.load(f)
-        materials = jsanitize(materials, strict=True, allow_bson=True)
-        cls.propstore.update(materials)
+        materials_file = os.path.join(TEST_DIR, "correlation_propnet_data.json")
+        if os.path.exists(materials_file):
+            with open(materials_file, 'r') as f:
+                materials = json.load(f)
+            materials = jsanitize(materials, strict=True, allow_bson=True)
+            cls.propstore.update(materials)
+
+        cls.quantity_store = MemoryStore()
+        cls.quantity_store.connect()
+        quantities_file = os.path.join(TEST_DIR, "correlation_propnet_quantity_data.json")
+        if os.path.exists(quantities_file):
+            with open(quantities_file, 'r') as f:
+                quantities = json.load(f)
+            quantities = jsanitize(quantities, strict=True, allow_bson=True)
+            cls.quantity_store.update(quantities, key='internal_id')
+
         cls.correlation = None
 
         # vickers hardness (x-axis) vs. bulk modulus (y-axis)
@@ -56,13 +68,33 @@ class CorrelationTest(unittest.TestCase):
         self.correlation.connect()
 
     def test_serial_runner(self):
-        builder = CorrelationBuilder(self.propstore, self.correlation)
+        builder = CorrelationBuilder(self.propstore, self.correlation,
+                                     from_quantity_db=False)
+        runner = Runner([builder])
+        runner.run()
+
+    def test_serial_runner_quantity_db(self):
+        # This only runs over the 4 properties in the database because
+        # the mongomock db cannot be indexed and is therefore very slow
+        builder = CorrelationBuilder(self.quantity_store, self.correlation,
+                                     props=self.propnet_props,
+                                     from_quantity_db=True)
         runner = Runner([builder])
         runner.run()
 
     def test_multiproc_runner(self):
-        builder = CorrelationBuilder(self.propstore, self.correlation)
-        runner = Runner([builder], max_workers=2)
+        builder = CorrelationBuilder(self.propstore, self.correlation,
+                                     from_quantity_db=False)
+        runner = Runner([builder], max_workers=4)
+        runner.run()
+
+    def test_multiproc_runner_quantity_db(self):
+        # This only runs over the 4 properties in the database because
+        # the mongomock db cannot be indexed and is therefore very slow
+        builder = CorrelationBuilder(self.quantity_store, self.correlation,
+                                     props=self.propnet_props,
+                                     from_quantity_db=True)
+        runner = Runner([builder], max_workers=4)
         runner.run()
 
     def test_process_item(self):
@@ -71,27 +103,30 @@ class CorrelationTest(unittest.TestCase):
         linlsq_correlation_values = [0.05219124923380024, 0.609064764013383]
         path_lengths = [None, 2]
 
-        for props, expected_correlation_val, expected_path_length in \
-                zip(test_props, linlsq_correlation_values, path_lengths):
-            builder = CorrelationBuilder(self.propstore, self.correlation,
-                                         props=props)
-            processed = None
-            prop_x, prop_y = props
-            for item in builder.get_items():
-                if item['x_name'] == prop_x and \
-                        item['y_name'] == prop_y:
-                    processed = builder.process_item(item)
-                    break
-            # print(processed)
-            self.assertIsNotNone(processed)
-            self.assertIsInstance(processed, tuple)
-            px, py, correlation, func_name, n_points, path_length = processed
-            self.assertEqual(px, prop_x)
-            self.assertEqual(py, prop_y)
-            self.assertAlmostEqual(correlation, expected_correlation_val)
-            self.assertEqual(func_name, 'linlsq')
-            self.assertEqual(n_points, 200)
-            self.assertEqual(path_length, expected_path_length)
+        for source_db, is_quantity_db in zip((self.propstore, self.quantity_store),
+                                             (False, True)):
+            for props, expected_correlation_val, expected_path_length in \
+                    zip(test_props, linlsq_correlation_values, path_lengths):
+                builder = CorrelationBuilder(source_db, self.correlation,
+                                             props=props,
+                                             from_quantity_db=is_quantity_db)
+                processed = None
+                prop_x, prop_y = props
+                for item in builder.get_items():
+                    if item['x_name'] == prop_x and \
+                            item['y_name'] == prop_y:
+                        processed = builder.process_item(item)
+                        break
+                # print(processed)
+                self.assertIsNotNone(processed)
+                self.assertIsInstance(processed, tuple)
+                px, py, correlation, func_name, n_points, path_length = processed
+                self.assertEqual(px, prop_x)
+                self.assertEqual(py, prop_y)
+                self.assertAlmostEqual(correlation, expected_correlation_val)
+                self.assertEqual(func_name, 'linlsq')
+                self.assertEqual(n_points, 200)
+                self.assertEqual(path_length, expected_path_length)
 
     def test_correlation_funcs(self):
         def custom_correlation_func(x, y):
@@ -102,7 +137,8 @@ class CorrelationTest(unittest.TestCase):
 
         builder = CorrelationBuilder(self.propstore, self.correlation,
                                      props=['vickers_hardness', 'bulk_modulus'],
-                                     funcs=['all', custom_correlation_func])
+                                     funcs=['all', custom_correlation_func],
+                                     from_quantity_db=False)
 
         self.assertEqual(set(builder._funcs.keys()), set(correlation_values.keys()),
                          msg="Are there new built-in functions in the correlation builder?")
@@ -124,7 +160,8 @@ class CorrelationTest(unittest.TestCase):
         builder = CorrelationBuilder(self.propstore, self.correlation,
                                      props=self.propnet_props,
                                      funcs='all',
-                                     out_file=os.path.join(TEST_DIR, "test_output.json"))
+                                     out_file=os.path.join(TEST_DIR, "test_output.json"),
+                                     from_quantity_db=False)
 
         runner = Runner([builder])
         runner.run()
@@ -186,7 +223,8 @@ class CorrelationTest(unittest.TestCase):
             correlation_store = MemoryStore()
             builder = CorrelationBuilder(self.propstore, correlation_store,
                                          props=['bulk_modulus', 'vickers_hardness'],
-                                         funcs='linlsq', sample_size=sample_size)
+                                         funcs='linlsq', sample_size=sample_size,
+                                         from_quantity_db=False)
             runner = Runner([builder])
             runner.run()
 
@@ -223,6 +261,23 @@ class CorrelationTest(unittest.TestCase):
                 cursor.close()
                 break
         dumpfn(data, os.path.join(TEST_DIR, "correlation_propnet_data.json"))
+
+    @unittest.skipIf(True, "Skipping quantity test materials creation")
+    def create_quantity_indexed_docs(self):
+        from monty.serialization import dumpfn
+        from propnet.dbtools.separation import SeparationBuilder
+        pn_store = MemoryStore()
+        q_store = MemoryStore()
+        m_store = MemoryStore()
+        with open(os.path.join(TEST_DIR, "correlation_propnet_data.json"), 'r') as f:
+            data = json.load(f)
+        pn_store.connect()
+        pn_store.update(jsanitize(data, strict=True, allow_bson=True))
+        sb = SeparationBuilder(pn_store, q_store, m_store)
+        r = Runner([sb])
+        r.run()
+        q_data = list(q_store.query(criteria={}, properties={'_id': False}))
+        dumpfn(q_data, os.path.join(TEST_DIR, "correlation_propnet_quantity_data.json"))
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ class Material(object):
     differentiate between different materials at runtime.
 
     Attributes:
-        _quantities_by_symbol (dict<Symbol, set<Quantity>>): data structure mapping Symbols to a list of corresponding
+        symbol_quantities_dict (dict<Symbol, set<Quantity>>): data structure mapping Symbols to a list of corresponding
                                                            Quantity objects of that type.
 
     """
@@ -189,7 +189,7 @@ class CompositeMaterial(Material):
     multiple materials (i. e. contact voltage in metals)
 
     Attributes:
-        _symbol_to_quantity (dict<Symbol, set<Quantity>>): data-structure
+        symbol_quantities_dict (dict<Symbol, set<Quantity>>): data-structure
             storing all properties / descriptors that arise from the
             joining of multiple materials
         materials (list<Material>): set of materials contained in the Composite

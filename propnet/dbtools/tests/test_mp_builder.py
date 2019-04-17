@@ -12,7 +12,7 @@ from propnet.dbtools.mp_builder import PropnetBuilder
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class BuilderTest(unittest.TestCase):
+class MPBuilderTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         add_builtin_models_to_registry()

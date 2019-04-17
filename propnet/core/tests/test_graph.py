@@ -302,7 +302,7 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(len(expected_quantities) == len(derived_quantities),
                             "Evaluate did not correctly derive outputs.")
             for q in expected_quantities:
-                self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+                self.assertTrue(q in material_derived.symbol_quantities_dict[q.symbol],
                                 "Evaluate failed to derive all outputs.")
                 self.assertTrue(q in derived_quantities)
 
@@ -329,7 +329,7 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(len(expected_quantities) == len(derived_quantities),
                             "Evaluate did not correctly derive outputs.")
             for q in expected_quantities:
-                self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+                self.assertTrue(q in material_derived.symbol_quantities_dict[q.symbol],
                                 "Evaluate failed to derive all outputs.")
                 self.assertTrue(q in derived_quantities)
 
@@ -363,7 +363,7 @@ class GraphTest(unittest.TestCase):
         self.assertTrue(len(expected_quantities) == len(derived_quantities),
                         "Evaluate did not correctly derive outputs.")
         for q in expected_quantities:
-            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+            self.assertTrue(q in material_derived.symbol_quantities_dict[q.symbol],
                             "Evaluate failed to derive all outputs.")
             self.assertTrue(q in derived_quantities)
 
@@ -390,7 +390,7 @@ class GraphTest(unittest.TestCase):
         self.assertTrue(len(expected_quantities) == len(derived_quantities),
                         "Evaluate did not correctly derive outputs.")
         for q in expected_quantities:
-            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+            self.assertTrue(q in material_derived.symbol_quantities_dict[q.symbol],
                             "Evaluate failed to derive all outputs.")
             self.assertTrue(q in derived_quantities)
 
@@ -443,7 +443,7 @@ class GraphTest(unittest.TestCase):
         # Test
         for q_expected in s_outputs:
             q = None
-            for q_derived in mat1_derived._symbol_to_quantity[q_expected.symbol]:
+            for q_derived in mat1_derived.symbol_quantities_dict[q_expected.symbol]:
                 if q_derived == q_expected:
                     q = q_derived
             self.assertTrue(q is not None,
@@ -954,9 +954,9 @@ class GraphTest(unittest.TestCase):
 
         cm = g.evaluate_composite(cm, allow_composite_model_failure=False)
 
-        self.assertTrue('pilling_bedworth_ratio' in cm._symbol_to_quantity.keys(),
+        self.assertTrue('pilling_bedworth_ratio' in cm.symbol_quantities_dict.keys(),
                         "Super Evaluate failed to derive expected outputs.")
-        self.assertTrue(len(cm._symbol_to_quantity['pilling_bedworth_ratio']) > 0,
+        self.assertTrue(len(cm.symbol_quantities_dict['pilling_bedworth_ratio']) > 0,
                         "Super Evaluate failed to derive expected outputs.")
 
     def test_provenance(self):
@@ -971,9 +971,9 @@ class GraphTest(unittest.TestCase):
 
         expected_quantities = self.expected_constrained_quantities
 
-        for q in material_derived._symbol_to_quantity[symbols['A']]:
+        for q in material_derived.symbol_quantities_dict[symbols['A']]:
             self.assertTrue(q._provenance.inputs is None)
-        for q in material_derived._symbol_to_quantity[symbols['B']]:
+        for q in material_derived.symbol_quantities_dict[symbols['B']]:
             if q.value == 38:
                 self.assertEquals(q._provenance.model, models['model1'].name,
                                   "provenance improperly calculated")
@@ -984,7 +984,7 @@ class GraphTest(unittest.TestCase):
                                   "provenance improperly calculated")
                 self.assertTrue(expected_quantities[1] in q._provenance.inputs,
                                 "provenance improperly calculated")
-        for q in material_derived._symbol_to_quantity[symbols['C']]:
+        for q in material_derived.symbol_quantities_dict[symbols['C']]:
             if q.value == 57:
                 self.assertEquals(q._provenance.model, models['model1'].name,
                                   "provenance improperly calculated")
@@ -995,7 +995,7 @@ class GraphTest(unittest.TestCase):
                                   "provenance improperly calculated")
                 self.assertTrue(expected_quantities[1] in q._provenance.inputs,
                                 "provenance improperly calculated")
-        for q in material_derived._symbol_to_quantity[symbols['G']]:
+        for q in material_derived.symbol_quantities_dict[symbols['G']]:
             if q.value == 95:
                 self.assertEquals(q._provenance.model, models['model2'].name,
                                   "provenance improperly calculated")
@@ -1006,7 +1006,7 @@ class GraphTest(unittest.TestCase):
                                   "provenance improperly calculated")
                 self.assertTrue(expected_quantities[1] in q._provenance.inputs,
                                 "provenance improperly calculated")
-        for q in material_derived._symbol_to_quantity[symbols['D']]:
+        for q in material_derived.symbol_quantities_dict[symbols['D']]:
             if q.value == 70395:
                 self.assertEquals(q._provenance.model, models['model5'].name,
                                   "provenance improperly calculated")
