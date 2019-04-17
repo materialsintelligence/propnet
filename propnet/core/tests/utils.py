@@ -6,6 +6,10 @@ import os
 
 
 def generate_composite_data_files():
+    """
+    Generates data files for testing composite graph evaluation.
+
+    """
     mpr = MPRester()
     mpids = ['mp-13', 'mp-24972']
     materials = mpr.get_materials_for_mpids(mpids)
