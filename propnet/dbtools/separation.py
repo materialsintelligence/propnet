@@ -1,7 +1,6 @@
 from maggma.builders import Builder
 from maggma.utils import grouper
 from pymongo import InsertOne
-from pymongo.collection import Collection
 import pydash
 from itertools import chain
 from propnet import ureg

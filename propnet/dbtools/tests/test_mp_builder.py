@@ -71,28 +71,19 @@ class MPBuilderTest(unittest.TestCase):
                                  date_value)
                 at_deepest_level = True
 
-    # @unittest.skipIf(not os.path.isfile("runner.json"), "No runner file")
-    # def test_runner_pipeline(self):
-    #     from monty.serialization import loadfn
-    #     runner = loadfn("runner.json")
-    #     runner.builders[0].connect()
-    #     items = list(runner.builders[0].get_items())
-    #     processed = runner.builders[0].process_item(items[0])
-    #     runner.run()
 
-    # Just here for reference, in case anyone wants to create a new set
-    # of test materials -jhm
-    @unittest.skipIf(True, "Skipping test materials creation")
-    def create_test_docs(self):
-        formulas = ["BaNiO3", "Si", "Fe2O3", "Cs"]
-        from maggma.advanced_stores import MongograntStore
-        from monty.serialization import dumpfn
-        mgstore = MongograntStore("ro:matgen2.lbl.gov/mp_prod", "materials")
-        builder = PropnetBuilder(
-            mgstore, self.propstore, criteria={"pretty_formula": {"$in": formulas},
-                                               "e_above_hull": 0})
-        builder.connect()
-        dumpfn(list(builder.get_items()), "test_materials.json")
+# Just here for reference, in case anyone wants to create a new set
+# of test materials -jhm
+def create_test_docs():
+    formulas = ["BaNiO3", "Si", "Fe2O3", "Cs"]
+    from maggma.advanced_stores import MongograntStore
+    from monty.serialization import dumpfn
+    mgstore = MongograntStore("ro:matgen2.lbl.gov/mp_prod", "materials")
+    builder = PropnetBuilder(
+        mgstore, MemoryStore(), criteria={"pretty_formula": {"$in": formulas},
+                                          "e_above_hull": 0})
+    builder.connect()
+    dumpfn(list(builder.get_items()), "test_materials.json")
 
 
 if __name__ == "__main__":
