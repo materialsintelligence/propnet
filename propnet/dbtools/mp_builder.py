@@ -166,8 +166,8 @@ class PropnetBuilder(MapBuilder):
                 msg = ex.args[0]
                 if "object has no attribute 'as_dict'" in msg:
                     # Write error to db and logger
-                    errmsg = "Quantity of Symbol '{}' is not JSON serializable. "
-                    "Cannot write quantities to database!".format(symbol.name)
+                    errmsg = "Quantity of Symbol '{}' is not ".format(symbol.name) + \
+                        "JSON serializable. Cannot write quantities to database!"
                     logger.error(errmsg)
                     sub_doc['error'] = errmsg
                     qs = []
@@ -178,7 +178,7 @@ class PropnetBuilder(MapBuilder):
             doc[symbol.name] = sub_doc
 
         aggregated_quantities = new_material.get_aggregated_quantities()
-        
+
         for symbol, quantity in aggregated_quantities.items():
             # Store mean and std dev for aggregated quantities
             sub_doc = {"mean": unumpy.nominal_values(quantity.value).tolist(),
