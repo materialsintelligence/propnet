@@ -26,7 +26,8 @@ EXPANSION_METHOD_MESSAGE = "Expansion methods (TreeBuilder, etc.) are undergoing
                            "revision and tests are offline until complete"
 # TODO: There's a lot of code duplication here that could be added to setUp
 
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'test_data')
 
 
 class GraphTest(unittest.TestCase):
@@ -211,7 +212,8 @@ class GraphTest(unittest.TestCase):
     # which enables model evaluation timeout
     @unittest.skipIf(os.name != 'posix', "Skipping because timeout not implemented on non-Unix systems")
     def test_model_timeout(self):
-        sleepy_model = PyModuleModel('propnet.core.tests.sleepy_model')
+        sleepy_model = PyModuleModel('propnet.core.tests.test_data.'
+                                     'sleepy_model')
         g = Graph(models={sleepy_model.name: sleepy_model})
         q = QuantityFactory.create_quantity("A", 5, 'dimensionless')
         with Timer('model_timeout'):
@@ -926,7 +928,7 @@ class GraphTest(unittest.TestCase):
         """
         mp_data = {}
         for mpid in ('mp-13', 'mp-24972'):
-            with open(os.path.join(TEST_DIR, "{}.json".format(mpid)), 'r') as f:
+            with open(os.path.join(TEST_DATA_DIR, "{}.json".format(mpid)), 'r') as f:
                 data = json.load(f)
             material = Material()
             for d in data:
@@ -1022,7 +1024,7 @@ def generate_composite_data_files():
     materials = mpr.get_materials_for_mpids(mpids)
     for m in materials:
         mpid = [q.value for q in m.get_quantities() if q.symbol == "external_identifier_mp"][0]
-        with open(os.path.join(TEST_DIR, '{}.json'.format(mpid)), 'w') as f:
+        with open(os.path.join(TEST_DATA_DIR, '{}.json'.format(mpid)), 'w') as f:
             qs = jsanitize(m.get_quantities(), strict=True)
             f.write(json.dumps(qs))
 
