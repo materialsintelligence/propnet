@@ -72,19 +72,5 @@ class MPBuilderTest(unittest.TestCase):
                 at_deepest_level = True
 
 
-# Just here for reference, in case anyone wants to create a new set
-# of test materials -jhm
-def create_test_docs():
-    formulas = ["BaNiO3", "Si", "Fe2O3", "Cs"]
-    from maggma.advanced_stores import MongograntStore
-    from monty.serialization import dumpfn
-    mgstore = MongograntStore("ro:matgen2.lbl.gov/mp_prod", "materials")
-    builder = PropnetBuilder(
-        mgstore, MemoryStore(), criteria={"pretty_formula": {"$in": formulas},
-                                          "e_above_hull": 0})
-    builder.connect()
-    dumpfn(list(builder.get_items()), "test_materials.json")
-
-
 if __name__ == "__main__":
     unittest.main()

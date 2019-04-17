@@ -237,49 +237,5 @@ class CorrelationTest(unittest.TestCase):
             _ = CorrelationBuilder(self.propstore, self.correlation, sample_size=1)
 
 
-# Just here for reference, in case anyone wants to create a new set
-# of test materials. Requires mongogrant read access to knowhere.lbl.gov.
-def create_test_docs():
-    from maggma.advanced_stores import MongograntStore
-    from monty.serialization import dumpfn
-    n_materials = 200
-    pnstore = MongograntStore("ro:knowhere.lbl.gov/mp_core", "propnet")
-    pnstore.connect()
-    cursor = pnstore.query(
-        criteria={'$and': [
-            {'$or': [{p: {'$exists': True}},
-                     {'inputs.symbol_type': p}]}
-            for p in PROPNET_PROPS]},
-        properties=['task_id', 'inputs'] +
-                   [p + '.mean' for p in PROPNET_PROPS] +
-                   [p + '.units' for p in PROPNET_PROPS] +
-                   [p + '.quantities' for p in PROPNET_PROPS])
-    data = []
-    for item in cursor:
-        if len(data) < n_materials:
-            data.append(item)
-        else:
-            cursor.close()
-            break
-    dumpfn(data, os.path.join(TEST_DIR, "correlation_propnet_data.json"))
-
-
-def create_quantity_indexed_docs():
-    from monty.serialization import dumpfn
-    from propnet.dbtools.separation import SeparationBuilder
-    pn_store = MemoryStore()
-    q_store = MemoryStore()
-    m_store = MemoryStore()
-    with open(os.path.join(TEST_DIR, "correlation_propnet_data.json"), 'r') as f:
-        data = json.load(f)
-    pn_store.connect()
-    pn_store.update(jsanitize(data, strict=True, allow_bson=True))
-    sb = SeparationBuilder(pn_store, q_store, m_store)
-    r = Runner([sb])
-    r.run()
-    q_data = list(q_store.query(criteria={}, properties={'_id': False}))
-    dumpfn(q_data, os.path.join(TEST_DIR, "correlation_propnet_quantity_data.json"))
-
-
 if __name__ == "__main__":
     unittest.main()
