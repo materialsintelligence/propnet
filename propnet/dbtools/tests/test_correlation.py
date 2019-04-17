@@ -12,7 +12,8 @@ from itertools import product
 from propnet.models import add_builtin_models_to_registry
 from propnet.dbtools.correlation import CorrelationBuilder
 
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'test_data')
 PROPNET_PROPS = ["band_gap_pbe", "atomic_density", "bulk_modulus", "vickers_hardness"]
 
 
@@ -24,7 +25,7 @@ class CorrelationTest(unittest.TestCase):
 
         cls.propstore = MemoryStore()
         cls.propstore.connect()
-        materials_file = os.path.join(TEST_DIR, "correlation_propnet_data.json")
+        materials_file = os.path.join(TEST_DATA_DIR, "correlation_propnet_data.json")
         if os.path.exists(materials_file):
             with open(materials_file, 'r') as f:
                 materials = json.load(f)
@@ -33,7 +34,7 @@ class CorrelationTest(unittest.TestCase):
 
         cls.quantity_store = MemoryStore()
         cls.quantity_store.connect()
-        quantities_file = os.path.join(TEST_DIR, "correlation_propnet_quantity_data.json")
+        quantities_file = os.path.join(TEST_DATA_DIR, "correlation_propnet_quantity_data.json")
         if os.path.exists(quantities_file):
             with open(quantities_file, 'r') as f:
                 quantities = json.load(f)
@@ -49,7 +50,8 @@ class CorrelationTest(unittest.TestCase):
             'spearman': 0.8263016575414387,
             'mic': 0.7702655041826725,
             'theilsen': 0.5931446188624948,
-            'ransac': 0.5799056238559421}
+            'ransac': 0.5799056238559421
+        }
 
         cls.correlation_values_bulk_vickers = {
             'linlsq': 0.609064764013383,
@@ -57,12 +59,13 @@ class CorrelationTest(unittest.TestCase):
             'spearman': 0.8263016575414387,
             'mic': 0.7702655041826725,
             'theilsen': 0.5569071036185801,
-            'ransac': 0.5113782981429206}
+            'ransac': 0.5113782981429206
+        }
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists(os.path.join(TEST_DIR, "test_output.json")):
-            os.remove(os.path.join(TEST_DIR, "test_output.json"))
+        if os.path.exists(os.path.join(TEST_DATA_DIR, "test_output.json")):
+            os.remove(os.path.join(TEST_DATA_DIR, "test_output.json"))
 
     def setUp(self):
         self.correlation = MemoryStore()
@@ -161,7 +164,7 @@ class CorrelationTest(unittest.TestCase):
         builder = CorrelationBuilder(self.propstore, self.correlation,
                                      props=self.propnet_props,
                                      funcs='all',
-                                     out_file=os.path.join(TEST_DIR, "test_output.json"),
+                                     out_file=os.path.join(TEST_DATA_DIR, "test_output.json"),
                                      from_quantity_db=False)
 
         runner = Runner([builder])
@@ -193,8 +196,8 @@ class CorrelationTest(unittest.TestCase):
                     d['correlation'],
                     self.correlation_values_bulk_vickers[d['correlation_func']])
         # Test file output
-        expected_file_data = loadfn(os.path.join(TEST_DIR, 'correlation_outfile.json'))
-        actual_file_data = loadfn(os.path.join(TEST_DIR, 'test_output.json'))
+        expected_file_data = loadfn(os.path.join(TEST_DATA_DIR, 'correlation_outfile.json'))
+        actual_file_data = loadfn(os.path.join(TEST_DATA_DIR, 'test_output.json'))
 
         self.assertIsInstance(actual_file_data, dict)
         self.assertEqual(actual_file_data.keys(), expected_file_data.keys())

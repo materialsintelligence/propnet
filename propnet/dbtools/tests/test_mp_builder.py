@@ -9,7 +9,8 @@ from maggma.runner import Runner
 from propnet.models import add_builtin_models_to_registry
 from propnet.dbtools.mp_builder import PropnetBuilder
 
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'test_data')
 
 
 class MPBuilderTest(unittest.TestCase):
@@ -18,7 +19,7 @@ class MPBuilderTest(unittest.TestCase):
         add_builtin_models_to_registry()
         cls.materials = MemoryStore()
         cls.materials.connect()
-        materials = loadfn(os.path.join(TEST_DIR, "test_materials.json"))
+        materials = loadfn(os.path.join(TEST_DATA_DIR, "test_materials.json"))
         materials = jsanitize(materials, strict=True, allow_bson=True)
         cls.materials.update(materials)
         cls.propstore = None
