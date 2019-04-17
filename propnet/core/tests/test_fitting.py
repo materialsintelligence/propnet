@@ -10,14 +10,15 @@ from propnet.core.materials import Material
 from propnet.core.provenance import ProvenanceElement
 from propnet.models import add_builtin_models_to_registry
 
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'test_data')
 
 
 class FittingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         add_builtin_models_to_registry()
-        path = os.path.join(TEST_DIR, "fitting_test_data.csv")
+        path = os.path.join(TEST_DATA_DIR, "fitting_test_data.csv")
         test_data = pd.read_csv(path)
         graph = Graph()
         materials = [Material([QuantityFactory.create_quantity("band_gap", bg)])

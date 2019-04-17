@@ -511,19 +511,22 @@ class QuantityTest(unittest.TestCase):
         # For custom class
         # Test failure if module not imported
         s = Symbol('A', category='object',
-                   object_type='propnet.core.tests.external_test_class.ACoercibleClass')
+                   object_type='propnet.core.tests.test_data.'
+                               'external_test_class.ACoercibleClass')
         with self.assertRaises(NameError):
             QuantityFactory.create_quantity(s, 55)
 
         # Test coercion after module imported
-        from propnet.core.tests.external_test_class import ACoercibleClass, AnIncoercibleClass
+        from propnet.core.tests.test_data.external_test_class \
+            import ACoercibleClass, AnIncoercibleClass
         q = QuantityFactory.create_quantity(s, 55)
         self.assertIsInstance(q, ObjQuantity)
         self.assertIsInstance(q.value, ACoercibleClass)
 
         # Test coercion failure by failed typecasting
         s = Symbol('A', category='object',
-                   object_type='propnet.core.tests.external_test_class.AnIncoercibleClass')
+                   object_type='propnet.core.tests.test_data.'
+                               'external_test_class.AnIncoercibleClass')
         with self.assertRaises(TypeError):
             QuantityFactory.create_quantity(s, 55)
 

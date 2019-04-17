@@ -1,5 +1,6 @@
 from monty.json import jsanitize, MontyDecoder
 from uncertainties import unumpy
+from itertools import chain
 
 from maggma.builders import MapBuilder
 from pymatgen.entries.computed_entries import ComputedEntry
@@ -133,7 +134,7 @@ class PropnetBuilder(MapBuilder):
         material.add_quantity(QuantityFactory.create_quantity("external_identifier_mp", item['task_id'],
                                                               provenance=provenance))
 
-        input_quantities = material.get_quantities()
+        input_quantities = material.symbol_quantities_dict
 
         # Use graph to generate expanded quantity pool
         logger.info("Evaluating graph for %s", item['task_id'])
@@ -145,26 +146,47 @@ class PropnetBuilder(MapBuilder):
         # Gives the initial inputs that were used to derive properties of a
         # certain material.
 
-        doc = {"inputs": [StorageQuantity.from_quantity(q) for q in input_quantities]}
-        for symbol, quantity in new_material.get_aggregated_quantities().items():
-            all_qs = new_material._symbol_to_quantity[symbol]
-            # If no new quantities of a given symbol were derived (i.e. if the initial
-            # input quantity is the only one listed in the new material) then don't add
-            # that quantity to the propnet entry document as a derived quantity.
-            if len(all_qs) == 1 and list(all_qs)[0] in input_quantities:
-                continue
+        doc = {"inputs": [StorageQuantity.from_quantity(q)
+                          for q in chain.from_iterable(input_quantities.values())]}
 
-            # Write out all quantities as dicts including the
-            # internal ID for provenance tracing
-            qs = [StorageQuantity.from_quantity(q).as_dict() for q in all_qs]
-            # THE listing of all Quantities of a given symbol.
-            sub_doc = {"quantities": qs,
-                       "mean": unumpy.nominal_values(quantity.value).tolist(),
+        for symbol, quantities in new_material.symbol_quantities_dict.items():
+            # If no new quantities of a given symbol were derived (i.e. if the initial
+            # input quantity/ies is/are the only one/s listed in the new material) then don't add
+            # that quantity to the propnet entry document as a derived quantity.
+            if len(quantities) == len(input_quantities[symbol]):
+                continue
+            sub_doc = {}
+            try:
+                # Write out all quantities as dicts including the
+                # internal ID for provenance tracing
+                qs = [jsanitize(StorageQuantity.from_quantity(q), strict=True) for q in quantities]
+            except AttributeError as ex:
+                # Check to see if this is an error caused by an object
+                # that is not JSON serializable
+                msg = ex.args[0]
+                if "object has no attribute 'as_dict'" in msg:
+                    # Write error to db and logger
+                    errmsg = "Quantity of Symbol '{}' is not ".format(symbol.name) + \
+                        "JSON serializable. Cannot write quantities to database!"
+                    logger.error(errmsg)
+                    sub_doc['error'] = errmsg
+                    qs = []
+                else:
+                    # If not, re-raise the error
+                    raise ex
+            sub_doc['quantities'] = qs
+            doc[symbol.name] = sub_doc
+
+        aggregated_quantities = new_material.get_aggregated_quantities()
+
+        for symbol, quantity in aggregated_quantities.items():
+            # Store mean and std dev for aggregated quantities
+            sub_doc = {"mean": unumpy.nominal_values(quantity.value).tolist(),
                        "std_dev": unumpy.std_devs(quantity.value).tolist(),
                        "units": quantity.units.format_babel() if quantity.units else None,
-                       "title": quantity._symbol_type.display_names[0]}
+                       "title": quantity.symbol.display_names[0]}
             # Symbol Name -> Sub_Document, listing all Quantities of that type.
-            doc[symbol.name] = sub_doc
+            doc[symbol.name].update(sub_doc)
 
         doc.update({"task_id": item["task_id"],
                     "pretty_formula": item.get("pretty_formula")})

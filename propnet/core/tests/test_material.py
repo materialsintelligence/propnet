@@ -27,15 +27,15 @@ class MaterialTest(unittest.TestCase):
         self.material = Material()
 
     def test_material_setup(self):
-        self.assertTrue(len(self.material._symbol_to_quantity) == 0,
+        self.assertTrue(len(self.material._quantities_by_symbol) == 0,
                         "Material not initialized properly.")
 
     def test_material_add_quantity(self):
         self.material.add_quantity(self.q1)
-        self.assertEqual(len(self.material._symbol_to_quantity), 1,
+        self.assertEqual(len(self.material._quantities_by_symbol), 1,
                          "Material did not add the quantity.")
         self.material.add_quantity(self.q2)
-        self.assertEqual(len(self.material._symbol_to_quantity), 2,
+        self.assertEqual(len(self.material._quantities_by_symbol), 2,
                          "Material did not add quantity to itself.")
 
     def test_material_remove_quantity(self):
@@ -43,11 +43,11 @@ class MaterialTest(unittest.TestCase):
         self.material.add_quantity(self.q2)
         self.material.remove_quantity(self.q1)
         self.assertEqual(
-            len(self.material._symbol_to_quantity[Registry("symbols")['shear_modulus']]),
+            len(self.material._quantities_by_symbol[Registry("symbols")['shear_modulus']]),
             1, "Material did not remove the correct quantity.")
         self.material.remove_quantity(self.q2)
         self.assertEqual(
-            len(self.material._symbol_to_quantity[Registry("symbols")['shear_modulus']]),
+            len(self.material._quantities_by_symbol[Registry("symbols")['shear_modulus']]),
             0, "Material did not remove the quantity correctly.")
 
     def test_material_remove_symbol(self):
@@ -56,12 +56,12 @@ class MaterialTest(unittest.TestCase):
         self.material.add_quantity(self.q3)
         self.material.remove_symbol(Registry("symbols")['bulk_modulus'])
         self.assertTrue(
-            Registry("symbols")['shear_modulus'] in self.material._symbol_to_quantity.keys(),
+            Registry("symbols")['shear_modulus'] in self.material._quantities_by_symbol.keys(),
             "Material did not remove Symbol correctly.")
         self.assertTrue(
-            self.q2 in self.material._symbol_to_quantity[Registry("symbols")['shear_modulus']],
+            self.q2 in self.material._quantities_by_symbol[Registry("symbols")['shear_modulus']],
             "Material did not remove Symbol correctly.")
-        self.assertEqual(len(self.material._symbol_to_quantity), 1,
+        self.assertEqual(len(self.material._quantities_by_symbol), 1,
                          "Material did not remove Symbol correctly.")
 
     def test_get_symbols(self):
