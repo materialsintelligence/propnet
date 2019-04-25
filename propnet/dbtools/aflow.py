@@ -1,4 +1,3 @@
-# from propnet.ext.aflow import AFLOWRetrieve
 from propnet.ext.aflow import AsyncQuery
 from aflow.keywords import load
 from maggma.builders import Builder
@@ -8,14 +7,11 @@ from pymongo import InsertOne
 # noinspection PyUnresolvedReferences
 import propnet.dbtools.aflow_redefs
 
+# Issues with the AFLUX API or the python wrapper
 unavailable_aflux_keys = ('ael_elastic_anistropy', 'Pullay_stress',
                           'aflowlib_entries', 'aflowlib_entries_number',
                           'author', 'catalog', 'corresponding', 'data_language',
-                          'keywords', 'delta_electronic_energy_convergence',
-                          'delta_electronic_energy_threshold', 'forces',
-                          'ldau_TLUJ', 'positions_cartesian', 'positions_fractional',
-                          'pressure_final', 'pressure_residual', 'sponsor',
-                          'stoich', 'stress_tensor')     # Issues with the AFLUX API or the python wrapper
+                          'keywords', 'pressure_final', 'pressure_residual', 'sponsor')
 
 
 class AFLOWIngester(Builder):
@@ -30,12 +26,8 @@ class AFLOWIngester(Builder):
 
         self._available_kws = dict()
         load(self._available_kws)
-        for k in unavailable_aflux_keys:
-            self._available_kws.pop(k)
-        
-        unavailable_kw_check = set(keywords or []).intersection(unavailable_aflux_keys)
-        if len(unavailable_kw_check) != 0:
-            raise KeyError("Cannot request keys:\n{}".format(unavailable_kw_check))
+        self._available_kws = {k: v for k, v in self._available_kws.items()
+                               if k not in unavailable_aflux_keys}
         
         bad_kw_check = [k for k in keywords or [] if k not in self._available_kws]
         if len(bad_kw_check) != 0:
