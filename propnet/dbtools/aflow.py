@@ -14,16 +14,43 @@ unavailable_aflux_keys = ('ael_elastic_anistropy', 'Pullay_stress',
                           'delta_electronic_energy_threshold', 'forces',
                           'ldau_TLUJ', 'positions_cartesian', 'positions_fractional',
                           'pressure_final', 'pressure_residual', 'sponsor',
-                          'stoich', 'stress_tensor', 'kpoints')     # Issues with the AFLUX API or the python wrapper
+                          'stoich', 'stress_tensor')     # Issues with the AFLUX API or the python wrapper
 
-# Redefining aflow library function because it's broken
+
+# Redefining aflow library functions because they're not general enough
 def _numbers(value):
     svals = list(value.split(','))
     vals = list(map(aflow.caster._number, svals))
     return np.array(vals)
 
 
+def _kpoints(value):
+    parts = value.split(';')
+    relaxation = np.array(list(map(aflow.caster._number, parts[0].split(','))))
+    if len(parts) == 1:
+        return {"relaxation": relaxation}
+    static = np.array(list(map(aflow.caster._number, parts[1].split(','))))
+    if len(parts) == 3:  # pragma: no cover
+        # The web page (possibly outdated) includes an example where
+        # this would be the case. We include it here for
+        # completeness. I haven't found a case yet that we could use in
+        # the unit tests to trigger this.
+        points = parts[-1].split('-')
+        nsamples = None
+    else:
+        points = parts[-2].split('-')
+        nsamples = int(parts[-1])
+
+    return {
+        "relaxation": relaxation,
+        "static": static,
+        "points": points,
+        "nsamples": nsamples
+    }
+
+
 aflow.caster._numbers = _numbers
+aflow.caster._kpoints = _kpoints
 
 
 class AFLOWIngester(Builder):
