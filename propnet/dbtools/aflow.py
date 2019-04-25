@@ -20,6 +20,7 @@ class AFLOWIngester(Builder):
         self.data_target = data_target
         self.auid_target = auid_target
         self.batch_size = batch_size
+        self.total = None
 
         self._available_kws = dict()
         load(self._available_kws)
@@ -47,10 +48,10 @@ class AFLOWIngester(Builder):
         afs = RetrievalQuery.from_pymongo(criteria={},
                                           properties=self.keywords,
                                           request_size=self.batch_size)
+        self.total = afs.N
         yield from afs
             
     def process_item(self, item):
-        print("I made it")
         d = {k: getattr(item, k, None) for k in self.keywords}
         d = {k: v for k, v in d.items() if v is not None}
         auid_info = {k: d[k] for k in ('auid', 'compound', 'aurl')}
