@@ -271,8 +271,8 @@ class AsyncQuery(_RetrievalQuery):
             self._N = int(next(iter(collected_responses.keys())).split()[-1])
 
         # Filter out any extra responses that we got
-        collected_responses = {k: v for k, v in collected_responses.items()
-                               if int(k.split()[0]) <= n*k}
+        collected_responses = {kk: v for kk, v in collected_responses.items()
+                               if int(kk.split()[0]) <= n*k}
         self.responses[n] = collected_responses
     
     @staticmethod
