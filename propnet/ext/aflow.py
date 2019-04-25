@@ -234,7 +234,7 @@ class AsyncQuery(_RetrievalQuery):
         try:
             _, response = self._get_response(request_url)
         except ConnectionError:
-            raise ValueError("Connection failed. Is your number"
+            raise ValueError("API request was rejected. Is your number"
                              " of records per page much greater than 1000?")
 
         # If this is the first request, then save the number of results in the
