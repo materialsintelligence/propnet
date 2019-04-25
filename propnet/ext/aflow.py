@@ -148,8 +148,10 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
 
     
 class AsyncQuery(_RetrievalQuery):
-    def __init__(self, *args, max_sim_requests=10, **kwargs):
+    def __init__(self, *args, max_sim_requests=10, auto_adjust_batch_size=True,
+                 **kwargs):
         self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
+        self._auto_adjust_batch_size = auto_adjust_batch_size
         super(AsyncQuery, self).__init__(*args, **kwargs)
 
     def __del__(self):
@@ -248,8 +250,12 @@ class AsyncQuery(_RetrievalQuery):
                 response = None
         
             if not is_ok:
-                this_n, this_k, n_pages = self._get_next_paging_set(this_n, this_k, 
-                                                                    n, k)
+                if self._auto_adjust_batch_size:
+                    this_n, this_k, n_pages = self._get_next_paging_set(this_n, this_k,
+                                                                        n, k)
+                else:
+                    raise ValueError("The API failed to complete the request. "
+                                     "Response:\n{}".format(response))
             else:
                 this_n += 1
                 n_pages -= 1
