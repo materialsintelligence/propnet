@@ -31,7 +31,7 @@ class AFLOWIngester(Builder):
         if len(unavailable_kw_check) != 0:
             raise KeyError("Cannot request keys:\n{}".format(unavailable_kw_check))
         
-        bad_kw_check = [k not in self._available_kws for k in keywords or []]
+        bad_kw_check = [k for k in keywords or [] if k not in self._available_kws]
         if len(bad_kw_check) != 0:
             raise KeyError("Bad keywords:\n{}".format(bad_kw_check))
         self.keywords = keywords or list(self._available_kws.keys())
