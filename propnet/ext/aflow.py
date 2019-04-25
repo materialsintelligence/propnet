@@ -10,6 +10,9 @@ import pandas as pd
 from datetime import datetime
 import requests
 from requests.exceptions import ConnectionError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AFLOWRetrieve(AFLOWDataRetrieval):
@@ -253,6 +256,7 @@ class AsyncQuery(_RetrievalQuery):
                 if self._auto_adjust_batch_size:
                     this_n, this_k, n_pages = self._get_next_paging_set(this_n, this_k,
                                                                         n, k)
+                    logger.warning("Temporarily reducing batch size to {}".format(this_k))
                 else:
                     raise ValueError("The API failed to complete the request. "
                                      "Response:\n{}".format(response))
