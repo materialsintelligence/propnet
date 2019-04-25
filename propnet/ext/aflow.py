@@ -241,21 +241,25 @@ class AsyncQuery(_RetrievalQuery):
         collected_responses = {}
 
         # This logic reduces the requested batch size if we experience errors
-        while this_k > 0 and n_pages > 0:
+        while n_pages > 0:
             directives = self._directives(this_n, this_k)
             request_url = self._get_request_url(server, matchbook, directives)
             try:
                 is_ok, response = self._get_response(request_url)
-            except ConnectionError:
+            except ConnectionError as ex:
                 # We requested SO many things that the server rejected our request
                 # outright as opposed to trying to complete the request and failing
                 is_ok = False
-                response = None
+                response = ex.args
         
             if not is_ok:
                 if self._auto_adjust_batch_size:
                     this_n, this_k, n_pages = self._get_next_paging_set(this_n, this_k,
                                                                         n, k)
+                    if this_k == 0:
+                        raise ValueError("The API failed to complete the request "
+                                         "and reducing the batch size failed to fix it. "
+                                         "Response:\n{}".format(response))
                     logger.warning("Temporarily reducing batch size to {}".format(this_k))
                 else:
                     raise ValueError("The API failed to complete the request. "
