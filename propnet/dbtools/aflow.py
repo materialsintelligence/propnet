@@ -1,5 +1,5 @@
 # from propnet.ext.aflow import AFLOWRetrieve
-from matminer.data_retrieval.retrieve_AFLOW import RetrievalQuery
+from propnet.ext.aflow import AsyncQuery
 from aflow.keywords import load
 from maggma.builders import Builder
 from monty.json import jsanitize
@@ -51,9 +51,9 @@ class AFLOWIngester(Builder):
         afs.select(*(self._available_kws[k] for k in self.keywords))
         afs.filter()
         '''
-        afs = RetrievalQuery.from_pymongo(criteria={},
-                                          properties=self.keywords,
-                                          request_size=self.batch_size)
+        afs = AsyncQuery.from_pymongo(criteria={},
+                                      properties=self.keywords,
+                                      request_size=self.batch_size)
         self.total = afs.N
         yield from afs
             

@@ -8,8 +8,7 @@ from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import ProvenanceElement
 import pandas as pd
 from datetime import datetime
-import json
-from six.moves import urllib
+import requests
 
 
 class AFLOWRetrieve(AFLOWDataRetrieval):
@@ -199,7 +198,7 @@ class AsyncQuery(_RetrievalQuery):
             
         for f in self._get_next_future(futures, preserve_order):
             try:
-                result, page = f.result()
+                _, result, page = f.result()
             except Exception as ex:
                 for ff in futures:
                     ff.cancel()
@@ -231,7 +230,7 @@ class AsyncQuery(_RetrievalQuery):
         matchbook = self.matchbook()
         directives = self._directives(n, k)
         request_url = self._get_request_url(server, matchbook, directives)
-        response = self._get_response(request_url)
+        _, response = self._get_response(request_url)
 
         # If this is the first request, then save the number of results in the
         # query.
@@ -241,17 +240,20 @@ class AsyncQuery(_RetrievalQuery):
     
     @staticmethod
     def _get_response(url, page=None):
-        urlopen = urllib.request.urlopen
-        rawresp = urlopen(url).read().decode("utf-8")
-        try:
-            response = json.loads(rawresp)
-        except:  # pragma: no cover
-            # We can't easily simulate network failure...
+        rawresp = requests.get(url)
+        retry = 0
+        while not rawresp.ok and retry < 5:
+            retry += 1
+            rawresp = requests.get(url)
+
+        if rawresp.ok:
+            response = rawresp.json()
+        else:
             _msg.err("{}\n\n{}".format(url, rawresp))
-            response = None
+            response = rawresp.text
         if page is not None:
-            return response, page
-        return response
+            return rawresp.ok, response, page
+        return rawresp.ok, response
 
     @staticmethod
     def _get_request_url(server, matchbook, directives):
