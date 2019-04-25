@@ -8,6 +8,8 @@ from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import ProvenanceElement
 import pandas as pd
 from datetime import datetime
+import json
+from six.moves import urllib
 
 
 class AFLOWRetrieve(AFLOWDataRetrieval):
@@ -17,7 +19,7 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
         "Egap": "band_gap",
         "ael_bulk_modulus_reuss": "bulk_modulus",
         "ael_bulk_modulus_voigt": "bulk_modulus",
-        # "ael_elastic_anisotropy": "elastic_anisotropy",
+        # "ael_elastic_anistropy": "elastic_anisotropy",    # This property returns "not allowed" from API
         "ael_poisson_ratio": "poisson_ratio",
         "ael_shear_modulus_reuss": "shear_modulus",
         "ael_shear_modulus_voigt": "shear_modulus",
@@ -25,8 +27,8 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
         "agl_debye": "debye_temperature",
         "agl_gruneisen": "gruneisen_parameter",
         # Listed per unit cell, need new symbol and model for conversion
-        # "agl_heat_capacity_Cp_300K": "cell_heat_capacity_constant_pressure",
-        # "agl_heat_capacity_Cv_300K": "cell_heat_capacity_constant_volume",
+        # "agl_heat_capacity_Cp_300K": "heat_capacity_of_cell_constant_pressure",
+        # "agl_heat_capacity_Cv_300K": "heat_capacity_of_cell_constant_volume",
         "agl_thermal_conductivity_300K": "thermal_conductivity",
         "agl_thermal_expansion_300K": "thermal_expansion_coefficient",
         # This returns the volumes of all the atoms' volumes
@@ -45,7 +47,7 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
         "Egap": "eV",
         "ael_bulk_modulus_reuss": "gigapascal",
         "ael_bulk_modulus_voigt": "gigapascal",
-        # "ael_elastic_anistoropy": "dimensionless",
+        # "ael_elastic_anistropy": "dimensionless",
         "ael_poisson_ratio": "dimensionless",
         "ael_shear_modulus_reuss": "gigapascal",
         "ael_shear_modulus_voigt": "gigapascal",
@@ -90,16 +92,22 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
                 yield self._transform_response_to_material(auid, data)
     
     @staticmethod
-    def generate_all_auids(max_request_size=100):
+    def generate_all_auids(max_request_size=10000, with_metadata=True):
+        props = ['auid']
+        if with_metadata:
+            props += ['compound', 'aflowlib_date']
         query = AsyncQuery.from_pymongo(
             criteria={},
-            properties=['auid'],
+            properties=props,
             request_size=max_request_size
         )
 
         for item in query.generate_items(preserve_order=False):
             for d in item.values():
-                yield d['auid']
+                if with_metadata:
+                    yield d
+                else:
+                    yield d['auid']
 
     def _submit_auid_queries(self, auids, max_request_size=10):
         futures = []
@@ -177,32 +185,32 @@ class AsyncQuery(_RetrievalQuery):
         return query
 
     def generate_items(self, preserve_order=True):
-        self._request(self.n, self.k)
-        if self._N == 1:
-            return
+        self.reset_iter()
+        self._request(1, self.k)
+        yield self.responses[1]
 
         urls = [self._get_request_url(_aflow_server, self.matchbook(), self._directives(page, self.k))
                 for page in range(2, self._N)]
 
         futures = []
-        for url in urls:
-            f = self._executor.submit(self._get_response, url)
+        for page, url in enumerate(urls):
+            f = self._executor.submit(self._get_response, url, page+1)
             futures.append(f)
             
         for f in self._get_next_future(futures, preserve_order):
             try:
-                result = f.result()
+                result, page = f.result()
             except Exception as ex:
                 for ff in futures:
                     ff.cancel()
                 raise ex
+            self.responses[page] = result
             yield result
         
     @staticmethod
     def _get_next_future(futures, preserve_order=True):
         if preserve_order:
-            for f in futures:
-                yield f
+            yield from futures
         else:
             yield from as_completed(futures)
         
@@ -232,9 +240,7 @@ class AsyncQuery(_RetrievalQuery):
         self.responses[n] = response
     
     @staticmethod
-    def _get_response(url):
-        import json
-        from six.moves import urllib
+    def _get_response(url, page=None):
         urlopen = urllib.request.urlopen
         rawresp = urlopen(url).read().decode("utf-8")
         try:
@@ -242,7 +248,9 @@ class AsyncQuery(_RetrievalQuery):
         except:  # pragma: no cover
             # We can't easily simulate network failure...
             _msg.err("{}\n\n{}".format(url, rawresp))
-            return
+            response = None
+        if page is not None:
+            return response, page
         return response
 
     @staticmethod

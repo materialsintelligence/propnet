@@ -37,6 +37,7 @@ maggma>=0.13.0
 
 # aflow ingestion
 aflow>=0.0.9
+six>=1.12.0
 
 # analysis
 minepy>=1.2.3
