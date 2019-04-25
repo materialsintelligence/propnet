@@ -56,7 +56,7 @@ class AFLOWIngester(Builder):
         yield from afs
             
     def process_item(self, item):
-        d = {k: getattr(item, k, None) for k in self.keywords}
+        d = {k: item.attributes.get(k, None) for k in self.keywords}
         d = {k: v for k, v in d.items() if v is not None}
         auid_info = {k: d[k] for k in ('auid', 'compound', 'aurl')}
         
