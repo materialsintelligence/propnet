@@ -229,25 +229,52 @@ class AsyncQuery(_RetrievalQuery):
             
         server = _aflow_server
         matchbook = self.matchbook()
-        directives = self._directives(n, k)
-        request_url = self._get_request_url(server, matchbook, directives)
-        try:
-            _, response = self._get_response(request_url)
-        except ConnectionError:
-            raise ValueError("API request was rejected. Is your number"
-                             " of records per page much greater than 1000?")
+        
+        this_k = k
+        this_n = n
+        n_pages = 1
+        collected_responses = {}
 
+        # This logic reduces the requested batch size if we experience errors
+        while this_k > 0 and n_pages > 0:
+            directives = self._directives(this_n, this_k)
+            request_url = self._get_request_url(server, matchbook, directives)
+            try:
+                is_ok, response = self._get_response(request_url)
+            except ConnectionError:
+                # We requested SO many things that the server rejected our request
+                # outright as opposed to trying to complete the request and failing
+                is_ok = False
+                response = None
+        
+            if not is_ok:
+                this_n, this_k, n_pages = self._get_next_paging_set(this_n, this_k, 
+                                                                    n, k)
+            else:
+                this_n += 1
+                n_pages -= 1
+                collected_responses.update(response)
+                
         # If this is the first request, then save the number of results in the
         # query.
         if len(self.responses) == 0:
-            self._N = int(next(iter(response.keys())).split()[-1])
-        self.responses[n] = response
+            self._N = int(next(iter(collected_responses.keys())).split()[-1])
+        self.responses[n] = collected_responses
     
+    @staticmethod
+    def _get_next_paging_set(n, k, original_n, original_k):
+        starting_entry = (n-1)*k+1
+        last_entry = original_n*original_k
+        new_k = k // 2
+        new_n = starting_entry // new_k + 1
+        new_pages = (last_entry-starting_entry) // new_k + 1
+        return new_n, new_k, new_pages
+        
     @staticmethod
     def _get_response(url, page=None):
         rawresp = requests.get(url)
         retry = 0
-        while not rawresp.ok and retry < 5:
+        while not rawresp.ok and retry < 3:
             retry += 1
             rawresp = requests.get(url)
 
