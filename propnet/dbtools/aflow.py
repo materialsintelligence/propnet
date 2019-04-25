@@ -2,8 +2,10 @@
 from matminer.data_retrieval.retrieve_AFLOW import RetrievalQuery
 from aflow.control import search as aflow_search
 from aflow.keywords import load
+import aflow.caster
 from maggma.builders import Builder
 from monty.json import jsanitize
+import numpy as np
 
 unavailable_aflux_keys = ('ael_elastic_anistropy', 'Pullay_stress',
                           'aflowlib_entries', 'aflowlib_entries_number',
@@ -13,6 +15,15 @@ unavailable_aflux_keys = ('ael_elastic_anistropy', 'Pullay_stress',
                           'ldau_TLUJ', 'positions_cartesian', 'positions_fractional',
                           'pressure_final', 'pressure_residual', 'sponsor',
                           'stoich', 'stress_tensor', 'kpoints')     # Issues with the AFLUX API or the python wrapper
+
+# Redefining aflow library function because it's broken
+def _numbers(value):
+    svals = list(value.split(','))
+    vals = list(map(aflow.caster._number, svals))
+    return np.array(vals)
+
+
+aflow.caster._numbers = _numbers
 
 
 class AFLOWIngester(Builder):
