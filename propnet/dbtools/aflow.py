@@ -3,6 +3,7 @@ from aflow.keywords import load
 from maggma.builders import Builder
 from monty.json import jsanitize
 from pymongo import InsertOne
+import logging
 
 # noinspection PyUnresolvedReferences
 import propnet.dbtools.aflow_redefs
@@ -13,13 +14,18 @@ unavailable_aflux_keys = ('ael_elastic_anistropy', 'Pullay_stress',
                           'author', 'catalog', 'corresponding', 'data_language',
                           'keywords', 'pressure_final', 'pressure_residual', 'sponsor')
 
+logger = logging.getLogger(__name__)
+
 
 class AFLOWIngester(Builder):
     def __init__(self, data_target, auid_target,
-                 keywords=None, batch_size=10000, insert_only=False,
+                 keywords=None, batch_size=1000, insert_only=False,
                  **kwargs):
         self.data_target = data_target
         self.auid_target = auid_target
+        if batch_size > 1000:
+            logger.warning("It is recommended to keep batch_size <= 1000 "
+                           "or the API request may be rejected by the server.")
         self.batch_size = batch_size
         self.total = None
         self.insert_only = insert_only
