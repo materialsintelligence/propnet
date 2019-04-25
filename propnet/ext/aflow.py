@@ -9,6 +9,7 @@ from propnet.core.provenance import ProvenanceElement
 import pandas as pd
 from datetime import datetime
 import requests
+from requests.exceptions import ConnectionError
 
 
 class AFLOWRetrieve(AFLOWDataRetrieval):
@@ -72,10 +73,10 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
     def get_material_by_auid(self, auid):
         return self.get_materials_by_auids([auid])[0]
     
-    def get_materials_by_auids(self, auids, max_request_size=10):
+    def get_materials_by_auids(self, auids, max_request_size=1000):
         return [m for m in self.generate_materials_by_auids(auids, max_request_size)]
     
-    def generate_materials_by_auids(self, auids, max_request_size=10):
+    def generate_materials_by_auids(self, auids, max_request_size=1000):
         futures = self._submit_auid_queries(auids, max_request_size)
 
         for f in as_completed(futures):
@@ -91,7 +92,7 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
                 yield self._transform_response_to_material(auid, data)
     
     @staticmethod
-    def generate_all_auids(max_request_size=10000, with_metadata=True):
+    def generate_all_auids(max_request_size=1000, with_metadata=True):
         props = ['auid']
         if with_metadata:
             props += ['compound', 'aflowlib_date']
@@ -108,7 +109,7 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
                 else:
                     yield d['auid']
 
-    def _submit_auid_queries(self, auids, max_request_size=10):
+    def _submit_auid_queries(self, auids, max_request_size=1000):
         futures = []
         for chunk in grouper(auids, max_request_size):
             criteria = {'auid': {'$in': [c for c in chunk if c is not None]}}
@@ -230,7 +231,11 @@ class AsyncQuery(_RetrievalQuery):
         matchbook = self.matchbook()
         directives = self._directives(n, k)
         request_url = self._get_request_url(server, matchbook, directives)
-        _, response = self._get_response(request_url)
+        try:
+            _, response = self._get_response(request_url)
+        except ConnectionError:
+            raise ValueError("Connection failed. Is your number"
+                             " of records per page much greater than 1000?")
 
         # If this is the first request, then save the number of results in the
         # query.
