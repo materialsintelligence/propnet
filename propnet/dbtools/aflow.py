@@ -10,6 +10,7 @@ from urllib3.util import Retry
 
 
 # Populate all available kws from AFLOW
+# Maybe we can get this from AFLOW instead
 AFLOW_KWS = dict()
 load(AFLOW_KWS)
 AFLOW_KWS = list(AFLOW_KWS.keys())
@@ -62,13 +63,28 @@ class AFLOWIngester(Builder):
             s = requests.Session()
             retries = Retry(total=5, backoff_factor=1)
             s.mount('http://', HTTPAdapter(max_retries=retries))
-            response = requests.get(url, params={'format': 'json'})
-
-            if response.ok:
-                data = jsanitize(response.json())
+            if self.keywords:
+                kw_params = "?"
+                if not url.endswith("/"):
+                    kw_params = "/" + kw_params
+                kw_params += "&".join(self.keywords)
+                response = requests.get(url + kw_params)
+                
+                if response.ok:
+                    data = {k: v.decode("utf-8") 
+                            for k, v in zip(self.keywords, response.iter_lines())}
+                    data = jsanitize(data, strict=True)
+                else:
+                    data = jsanitize({'error': response.text}, strict=True)
+                    data.update(auid_info)
             else:
-                data = jsanitize({'error': response.text}, strict=True)
-                data.update(auid_info)
+                response = requests.get(url, params={'format': 'json'})
+
+                if response.ok:
+                    data = jsanitize(response.json())
+                else:
+                    data = jsanitize({'error': response.text}, strict=True)
+                    data.update(auid_info)
         else:
             data = {'error': 'No URL'}
 
