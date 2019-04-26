@@ -12,12 +12,17 @@ import propnet.dbtools.aflow_redefs
 unavailable_aflux_keys = ('ael_elastic_anistropy', 'Pullay_stress',
                           'aflowlib_entries', 'aflowlib_entries_number',
                           'author', 'catalog', 'corresponding', 'data_language',
-                          'keywords', 'pressure_final', 'pressure_residual', 'sponsor')
+                          'keywords', 'pressure_final', 'sponsor')
 
 logger = logging.getLogger(__name__)
 
 
 class AFLOWIngester(Builder):
+    _available_kws = dict()
+    load(_available_kws)
+    _available_kws = [k for k in _available_kws.keys()
+                      if k not in unavailable_aflux_keys]
+    
     def __init__(self, data_target, auid_target,
                  keywords=None, batch_size=1000, insert_only=False,
                  **kwargs):
@@ -29,11 +34,6 @@ class AFLOWIngester(Builder):
         self.batch_size = batch_size
         self.total = None
         self.insert_only = insert_only
-
-        self._available_kws = dict()
-        load(self._available_kws)
-        self._available_kws = {k: v for k, v in self._available_kws.items()
-                               if k not in unavailable_aflux_keys}
         
         bad_kw_check = [k for k in keywords or [] if k not in self._available_kws]
         if len(bad_kw_check) != 0:
@@ -51,7 +51,9 @@ class AFLOWIngester(Builder):
         '''
         afs = AsyncQuery.from_pymongo(criteria={},
                                       properties=self.keywords,
-                                      request_size=self.batch_size)
+                                      request_size=self.batch_size,
+                                      reduction_scheme='property')
+        afs.orderby('auid')
         self.total = afs.N
         yield from afs
             
