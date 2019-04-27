@@ -171,7 +171,7 @@ class AsyncQuery(_RetrievalQuery):
             raise ValueError("Invalid reduction scheme")
 
         self._session = requests.Session()
-        retries = Retry(total=1, backoff_factor=3, status_forcelist=[500])
+        retries = Retry(total=5, backoff_factor=3, status_forcelist=[500])
         self._session.mount('http://', HTTPAdapter(max_retries=retries))
 
         super(AsyncQuery, self).__init__(*args, **kwargs)
