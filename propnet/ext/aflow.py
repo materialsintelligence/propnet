@@ -171,7 +171,7 @@ class AsyncQuery(_RetrievalQuery):
             raise ValueError("Invalid reduction scheme")
 
         self._session = requests.Session()
-        retries = Retry(total=5, backoff_factor=3, status_forcelist=[500])
+        retries = Retry(total=3, backoff_factor=5, status_forcelist=[500])
         self._session.mount('http://', HTTPAdapter(max_retries=retries))
 
         super(AsyncQuery, self).__init__(*args, **kwargs)
@@ -272,9 +272,10 @@ class AsyncQuery(_RetrievalQuery):
     def _request_with_fewer_props(self, n, k):
         collected_responses = defaultdict(dict)
         props = self.selects
-        max_chunks = 5
         chunks = 2
-        while chunks <= max_chunks or len(props) // chunks == 0:
+        while len(props) // chunks >= 1:
+            if len(props) / chunks < 2:
+                chunks = len(props) + 1
             query_error = False
             for chunk in grouper(props, (len(props) // chunks) + 1):
                 logger.debug('Requesting property chunk {} with {} records'.format(chunks, k))
