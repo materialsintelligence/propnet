@@ -158,7 +158,11 @@ class AsyncQuery(_RetrievalQuery):
     def __init__(self, *args, max_sim_requests=10, reduction_scheme='batch',
                  **kwargs):
         self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
-        if reduction_scheme == 'batch':
+        if isinstance(reduction_scheme, list) and \
+                'batch' in reduction_scheme and 'property' in reduction_scheme:
+            self._auto_adjust_batch_size = True
+            self._auto_adjust_num_props = True
+        elif reduction_scheme == 'batch':
             self._auto_adjust_batch_size = True
             self._auto_adjust_num_props = False
         elif reduction_scheme == 'property':
@@ -171,7 +175,7 @@ class AsyncQuery(_RetrievalQuery):
             raise ValueError("Invalid reduction scheme")
 
         self._session = requests.Session()
-        retries = Retry(total=3, backoff_factor=10, status_forcelist=[500])
+        retries = Retry(total=3, backoff_factor=10, status_forcelist=[500], connect=0)
         self._session.mount('http://', HTTPAdapter(max_retries=retries))
 
         super(AsyncQuery, self).__init__(*args, **kwargs)
@@ -252,7 +256,9 @@ class AsyncQuery(_RetrievalQuery):
             response = ex.args
 
         if not is_ok:
-            if self._auto_adjust_batch_size:
+            if self._auto_adjust_batch_size and self._auto_adjust_num_props:
+                response = self._request_with_fewer_props(n, k, reduce_batch_on_fail=True)
+            elif self._auto_adjust_batch_size:
                 response = self._request_with_smaller_batch(n, k)
             elif self._auto_adjust_num_props:
                 response = self._request_with_fewer_props(n, k)
@@ -269,7 +275,7 @@ class AsyncQuery(_RetrievalQuery):
                                if int(kk.split()[0]) <= n*k}
         self.responses[n] = collected_responses
 
-    def _request_with_fewer_props(self, n, k):
+    def _request_with_fewer_props(self, n, k, reduce_batch_on_fail=False):
         collected_responses = defaultdict(dict)
         props = self.selects
         chunks = 2
@@ -281,10 +287,14 @@ class AsyncQuery(_RetrievalQuery):
                 logger.debug('Requesting property chunk {} with {} records'.format(chunks, k))
                 props_to_request = set(c for c in chunk if c is not None)
                 props_to_request.add(str(self.order))
+                if reduce_batch_on_fail:
+                    reduction_scheme = 'batch'
+                else:
+                    reduction_scheme = None
                 query = AsyncQuery.from_pymongo(criteria={},
                                                 properties=list(props_to_request),
                                                 request_size=k,
-                                                reduction_scheme=None)
+                                                reduction_scheme=reduction_scheme)
                 query.filters = self.filters
                 query.orderby(self.order, self.reverse)
                 query._session = self._session
@@ -354,7 +364,7 @@ class AsyncQuery(_RetrievalQuery):
     def _get_response(url, session=None, page=None):
         if not session:
             session = requests.Session()
-            retries = Retry(total=5, backoff_factor=10, status_forcelist=[500])
+            retries = Retry(total=5, backoff_factor=10, status_forcelist=[500], connect=0)
             session.mount('http://', HTTPAdapter(max_retries=retries))
         try:
             rawresp = session.get(url)
