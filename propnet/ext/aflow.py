@@ -224,8 +224,8 @@ class AsyncQuery(_RetrievalQuery):
             self._N = None
             self.order = keyword
             self.reverse = reverse
-            if str(keyword) in map(str, self.selects):
-                idx = list(map(str, self.selects)).index(str(keyword))
+            if keyword.name in [v.name for v in self.selects]:
+                idx = [v.name for v in self.selects].index(keyword.name)
                 self.selects.pop(idx)
         return self
         
