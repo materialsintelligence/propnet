@@ -6,7 +6,7 @@ from pymongo import InsertOne
 import logging
 
 # noinspection PyUnresolvedReferences
-import propnet.dbtools.aflow_redefs
+import propnet.ext.aflow_redefs
 
 # Issues with the AFLUX API or the python wrapper
 unavailable_aflux_keys = ('ael_elastic_anistropy', 'Pullay_stress',
