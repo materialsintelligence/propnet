@@ -224,9 +224,17 @@ class AsyncQuery(_RetrievalQuery):
             self._N = None
             self.order = keyword
             self.reverse = reverse
+            # Because order will be placed first in the query string, remove
+            # it from the other sections to not be redundant
             if keyword.name in [v.name for v in self.selects]:
                 idx = [v.name for v in self.selects].index(keyword.name)
                 self.selects.pop(idx)
+            if keyword.name in [v.name for v in self.filters]:
+                idx = [v.name for v in self.filters].index(keyword.name)
+                self.filters.pop(idx)
+            if keyword.name in [v.name for v in self.excludes]:
+                idx = [v.name for v in self.excludes].index(keyword.name)
+                self.excludes.pop(idx)
         return self
         
     def _request(self, n, k):
