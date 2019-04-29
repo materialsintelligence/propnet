@@ -1,17 +1,23 @@
 from matminer.data_retrieval.retrieve_AFLOW import AFLOWDataRetrieval, RetrievalQuery as _RetrievalQuery
+
+# noinspection PyUnresolvedReferences
+import propnet.ext.aflow_redefs
 from aflow.control import server as _aflow_server
 from aflow import K, msg as _msg
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from maggma.utils import grouper
-from propnet.core.materials import Material
-from propnet.core.quantity import QuantityFactory
-from propnet.core.provenance import ProvenanceElement
-import pandas as pd
-from datetime import datetime
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 from requests.exceptions import ConnectionError, RetryError
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from maggma.utils import grouper
+
+from propnet.core.materials import Material
+from propnet.core.quantity import QuantityFactory
+from propnet.core.provenance import ProvenanceElement
+
+import pandas as pd
+from datetime import datetime
 import logging
 from collections import defaultdict
 
@@ -19,14 +25,14 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-class AFLOWRetrieve(AFLOWDataRetrieval):
+class AflowAdapter(AFLOWDataRetrieval):
     # Mapping is keyed by AFLOW keyword, valued by propnet property
     mapping = {
         "auid": "external_identifier_aflow",
         "Egap": "band_gap",
         "ael_bulk_modulus_reuss": "bulk_modulus",
         "ael_bulk_modulus_voigt": "bulk_modulus",
-        # "ael_elastic_anistropy": "elastic_anisotropy",    # This property returns "not allowed" from API
+        "ael_elastic_anisotropy": "elastic_anisotropy",
         "ael_poisson_ratio": "poisson_ratio",
         "ael_shear_modulus_reuss": "shear_modulus",
         "ael_shear_modulus_voigt": "shear_modulus",
@@ -71,7 +77,7 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
 
     def __init__(self, max_sim_requests=10):
         self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
-        super(AFLOWRetrieve, self).__init__()
+        super(AflowAdapter, self).__init__()
 
     def __del__(self):
         if self._executor:
@@ -103,7 +109,7 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
         props = ['auid']
         if with_metadata:
             props += ['compound', 'aflowlib_date']
-        query = AsyncQuery.from_pymongo(
+        query = AflowAPIQuery.from_pymongo(
             criteria={},
             properties=props,
             request_size=max_request_size
@@ -154,7 +160,7 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
         return Material(qs)
 
     
-class AsyncQuery(_RetrievalQuery):
+class AflowAPIQuery(_RetrievalQuery):
     def __init__(self, *args, max_sim_requests=10, reduction_scheme='batch',
                  **kwargs):
         self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
@@ -178,7 +184,7 @@ class AsyncQuery(_RetrievalQuery):
         retries = Retry(total=3, backoff_factor=10, status_forcelist=[500], connect=0)
         self._session.mount('http://', HTTPAdapter(max_retries=retries))
 
-        super(AsyncQuery, self).__init__(*args, **kwargs)
+        super(AflowAPIQuery, self).__init__(*args, **kwargs)
 
     def __del__(self):
         if self._executor:
@@ -299,10 +305,10 @@ class AsyncQuery(_RetrievalQuery):
                     reduction_scheme = 'batch'
                 else:
                     reduction_scheme = None
-                query = AsyncQuery.from_pymongo(criteria={},
-                                                properties=list(props_to_request),
-                                                request_size=k,
-                                                reduction_scheme=reduction_scheme)
+                query = AflowAPIQuery.from_pymongo(criteria={},
+                                                   properties=list(props_to_request),
+                                                   request_size=k,
+                                                   reduction_scheme=reduction_scheme)
                 query.filters = self.filters
                 query.orderby(self.order, self.reverse)
                 query._session = self._session

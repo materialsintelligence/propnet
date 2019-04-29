@@ -1,4 +1,4 @@
-from propnet.ext.aflow import AsyncQuery
+from propnet.ext.aflow import AflowAPIQuery
 from aflow.keywords import load
 from maggma.builders import Builder
 from monty.json import jsanitize
@@ -49,10 +49,10 @@ class AFLOWIngester(Builder):
         afs.select(*(self._available_kws[k] for k in self.keywords))
         afs.filter()
         '''
-        afs = AsyncQuery.from_pymongo(criteria={},
-                                      properties=self.keywords,
-                                      request_size=self.batch_size,
-                                      reduction_scheme='property')
+        afs = AflowAPIQuery.from_pymongo(criteria={},
+                                         properties=self.keywords,
+                                         request_size=self.batch_size,
+                                         reduction_scheme='property')
         afs.orderby('auid')
         self.total = afs.N
         yield from afs
