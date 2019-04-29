@@ -254,7 +254,7 @@ class AsyncQuery(_RetrievalQuery):
         matchbook = self.matchbook()
         directives = self._directives(n, k)
         request_url = self._get_request_url(server, matchbook, directives)
-        logger.debug('Requesting page {} with {} records'.format(n, k))
+        logger.debug('Requesting page {} with {} records from url:\n{}'.format(n, k, request_url))
         try:
             is_ok, response = self._get_response(request_url, session=self._session)
         except ConnectionError as ex:
