@@ -40,8 +40,8 @@ class AflowAdapter(AFLOWDataRetrieval):
         "agl_debye": "debye_temperature",
         "agl_gruneisen": "gruneisen_parameter",
         # Listed per unit cell, need new symbol and model for conversion
-        # "agl_heat_capacity_Cp_300K": "heat_capacity_of_cell_constant_pressure",
-        # "agl_heat_capacity_Cv_300K": "heat_capacity_of_cell_constant_volume",
+        "agl_heat_capacity_Cp_300K": "unit_cell_heat_capacity_constant_pressure",
+        "agl_heat_capacity_Cv_300K": "unit_cell_heat_capacity_constant_volume",
         "agl_thermal_conductivity_300K": "thermal_conductivity",
         "agl_thermal_expansion_300K": "thermal_expansion_coefficient",
         # This returns the volumes of all the atoms' volumes
