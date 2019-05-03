@@ -1,9 +1,12 @@
-from matminer.data_retrieval.retrieve_AFLOW import AFLOWDataRetrieval, RetrievalQuery as _RetrievalQuery
+from matminer.data_retrieval.retrieve_AFLOW import RetrievalQuery as _RetrievalQuery
+from pymatgen.core.composition import Composition
 
 # noinspection PyUnresolvedReferences
 import propnet.ext.aflow_redefs
 from aflow.control import server as _aflow_server
 from aflow import K, msg as _msg
+from aflow.entries import Entry
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
@@ -21,11 +24,10 @@ from datetime import datetime
 import logging
 from collections import defaultdict
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-class AflowAdapter(AFLOWDataRetrieval):
+class AflowAdapter:
     # Mapping is keyed by AFLOW keyword, valued by propnet property
     mapping = {
         "auid": "external_identifier_aflow",
@@ -39,13 +41,10 @@ class AflowAdapter(AFLOWDataRetrieval):
         "agl_acoustic_debye": "debye_temperature",
         "agl_debye": "debye_temperature",
         "agl_gruneisen": "gruneisen_parameter",
-        # Listed per unit cell, need new symbol and model for conversion
         "agl_heat_capacity_Cp_300K": "unit_cell_heat_capacity_constant_pressure",
         "agl_heat_capacity_Cv_300K": "unit_cell_heat_capacity_constant_volume",
         "agl_thermal_conductivity_300K": "thermal_conductivity",
         "agl_thermal_expansion_300K": "thermal_expansion_coefficient",
-        # This returns the volumes of all the atoms' volumes
-        # "bader_atomic_volumes": ""
         "compound": "formula",
         "energy_atom": "energy_per_atom",
         "enthalpy_formation_atom": "formation_energy_per_atom"
@@ -54,29 +53,36 @@ class AflowAdapter(AFLOWDataRetrieval):
         "structure": "structure"
     }
     transform_func = {
-        "energy_atom": lambda x: abs(x)
+        "energy_atom": lambda x: abs(x),
+        "compound": lambda x: Composition(x).reduced_formula
     }
     unit_map = {
         "Egap": "eV",
         "ael_bulk_modulus_reuss": "gigapascal",
         "ael_bulk_modulus_voigt": "gigapascal",
-        # "ael_elastic_anistropy": "dimensionless",
+        "ael_elastic_anisotropy": "dimensionless",
         "ael_poisson_ratio": "dimensionless",
         "ael_shear_modulus_reuss": "gigapascal",
         "ael_shear_modulus_voigt": "gigapascal",
         "agl_acoustic_debye": "kelvin",
         "agl_debye": "kelvin",
         "agl_gruneisen": "dimensionless",
-        # "agl_heat_capacity_Cp_300K": "boltzmann_constant",
-        # "agl_heat_capacity_Cv_300K": "boltzmann_constant",
+        "agl_heat_capacity_Cp_300K": "boltzmann_constant",
+        "agl_heat_capacity_Cv_300K": "boltzmann_constant",
         "agl_thermal_conductivity_300K": "watt/meter/kelvin",
         "agl_thermal_expansion_300K": "1/kelvin",
         "energy_atom": "eV/atom",
         "enthalpy_formation_atom": "eV/atom"
     }
 
-    def __init__(self, max_sim_requests=10):
-        self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
+    def __init__(self, max_sim_requests=10, store=None):
+        if store is None:
+            self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
+            self.store = None
+        else:
+            self._executor = None
+            self.store = store
+            store.connect()
         super(AflowAdapter, self).__init__()
 
     def __del__(self):
@@ -90,19 +96,10 @@ class AflowAdapter(AFLOWDataRetrieval):
         return [m for m in self.generate_materials_by_auids(auids, max_request_size)]
     
     def generate_materials_by_auids(self, auids, max_request_size=1000):
-        futures = self._submit_auid_queries(auids, max_request_size)
-
-        for f in as_completed(futures):
-            try:
-                response: pd.DataFrame = f.result()
-            except Exception as ex:
-                msg = "Could not retrieve one or more materials. Error:\n{}".format(ex)
-                for future in futures:
-                    future.cancel()
-                raise ValueError(msg)
-
-            for auid, data in response.iterrows():
-                yield self._transform_response_to_material(auid, data)
+        if self.store is not None:
+            yield from self._get_materials_from_store(auids, max_request_size)
+        else:
+            yield from self._get_materials_from_web(auids, max_request_size)
     
     @staticmethod
     def generate_all_auids(max_request_size=1000, with_metadata=True):
@@ -122,7 +119,7 @@ class AflowAdapter(AFLOWDataRetrieval):
                 else:
                     yield d['auid']
 
-    def _submit_auid_queries(self, auids, max_request_size=1000):
+    def _get_materials_from_web(self, auids, max_request_size=1000):
         futures = []
         for chunk in grouper(auids, max_request_size):
             criteria = {'auid': {'$in': [c for c in chunk if c is not None]}}
@@ -131,7 +128,18 @@ class AflowAdapter(AFLOWDataRetrieval):
             f = self._executor.submit(
                 self.get_dataframe, criteria, properties, files=files)
             futures.append(f)
-        return futures
+
+        for f in as_completed(futures):
+            try:
+                response: pd.DataFrame = f.result()
+            except Exception as ex:
+                msg = "Could not retrieve one or more materials. Error:\n{}".format(ex)
+                for future in futures:
+                    future.cancel()
+                raise ValueError(msg)
+
+            for auid, data in response.iterrows():
+                yield self._transform_response_to_material(auid, data)
 
     def _transform_response_to_material(self, auid, data):
         qs = []
@@ -161,24 +169,12 @@ class AflowAdapter(AFLOWDataRetrieval):
 
     
 class AflowAPIQuery(_RetrievalQuery):
-    def __init__(self, *args, max_sim_requests=10, reduction_scheme='batch',
+    def __init__(self, *args, max_sim_requests=10,
+                 batch_reduction=True, property_reduction=False,
                  **kwargs):
         self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
-        if isinstance(reduction_scheme, list) and \
-                'batch' in reduction_scheme and 'property' in reduction_scheme:
-            self._auto_adjust_batch_size = True
-            self._auto_adjust_num_props = True
-        elif reduction_scheme == 'batch':
-            self._auto_adjust_batch_size = True
-            self._auto_adjust_num_props = False
-        elif reduction_scheme == 'property':
-            self._auto_adjust_batch_size = False
-            self._auto_adjust_num_props = True
-        elif reduction_scheme is None:
-            self._auto_adjust_batch_size = False
-            self._auto_adjust_num_props = False
-        else:
-            raise ValueError("Invalid reduction scheme")
+        self._auto_adjust_batch_size = batch_reduction
+        self._auto_adjust_num_props = property_reduction
 
         self._session = requests.Session()
         retries = Retry(total=3, backoff_factor=10, status_forcelist=[500], connect=0)
@@ -217,31 +213,6 @@ class AflowAPIQuery(_RetrievalQuery):
         query.exclude(*[getattr(K, i) for i in excluded_keywords])
 
         return query
-
-    def orderby(self, keyword, reverse=False):
-        """Sets a keyword to be the one by which
-
-        Args:
-            keyword (aflow.keywords.Keyword): that encapsulates the AFLUX
-              request language logic.
-            reverse (bool): when True, reverse the ordering.
-        """
-        if self._final_check():
-            self._N = None
-            self.order = keyword
-            self.reverse = reverse
-            # Because order will be placed first in the query string, remove
-            # it from the other sections to not be redundant
-            if keyword.name in [v.name for v in self.selects]:
-                idx = [v.name for v in self.selects].index(keyword.name)
-                self.selects.pop(idx)
-            if keyword.name in [v.name for v in self.filters]:
-                idx = [v.name for v in self.filters].index(keyword.name)
-                self.filters.pop(idx)
-            if keyword.name in [v.name for v in self.excludes]:
-                idx = [v.name for v in self.excludes].index(keyword.name)
-                self.excludes.pop(idx)
-        return self
         
     def _request(self, n, k):
         """Constructs the query string for this :class:`Query` object for the
