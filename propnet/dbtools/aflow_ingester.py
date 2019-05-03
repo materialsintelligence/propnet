@@ -1,4 +1,5 @@
 from propnet.ext.aflow import AflowAPIQuery
+from propnet.dbtools.aflow_ingester_defaults import default_query_configs, default_files_to_ingest
 from aflow.keywords import load as kw_load, reset as kw_reset
 from aflow import K
 from maggma.builders import Builder
@@ -12,127 +13,21 @@ import datetime
 
 logger = logging.getLogger(__name__)
 
-# Querying AFLOW needs to be done in manageable chunks
-# These configuations define the chunks to download. Note that
-# this will not download all properties for a material at once,
-# so it must be run in its entirety to complete the material.
-
-_files_to_ingest = [
-    'CONTCAR.relax.vasp',
-    'AEL_elastic_tensor.json'
-]
-
-_query_configs = [
-    {
-        'catalog': 'icsd',
-        'k': [200000],
-        'exclude': [],
-        'filter': [],
-        'select': ['auid', 'aurl', 'compound'],
-        'targets': ['data', 'auid']
-    },
-    {
-        'catalog': 'icsd',
-        'k': [200000],
-        'exclude': ['compound', 'aurl'],
-        'filter': [],
-        'select': [],
-        'targets': ['data']
-    },
-    {
-        'catalog': 'icsd',
-        'k': [10000],
-        'exclude': ['compound'],
-        'filter': [],
-        'select': ['files', 'aurl'],
-        'targets': ['data']
-    },
-    {
-        'catalog': 'lib1',
-        'k': [200000],
-        'exclude': [],
-        'filter': [],
-        'select': ['auid', 'aurl', 'compound'],
-        'targets': ['data', 'auid']
-    },
-    {
-        'catalog': 'lib1',
-        'k': [200000],
-        'exclude': ['compound', 'aurl'],
-        'filter': [],
-        'select': [],
-        'targets': ['data']
-    },
-    {
-        'catalog': 'lib1',
-        'k': [10000],
-        'exclude': ['compound'],
-        'filter': [],
-        'select': ['files', 'aurl'],
-        'targets': ['data']
-    },
-    {
-        'catalog': 'lib2',
-        'k': [200000],
-        'exclude': [],
-        'filter': [],
-        'select': ['auid', 'aurl', 'compound'],
-        'targets': ['data', 'auid']
-    },
-    {
-        'catalog': 'lib2',
-        'k': [200000],
-        'exclude': ['compound', 'aurl'],
-        'filter': [],
-        'select': [],
-        'targets': ['data']
-    },
-    {
-        'catalog': 'lib2',
-        'k': [10000],
-        'exclude': ['compound'],
-        'filter': [],
-        'select': ['files', 'aurl'],
-        'targets': ['data']
-    },
-    {
-        'catalog': 'lib3',
-        'k': [200000],
-        'exclude': [],
-        'filter': [('auid', '__lt__', "'aflow:{}'".format(start))
-                   for start in [hex(i)[2:] for i in range(0, 16)]],
-        'select': ['auid', 'aurl', 'compound'],
-        'targets': ['data', 'auid']
-    },
-    {
-        'catalog': 'lib3',
-        'k': [200000],
-        'exclude': ['compound', 'aurl'],
-        'filter': [('auid', '__lt__', "'aflow:{}'".format(start))
-                   for start in [hex(i)[2:] for i in range(0, 16)]],
-        'select': [],
-        'targets': ['data']
-    },
-    {
-        'catalog': 'lib3',
-        'k': [10000],
-        'exclude': ['compound'],
-        'filter': [('auid', '__lt__', "'aflow:{}'".format(start))
-                   for start in [hex(i)[2:] for i in range(0, 16)]],
-        'select': ['files', 'aurl'],
-        'targets': ['data']
-    },
-]
-
 
 class AFLOWIngester(Builder):
     _available_kws = dict()
     kw_load(_available_kws)
     
     def __init__(self, data_target, auid_target=None,
-                 keywords=None, **kwargs):
+                 keywords=None, query_configs=None,
+                 files_to_ingest=None, filter_null_properties=False,
+                 **kwargs):
         self.data_target = data_target
         self.auid_target = auid_target
+
+        self.query_configs = query_configs or default_query_configs
+        self.files_to_ingest = files_to_ingest or default_files_to_ingest
+        self.filter_null_properties = filter_null_properties
         
         bad_kw_check = [k for k in keywords or [] if k not in self._available_kws]
         if len(bad_kw_check) != 0:
@@ -159,9 +54,9 @@ class AFLOWIngester(Builder):
                 lhs = getattr(K, lhs)
                 oper = getattr(lhs, oper)
                 if rhs:
-                    query.filter(oper(lhs, rhs))
+                    query.filter(oper(rhs))
                 else:
-                    query.filter(oper(lhs))
+                    query.filter(oper())
         query.orderby(K.auid)
         return query
 
@@ -173,7 +68,7 @@ class AFLOWIngester(Builder):
             except ValueError:
                 pass
 
-        for config_ in _query_configs:
+        for config_ in self.query_configs:
             logger.debug(
                 "Catalog {} selecting {}".format(config_['catalog'],
                                                  'all' if not config_['select']
@@ -219,11 +114,10 @@ class AFLOWIngester(Builder):
         else:
             auid_data = None
         db_data = {k: entry.raw.get(k, None) for k in self.keywords}
-        db_data = {k: v for k, v in db_data.items() if v is not None}
 
         if 'files' in entry.attributes:
             file_data = dict()
-            for filename in _files_to_ingest:
+            for filename in self.files_to_ingest:
                 try:
                     data = entry.files[filename]()
                 except KeyError:
@@ -231,6 +125,9 @@ class AFLOWIngester(Builder):
                 if data:
                     file_data[filename.replace('.', '_')] = data
             db_data.update(file_data)
+
+        if self.filter_null_properties:
+            db_data = {k: v for k, v in db_data.items() if v is not None}
         
         return jsanitize(db_data, strict=True), jsanitize(auid_data, strict=True)
     

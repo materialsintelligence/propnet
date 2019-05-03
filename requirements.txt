@@ -36,8 +36,10 @@ pymatgen>=2018.5.22
 maggma>=0.13.0
 
 # aflow ingestion
-aflow>=0.0.9
+aflow>=0.0.8
 six>=1.12.0
+requests>=2.21.0
+urllib3>=1.24.1
 
 # analysis
 minepy>=1.2.3

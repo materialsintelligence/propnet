@@ -250,6 +250,11 @@ class AflowAPIQuery(_RetrievalQuery):
             else:
                 raise ValueError("The API failed to complete the request.")
 
+        if not response:
+            self._N = 0
+            raise ValueError("Empty response from URI. "
+                             "Check your query filters.\nURI: {}".format(request_url))
+
         # If this is the first request, then save the number of results in the
         # query.
         if len(self.responses) == 0:
@@ -272,14 +277,10 @@ class AflowAPIQuery(_RetrievalQuery):
                 logger.debug('Requesting property chunk {} with {} records'.format(chunks, k))
                 props_to_request = set(c for c in chunk if c is not None)
                 props_to_request.add(str(self.order))
-                if reduce_batch_on_fail:
-                    reduction_scheme = 'batch'
-                else:
-                    reduction_scheme = None
                 query = AflowAPIQuery.from_pymongo(criteria={},
                                                    properties=list(props_to_request),
                                                    request_size=k,
-                                                   reduction_scheme=reduction_scheme)
+                                                   batch_reduction=reduce_batch_on_fail)
                 query.filters = self.filters
                 query.orderby(self.order, self.reverse)
                 query._session = self._session
