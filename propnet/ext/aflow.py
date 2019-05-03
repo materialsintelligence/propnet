@@ -1,41 +1,50 @@
-from matminer.data_retrieval.retrieve_AFLOW import AFLOWDataRetrieval, RetrievalQuery as _RetrievalQuery
+from matminer.data_retrieval.retrieve_AFLOW import RetrievalQuery as _RetrievalQuery
+from pymatgen.core.composition import Composition
+
+# noinspection PyUnresolvedReferences
+import propnet.ext.aflow_redefs
 from aflow.control import server as _aflow_server
 from aflow import K, msg as _msg
+from aflow.entries import Entry
+
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
+from requests.exceptions import ConnectionError, RetryError
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from maggma.utils import grouper
+
 from propnet.core.materials import Material
 from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import ProvenanceElement
+
 import pandas as pd
 from datetime import datetime
-import requests
-from requests.exceptions import ConnectionError
 import logging
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
 
-class AFLOWRetrieve(AFLOWDataRetrieval):
+class AflowAdapter:
     # Mapping is keyed by AFLOW keyword, valued by propnet property
     mapping = {
         "auid": "external_identifier_aflow",
         "Egap": "band_gap",
         "ael_bulk_modulus_reuss": "bulk_modulus",
         "ael_bulk_modulus_voigt": "bulk_modulus",
-        # "ael_elastic_anistropy": "elastic_anisotropy",    # This property returns "not allowed" from API
+        "ael_elastic_anisotropy": "elastic_anisotropy",
         "ael_poisson_ratio": "poisson_ratio",
         "ael_shear_modulus_reuss": "shear_modulus",
         "ael_shear_modulus_voigt": "shear_modulus",
         "agl_acoustic_debye": "debye_temperature",
         "agl_debye": "debye_temperature",
         "agl_gruneisen": "gruneisen_parameter",
-        # Listed per unit cell, need new symbol and model for conversion
-        # "agl_heat_capacity_Cp_300K": "heat_capacity_of_cell_constant_pressure",
-        # "agl_heat_capacity_Cv_300K": "heat_capacity_of_cell_constant_volume",
+        "agl_heat_capacity_Cp_300K": "unit_cell_heat_capacity_constant_pressure",
+        "agl_heat_capacity_Cv_300K": "unit_cell_heat_capacity_constant_volume",
         "agl_thermal_conductivity_300K": "thermal_conductivity",
         "agl_thermal_expansion_300K": "thermal_expansion_coefficient",
-        # This returns the volumes of all the atoms' volumes
-        # "bader_atomic_volumes": ""
         "compound": "formula",
         "energy_atom": "energy_per_atom",
         "enthalpy_formation_atom": "formation_energy_per_atom"
@@ -44,30 +53,37 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
         "structure": "structure"
     }
     transform_func = {
-        "energy_atom": lambda x: abs(x)
+        "energy_atom": lambda x: abs(x),
+        "compound": lambda x: Composition(x).reduced_formula
     }
     unit_map = {
         "Egap": "eV",
         "ael_bulk_modulus_reuss": "gigapascal",
         "ael_bulk_modulus_voigt": "gigapascal",
-        # "ael_elastic_anistropy": "dimensionless",
+        "ael_elastic_anisotropy": "dimensionless",
         "ael_poisson_ratio": "dimensionless",
         "ael_shear_modulus_reuss": "gigapascal",
         "ael_shear_modulus_voigt": "gigapascal",
         "agl_acoustic_debye": "kelvin",
         "agl_debye": "kelvin",
         "agl_gruneisen": "dimensionless",
-        # "agl_heat_capacity_Cp_300K": "boltzmann_constant",
-        # "agl_heat_capacity_Cv_300K": "boltzmann_constant",
+        "agl_heat_capacity_Cp_300K": "boltzmann_constant",
+        "agl_heat_capacity_Cv_300K": "boltzmann_constant",
         "agl_thermal_conductivity_300K": "watt/meter/kelvin",
         "agl_thermal_expansion_300K": "1/kelvin",
         "energy_atom": "eV/atom",
         "enthalpy_formation_atom": "eV/atom"
     }
 
-    def __init__(self, max_sim_requests=10):
-        self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
-        super(AFLOWRetrieve, self).__init__()
+    def __init__(self, max_sim_requests=10, store=None):
+        if store is None:
+            self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
+            self.store = None
+        else:
+            self._executor = None
+            self.store = store
+            store.connect()
+        super(AflowAdapter, self).__init__()
 
     def __del__(self):
         if self._executor:
@@ -80,26 +96,17 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
         return [m for m in self.generate_materials_by_auids(auids, max_request_size)]
     
     def generate_materials_by_auids(self, auids, max_request_size=1000):
-        futures = self._submit_auid_queries(auids, max_request_size)
-
-        for f in as_completed(futures):
-            try:
-                response: pd.DataFrame = f.result()
-            except Exception as ex:
-                msg = "Could not retrieve one or more materials. Error:\n{}".format(ex)
-                for future in futures:
-                    future.cancel()
-                raise ValueError(msg)
-
-            for auid, data in response.iterrows():
-                yield self._transform_response_to_material(auid, data)
+        if self.store is not None:
+            yield from self._get_materials_from_store(auids, max_request_size)
+        else:
+            yield from self._get_materials_from_web(auids, max_request_size)
     
     @staticmethod
     def generate_all_auids(max_request_size=1000, with_metadata=True):
         props = ['auid']
         if with_metadata:
             props += ['compound', 'aflowlib_date']
-        query = AsyncQuery.from_pymongo(
+        query = AflowAPIQuery.from_pymongo(
             criteria={},
             properties=props,
             request_size=max_request_size
@@ -112,7 +119,7 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
                 else:
                     yield d['auid']
 
-    def _submit_auid_queries(self, auids, max_request_size=1000):
+    def _get_materials_from_web(self, auids, max_request_size=1000):
         futures = []
         for chunk in grouper(auids, max_request_size):
             criteria = {'auid': {'$in': [c for c in chunk if c is not None]}}
@@ -121,7 +128,18 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
             f = self._executor.submit(
                 self.get_dataframe, criteria, properties, files=files)
             futures.append(f)
-        return futures
+
+        for f in as_completed(futures):
+            try:
+                response: pd.DataFrame = f.result()
+            except Exception as ex:
+                msg = "Could not retrieve one or more materials. Error:\n{}".format(ex)
+                for future in futures:
+                    future.cancel()
+                raise ValueError(msg)
+
+            for auid, data in response.iterrows():
+                yield self._transform_response_to_material(auid, data)
 
     def _transform_response_to_material(self, auid, data):
         qs = []
@@ -150,19 +168,26 @@ class AFLOWRetrieve(AFLOWDataRetrieval):
         return Material(qs)
 
     
-class AsyncQuery(_RetrievalQuery):
-    def __init__(self, *args, max_sim_requests=10, auto_adjust_batch_size=True,
+class AflowAPIQuery(_RetrievalQuery):
+    def __init__(self, *args, max_sim_requests=10,
+                 batch_reduction=True, property_reduction=False,
                  **kwargs):
         self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
-        self._auto_adjust_batch_size = auto_adjust_batch_size
-        super(AsyncQuery, self).__init__(*args, **kwargs)
+        self._auto_adjust_batch_size = batch_reduction
+        self._auto_adjust_num_props = property_reduction
+
+        self._session = requests.Session()
+        retries = Retry(total=3, backoff_factor=10, status_forcelist=[500], connect=0)
+        self._session.mount('http://', HTTPAdapter(max_retries=retries))
+
+        super(AflowAPIQuery, self).__init__(*args, **kwargs)
 
     def __del__(self):
         if self._executor:
             self._executor.shutdown()
 
     @classmethod
-    def from_pymongo(cls, criteria, properties, request_size):
+    def from_pymongo(cls, criteria, properties, request_size, **kwargs):
         """Generates an aflow Query object from pymongo-like arguments.
 
         Args:
@@ -174,7 +199,7 @@ class AsyncQuery(_RetrievalQuery):
                 Note that this is similar to "limit" in pymongo.find.
         """
         # initializes query
-        query = cls(batch_size=request_size)
+        query = cls(batch_size=request_size, **kwargs)
 
         # adds filters to query
         query._add_filters(criteria)
@@ -188,36 +213,6 @@ class AsyncQuery(_RetrievalQuery):
         query.exclude(*[getattr(K, i) for i in excluded_keywords])
 
         return query
-
-    def generate_items(self, preserve_order=True):
-        self.reset_iter()
-        self._request(1, self.k)
-        yield self.responses[1]
-
-        urls = [self._get_request_url(_aflow_server, self.matchbook(), self._directives(page, self.k))
-                for page in range(2, self._N)]
-
-        futures = []
-        for page, url in enumerate(urls):
-            f = self._executor.submit(self._get_response, url, page+1)
-            futures.append(f)
-            
-        for f in self._get_next_future(futures, preserve_order):
-            try:
-                _, result, page = f.result()
-            except Exception as ex:
-                for ff in futures:
-                    ff.cancel()
-                raise ex
-            self.responses[page] = result
-            yield result
-        
-    @staticmethod
-    def _get_next_future(futures, preserve_order=True):
-        if preserve_order:
-            yield from futures
-        else:
-            yield from as_completed(futures)
         
     def _request(self, n, k):
         """Constructs the query string for this :class:`Query` object for the
@@ -234,51 +229,114 @@ class AsyncQuery(_RetrievalQuery):
             
         server = _aflow_server
         matchbook = self.matchbook()
-        
-        this_k = k
-        this_n = n
-        n_pages = 1
+        directives = self._directives(n, k)
+        request_url = self._get_request_url(server, matchbook, directives)
+        logger.debug('Requesting page {} with {} records from url:\n{}'.format(n, k, request_url))
+        try:
+            is_ok, response = self._get_response(request_url, session=self._session)
+        except ConnectionError as ex:
+            # We requested SO many things that the server rejected our request
+            # outright as opposed to trying to complete the request and failing
+            is_ok = False
+            response = ex.args
+
+        if not is_ok:
+            if self._auto_adjust_batch_size and self._auto_adjust_num_props:
+                response = self._request_with_fewer_props(n, k, reduce_batch_on_fail=True)
+            elif self._auto_adjust_batch_size:
+                response = self._request_with_smaller_batch(n, k)
+            elif self._auto_adjust_num_props:
+                response = self._request_with_fewer_props(n, k)
+            else:
+                raise ValueError("The API failed to complete the request.")
+
+        if not response:
+            self._N = 0
+            raise ValueError("Empty response from URI. "
+                             "Check your query filters.\nURI: {}".format(request_url))
+
+        # If this is the first request, then save the number of results in the
+        # query.
+        if len(self.responses) == 0:
+            self._N = int(next(iter(response.keys())).split()[-1])
+
+        # Filter out any extra responses that we got
+        collected_responses = {kk: v for kk, v in response.items()
+                               if int(kk.split()[0]) <= n*k}
+        self.responses[n] = collected_responses
+
+    def _request_with_fewer_props(self, n, k, reduce_batch_on_fail=False):
+        collected_responses = defaultdict(dict)
+        props = self.selects
+        chunks = 2
+        while len(props) // chunks >= 1:
+            if len(props) / chunks < 2:
+                chunks = len(props) + 1
+            query_error = False
+            for chunk in grouper(props, (len(props) // chunks) + 1):
+                logger.debug('Requesting property chunk {} with {} records'.format(chunks, k))
+                props_to_request = set(c for c in chunk if c is not None)
+                props_to_request.add(str(self.order))
+                query = AflowAPIQuery.from_pymongo(criteria={},
+                                                   properties=list(props_to_request),
+                                                   request_size=k,
+                                                   batch_reduction=reduce_batch_on_fail)
+                query.filters = self.filters
+                query.orderby(self.order, self.reverse)
+                query._session = self._session
+                try:
+                    query._request(n, k)
+                except ValueError:
+                    query_error = True
+                if not query_error:
+                    response = query.responses[n]
+                    for record_key, record in response.items():
+                        collected_responses[record_key].update(record)
+                else:
+                    break
+
+            if query_error:
+                chunks += 1
+            else:
+                return collected_responses
+
+        raise ValueError("The API failed to complete the request "
+                         "and reducing the number of properties failed to fix it.")
+
+    def _request_with_smaller_batch(self, original_n, original_k):
         collected_responses = {}
+
+        n, k, n_pages = self._get_next_paging_set(original_n, original_k, original_n, original_k)
 
         # This logic reduces the requested batch size if we experience errors
         while n_pages > 0:
-            directives = self._directives(this_n, this_k)
+            logger.debug('Requesting page {} with {} records'.format(n, k))
+            server = _aflow_server
+            matchbook = self.matchbook()
+            directives = self._directives(n, k)
             request_url = self._get_request_url(server, matchbook, directives)
             try:
-                is_ok, response = self._get_response(request_url)
-            except ConnectionError as ex:
+                is_ok, response = self._get_response(request_url, session=self._session)
+            except (ConnectionError, RetryError) as ex:
                 # We requested SO many things that the server rejected our request
                 # outright as opposed to trying to complete the request and failing
                 is_ok = False
                 response = ex.args
-        
+
             if not is_ok:
-                if self._auto_adjust_batch_size:
-                    this_n, this_k, n_pages = self._get_next_paging_set(this_n, this_k,
-                                                                        n, k)
-                    if this_k == 0:
-                        raise ValueError("The API failed to complete the request "
-                                         "and reducing the batch size failed to fix it. "
-                                         "Response:\n{}".format(response))
-                    logger.warning("Temporarily reducing batch size to {}".format(this_k))
-                else:
-                    raise ValueError("The API failed to complete the request. "
-                                     "Response:\n{}".format(response))
+                n, k, n_pages = self._get_next_paging_set(n, k,
+                                                          original_n, original_k)
             else:
-                this_n += 1
+                n += 1
                 n_pages -= 1
                 collected_responses.update(response)
-                
-        # If this is the first request, then save the number of results in the
-        # query.
-        if len(self.responses) == 0:
-            self._N = int(next(iter(collected_responses.keys())).split()[-1])
 
-        # Filter out any extra responses that we got
-        collected_responses = {kk: v for kk, v in collected_responses.items()
-                               if int(kk.split()[0]) <= n*k}
-        self.responses[n] = collected_responses
-    
+            if k == 0:
+                raise ValueError("The API failed to complete the request "
+                                 "and reducing the batch size failed to fix it.")
+
+        return collected_responses
+
     @staticmethod
     def _get_next_paging_set(n, k, original_n, original_k):
         starting_entry = (n-1)*k+1
@@ -289,21 +347,23 @@ class AsyncQuery(_RetrievalQuery):
         return new_n, new_k, new_pages
         
     @staticmethod
-    def _get_response(url, page=None):
-        rawresp = requests.get(url)
-        retry = 0
-        while not rawresp.ok and retry < 3:
-            retry += 1
-            rawresp = requests.get(url)
-
-        if rawresp.ok:
+    def _get_response(url, session=None, page=None):
+        if not session:
+            session = requests.Session()
+            retries = Retry(total=5, backoff_factor=10, status_forcelist=[500], connect=0)
+            session.mount('http://', HTTPAdapter(max_retries=retries))
+        try:
+            rawresp = session.get(url)
+            is_ok = rawresp.ok
             response = rawresp.json()
-        else:
-            _msg.err("{}\n\n{}".format(url, rawresp))
-            response = rawresp.text
+        except (ConnectionError, RetryError) as ex:
+            is_ok = False
+            response = ex.args
+            _msg.err("{}\n\n{}".format(url, response))
+
         if page is not None:
-            return rawresp.ok, response, page
-        return rawresp.ok, response
+            return is_ok, response, page
+        return is_ok, response
 
     @staticmethod
     def _get_request_url(server, matchbook, directives):

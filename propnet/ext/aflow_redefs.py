@@ -60,6 +60,16 @@ def _ldau_TLUJ(value):
 aflow.keywords._ldau_TLUJ.ptype = dict
 
 
+class _ael_elastic_anisotropy(aflow.keywords.Keyword):
+    name = "ael_elastic_anisotropy"
+    ptype = float
+    atype = "number"
+
+aflow.keywords.ael_elastic_anisotropy = _ael_elastic_anisotropy()
+aflow.keywords._ael_elastic_anisotropy = _ael_elastic_anisotropy
+aflow.keywords._find_all()
+
+
 def _val_from_str(attr, value):
     """Retrieves the specified attribute's value, cast to an
     appropriate python type where possible.
