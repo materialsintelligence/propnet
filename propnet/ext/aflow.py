@@ -1,28 +1,34 @@
 from matminer.data_retrieval.retrieve_AFLOW import RetrievalQuery as _RetrievalQuery
 from pymatgen.core.composition import Composition
+from pymatgen.core.structure import Structure
 
 # noinspection PyUnresolvedReferences
 import propnet.ext.aflow_redefs
 from aflow.control import server as _aflow_server
 from aflow import K, msg as _msg
-from aflow.entries import Entry
+from aflow.entries import AflowFile, Entry
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
+from urllib.error import HTTPError
 from requests.exceptions import ConnectionError, RetryError
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from maggma.utils import grouper
+from maggma.stores import MongoStore
 
 from propnet.core.materials import Material
 from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import ProvenanceElement
+from propnet import ureg
 
-import pandas as pd
+import numpy as np
 from datetime import datetime
 import logging
 from collections import defaultdict
+from itertools import chain
+from functools import partial
 
 logger = logging.getLogger(__name__)
 
@@ -47,14 +53,24 @@ class AflowAdapter:
         "agl_thermal_expansion_300K": "thermal_expansion_coefficient",
         "compound": "formula",
         "energy_atom": "energy_per_atom",
-        "enthalpy_formation_atom": "formation_energy_per_atom"
+        "enthalpy_formation_atom": "formation_energy_per_atom",
+        "structure": "structure",
+        "elastic_tensor_voigt": "elastic_tensor_voigt",
+        "compliance_tensor_voigt": "compliance_tensor_voigt"
     }
-    file_property_mapping = {
-        "structure": "structure"
+    property_file_mapping = {
+        "structure": "CONTCAR.relax.vasp",
+        "elastic_tensor_voigt": "AEL_elastic_tensor.json",
+        "compliance_tensor_voigt": "AEL_elastic_tensor.json"
     }
+    file_property_mapping = {v: k for k, v in property_file_mapping.items()}
+
     transform_func = {
         "energy_atom": lambda x: abs(x),
-        "compound": lambda x: Composition(x).reduced_formula
+        "compound": lambda x: Composition(x).reduced_formula,
+        "structure": lambda x: AflowAdapter._transform_structure(x),
+        "compliance_tensor_voigt": lambda x: AflowAdapter._transform_elastic_tensor(x, prop='compliance'),
+        "elastic_tensor_voigt": lambda x: AflowAdapter._transform_elastic_tensor(x, prop='stiffness')
     }
     unit_map = {
         "Egap": "eV",
@@ -72,17 +88,23 @@ class AflowAdapter:
         "agl_thermal_conductivity_300K": "watt/meter/kelvin",
         "agl_thermal_expansion_300K": "1/kelvin",
         "energy_atom": "eV/atom",
-        "enthalpy_formation_atom": "eV/atom"
+        "enthalpy_formation_atom": "eV/atom",
+        "elastic_tensor_voigt": "gigapascal",
+        "compliance_tensor_voigt": "gigapascal"
     }
 
     def __init__(self, max_sim_requests=10, store=None):
         if store is None:
             self._executor = ThreadPoolExecutor(max_workers=max_sim_requests)
             self.store = None
+            self._cache = dict()
         else:
             self._executor = None
             self.store = store
+            self.transform_func['structure'] = partial(AflowAdapter._transform_structure,
+                                                       store=store)
             store.connect()
+            self._cache = None
         super(AflowAdapter, self).__init__()
 
     def __del__(self):
@@ -96,78 +118,228 @@ class AflowAdapter:
         return [m for m in self.generate_materials_by_auids(auids, max_request_size)]
     
     def generate_materials_by_auids(self, auids, max_request_size=1000):
+        criteria = {'auid': {'$in': auids}}
+        properties = list(self.mapping.keys())
         if self.store is not None:
-            yield from self._get_materials_from_store(auids, max_request_size)
+            yield from self.get_materials_from_store(criteria, properties)
         else:
-            yield from self._get_materials_from_web(auids, max_request_size)
+            yield from self.get_materials_from_web(criteria, properties, max_request_size)
     
     @staticmethod
-    def generate_all_auids(max_request_size=1000, with_metadata=True):
+    def generate_all_auids(max_request_size=1000, with_metadata=False):
         props = ['auid']
         if with_metadata:
-            props += ['compound', 'aflowlib_date']
+            props += ['aurl', 'compound', 'aflowlib_date']
         query = AflowAPIQuery.from_pymongo(
             criteria={},
             properties=props,
             request_size=max_request_size
         )
 
-        for item in query.generate_items(preserve_order=False):
-            for d in item.values():
-                if with_metadata:
-                    yield d
-                else:
-                    yield d['auid']
+        for item in query:
+            if with_metadata:
+                yield item.raw
+            else:
+                yield item.auid
 
-    def _get_materials_from_web(self, auids, max_request_size=1000):
+    def get_materials_from_store(self, criteria, properties, **kwargs):
+        if not self.store:
+            raise ValueError("No store specified!")
+        if not properties:
+            properties = list(self.mapping.keys())
+        properties += ['aflowlib_date']
+        for data in self.get_properties_from_store(criteria, properties, **kwargs):
+            yield self.transform_properties_to_material(data)
+
+    def get_materials_from_web(self, criteria, properties, max_request_size=1000):
+        if not properties:
+            properties = list(self.mapping.keys())
+        properties += ['aflowlib_date']
+        for data in self.get_properties_from_web(criteria, properties,
+                                                 max_request_size=max_request_size):
+            yield self.transform_properties_to_material(data)
+
+    def get_properties_from_store(self, criteria, properties, **kwargs):
+        file_properties_to_map = defaultdict(list)
+        for p, fn in self.property_file_mapping.items():
+            if p in properties:
+                mongo_field_name = fn.replace('.', '_')
+                file_properties_to_map[mongo_field_name].append(p)
+                properties.remove(p)
+                properties.append(mongo_field_name)
+
+        q = self.store.query(criteria=criteria, properties=properties, **kwargs)
+        for raw_data in q:
+            raw_data.pop('_id')
+            data = dict()
+            for field, props in file_properties_to_map.items():
+                field_data = raw_data.get(field)
+                if field_data:
+                    data.update({
+                        prop: field_data for prop in props
+                    })
+                    raw_data.pop(field)
+            entry = Entry(**raw_data)
+            for prop in entry.attributes:
+                data[prop] = getattr(entry, prop)
+            yield data
+
+    def get_properties_from_web(self, criteria, properties, max_request_size=1000):
+        files_to_download = defaultdict(list)
+        for p, fn in self.property_file_mapping.items():
+            if p in properties:
+                files_to_download[fn].append(p)
+                properties.remove(p)
+
+        q = AflowAPIQuery.from_pymongo(criteria, properties, max_request_size,
+                                       batch_reduction=True, property_reduction=True)
+        if not files_to_download:
+            for material in q:
+                data = dict()
+                for prop in material.attributes:
+                    data[prop] = getattr(material, prop)
+                yield data
+            raise StopIteration
+
         futures = []
-        for chunk in grouper(auids, max_request_size):
-            criteria = {'auid': {'$in': [c for c in chunk if c is not None]}}
-            properties = list(self.mapping.keys()) + ['aflowlib_date']
-            files = list(self.file_property_mapping.keys())
-            f = self._executor.submit(
-                self.get_dataframe, criteria, properties, files=files)
-            futures.append(f)
+        materials = dict()
+        files = defaultdict(dict)
 
-        for f in as_completed(futures):
-            try:
-                response: pd.DataFrame = f.result()
-            except Exception as ex:
-                msg = "Could not retrieve one or more materials. Error:\n{}".format(ex)
-                for future in futures:
-                    future.cancel()
-                raise ValueError(msg)
+        for material in q:
+            auid = material.auid
+            data = dict()
+            for prop in material.attributes:
+                data[prop] = getattr(material, prop)
+            materials[auid] = data
+            for filename in files_to_download:
+                future = self._executor.submit(
+                    self._get_aflow_file,
+                    material.auid, material.aurl, filename
+                )
+                futures.append(future)
 
-            for auid, data in response.iterrows():
-                yield self._transform_response_to_material(auid, data)
+        for future in as_completed(futures):
+            auid, filename, response = future.result()
+            if isinstance(response, HTTPError):
+                logger.info("Encountered error downloading file "
+                            "{} for {}:\n{}".format(filename, auid, str(response)))
+                response = auid
+            files[auid].update({filename: response})
 
-    def _transform_response_to_material(self, auid, data):
+            if len(files[auid]) == len(files_to_download):
+                materials[auid].update({prop: file_data
+                                        for fn, file_data in files[auid].items()
+                                        for prop in files_to_download[fn]
+                                        if file_data is not None})
+                yield materials[auid]
+
+    def _get_aflow_file(self, auid, aurl, filename):
+        aff = AflowFile(aurl, filename)
+        try:
+            data = aff()
+        except HTTPError as ex:
+            return auid, filename, ex
+        return auid, filename, data
+
+    def transform_properties_to_material(self, material_data):
         qs = []
-        for prop, value in data.items():
-            if value is not None and \
-                    (prop in self.mapping or prop in self.file_property_mapping):
-                date_created = data.get('aflowlib_date')
-                if date_created:
-                    date, tz = date_created.rsplit("GMT", 1)
-                    tz = "GMT{:+05d}".format(int(tz) * 100)
-                    date_object = datetime.strptime(date + tz, "%Y%m%d_%H:%M:%S_%Z%z")
-                    date_created = date_object.strftime("%Y-%m-%d %H:%M:%S")
+        auid = material_data.get('auid')
+        date_created = material_data.get('aflowlib_date')
+        if date_created:
+            date, tz = date_created.rsplit("GMT", 1)
+            tz = "GMT{:+05d}".format(int(tz) * 100)
+            date_object = datetime.strptime(date + tz, "%Y%m%d_%H:%M:%S_%Z%z")
+            date_created = date_object.strftime("%Y-%m-%d %H:%M:%S")
+
+        for prop, value in material_data.items():
+            if value is not None and prop in self.mapping:
                 provenance = ProvenanceElement(
                     source={'source': 'AFLOW',
                             'source_key': auid,
                             'date_created': date_created}
                 )
+
                 if prop in self.transform_func:
                     value = self.transform_func[prop](value)
+                if value is None:
+                    continue
                 q = QuantityFactory.create_quantity(
-                    self.mapping.get(prop) or self.file_property_mapping.get(prop),
+                    self.mapping.get(prop),
                     value,
                     units=self.unit_map.get(prop), provenance=provenance
                 )
                 qs.append(q)
+
         return Material(qs)
 
-    
+    @staticmethod
+    def _transform_elastic_tensor(data_in, prop=None):
+        if isinstance(data_in, str):
+            if data_in.startswith("aflow"):
+                # We got an auid because there's no tensor file
+                return None
+            import json
+            data_in = json.loads(data_in)
+        units = data_in['units']
+
+        c_tensor_in = data_in['elastic_compliance_tensor']
+        s_tensor_in = data_in['elastic_stiffness_tensor']
+
+        c_idx = [idx for idx in ['s_'+str(i)+str(j) for i in range(1, 7) for j in range(1, 7)]]
+        s_idx = [idx for idx in ['c_'+str(i)+str(j) for i in range(1, 7) for j in range(1, 7)]]
+
+        c_tensor = np.reshape([c_tensor_in[idx] for idx in c_idx], (6, 6))
+        s_tensor = np.reshape([s_tensor_in[idx] for idx in s_idx], (6, 6))
+
+        c_tensor = ureg.Quantity(c_tensor, units).to(AflowAdapter.unit_map['compliance_tensor_voigt'])
+        s_tensor = ureg.Quantity(s_tensor, units).to(AflowAdapter.unit_map['elastic_tensor_voigt'])
+
+        if prop == 'compliance':
+            return c_tensor
+        elif prop == 'stiffness':
+            return s_tensor
+        return {
+            'compliance_tensor_voigt': c_tensor,
+            'elastic_tensor_voigt': s_tensor
+        }
+
+    @staticmethod
+    def _transform_structure(data_in, store=None):
+        # Try to convert data to structure assuming data_in contains
+        # a string of CONTCAR data.
+        try:
+            structure = Structure.from_str(data_in, fmt="poscar")
+            return structure
+        except Exception:
+            logger.warning("No structure file for {}. Generating from material entry".format(data_in))
+
+        # If that fails, either because the file was not formatted correctly,
+        # or there was no file to download, build it from the geometry data.
+        # It's less precise, but not likely by enough to matter.
+        criteria = {'auid': data_in}
+        properties = ['geometry', 'species',
+                      'composition', 'positions_fractional']
+        if store:
+            supplemental_data = store.query_one(criteria=criteria,
+                                                properties=properties)
+            del supplemental_data['_id']
+            entry = Entry(**supplemental_data)
+        else:
+            q = AflowAPIQuery.from_pymongo(criteria, properties, 1)
+            entry = q.__next__()
+
+        from pymatgen.core.lattice import Lattice
+        # This lazy-loads the data by making an HTTP request for each property it needs
+        # if no mongo store was specified
+        geometry = entry.geometry
+        lattice = Lattice.from_parameters(*geometry)
+        elements = list(map(str.strip, entry.species))
+        composition = list(entry.composition)
+        species = list(chain.from_iterable([elem] * comp for elem, comp in zip(elements, composition)))
+        xyz = entry.positions_fractional.tolist()
+        return Structure(lattice, species, xyz)
+
+
 class AflowAPIQuery(_RetrievalQuery):
     def __init__(self, *args, max_sim_requests=10,
                  batch_reduction=True, property_reduction=False,
