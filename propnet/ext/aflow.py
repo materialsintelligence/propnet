@@ -2,8 +2,6 @@ from matminer.data_retrieval.retrieve_AFLOW import RetrievalQuery as _RetrievalQ
 from pymatgen.core.composition import Composition
 from pymatgen.core.structure import Structure
 
-# noinspection PyUnresolvedReferences
-import propnet.ext.aflow_redefs
 from aflow.control import server as _aflow_server
 from aflow import K, msg as _msg
 from aflow.entries import AflowFile, Entry
@@ -16,7 +14,6 @@ from requests.exceptions import ConnectionError, RetryError
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from maggma.utils import grouper
-from maggma.stores import MongoStore
 
 from propnet.core.materials import Material
 from propnet.core.quantity import QuantityFactory
