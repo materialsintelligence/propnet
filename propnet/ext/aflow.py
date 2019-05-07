@@ -670,6 +670,15 @@ class AflowAPIQuery(_RetrievalQuery):
     """
     def __init__(self, *args, batch_reduction=True, property_reduction=False,
                  **kwargs):
+        """
+
+        Args:
+            *args: Arguments to super class
+            batch_reduction (bool): True enables reduction of batch size upon query failure
+            property_reduction (bool): True enables reduction of number of proeprties requested
+                upon query failure
+            **kwargs: Keyword arguments to super class
+        """
         self._auto_adjust_batch_size = batch_reduction
         self._auto_adjust_num_props = property_reduction
 
