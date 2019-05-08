@@ -1,6 +1,6 @@
 name: unit_cell_heat_capacity_constant_pressure
 units: J / K
-display_names: [Heat capacity of one unit cell (constant volume)]
+display_names: [Heat capacity of a single unit cell (constant pressure)]
 display_symbols: [c_v]
 shape: 1
 comment: ''

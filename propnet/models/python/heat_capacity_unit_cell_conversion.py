@@ -67,6 +67,12 @@ config = {
         "molar_cv": "molar_heat_capacity_constant_volume",
         "molar_cp": "molar_heat_capacity_constant_pressure"
     },
+    "units_for_evaluation": {
+        "uc_cv": "joule / kelvin",
+        "uc_cp": "joule / kelvin",
+        "molar_cv": "joule / kelvin / mol",
+        "molar_cp": "joule / kelvin / mol"
+    },
     "description": DESCRIPTION,
     "references": ["doi:10.1016/j.commatsci.2012.10.028"],
     "implemented_by": [

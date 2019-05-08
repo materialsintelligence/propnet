@@ -1,6 +1,6 @@
 name: molar_heat_capacity_constant_pressure
 units: J / mol / K
-display_names: [Heat capacity of a single unit cell (constant pressure)]
+display_names: [Molar heat capacity (constant pressure)]
 display_symbols: [c_p]
 shape: 1
 comment: ''
