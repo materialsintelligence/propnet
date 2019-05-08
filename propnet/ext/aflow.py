@@ -54,16 +54,18 @@ class AflowAdapter:
         "agl_acoustic_debye": "debye_temperature",
         "agl_debye": "debye_temperature",
         "agl_gruneisen": "gruneisen_parameter",
-        "agl_heat_capacity_Cp_300K": "unit_cell_heat_capacity_constant_pressure",
-        "agl_heat_capacity_Cv_300K": "unit_cell_heat_capacity_constant_volume",
-        "agl_thermal_conductivity_300K": "thermal_conductivity",
-        "agl_thermal_expansion_300K": "thermal_expansion_coefficient",
+        # Adding these temperature-dependent properties drastically increases evaluation time.
+        # Keep out for now
+        # "agl_heat_capacity_Cp_300K": "unit_cell_heat_capacity_constant_pressure",
+        # "agl_heat_capacity_Cv_300K": "unit_cell_heat_capacity_constant_volume",
+        # "agl_thermal_conductivity_300K": "thermal_conductivity",
+        # "agl_thermal_expansion_300K": "thermal_expansion_coefficient",
         "compound": "formula",
         "energy_atom": "energy_per_atom",
         "enthalpy_formation_atom": "formation_energy_per_atom",
         "structure": "structure",
         "elastic_tensor_voigt": "elastic_tensor_voigt",
-        "compliance_tensor_voigt": "compliance_tensor_voigt"
+        # "compliance_tensor_voigt": "compliance_tensor_voigt"
     }
     """Mapping of AFLOW keywords to propnet properties. These AFLOW keywords include
     extra keywords (e.g. structure, elastic_tensor_voigt, compliance_tensor_voigt) which
@@ -105,8 +107,8 @@ class AflowAdapter:
 
     file_transform_func = {
         "structure": lambda x: AflowAdapter._get_structure(x),
-        "compliance_tensor_voigt": lambda x: AflowAdapter._get_elastic_data(x, prop='compliance'),
-        "elastic_tensor_voigt": lambda x: AflowAdapter._get_elastic_data(x, prop='stiffness')
+        "elastic_tensor_voigt": lambda x: AflowAdapter._get_elastic_data(x, prop='stiffness'),
+        "compliance_tensor_voigt": lambda x: AflowAdapter._get_elastic_data(x, prop='compliance')
     }
     """Contains references to functions to transform data acquired from AFLOW files to their respective
     properties. Functions must take an Entry object, initialized with all the raw data necessary. File data
@@ -174,7 +176,10 @@ class AflowAdapter:
         Returns:
             propnet.core.materials.Material: propnet material of the AFLOW entry
         """
-        return self.get_materials_by_auids([auid])[0]
+        materials = self.get_materials_by_auids([auid])
+        if not materials:
+            return None
+        return materials[0]
     
     def get_materials_by_auids(self, auids, max_request_size=1000):
         """
@@ -192,9 +197,11 @@ class AflowAdapter:
         """
 
         materials = [m for m in self.generate_materials_by_auids(list(auids), max_request_size)]
+        if not materials:
+            return None
         materials_by_auid = dict()
         for material in materials:
-            auid = material.symbol_quantities_dict['external_identifier_aflow']
+            auid = list(material.symbol_quantities_dict['external_identifier_aflow'])[0].value
             materials_by_auid[auid] = material
 
         return [materials_by_auid[auid] for auid in auids]
