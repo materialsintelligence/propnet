@@ -299,10 +299,37 @@ class Model(ABC):
         return remap(variables, getattr(self, "variable_symbol_map", {}))
 
     def _convert_inputs_for_plugin(self, inputs):
-        return {k: v.magnitude for k, v in inputs.items()}
+        converted_inputs = {}
+        for var, quantity in inputs.items():
+            converted_inputs[var] = quantity.value
+            if self.variable_unit_map.get(var) is not None:
+                # Units are being assumed by equation and we need to strip them
+                # or pint might get angry if it has to add or subtract quantities
+                # with unmatched dimensions
+                converted_inputs[var] = quantity.to(self.variable_unit_map[var]).magnitude
+        return converted_inputs
 
     def _convert_outputs_from_plugin(self, outputs):
-        return outputs
+        converted_outputs = {}
+        for var, quantity in outputs.items():
+            symbol = self._variable_symbol_map[var]
+            unit = self.variable_unit_map.get(var) or Registry("units").get(symbol)
+            if unit is None:
+                converted_outputs[var] = quantity
+            else:
+                if isinstance(quantity, ureg.Quantity):
+                    try:
+                        converted_outputs[var] = quantity.to(unit)
+                    except DimensionalityError:
+                        # If the equation multiplies by constants with dimensions,
+                        # we'll end up with an output with incorrect dimensions.
+                        # This forces the unit conversion until we can fix inclusion of constants
+                        # TODO: Fix when we add support for constants with dimensions
+                        converted_outputs[var] = ureg.Quantity(quantity.magnitude,
+                                                               units=unit)
+                else:
+                    converted_outputs[var] = ureg.Quantity(quantity, units=unit)
+        return converted_outputs
 
     def evaluate(self, symbol_quantity_dict, allow_failure=True):
         """
@@ -836,17 +863,6 @@ class EquationModel(Model, MSONable):
     def __setstate__(self, state):
         self.__dict__.update(state)
         self._generate_lambdas()
-
-    def _convert_inputs_for_plugin(self, inputs):
-        converted_inputs = {}
-        for var, quantity in inputs.items():
-            converted_inputs[var] = quantity.value
-            if var in self.variable_unit_map.keys():
-                # Units are being assumed by equation and we need to strip them
-                # or pint might get angry if it has to add or subtract quantities
-                # with unmatched dimensions
-                converted_inputs[var] = quantity.to(self.variable_unit_map[var]).magnitude
-        return converted_inputs
 
     def _convert_outputs_from_plugin(self, outputs):
         converted_outputs = {}
