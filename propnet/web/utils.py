@@ -216,6 +216,8 @@ def parse_path(pathname):
         mode = 'generate'
     elif pathname.startswith('/correlate'):
         mode = 'correlate'
+    elif pathname.startswith('/refs'):
+        mode = 'refs'
     elif pathname.startswith('/home'):
         mode = 'home'
 
