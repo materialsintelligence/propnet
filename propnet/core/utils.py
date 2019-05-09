@@ -134,12 +134,13 @@ class PrintToLogger:
         log = PrintToLogger.get_print_log() # Record anything printed by foo()
     """
 
-    def __init__(self):
+    def __init__(self, level='INFO'):
         self.logger = print_logger
+        self.level = level
 
     def write(self, buf):
         for line in buf.rstrip().splitlines():
-            self.logger.info(line.rstrip())
+            self.logger.log(self.level, line.rstrip())
 
     def flush(self, *args, **kwargs):
         pass
