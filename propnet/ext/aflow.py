@@ -5,6 +5,7 @@ from pymatgen.core.structure import Structure
 from aflow.control import server as _aflow_server
 from aflow import K, msg as _msg
 from aflow.entries import AflowFile, Entry
+from aflow.keywords import reset as aflow_kw_reset
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -304,7 +305,7 @@ class AflowAdapter:
             else:
                 yield item['auid']
 
-    def get_materials_from_store(self, criteria, properties, **kwargs):
+    def get_materials_from_store(self, criteria=None, properties=None, **kwargs):
         """
         Produces propnet materials from MongoDB AFLOW database using a Mongo-like query
         construction. To use the web API, use get_materials_from_web().
@@ -314,8 +315,8 @@ class AflowAdapter:
             keyword is specified, it will be ignored.
         
         Args:
-            criteria (dict): Mongo-like query criteria
-            properties (`list` or `dict`): list of fields to retrieve or
+            criteria (`dict` or `None`): Mongo-like query criteria
+            properties (`list` or `dict` or `None`): list of fields to retrieve or
                 Mongo-like projection dictionary (e.g. `{'field': True}`)
             **kwargs: arguments to MongoStore object
 
@@ -331,7 +332,7 @@ class AflowAdapter:
                 criteria, properties + ['aflowlib_date'], **kwargs):
             yield self.transform_properties_to_material(data)
 
-    def get_materials_from_web(self, criteria, properties, max_request_size=1000):
+    def get_materials_from_web(self, criteria, properties=None, max_request_size=1000):
         """
         Produces propnet materials from AFLUX API using a Mongo-like query
         construction. To use a MongoDB store, use get_materials_from_store().
@@ -344,8 +345,8 @@ class AflowAdapter:
             AFLOW keyword is specified, it will be ignored.
 
         Args:
-            criteria (dict): Mongo-like query criteria. Must be simple.
-            properties (`list`): list of fields to retrieve. Does not
+            criteria (`dict` or `None`): Mongo-like query criteria. Must be simple.
+            properties (`list` or `None`): list of fields to retrieve. Does not
                 support MongoDB projection dictionary.
             max_request_size (int): maxmimum number of materials to retrieve per request. 
                 If total number of records is greater than `max_request_size`, multiple
@@ -361,7 +362,7 @@ class AflowAdapter:
                 criteria, properties + ['aflowlib_date'], max_request_size=max_request_size):
             yield self.transform_properties_to_material(data)
 
-    def get_properties_from_store(self, criteria, properties, **kwargs):
+    def get_properties_from_store(self, criteria=None, properties=None, **kwargs):
         """
         Produces raw property data from a MongoDB AFLOW database using a Mongo-like query
         construction. To use the web API, use get_properties_from_web().
@@ -370,8 +371,8 @@ class AflowAdapter:
             AflowAdapter.mapping will be retrieved.
             
         Args:
-            criteria (dict): Mongo-like query criteria
-            properties (`list` or `dict`): list of fields to retrieve or
+            criteria (`dict` or `None`): Mongo-like query criteria
+            properties (`list` or `dict` or `None`): list of fields to retrieve or
                 Mongo-like projection dictionary (e.g. `{'field': True}`)
             **kwargs: arguments to MongoStore object
 
@@ -398,7 +399,7 @@ class AflowAdapter:
                     raw_data[prop] = transformed_data
             yield self._convert_entry_to_dict(Entry(**raw_data), props=properties)
 
-    def get_properties_from_web(self, criteria, properties, max_request_size=1000):
+    def get_properties_from_web(self, criteria=None, properties=None, max_request_size=1000):
         """
         Produces raw property data from the AFLUX API using a Mongo-like query
         construction. To use a MongoDB store, use get_properties_from_store().
@@ -414,8 +415,8 @@ class AflowAdapter:
             property depends on an external AFLOW file.
 
         Args:
-            criteria (dict): Mongo-like query criteria. Must be simple.
-            properties (`list`): list of fields to retrieve. Does not
+            criteria (`dict` or `None`): Mongo-like query criteria. Must be simple.
+            properties (`list` or `None`): list of fields to retrieve. Does not
                 support MongoDB projection dictionary.
             max_request_size (int): maxmimum number of materials to retrieve per request.
                 If total number of records is greater than `max_request_size`, multiple
@@ -435,6 +436,7 @@ class AflowAdapter:
                 files_to_download[fn].append(p)
                 properties_to_retrieve.remove(p)
 
+        aflow_kw_reset()
         q = AflowAPIQuery.from_pymongo(criteria, list(properties_to_retrieve), max_request_size,
                                        batch_reduction=True, property_reduction=True)
 

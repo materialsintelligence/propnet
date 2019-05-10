@@ -212,3 +212,7 @@ class AFLOWIngesterTest(unittest.TestCase):
         dt_data = list(dt.query())
 
         self.assertEqual(len(dt_data), 1)
+
+
+if __name__ == '__main__':
+    unittest.main()
