@@ -10,6 +10,7 @@ import logging
 from itertools import zip_longest
 import time
 import datetime
+from urllib.error import HTTPError
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,15 @@ class AFLOWIngester(Builder):
         self.data_target = data_target
         self.auid_target = auid_target
 
-        self.query_configs = query_configs or default_query_configs
+        if query_configs:
+            for query_config in query_configs:
+                if not all(k in query_config
+                           for k in ('catalog', 'k', 'exclude', 'filter', 'select', 'targets')):
+                    raise ValueError("Incorrect configuration construction.")
+            self.query_configs = query_configs
+        else:
+            self.query_configs = default_query_configs
+
         self.files_to_ingest = files_to_ingest or default_files_to_ingest
         self.filter_null_properties = filter_null_properties
         
@@ -65,7 +74,7 @@ class AFLOWIngester(Builder):
         for kw in ('auid', 'aurl', 'compound', 'files'):
             try:
                 kws.remove(kw)
-            except ValueError:
+            except KeyError:
                 pass
 
         for config_ in self.query_configs:
@@ -101,18 +110,20 @@ class AFLOWIngester(Builder):
                                 yield entry, config_['targets']
                             success = True
                         except ValueError:
-                            logger.debug('Resting...starting {}'.format(datetime.datetime.now()))
-                            time.sleep(120)
+                            if data_query.N == 0:   # Empty query
+                                raise ValueError("Query returned no results. Query config:\n{}".format(config_))
+                            logger.debug('Resting...starting {}'.format(datetime.datetime.now()))   # pragma: no cover
+                            time.sleep(120)     # pragma: no cover
 
     def process_item(self, item):
         entry, targets = item
         kws = self.keywords.copy()
         kws.add('auid')
-        if 'auid' in targets:
+        if 'auid' in targets and self.auid_target is not None:
             auid_data = {k: entry.raw.get(k, None)
                          for k in ('auid', 'aurl', 'compound')}
         else:
-            auid_data = None
+            auid_data = dict()
         db_data = {k: entry.raw.get(k, None) for k in self.keywords}
 
         if 'files' in entry.attributes:
@@ -120,7 +131,8 @@ class AFLOWIngester(Builder):
             for filename in self.files_to_ingest:
                 try:
                     data = entry.files[filename]()
-                except KeyError:
+                except (KeyError, HTTPError):
+                    # Invalid file name, or file does not exist
                     data = None
                 if data:
                     file_data[filename.replace('.', '_')] = data
@@ -128,6 +140,7 @@ class AFLOWIngester(Builder):
 
         if self.filter_null_properties:
             db_data = {k: v for k, v in db_data.items() if v is not None}
+            auid_data = {k: v for k, v in auid_data.items() if v is not None}
         
         return jsanitize(db_data, strict=True), jsanitize(auid_data, strict=True)
     
@@ -145,7 +158,7 @@ class AFLOWIngester(Builder):
                             for item in items]
             self.auid_target.collection.bulk_write(auid_entries)
     
-    def finalize(self, cursor=None):
+    def finalize(self, cursor=None):    # pragma: no cover
         self.data_target.ensure_index('auid')
         if self.auid_target is not None:
             self.auid_target.ensure_index('auid')
