@@ -395,15 +395,15 @@ class Model(ABC):
             return {"successful": False,
                     "message": "Constraints not satisfied"}
 
-        provenance = ProvenanceElement(
-            model=self.name, inputs=list(input_variable_quantity_dict.values()),
-            source="propnet")
-
         out = self._convert_outputs_from_plugin(out)
         out = self.map_variables_to_symbols(out)
 
         symbol_unit_map = self.map_variables_to_symbols(self.variable_unit_map)
         for symbol, value in out.items():
+            provenance = ProvenanceElement(
+                model=self.name, inputs=list(input_variable_quantity_dict.values()),
+                source="propnet")
+
             try:
                 quantity = QuantityFactory.create_quantity(
                     symbol, value,
