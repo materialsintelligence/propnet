@@ -15,7 +15,7 @@ from urllib.error import HTTPError
 logger = logging.getLogger(__name__)
 
 
-class AFLOWIngester(Builder):
+class AflowIngester(Builder):
     _available_kws = dict()
     kw_load(_available_kws)
     
@@ -47,7 +47,7 @@ class AFLOWIngester(Builder):
         if self.auid_target is not None:
             targets.append(self.auid_target)
 
-        super(AFLOWIngester, self).__init__(sources=[], targets=targets,
+        super(AflowIngester, self).__init__(sources=[], targets=targets,
                                             **kwargs)
 
     @staticmethod

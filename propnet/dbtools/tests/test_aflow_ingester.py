@@ -1,5 +1,5 @@
 import unittest
-from propnet.dbtools.aflow_ingester import AFLOWIngester
+from propnet.dbtools.aflow_ingester import AflowIngester
 from propnet.dbtools.aflow_ingester_defaults import default_query_configs, default_files_to_ingest
 from propnet.symbols import add_builtin_symbols_to_registry
 from propnet.core.registry import Registry
@@ -16,7 +16,7 @@ class AFLOWIngesterTest(unittest.TestCase):
     def test_instantiate_builder(self):
         dt = MemoryStore()
         at = MemoryStore()
-        afi = AFLOWIngester(data_target=dt, auid_target=at)
+        afi = AflowIngester(data_target=dt, auid_target=at)
 
         self.assertEqual(afi.sources, [])
         self.assertEqual(sum(t is dt for t in afi.targets), 1)
@@ -25,7 +25,7 @@ class AFLOWIngesterTest(unittest.TestCase):
         self.assertEqual(afi.files_to_ingest, default_files_to_ingest)
         self.assertFalse(afi.filter_null_properties)
 
-        afi = AFLOWIngester(data_target=dt)
+        afi = AflowIngester(data_target=dt)
 
         self.assertEqual(afi.sources, [])
         self.assertEqual(sum(t is dt for t in afi.targets), 1)
@@ -40,17 +40,17 @@ class AFLOWIngesterTest(unittest.TestCase):
             'targets': ['data', 'auid']
         }]
         kw = ['auid', 'ael_elastic_anisotropy', 'auid']
-        afi = AFLOWIngester(data_target=dt, keywords=kw, query_configs=qc, filter_null_properties=True)
+        afi = AflowIngester(data_target=dt, keywords=kw, query_configs=qc, filter_null_properties=True)
 
         self.assertEqual(afi.keywords, set(kw))
         self.assertListEqual(afi.query_configs, qc)
         self.assertTrue(afi.filter_null_properties)
 
         with self.assertRaises(KeyError):
-            _ = AFLOWIngester(data_target=dt, keywords=['garbage'])
+            _ = AflowIngester(data_target=dt, keywords=['garbage'])
 
         with self.assertRaises(ValueError):
-            _ = AFLOWIngester(data_target=dt, query_configs=[{'catalog': 'icsd'}])
+            _ = AflowIngester(data_target=dt, query_configs=[{'catalog': 'icsd'}])
 
     def test_get_item(self):
         dt = MemoryStore()
@@ -64,7 +64,7 @@ class AFLOWIngesterTest(unittest.TestCase):
             'targets': ['data', 'auid']
         }]
         kw = ['ael_elastic_anisotropy']
-        afi = AFLOWIngester(data_target=dt, auid_target=at, keywords=kw,
+        afi = AflowIngester(data_target=dt, auid_target=at, keywords=kw,
                             query_configs=qc)
 
         count = 0
@@ -92,7 +92,7 @@ class AFLOWIngesterTest(unittest.TestCase):
             'select': [],
             'targets': ['data', 'auid']
         }]
-        afi = AFLOWIngester(data_target=dt, auid_target=at, keywords=kw,
+        afi = AflowIngester(data_target=dt, auid_target=at, keywords=kw,
                             query_configs=empty_qc)
         with self.assertRaises(ValueError):
             _ = afi.get_items().__next__()
@@ -110,7 +110,7 @@ class AFLOWIngesterTest(unittest.TestCase):
             'targets': ['data', 'auid']
         }]
         kw = ['auid', 'aurl', 'ael_elastic_anisotropy', 'files']
-        afi = AFLOWIngester(data_target=dt, auid_target=at, keywords=kw,
+        afi = AflowIngester(data_target=dt, auid_target=at, keywords=kw,
                             query_configs=qc)
 
         item = afi.get_items().__next__()
@@ -131,7 +131,7 @@ class AFLOWIngesterTest(unittest.TestCase):
         self.assertIsNone(auid['compound'])
 
         # Omit auid target
-        afi = AFLOWIngester(data_target=dt, keywords=kw,
+        afi = AflowIngester(data_target=dt, keywords=kw,
                             query_configs=qc)
 
         item = afi.get_items().__next__()
@@ -154,7 +154,7 @@ class AFLOWIngesterTest(unittest.TestCase):
             'select': [],
             'targets': ['data', 'auid']
         }]
-        afi = AFLOWIngester(data_target=dt, auid_target=at, keywords=kw,
+        afi = AflowIngester(data_target=dt, auid_target=at, keywords=kw,
                             query_configs=qc, filter_null_properties=True)
 
         item = afi.get_items().__next__()
@@ -182,7 +182,7 @@ class AFLOWIngesterTest(unittest.TestCase):
             'targets': ['data', 'auid']
         }]
         kw = ['auid', 'aurl', 'ael_elastic_anisotropy', 'files']
-        afi = AFLOWIngester(data_target=dt, auid_target=at, keywords=kw,
+        afi = AflowIngester(data_target=dt, auid_target=at, keywords=kw,
                             query_configs=qc)
         afi.connect()
 
@@ -199,7 +199,7 @@ class AFLOWIngesterTest(unittest.TestCase):
         self.assertEqual(len(at_data), 1)
 
         # Omit auid target and use same data target to ensure upsert
-        afi = AFLOWIngester(data_target=dt, keywords=kw,
+        afi = AflowIngester(data_target=dt, keywords=kw,
                             query_configs=qc)
         afi.connect()
 
