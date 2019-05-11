@@ -624,58 +624,42 @@ class Graph(object):
             return None
 
     @staticmethod
-    def generate_input_sets(props, this_quantity_pool):
-        """
-        Generates all combinatorially-unique sets of input dicts given
-        a list of property names and a quantity pool
-        Args:
-            props ([str]): property names
-            this_quantity_pool ({Symbol: Set(Quantity)}): quantities
-                keyed by symbols
-        Returns ([{str: Quantity}]):
-            list of symbol strings mapped to Quantity values.
-        """
-        aggregated_symbols = []
-        for prop in props:
-            if prop not in this_quantity_pool.keys():
-                return []
-            aggregated_symbols.append(this_quantity_pool[prop])
-        return product(*aggregated_symbols)
-
-    @staticmethod
-    def get_input_sets_for_model(model, fixed_quantities, quantity_pool):
+    def get_input_sets_for_model(model, new_quantities, old_quantities):
         """
         Generates all of the valid input sets for a given model, a fixed
         quantity, and a quantity pool from which to draw remaining properties
         Args:
             model (Model): model for which to evaluate valid input sets
-            fixed_quantities (Quantity, list of Quantities): one or more quantities,
-                at least one of which must be included in an input set
-            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
-                keyed by symbol from which to draw additional quantities
-                for model inputs
+            new_quantities ({symbol: [Quantity]}): quantities generated
+                during the most recent iteration of the evaluation loop
+            old_quantities ({symbol: [Quantity]}): quantities generated
+                in previous iterations of the evaluation loop
         Returns:
             list of sets of input quantities for the model
         """
-        if isinstance(fixed_quantities, BaseQuantity):
-            quantities_in = [fixed_quantities]
-        else:
-            quantities_in = fixed_quantities
-
-        symbol = fixed_quantities[0].symbol
-        if not all(q.symbol == symbol for q in fixed_quantities):
-            raise ValueError("Not all quantities are of the same symbol")
 
         all_input_sets = []
-        evaluation_lists = [c for c in model.evaluation_list
-                            if symbol in c]
-        for evaluation_list in evaluation_lists:
-            evaluation_list.remove(symbol)
-            input_sets = Graph.generate_input_sets(evaluation_list, quantity_pool)
-            full_input_sets = [list(input_set) + [fixed_quantity]
-                               for input_set in input_sets
-                               for fixed_quantity in quantities_in]
-            all_input_sets += full_input_sets
+        source_map = {"old":old_quantities, "new":new_quantities}
+
+        for eval_list in model.evaluation_list:
+            sourcing_list = []
+            for symbol in eval_list:
+                symbol_sources = list()
+                if symbol in old_quantities:
+                    symbol_sources.append("old")
+                if symbol in new_quantities:
+                    symbol_sources.append("new")
+                sourcing_list.append(symbol_sources)
+            source_product = list(product(*sourcing_list))
+            if len(source_product) == 0:
+                continue
+            for sources in source_product:
+                if all(s == "old" for s in sources):
+                    continue
+                symbol_lists = [source_map[source][symbol]
+                                for source, symbol in zip(sources, eval_list)]
+                all_input_sets.extend(product(*symbol_lists))
+
         return all_input_sets
 
     def generate_models_and_input_sets(self, new_quantities, quantity_pool):
@@ -697,28 +681,17 @@ class Graph(object):
         for quantity in new_quantities:
             new_qs_by_symbol[quantity.symbol].append(quantity)
 
-        for symbol, quantities in new_qs_by_symbol.items():
+        candidate_models = set()
+        for symbol in new_qs_by_symbol.keys():
             for model in self._input_to_model[symbol]:
-                input_sets = self.get_input_sets_for_model(
-                    model, quantities, quantity_pool)
-                models_and_input_sets += [
-                    tuple([model] + list(input_set))
-                    for input_set in input_sets]
+                candidate_models.add(model)
 
-        # Filter for duplicates
-        filter_set = defaultdict(list)
-        idx_of_duplicates = []
-        for idx, input_set in enumerate(models_and_input_sets):
-            model_name = input_set[0].name
-            q_ids = sorted([q._internal_id for q in input_set[1:]])
-            # We filter using a simplified, unique key to speed up hashing for duplicate removal
-            simplified_key = tuple([model_name] + q_ids)
-            filter_set[simplified_key].append(idx)
-            if len(filter_set[simplified_key]) > 1:
-                idx_of_duplicates.append(idx)
-
-        for idx in reversed(idx_of_duplicates):
-            models_and_input_sets.pop(idx)
+        for model in candidate_models:
+            input_sets = self.get_input_sets_for_model(
+                model, new_qs_by_symbol, quantity_pool)
+            models_and_input_sets += [
+                tuple([model] + list(input_set))
+                for input_set in input_sets]
 
         return models_and_input_sets
 
@@ -749,9 +722,7 @@ class Graph(object):
                 quantity pool
         """
         # Update quantity pool
-        quantity_pool = quantity_pool or defaultdict(set)
-        for quantity in new_quantities:
-            quantity_pool[quantity.symbol].add(quantity)
+        quantity_pool = quantity_pool or defaultdict(list)
 
         # Generate all of the models and input sets to be evaluated
 
@@ -761,6 +732,9 @@ class Graph(object):
         logger.info("Generating models and input sets for %s", new_quantities)
         models_and_input_sets = self.generate_models_and_input_sets(
             new_quantities, quantity_pool)
+
+        for quantity in new_quantities:
+            quantity_pool[quantity.symbol].append(quantity)
 
         input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
 
