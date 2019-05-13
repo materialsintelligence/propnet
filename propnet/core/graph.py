@@ -4,7 +4,7 @@ Module containing classes and methods for graph functionality in Propnet code.
 
 import logging
 from collections import defaultdict
-from itertools import product
+from itertools import product, chain, repeat
 from chronic import Timer, timings, clear
 from pandas import DataFrame
 from collections import deque
@@ -12,7 +12,7 @@ import concurrent.futures
 from functools import partial
 from multiprocessing import cpu_count
 import copy
-
+import numpy as np
 import networkx as nx
 
 from propnet.core.materials import CompositeMaterial
@@ -661,14 +661,15 @@ class Graph(object):
         OLD = 0
         NEW = 1
         source_map = {OLD: old_quantities, NEW: new_quantities}
+        n_input_sets = 0
 
         for symbols_to_evaluate in model.evaluation_list:
             sources_by_symbol = []
             for symbol in symbols_to_evaluate:
                 symbol_sources = []
-                if symbol in old_quantities:
+                if symbol in old_quantities.keys():
                     symbol_sources.append(OLD)
-                if symbol in new_quantities:
+                if symbol in new_quantities.keys():
                     symbol_sources.append(NEW)
                 sources_by_symbol.append(symbol_sources)
             source_combinations = list(product(*sources_by_symbol))
@@ -678,9 +679,10 @@ class Graph(object):
                     continue
                 symbols_to_combine = [source_map[source][symbol]
                                       for source, symbol in zip(sources, symbols_to_evaluate)]
-                all_input_sets.extend(product(*symbols_to_combine))
+                n_input_sets += np.prod([len(v) for v in symbols_to_combine])
+                all_input_sets.append(product(*symbols_to_combine))
 
-        return all_input_sets
+        return chain.from_iterable(all_input_sets), n_input_sets
 
     def generate_models_and_input_sets(self, new_quantities, quantity_pool):
         """
@@ -697,6 +699,7 @@ class Graph(object):
                 sets, uses tuple so duplicate checking can be performed
         """
         models_and_input_sets = []
+        n_total_input_sets = 0
         new_qs_by_symbol = defaultdict(list)
         for quantity in new_quantities:
             new_qs_by_symbol[quantity.symbol].append(quantity)
@@ -707,13 +710,13 @@ class Graph(object):
                 candidate_models.add(model)
 
         for model in candidate_models:
-            input_sets = self.get_input_sets_for_model(
+            input_sets, n_input_sets = self.get_input_sets_for_model(
                 model, new_qs_by_symbol, quantity_pool)
-            models_and_input_sets += [
-                tuple([model] + list(input_set))
-                for input_set in input_sets]
+            if n_input_sets > 0:
+                models_and_input_sets.append(zip(repeat(model, n_input_sets), input_sets))
+                n_total_input_sets += n_input_sets
 
-        return models_and_input_sets
+        return chain.from_iterable(models_and_input_sets), n_total_input_sets
 
     def derive_quantities(self, new_quantities, quantity_pool=None,
                           allow_model_failure=True, timeout=None):
@@ -724,7 +727,7 @@ class Graph(object):
         Args:
             new_quantities ([Quantity]): list of quantities which to
                 consider as new inputs to models
-            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
+            quantity_pool ({symbol: [Quantity]}): dict of quantity lists
                 keyed by symbol from which to draw additional quantities
                 for model inputs
             allow_model_failure (bool): True allows graph evaluation to
@@ -742,35 +745,33 @@ class Graph(object):
                 quantity pool
         """
         # Update quantity pool
-        quantity_pool = quantity_pool or defaultdict(set)
+        quantity_pool = quantity_pool or defaultdict(list)
 
         # Generate all of the models and input sets to be evaluated
 
-        # TODO: With the current implementation of the input set generation, etc.,
-        #       parallelization does not provide any speed-up. Maybe we can look into
-        #       improving the algorithm?
         logger.info("Generating models and input sets for %s", new_quantities)
 
-        candidate_quantities = []
-        for q in new_quantities:
-            if q not in quantity_pool[q.symbol]:
-                candidate_quantities.append(q)
+        models_and_input_sets, n_input_sets = self.generate_models_and_input_sets(
+            new_quantities, quantity_pool)
 
-        models_and_input_sets = self.generate_models_and_input_sets(
-            candidate_quantities, quantity_pool)
+        for quantity in new_quantities:
+            quantity_pool[quantity.symbol].append(quantity)
 
-        for quantity in candidate_quantities:
-            quantity_pool[quantity.symbol].add(quantity)
+        # input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
 
-        input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
+        # This doesn't eliminate many and will be caught by cyclic filter
+        # after evaluation. This is usually only important if the model we'd be
+        # re-evaluating takes a long time, which the majority of our models do not
+        # take a long time...can we move this into the generation step or just before
+        # evaluation so we don't have to break the generator open?
 
-        inputs_to_calculate = list(filter(Graph._generates_noncyclic_output,
-                                          input_tuples))
+        # inputs_to_calculate = list(filter(Graph._generates_noncyclic_output,
+        #                                   input_tuples))
 
         # Evaluate model for each input set and add new valid quantities
         if not self._parallel:
             with Timer('_graph_evaluation'):
-                added_quantities, model_timings = Graph._run_serial(inputs_to_calculate,
+                added_quantities, model_timings = Graph._run_serial(models_and_input_sets,
                                                                     allow_model_failure=allow_model_failure,
                                                                     timeout=timeout)
         else:
@@ -778,7 +779,8 @@ class Graph(object):
                 self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
             with Timer('_graph_evaluation'):
                 added_quantities, model_timings = Graph._run_parallel(self._executor, self._max_workers,
-                                                                      inputs_to_calculate,
+                                                                      models_and_input_sets,
+                                                                      n_input_sets,
                                                                       allow_model_failure=allow_model_failure,
                                                                       timeout=timeout)
 
@@ -854,6 +856,7 @@ class Graph(object):
 
     @staticmethod
     def _run_parallel(executor, n_workers, models_and_input_sets,
+                      n_total_input_sets,
                       allow_model_failure=True,
                       timeout=None):
         """
@@ -872,7 +875,7 @@ class Graph(object):
         func = partial(Graph._evaluate_model,
                        allow_failure=allow_model_failure,
                        timeout=timeout)
-        chunk_size = int(len(models_and_input_sets) / n_workers) + 1
+        chunk_size = min(int(n_total_input_sets / n_workers) + 1, 200)
         results = executor.map(func, models_and_input_sets, chunksize=chunk_size)
         outputs = []
         model_timings = []
