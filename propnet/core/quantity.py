@@ -224,8 +224,8 @@ class BaseQuantity(ABC, MSONable):
         """
 
         if self.provenance and self.provenance.model:
-            return self.provenance.model_in_provenance_tree(self.provenance.model) or \
-                self.provenance.symbol_in_provenance_tree(self.symbol)
+            return self.provenance.model_is_in_tree(self.provenance.model) or \
+                self.provenance.symbol_is_in_tree(self.symbol)
 
         return False
 

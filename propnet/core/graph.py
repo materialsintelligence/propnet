@@ -742,7 +742,7 @@ class Graph(object):
                 quantity pool
         """
         # Update quantity pool
-        quantity_pool = quantity_pool or defaultdict(list)
+        quantity_pool = quantity_pool or defaultdict(set)
 
         # Generate all of the models and input sets to be evaluated
 
@@ -750,11 +750,17 @@ class Graph(object):
         #       parallelization does not provide any speed-up. Maybe we can look into
         #       improving the algorithm?
         logger.info("Generating models and input sets for %s", new_quantities)
-        models_and_input_sets = self.generate_models_and_input_sets(
-            new_quantities, quantity_pool)
 
-        for quantity in new_quantities:
-            quantity_pool[quantity.symbol].append(quantity)
+        candidate_quantities = []
+        for q in new_quantities:
+            if q not in quantity_pool[q.symbol]:
+                candidate_quantities.append(q)
+
+        models_and_input_sets = self.generate_models_and_input_sets(
+            candidate_quantities, quantity_pool)
+
+        for quantity in candidate_quantities:
+            quantity_pool[quantity.symbol].add(quantity)
 
         input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
 
@@ -803,10 +809,10 @@ class Graph(object):
             if set(model.map_variables_to_symbols(s['inputs'])) == input_symbols:
                 outputs = outputs.union(model.map_variables_to_symbols(s['outputs']))
 
-        model_in_all_trees = all(input_q.provenance.model_in_provenance_tree(model)
+        model_in_all_trees = all(input_q.provenance.model_is_in_tree(model)
                                  for input_q in inputs)
 
-        symbol_in_all_trees = all(all(input_q.provenance.symbol_in_provenance_tree(output)
+        symbol_in_all_trees = all(all(input_q.provenance.symbol_is_in_tree(output)
                                       for input_q in inputs)
                                   for output in outputs)
 

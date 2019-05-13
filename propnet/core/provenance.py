@@ -2,7 +2,8 @@
 Module containing classes and methods for provenance generation and parsing
 """
 
-from monty.json import MSONable
+from monty.json import MSONable, jsanitize
+import copy
 
 
 class ProvenanceElement(MSONable):
@@ -10,7 +11,7 @@ class ProvenanceElement(MSONable):
     Tree-like data structure for representing provenance.
     """
 
-    __slots__ = ['_model', '_inputs', '_source']
+    __slots__ = ['_model', '_inputs', '_source', '_symbol_cache', '_model_cache']
 
     def __init__(self, model=None, inputs=None, source=None):
         """
@@ -27,6 +28,9 @@ class ProvenanceElement(MSONable):
         else:
             self._model = getattr(model, 'name', model)
 
+        self._model_cache = set()
+        self._symbol_cache = set()
+
         if inputs is not None:
             if not isinstance(inputs, list):
                 try:
@@ -34,7 +38,7 @@ class ProvenanceElement(MSONable):
                 except TypeError:
                     inputs = [inputs]
 
-        self._inputs = inputs
+        self.inputs = inputs
         self._source = source
 
     @property
@@ -47,11 +51,29 @@ class ProvenanceElement(MSONable):
 
     @property
     def inputs(self):
-        return self._inputs
+        return copy.copy(self._inputs)
 
     @inputs.setter
     def inputs(self, rhv):
-        self._inputs = rhv
+        if rhv is None:
+            self._inputs = None
+        elif not isinstance(rhv, list):
+            self._inputs = [rhv]
+        else:
+            self._inputs = rhv.copy()
+        self.update_caches()
+
+    def update_caches(self):
+        """
+        Updates caches holding the set of models and symbols in the provenance tree
+        for quick lookup.
+        """
+        self._model_cache = set()
+        self._symbol_cache = set()
+        if self._inputs:
+            self._symbol_cache.update(v.symbol for v in self._inputs)
+            self._symbol_cache.update(*(v.provenance.symbols_in_tree for v in self._inputs))
+            self._model_cache.update(*(v.provenance.models_in_tree for v in self._inputs))
 
     @property
     def source(self):
@@ -61,30 +83,39 @@ class ProvenanceElement(MSONable):
     def source(self, rhv):
         self._source = rhv
 
-    def symbol_in_provenance_tree(self, symbol):
-        def rec_symbol_search(symbol_to_find, provenance):
-            for q in provenance.inputs or []:
-                if q.symbol == symbol_to_find:
-                    return True
-                elif rec_symbol_search(symbol_to_find, q.provenance):
-                    return True
-            return False
+    @property
+    def symbols_in_tree(self):
+        return self._symbol_cache.copy()
 
-        return rec_symbol_search(symbol, self)
+    @property
+    def models_in_tree(self):
+        return self._model_cache.copy()
 
-    def model_in_provenance_tree(self, model):
-        def rec_model_search(model_to_find, provenance):
-            if provenance.model and provenance.model == model_to_find:
-                return True
-            for q in provenance.inputs or []:
-                if rec_model_search(model_to_find, q.provenance):
-                    return True
-            return False
+    def model_is_in_tree(self, model):
+        """
+        Checks if a model is in the provenance tree. Does NOT include the model used to derive
+        the quantity with which the `ProvenanceElement` is associated.
 
-        for q in self.inputs or []:
-            if rec_model_search(model, q.provenance):
-                return True
-        return False
+        Args:
+            model (`propnet.core.models.Model` or `str`): a propnet model or its name
+
+        Returns:
+            bool: True if the model is in the tree, False otherwise.
+        """
+        return model in self._model_cache
+
+    def symbol_is_in_tree(self, symbol):
+        """
+        Checks if a symbol is in the provenance tree. Does NOT include the symbol of
+        the quantity with which the `ProvenanceElement` is associated.
+
+        Args:
+            symbol (`propnet.core.symbols.Symbol` or `str`): a propnet symbol or its name
+
+        Returns:
+            bool: True if the symbol is in the tree, False otherwise.
+        """
+        return symbol in self._symbol_cache
 
     def __str__(self):
         pre = ",".join([
@@ -106,11 +137,14 @@ class ProvenanceElement(MSONable):
         return hash_value
 
     def as_dict(self):
-        d = super().as_dict()
-        if self.inputs is not None:
-            inputs = [item.as_dict() for item in self.inputs]
-            d['inputs'] = inputs
-        return d
+        d = {
+            "@module": self.__module__,
+            "@class": self.__class__.__name__,
+            "model": self._model,
+            "source": self._source,
+            "inputs": self._inputs
+        }
+        return jsanitize(d)
 
 
 class SymbolTree(object):

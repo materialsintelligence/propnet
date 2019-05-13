@@ -16,13 +16,36 @@ logger = logging.getLogger(__name__)
 
 
 class AflowIngester(Builder):
+    """
+    Builds MongoDB collections from AFLOW data using the AFLOW and AFLUX web APIs.
+    """
     _available_kws = dict()
+    """Contains supported keywords in the AFLUX schema
+    """
     kw_load(_available_kws)
     
     def __init__(self, data_target, auid_target=None,
                  keywords=None, query_configs=None,
                  files_to_ingest=None, filter_null_properties=False,
                  **kwargs):
+        """
+        Initialize the database builder.
+
+        Args:
+            data_target (maggma.stores.MongoStore): target to store the AFLOW data
+            auid_target (`maggma.stores.MongoStore` or `None`): target to store auid, AFLOW API url,
+                and formula data as a second database
+            keywords (list): list of keywords as strings to download from the AFLOW API. Default: all available
+            query_configs (`list` of `dict`): a list of query parameters to use to download the database. The
+                configurations will be applied sequentially. See `propnet.dbtools.aflow_ingester_defaults` to
+                see schema. Default: the list at `propnet.dbtools.aflow_ingester_defaults.default_query_configs`.
+            files_to_ingest (list): list of file names to download as external files.
+                Default: the list at `propnet.dbtools.aflow_ingester_defaults.default_files_to_ingest`.
+            filter_null_properties (bool): True prevents null properties from being added to the database. False
+                creates a null field for them in the database. Default: False
+            **kwargs: keyword args to the Builder superclass.
+        """
+
         self.data_target = data_target
         self.auid_target = auid_target
 
@@ -52,6 +75,18 @@ class AflowIngester(Builder):
 
     @staticmethod
     def _get_query_obj(catalog, batch_size, excludes=None, filters=None):
+        """
+        Produces API query object from selected query configuration.
+
+        Args:
+            catalog (str): catalog name of 'icsd', 'lib1', 'lib2', and 'lib3'
+            batch_size (int): how many records to retrieve in a single query
+            excludes (`list` of `str`): properties to explicitly exclude from query
+            filters (`list` of `tuple`): descriptors for constructing query filters
+
+        Returns:
+            propnet.ext.AflowAPIQuery: query object
+        """
         kw_reset()
         query = AflowAPIQuery(catalog=catalog, batch_size=batch_size,
                               batch_reduction=True, property_reduction=True)
