@@ -55,8 +55,9 @@ class AflowAdapter:
         "agl_acoustic_debye": "debye_temperature",
         "agl_debye": "debye_temperature",
         "agl_gruneisen": "gruneisen_parameter",
-        # Adding these temperature-dependent properties drastically increases evaluation time.
-        # Keep out for now
+        # Adding these temperature-dependent properties causes combinatorics explosion
+        # TODO: add condition-dependent properties back when we have a system capable of
+        #       handling large combinatorics problem gracefully
         # "agl_heat_capacity_Cp_300K": "unit_cell_heat_capacity_constant_pressure",
         # "agl_heat_capacity_Cv_300K": "unit_cell_heat_capacity_constant_volume",
         # "agl_thermal_conductivity_300K": "thermal_conductivity",
@@ -66,6 +67,7 @@ class AflowAdapter:
         "enthalpy_formation_atom": "formation_energy_per_atom",
         "structure": "structure",
         "elastic_tensor_voigt": "elastic_tensor_voigt",
+        # propnet derives compliance tensor from elastic, so no need to import
         # "compliance_tensor_voigt": "compliance_tensor_voigt"
     }
     """Mapping of AFLOW keywords to propnet properties. These AFLOW keywords include

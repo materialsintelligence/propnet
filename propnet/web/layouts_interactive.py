@@ -32,9 +32,12 @@ graph_evaluator = Graph(parallel=True, max_workers=4)
 
 # explicitly making this an OrderedDict so we can go back from the
 # display name to the symbol name
+# Removed condition symbols from table until we can handle combinatorics blow-up that results
+# from adding a temperature -cml
+# TODO: Add condition symbols back when combinartorics problem solved
 SCALAR_SYMBOLS = OrderedDict({k: v for k, v in sorted(Registry("symbols").items(),
                                                       key=lambda x: x[1].display_names[0])
-                              if ((v.category == 'property' or v.category == 'condition')
+                              if (v.category == 'property'
                                   and v.shape == 1)})
 ROW_IDX_TO_SYMBOL_NAME = [symbol for symbol in SCALAR_SYMBOLS.keys()]
 
