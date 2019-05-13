@@ -1,13 +1,12 @@
 from propnet.ext.aflow import AflowAPIQuery
 from propnet.dbtools.aflow_ingester_defaults import default_query_configs, default_files_to_ingest
 from aflow.keywords import load as kw_load, reset as kw_reset
-from aflow import K
+from aflow import K as AFLOW_KWS
 from maggma.builders import Builder
 from maggma.utils import grouper
 from monty.json import jsanitize
 from pymongo import UpdateOne
 import logging
-from itertools import zip_longest
 import time
 import datetime
 from urllib.error import HTTPError
@@ -91,20 +90,29 @@ class AflowIngester(Builder):
         query = AflowAPIQuery(catalog=catalog, batch_size=batch_size,
                               batch_reduction=True, property_reduction=True)
         if excludes:
-            query.exclude(*(getattr(K, item) for item in excludes))
+            query.exclude(*(getattr(AFLOW_KWS, item) for item in excludes))
         if filters:
             for filter_item in filters:
                 lhs, oper, rhs = filter_item
-                lhs = getattr(K, lhs)
+                lhs = getattr(AFLOW_KWS, lhs)
                 oper = getattr(lhs, oper)
                 if rhs:
                     query.filter(oper(rhs))
                 else:
                     query.filter(oper())
-        query.orderby(K.auid)
+        query.orderby(AFLOW_KWS.auid)
         return query
 
     def get_items(self):
+        """
+        Retrieves AFLOW data using the AFLUX API according to the specifications in the query
+        configurations.
+
+        Yields:
+            tuple: The first item is an `aflow.entries.Entry` containing the material data
+                and the second item is a list of targets for the data ('data' and/or 'auid')
+
+        """
         kws = self.keywords.copy()
         for kw in ('auid', 'aurl', 'compound', 'files'):
             try:
@@ -123,34 +131,49 @@ class AflowIngester(Builder):
             else:
                 kws_to_chunk = self.keywords
 
-            for k, filter_vals in zip_longest(config_['k'], config_['filter'], fillvalue=None):
+            k = config_['k']
+            filter_vals = config_['filters']
 
-                chunk_idx = 0
-                chunk_size = 5
-                total_chunks = len(kws_to_chunk) // chunk_size + 1
+            chunk_idx = 0
+            chunk_size = 5
+            total_chunks = len(kws_to_chunk) // chunk_size + 1
 
-                for chunk in grouper(kws_to_chunk, chunk_size):
-                    chunk_idx += 1
-                    logger.debug("Property chunk {} of {}".format(chunk_idx, total_chunks))
-                    props = [getattr(K, c) for c in chunk if c is not None]
-                    if len(props) == 0:
-                        continue
-                    data_query = self._get_query_obj(config_['catalog'], k,
-                                                     config_['exclude'], filter_vals)
-                    data_query.select(*props)
-                    success = False
-                    while not success:
-                        try:
-                            for entry in data_query:
-                                yield entry, config_['targets']
-                            success = True
-                        except ValueError:
-                            if data_query.N == 0:   # Empty query
-                                raise ValueError("Query returned no results. Query config:\n{}".format(config_))
-                            logger.debug('Resting...starting {}'.format(datetime.datetime.now()))   # pragma: no cover
-                            time.sleep(120)     # pragma: no cover
+            for chunk in grouper(kws_to_chunk, chunk_size):
+                chunk_idx += 1
+                logger.debug("Property chunk {} of {}".format(chunk_idx, total_chunks))
+                props = [getattr(AFLOW_KWS, c) for c in chunk if c is not None]
+                if len(props) == 0:
+                    continue
+                data_query = self._get_query_obj(config_['catalog'], k,
+                                                 config_['exclude'], filter_vals)
+                data_query.select(*props)
+                success = False
+                while not success:
+                    try:
+                        for entry in data_query:
+                            yield entry, config_['targets']
+                        success = True
+                    except ValueError:
+                        if data_query.N == 0:   # Empty query
+                            raise ValueError("Query returned no results. Query config:\n{}".format(config_))
+                        else:   # pragma: no cover
+                            logger.warning(
+                                'Server error. ' +
+                                'Resting...starting {}'.format(datetime.datetime.now()))
+                            time.sleep(120)
 
     def process_item(self, item):
+        """
+        Processes AFLOW data, filters by null properties, and downloads extra files as available.
+
+        Args:
+            item (tuple): data tuple from `get_items()`
+
+        Returns:
+            tuple: dicts of JSON-sanitized data for the data (position #1) and auid (position #2) stores.
+                If data is not destined for one of the targets, tuple position consists of an
+                empty dictionary.
+        """
         entry, targets = item
         kws = self.keywords.copy()
         kws.add('auid')
@@ -180,6 +203,14 @@ class AflowIngester(Builder):
         return jsanitize(db_data, strict=True), jsanitize(auid_data, strict=True)
     
     def update_targets(self, items):
+        """
+        Updates Mongo stores. If an auid entry does not exist, it is created.
+        If a previous query configuration downloaded the same field, the field
+        will be overwritten.
+
+        Args:
+            items (list): list of data tuples from `process_item()`
+        """
         data_entries = [UpdateOne(filter={'auid': item[0]['auid']},
                                   update={'$set': item[0]},
                                   upsert=True)
@@ -194,6 +225,14 @@ class AflowIngester(Builder):
             self.auid_target.collection.bulk_write(auid_entries)
     
     def finalize(self, cursor=None):    # pragma: no cover
+        """
+        Wraps up database build, ensuring indices exist in the stores and closing
+        the cursor if necessary.
+
+        Args:
+            cursor (pymongo.cursor.Cursor): MongoDB cursor to be closed
+
+        """
         self.data_target.ensure_index('auid')
         if self.auid_target is not None:
             self.auid_target.ensure_index('auid')
