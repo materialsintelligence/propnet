@@ -18,7 +18,7 @@ import networkx as nx
 from propnet.core.materials import CompositeMaterial
 from propnet.core.materials import Material
 from propnet.core.models import Model, CompositeModel
-from propnet.core.quantity import QuantityFactory, BaseQuantity
+from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import SymbolTree, TreeElement
 from propnet.symbols import Symbol
 from propnet.core.utils import Timeout
@@ -66,11 +66,11 @@ class Graph(object):
     """
 
     def __init__(self,
-                 models: Dict[str, Model]=None,
-                 composite_models: Dict[str, CompositeModel]=None,
-                 symbol_types: Dict[str, Symbol]=None,
-                 parallel: bool=False,
-                 max_workers: int=None) -> None:
+                 models: Dict[str, Model] = None,
+                 composite_models: Dict[str, CompositeModel] = None,
+                 symbol_types: Dict[str, Symbol] = None,
+                 parallel: bool = False,
+                 max_workers: int = None) -> None:
         """
         Creates a graph instance.
 
@@ -624,6 +624,25 @@ class Graph(object):
             return None
 
     @staticmethod
+    def generate_input_sets(props, this_quantity_pool):
+        """
+        Generates all combinatorially-unique sets of input dicts given
+        a list of property names and a quantity pool
+        Args:
+            props ([str]): property names
+            this_quantity_pool ({Symbol: Set(Quantity)}): quantities
+                keyed by symbols
+        Returns ([{str: Quantity}]):
+            list of symbol strings mapped to Quantity values.
+        """
+        aggregated_symbols = []
+        for prop in props:
+            if prop not in this_quantity_pool.keys():
+                return []
+            aggregated_symbols.append(this_quantity_pool[prop])
+        return product(*aggregated_symbols)
+
+    @staticmethod
     def get_input_sets_for_model(model, new_quantities, old_quantities):
         """
         Generates all of the valid input sets for a given model, a fixed
@@ -639,26 +658,27 @@ class Graph(object):
         """
 
         all_input_sets = []
-        source_map = {"old":old_quantities, "new":new_quantities}
+        OLD = 0
+        NEW = 1
+        source_map = {OLD: old_quantities, NEW: new_quantities}
 
-        for eval_list in model.evaluation_list:
-            sourcing_list = []
-            for symbol in eval_list:
-                symbol_sources = list()
+        for symbols_to_evaluate in model.evaluation_list:
+            sources_by_symbol = []
+            for symbol in symbols_to_evaluate:
+                symbol_sources = []
                 if symbol in old_quantities:
-                    symbol_sources.append("old")
+                    symbol_sources.append(OLD)
                 if symbol in new_quantities:
-                    symbol_sources.append("new")
-                sourcing_list.append(symbol_sources)
-            source_product = list(product(*sourcing_list))
-            if len(source_product) == 0:
-                continue
-            for sources in source_product:
-                if all(s == "old" for s in sources):
+                    symbol_sources.append(NEW)
+                sources_by_symbol.append(symbol_sources)
+            source_combinations = list(product(*sources_by_symbol))
+
+            for sources in source_combinations:
+                if all(s == OLD for s in sources):
                     continue
-                symbol_lists = [source_map[source][symbol]
-                                for source, symbol in zip(sources, eval_list)]
-                all_input_sets.extend(product(*symbol_lists))
+                symbols_to_combine = [source_map[source][symbol]
+                                      for source, symbol in zip(sources, symbols_to_evaluate)]
+                all_input_sets.extend(product(*symbols_to_combine))
 
         return all_input_sets
 
