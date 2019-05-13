@@ -31,8 +31,8 @@ class AflowIngester(Builder):
         Initialize the database builder.
 
         Args:
-            data_target (maggma.stores.MongoStore): target to store the AFLOW data
-            auid_target (`maggma.stores.MongoStore` or `None`): target to store auid, AFLOW API url,
+            data_target (maggma.stores.Store): target to store the AFLOW data
+            auid_target (`maggma.stores.Store` or `None`): target to store auid, AFLOW API url,
                 and formula data as a second database
             keywords (list): list of keywords as strings to download from the AFLOW API. Default: all available
             query_configs (`list` of `dict`): a list of query parameters to use to download the database. The
@@ -132,7 +132,7 @@ class AflowIngester(Builder):
                 kws_to_chunk = self.keywords
 
             k = config_['k']
-            filter_vals = config_['filters']
+            filter_vals = config_['filter']
 
             chunk_idx = 0
             chunk_size = 5

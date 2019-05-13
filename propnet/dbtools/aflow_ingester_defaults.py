@@ -10,7 +10,7 @@ default_files_to_ingest = [
 """File names to download for each entry if they exist.
 """
 
-_lib3_filter_list = [[('auid', '__gt__', "aflow:{}".format(start))]
+_lib3_filter_list = [('auid', '__gt__', "aflow:{}".format(start))
                      for start in (hex(i)[2:] for i in range(0, 16))]
 """This set of filters divides the lib3 database up by AFLOW ID, sequentially
 requesting IDs that start with "aflow:0", then "aflow:1", etc.
@@ -121,7 +121,7 @@ for lib3_filter in _lib3_filter_list:
             'catalog': 'lib3',
             'k': 50000,
             'exclude': [],
-            'filter': lib3_filter,
+            'filter': [lib3_filter],
             'select': ['auid', 'aurl', 'compound'],
             'targets': ['data', 'auid']
         },
@@ -129,7 +129,7 @@ for lib3_filter in _lib3_filter_list:
             'catalog': 'lib3',
             'k': 50000,
             'exclude': ['compound', 'aurl'],
-            'filter': lib3_filter,
+            'filter': [lib3_filter],
             'select': [],
             'targets': ['data']
         },
@@ -137,7 +137,7 @@ for lib3_filter in _lib3_filter_list:
             'catalog': 'lib3',
             'k': 10000,
             'exclude': ['compound'],
-            'filter': lib3_filter,
+            'filter': [lib3_filter],
             'select': ['files', 'aurl'],
             'targets': ['data']
         }

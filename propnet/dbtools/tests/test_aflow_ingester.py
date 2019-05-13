@@ -33,7 +33,7 @@ class AFLOWIngesterTest(unittest.TestCase):
 
         qc = [{
             'catalog': 'icsd',
-            'k': [10000],
+            'k': 10000,
             'exclude': [],
             'filter': [],
             'select': [],
@@ -57,9 +57,9 @@ class AFLOWIngesterTest(unittest.TestCase):
         at = MemoryStore()
         qc = [{
             'catalog': 'icsd',
-            'k': [100],
+            'k': 100,
             'exclude': [],
-            'filter': [[('auid', '__eq__', 'aflow:0132ab6b9cddd429')]],
+            'filter': [('auid', '__eq__', 'aflow:0132ab6b9cddd429')],
             'select': [],
             'targets': ['data', 'auid']
         }]
@@ -86,9 +86,9 @@ class AFLOWIngesterTest(unittest.TestCase):
         # Test empty query
         empty_qc = [{
             'catalog': 'lib1',
-            'k': [100],
+            'k': 100,
             'exclude': [],
-            'filter': [[('auid', '__eq__', 'aflow:0132ab6b9cddd429')]],
+            'filter': [('auid', '__eq__', 'aflow:0132ab6b9cddd429')],
             'select': [],
             'targets': ['data', 'auid']
         }]
@@ -103,9 +103,9 @@ class AFLOWIngesterTest(unittest.TestCase):
 
         qc = [{
             'catalog': 'icsd',
-            'k': [100],
+            'k': 100,
             'exclude': ['compound'],
-            'filter': [[('auid', '__eq__', 'aflow:0132ab6b9cddd429')]],
+            'filter': [('auid', '__eq__', 'aflow:0132ab6b9cddd429')],
             'select': [],
             'targets': ['data', 'auid']
         }]
@@ -148,9 +148,9 @@ class AFLOWIngesterTest(unittest.TestCase):
         # Test for filtering null properties
         qc = [{
             'catalog': 'lib1',
-            'k': [100],
+            'k': 100,
             'exclude': ['compound'],
-            'filter': [[('auid', '__eq__', 'aflow:7203c28b8396b9c9')]],
+            'filter': [('auid', '__eq__', 'aflow:7203c28b8396b9c9')],
             'select': [],
             'targets': ['data', 'auid']
         }]
@@ -175,9 +175,9 @@ class AFLOWIngesterTest(unittest.TestCase):
         at = MemoryStore()
         qc = [{
             'catalog': 'icsd',
-            'k': [100],
+            'k': 100,
             'exclude': ['compound'],
-            'filter': [[('auid', '__eq__', 'aflow:0132ab6b9cddd429')]],
+            'filter': [('auid', '__eq__', 'aflow:0132ab6b9cddd429')],
             'select': [],
             'targets': ['data', 'auid']
         }]
@@ -212,6 +212,18 @@ class AFLOWIngesterTest(unittest.TestCase):
         dt_data = list(dt.query())
 
         self.assertEqual(len(dt_data), 1)
+
+    def test_default_query_configs(self):
+        from propnet.dbtools.aflow_ingester_defaults import default_query_configs
+        from aflow import K
+        for config_ in default_query_configs:
+            # Check that no error occurs when making query
+            AflowIngester._get_query_obj(config_['catalog'],
+                                         config_['k'],
+                                         config_['exclude'],
+                                         config_['filter'])
+            for kw in config_['select']:
+                self.assertIsNotNone(getattr(K, kw))
 
 
 if __name__ == '__main__':
