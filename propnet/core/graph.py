@@ -809,7 +809,8 @@ class Graph(object):
             if set(model.map_variables_to_symbols(s['inputs'])) == input_symbols:
                 outputs = outputs.union(model.map_variables_to_symbols(s['outputs']))
 
-        model_in_all_trees = all(input_q.provenance.model_is_in_tree(model)
+        model_in_all_trees = all(input_q.provenance.model_is_in_tree(model) or
+                                 model == input_q.provenance.model
                                  for input_q in inputs)
 
         symbol_in_all_trees = all(all(input_q.provenance.symbol_is_in_tree(output)

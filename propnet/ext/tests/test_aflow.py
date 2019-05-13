@@ -60,8 +60,12 @@ class AflowAdapterTest(unittest.TestCase):
             results.append([m for m in self.afa_store.get_properties_from_store(criteria={'auid': {'$in': auids}},
                                                                                 properties=None)])
         for result in results:
-            self.assertAlmostEqual(result[0]['Egap'], 0)
-            self.assertEqual(result[1]['compound'], 'Cl1Na1')
+            # Store queries may not come back in order
+            for material in result:
+                if material['auid'] == auids[0]:
+                    self.assertAlmostEqual(material['Egap'], 0)
+                else:
+                    self.assertEqual(material['compound'], 'Cl1Na1')
 
 
 if __name__ == '__main__':

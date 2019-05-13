@@ -72,8 +72,12 @@ class ProvenanceElement(MSONable):
         self._symbol_cache = set()
         if self._inputs:
             self._symbol_cache.update(v.symbol for v in self._inputs)
-            self._symbol_cache.update(*(v.provenance.symbols_in_tree for v in self._inputs))
-            self._model_cache.update(*(v.provenance.models_in_tree for v in self._inputs))
+            self._symbol_cache.update(*(v.provenance.symbols_in_tree
+                                        for v in self._inputs if v.provenance is not None))
+            self._model_cache.update(v.provenance.model for v in self._inputs
+                                     if v.provenance is not None and v.provenance.model is not None)
+            self._model_cache.update(*(v.provenance.models_in_tree for v in self._inputs
+                                       if v.provenance is not None))
 
     @property
     def source(self):
