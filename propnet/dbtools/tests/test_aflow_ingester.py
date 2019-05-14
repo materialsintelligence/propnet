@@ -214,7 +214,6 @@ class AFLOWIngesterTest(unittest.TestCase):
         self.assertEqual(len(dt_data), 1)
 
     def test_default_query_configs(self):
-        from propnet.dbtools.aflow_ingester_defaults import default_query_configs
         from aflow import K
         for config_ in default_query_configs:
             # Check that no error occurs when making query

@@ -266,8 +266,8 @@ class AflowAdapter:
                 batch_reduction=True
             )
             if not with_metadata:
-                from aflow.keywords import aurl, compound, reset
-                reset()
+                from aflow.keywords import aurl, compound
+                aflow_kw_reset()
                 query.exclude(aurl, compound)
 
             for item in query:
@@ -385,7 +385,7 @@ class AflowAdapter:
             properties = list(self.mapping.keys())
         properties_to_retrieve = set(properties)
         file_properties_to_map = dict()
-        for p, fn in self.property_store_field_mapping.items():
+        for p in self.property_store_field_mapping.keys():
             if p in properties_to_retrieve:
                 additional_fields = self.property_store_field_mapping[p]
                 file_properties_to_map[p] = additional_fields
