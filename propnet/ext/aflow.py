@@ -11,7 +11,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 from urllib.error import HTTPError
-from requests.exceptions import ConnectionError, RetryError
+from requests.exceptions import ConnectionError as ReqConnError, RetryError
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from maggma.utils import grouper
@@ -761,7 +761,7 @@ class AflowAPIQuery(_RetrievalQuery):
         logger.debug('Requesting page {} with {} records from url:\n{}'.format(n, k, request_url))
         try:
             is_ok, response = self._get_response(request_url, session=self._session)
-        except ConnectionError as ex:       # pragma: no cover
+        except ReqConnError as ex:       # pragma: no cover
             # We requested SO many things that the server rejected our request
             # outright as opposed to trying to complete the request and failing
             is_ok = False
@@ -821,6 +821,7 @@ class AflowAPIQuery(_RetrievalQuery):
         props = self.selects
         chunks = 2
 
+        # Split up current query matchbook to recover filters
         matchbook_splitter = re.compile(r"(?!\'),(?<!\')")
         filter_identifier = re.compile(r"\(.+\)")
         current_matchbook = self._matchbook
@@ -838,6 +839,9 @@ class AflowAPIQuery(_RetrievalQuery):
             for chunk in grouper(props, (len(props) // chunks) + 1):
                 logger.debug('Requesting property chunk {} with {} records'.format(chunks, k))
                 props_to_request = list(set(c for c in chunk if c is not None))
+
+                # Exclude orderby keyword if it is not requested in this chunk.
+                # If it is included, remove from requested properties to avoid duplication in URI
                 orderby_prop = None
                 orderby_str = None
                 for prop in props_to_request:
@@ -858,7 +862,7 @@ class AflowAPIQuery(_RetrievalQuery):
                         orderby_str = '$' + orderby_kw
                 matchbook_list = [orderby_str] + filters + props_to_request
 
-                query = AflowAPIQuery(batch_reduction=reduce_batch_on_fail)
+                query = AflowAPIQuery(catalog=self.catalog, batch_reduction=reduce_batch_on_fail)
                 query.finalize()
                 query._matchbook = ",".join(matchbook_list)
 
@@ -915,23 +919,23 @@ class AflowAPIQuery(_RetrievalQuery):
             request_url = self._get_request_url(server, matchbook, directives)
             try:
                 is_ok, response = self._get_response(request_url, session=self._session)
-            except (ConnectionError, RetryError) as ex:     # pragma: no cover
+            except (ReqConnError, RetryError) as ex:     # pragma: no cover
                 # We requested SO many things that the server rejected our request
                 # outright as opposed to trying to complete the request and failing
                 is_ok = False
                 response = ex.args
 
             if not is_ok:   # pragma: no cover
-                n, k, n_pages = self._get_next_paging_set(n, k,
-                                                          original_n, original_k)
+                try:
+                    n, k, n_pages = self._get_next_paging_set(n, k,
+                                                              original_n, original_k)
+                except ValueError:      # pragma: no cover
+                    raise ValueError("The API failed to complete the request "
+                                     "and reducing the batch size failed to fix it.")
             else:
                 n += 1
                 n_pages -= 1
                 collected_responses.update(response)
-
-            if k == 0:      # pragma: no cover
-                raise ValueError("The API failed to complete the request "
-                                 "and reducing the batch size failed to fix it.")
 
         return collected_responses
 
@@ -954,6 +958,8 @@ class AflowAPIQuery(_RetrievalQuery):
         starting_entry = (n-1)*k+1
         last_entry = original_n*original_k
         new_k = k // 2
+        if k == 0:  # pragma: no cover
+            raise ValueError("Cannot reduce page set any further.")
         new_n = starting_entry // new_k
         if starting_entry % new_k != 0:
             new_n += 1
@@ -989,7 +995,7 @@ class AflowAPIQuery(_RetrievalQuery):
             rawresp = session.get(url)
             is_ok = rawresp.ok
             response = rawresp.json()
-        except (ConnectionError, RetryError) as ex:     # pragma: no cover
+        except (ReqConnError, RetryError) as ex:     # pragma: no cover
             is_ok = False
             response = ex.args
             _msg.err("{}\n\n{}".format(url, response))
