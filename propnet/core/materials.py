@@ -4,7 +4,6 @@ Module containing classes and methods for Material functionality in propnet code
 
 from collections import defaultdict
 from itertools import chain
-import warnings
 
 from propnet.core.quantity import QuantityFactory, NumQuantity
 from propnet.core.symbols import Symbol
@@ -12,6 +11,9 @@ from propnet.core.symbols import Symbol
 # noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Material(object):
@@ -89,8 +91,8 @@ class Material(object):
         new_syms -= set(self._quantities_by_symbol.keys())
         for sym in new_syms:
             quantity = QuantityFactory.from_default(sym)
-            warnings.warn("Adding default {} quantity with value {}".format(
-                          sym, quantity))
+            logger.warning("Adding default {} quantity with value {}".format(
+                           sym, quantity))
             self.add_quantity(quantity)
 
     def remove_symbol(self, symbol):

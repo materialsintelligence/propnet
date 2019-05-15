@@ -31,9 +31,15 @@ pybtex==0.21
 pylatexenc==1.2
 
 # materials project codes
-matminer>=0.4.3
+matminer>=0.5.5
 pymatgen>=2018.5.22
 maggma>=0.13.0
+
+# aflow ingestion
+aflow>=0.0.10
+six>=1.12.0
+requests>=2.21.0
+urllib3>=1.24.1
 
 # analysis
 minepy>=1.2.3

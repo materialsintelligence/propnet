@@ -11,6 +11,7 @@ from propnet.web.layouts_home import home_layout
 from propnet.web.layouts_interactive import interactive_layout
 from propnet.web.layouts_correlate import correlate_layout
 from propnet.web.layouts_explore import explore_layout
+from propnet.web.layout_refs import refs_layout
 
 from dash_cytoscape import load_extra_layouts
 
@@ -46,7 +47,9 @@ layout_menu = html.Div(
               html.Span(' • '),
               dcc.Link('Correlate', href='/correlate'),
               html.Span(' • '),
-              dcc.Link('Plot', href='/plot')
+              dcc.Link('Plot', href='/plot'),
+              html.Span(' • '),
+              dcc.Link('References', href='/refs')
               ])
 # header
 app.layout = html.Div(
@@ -60,6 +63,7 @@ PLOT_LAYOUT = plot_layout(app)
 CORRELATE_LAYOUT = correlate_layout(app)
 INTERACTIVE_LAYOUT = interactive_layout(app)
 EXPLORE_LAYOUT = explore_layout(app)
+REFS_LAYOUT = refs_layout(app)
 
 # routing, current routes defined are:
 # / for home page
@@ -103,6 +107,8 @@ def display_page(pathname):
             return INTERACTIVE_LAYOUT
         elif path_info['mode'] == 'correlate':
             return CORRELATE_LAYOUT
+        elif path_info['mode'] == 'refs':
+            return REFS_LAYOUT
         elif path_info['mode'] == 'home':
             return home_layout()
         else:

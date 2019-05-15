@@ -224,8 +224,8 @@ class BaseQuantity(ABC, MSONable):
         """
 
         if self.provenance and self.provenance.model:
-            return self.provenance.model_in_provenance_tree(self.provenance.model) or \
-                self.provenance.symbol_in_provenance_tree(self.symbol)
+            return self.provenance.model_is_in_tree(self.provenance.model) or \
+                self.provenance.symbol_is_in_tree(self.symbol)
 
         return False
 
@@ -592,12 +592,14 @@ class NumQuantity(BaseQuantity):
 
         # Accumulate provenance and tags for new quantities
         new_tags = set()
-        new_provenance = ProvenanceElement(model='aggregation', inputs=[])
+        inputs = []
         for quantity in quantities:
             if quantity.tags:
                 for tag in quantity.tags:
                     new_tags.add(tag)
-            new_provenance.inputs.append(quantity)
+            inputs.append(quantity)
+
+        new_provenance = ProvenanceElement(model='aggregation', inputs=inputs)
 
         return cls(symbol_type=input_symbol, value=new_value, units=new_value.units,
                    tags=list(new_tags), provenance=new_provenance,

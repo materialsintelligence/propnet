@@ -24,16 +24,20 @@ from propnet.core.materials import Material
 from propnet.core.graph import Graph
 
 from propnet.ext.matproj import MPRester
+from propnet.ext.aflow import AflowAdapter
 
 MPR = MPRester()
+AFA = AflowAdapter()
 graph_evaluator = Graph(parallel=True, max_workers=4)
-
 
 # explicitly making this an OrderedDict so we can go back from the
 # display name to the symbol name
+# Removed condition symbols from table until we can handle combinatorics blow-up that results
+# from adding a temperature -cml
+# TODO: Add condition symbols back when combinartorics problem solved
 SCALAR_SYMBOLS = OrderedDict({k: v for k, v in sorted(Registry("symbols").items(),
                                                       key=lambda x: x[1].display_names[0])
-                              if ((v.category == 'property' or v.category == 'condition')
+                              if (v.category == 'property'
                                   and v.shape == 1)})
 ROW_IDX_TO_SYMBOL_NAME = [symbol for symbol in SCALAR_SYMBOLS.keys()]
 
@@ -95,27 +99,30 @@ def interactive_layout(app):
         dcc.Markdown('## input data'),
         dcc.Markdown(
             'You can also pre-populate input data from the Materials Project '
-            'database by entering a formula or Materials Project ID:'),
+            'database by entering a formula or Materials Project ID or with '
+            'data from the AFLOW database by entering an AFLOW ID:'),
         html.Div([dcc.Input(
-            placeholder='Enter a formula or mp-id...',
+            placeholder='Enter a formula, mp-id, or auid...',
             type='text',
             value='',
             id='query-input',
             style={"width": "40%", "display": "inline-block", "vertical-align": "middle"}
         ),
-        html.Button('Load data from Materials Project', id='submit-query',
+        html.Button('Load external data', id='submit-query',
             style={"display": "inline-block", "vertical-align": "middle"}),
-            html.Button('Clear', id='clear-mp',
+            html.Button('Clear', id='clear-db',
                         style={"display": "inline-block",
                                "vertical-align": "middle"})
         ]),
         html.Br(),
-        html.Div(children=[dt.DataTable(id='mp-table',
-                                        data=[{'Property': "", 'Materials Project Value': ""}],
+        dcc.Markdown(id='calculation-status'),
+        html.Br(),
+        html.Div(children=[dt.DataTable(id='db-table',
+                                        data=[{'Property': "", 'Database Value': ""}],
                                         columns=[{'id': val, 'name': val}
-                                                 for val in ('Property', 'Materials Project Value')],
-                                        editable=False, **DATA_TABLE_STYLE)], id='mp-container'),
-        dcc.Store(id='mp-data', storage_type='memory'),
+                                                 for val in ('Property', 'Database Value')],
+                                        editable=False, **DATA_TABLE_STYLE)], id='db-container'),
+        dcc.Store(id='db-data', storage_type='memory'),
         html.Br(),
         dcc.Markdown(
             'You can also enter your own values of properties below. If units are not '
@@ -140,54 +147,60 @@ def interactive_layout(app):
         html.Br()
     ])
 
-    @app.callback(Output('mp-data', 'data'),
+    @app.callback(Output('db-data', 'data'),
                   [Input('submit-query', 'n_clicks'),
                    Input('query-input', 'n_submit')],
                   [State('query-input', 'value')])
     def retrieve_material(n_clicks, n_submit, query):
 
-        if (n_clicks is None) and (n_submit is None):
+        if (n_clicks is None) and (n_submit is None) or query == "":
             raise PreventUpdate
 
-        if query.startswith("mp-") or query.startswith("mvc-"):
-            mpid = query
+        if query.startswith("aflow"):
+            identifier = query
+            material = AFA.get_material_by_auid(query)
+            formula = material['formula']
         else:
-            mpid = MPR.get_mpid_from_formula(query)
+            if query.startswith("mp-") or query.startswith("mvc-"):
+                identifier = query
+            else:
+                identifier = MPR.get_mpid_from_formula(query)
+            material = MPR.get_material_for_mpid(identifier)
+            formula = material['pretty_formula']
 
-        material = MPR.get_material_for_mpid(mpid)
         if not material:
             raise PreventUpdate
 
         logger.info("Retrieved material {} for formula {}".format(
-            mpid, material['pretty_formula']))
+            identifier, formula))
 
-        mp_quantities = {quantity.symbol.display_names[0]: quantity.as_dict()
+        db_quantities = {quantity.symbol.display_names[0]: quantity.as_dict()
                          for quantity in material.get_quantities()}
 
-        return json.dumps(mp_quantities, cls=MontyEncoder)
+        return json.dumps(db_quantities, cls=MontyEncoder)
 
     @app.callback(
-        Output('mp-table', 'data'),
-        [Input('mp-data', 'data')]
+        Output('db-table', 'data'),
+        [Input('db-data', 'data')]
     )
-    def show_mp_table(data):
+    def show_db_table(data):
         if (data is None) or (len(data) == 0):
             raise PreventUpdate
 
-        mp_quantities = json.loads(data, cls=MontyDecoder)
+        db_quantities = json.loads(data, cls=MontyDecoder)
 
         output_rows = [
             {
                 'Property': symbol_string,
-                'Materials Project Value': quantity.pretty_string(sigfigs=3)
+                'Database Value': quantity.pretty_string(sigfigs=3)
             }
-            for symbol_string, quantity in mp_quantities.items()
+            for symbol_string, quantity in db_quantities.items()
         ]
 
         return output_rows
 
     @app.callback(Output('storage', 'clear_data'),
-                  [Input('clear-mp', 'n_clicks')])
+                  [Input('clear-db', 'n_clicks')])
     def clear_data(n_clicks):
         if n_clicks is None:
             raise PreventUpdate
@@ -196,7 +209,7 @@ def interactive_layout(app):
     @app.callback(
         Output('propnet-output', 'children'),
         [Input('input-table', 'data'),
-         Input('mp-data', 'data'),
+         Input('db-data', 'data'),
          Input('aggregate', 'values')]
     )
     def evaluate(input_rows, data, aggregate):

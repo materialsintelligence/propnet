@@ -4,7 +4,7 @@ Module containing classes and methods for graph functionality in Propnet code.
 
 import logging
 from collections import defaultdict
-from itertools import product
+from itertools import product, chain, repeat
 from chronic import Timer, timings, clear
 from pandas import DataFrame
 from collections import deque
@@ -12,7 +12,7 @@ import concurrent.futures
 from functools import partial
 from multiprocessing import cpu_count
 import copy
-
+import numpy as np
 import networkx as nx
 
 from propnet.core.materials import CompositeMaterial
@@ -66,11 +66,11 @@ class Graph(object):
     """
 
     def __init__(self,
-                 models: Dict[str, Model]=None,
-                 composite_models: Dict[str, CompositeModel]=None,
-                 symbol_types: Dict[str, Symbol]=None,
-                 parallel: bool=False,
-                 max_workers: int=None) -> None:
+                 models: Dict[str, Model] = None,
+                 composite_models: Dict[str, CompositeModel] = None,
+                 symbol_types: Dict[str, Symbol] = None,
+                 parallel: bool = False,
+                 max_workers: int = None) -> None:
         """
         Creates a graph instance.
 
@@ -569,7 +569,8 @@ class Graph(object):
         tree = self.required_inputs_for_property(end_property)
         return tree.get_paths_from(start_property)
 
-    def get_degree_of_separation(self, start_property: Union[str, Symbol], end_property: Union[str, Symbol]) -> int:
+    def get_degree_of_separation(self, start_property: Union[str, Symbol],
+                                 end_property: Union[str, Symbol]) -> Union[int, None]:
         """
         Returns the minimum number of models separating two properties.
         Returns 0 if the start_property and end_property are equal.
@@ -642,30 +643,46 @@ class Graph(object):
         return product(*aggregated_symbols)
 
     @staticmethod
-    def get_input_sets_for_model(model, fixed_quantity, quantity_pool):
+    def get_input_sets_for_model(model, new_quantities, old_quantities):
         """
         Generates all of the valid input sets for a given model, a fixed
         quantity, and a quantity pool from which to draw remaining properties
         Args:
             model (Model): model for which to evaluate valid input sets
-            fixed_quantity (Quantity): quantity which must be included
-                in all input sets
-            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
-                keyed by symbol from which to draw additional quantities
-                for model inputs
+            new_quantities ({symbol: [Quantity]}): quantities generated
+                during the most recent iteration of the evaluation loop
+            old_quantities ({symbol: [Quantity]}): quantities generated
+                in previous iterations of the evaluation loop
         Returns:
             list of sets of input quantities for the model
         """
-        evaluation_lists = [c for c in model.evaluation_list
-                            if fixed_quantity.symbol in c]
+
         all_input_sets = []
-        for elist in evaluation_lists:
-            elist_without_fixed = elist.copy()
-            elist_without_fixed.remove(fixed_quantity.symbol)
-            input_sets = Graph.generate_input_sets(elist_without_fixed, quantity_pool)
-            for input_set in input_sets:
-                all_input_sets.append(list(input_set) + [fixed_quantity])
-        return all_input_sets
+        OLD = 0
+        NEW = 1
+        source_map = {OLD: old_quantities, NEW: new_quantities}
+        n_input_sets = 0
+
+        for symbols_to_evaluate in model.evaluation_list:
+            sources_by_symbol = []
+            for symbol in symbols_to_evaluate:
+                symbol_sources = []
+                if symbol in old_quantities.keys():
+                    symbol_sources.append(OLD)
+                if symbol in new_quantities.keys():
+                    symbol_sources.append(NEW)
+                sources_by_symbol.append(symbol_sources)
+            source_combinations = list(product(*sources_by_symbol))
+
+            for sources in source_combinations:
+                if all(s == OLD for s in sources):
+                    continue
+                symbols_to_combine = [source_map[source][symbol]
+                                      for source, symbol in zip(sources, symbols_to_evaluate)]
+                n_input_sets += np.prod([len(v) for v in symbols_to_combine])
+                all_input_sets.append(product(*symbols_to_combine))
+
+        return chain.from_iterable(all_input_sets), n_input_sets
 
     def generate_models_and_input_sets(self, new_quantities, quantity_pool):
         """
@@ -682,15 +699,24 @@ class Graph(object):
                 sets, uses tuple so duplicate checking can be performed
         """
         models_and_input_sets = []
+        n_total_input_sets = 0
+        new_qs_by_symbol = defaultdict(list)
         for quantity in new_quantities:
-            for model in self._input_to_model[quantity.symbol]:
-                input_sets = self.get_input_sets_for_model(
-                    model, quantity, quantity_pool)
-                models_and_input_sets += [
-                    tuple([model] + sorted(list(input_set), key=lambda x: (x.symbol.name, x.value)))
-                    for input_set in input_sets]
-        # Filter for duplicates
-        return set(models_and_input_sets)
+            new_qs_by_symbol[quantity.symbol].append(quantity)
+
+        candidate_models = set()
+        for symbol in new_qs_by_symbol.keys():
+            for model in self._input_to_model[symbol]:
+                candidate_models.add(model)
+
+        for model in candidate_models:
+            input_sets, n_input_sets = self.get_input_sets_for_model(
+                model, new_qs_by_symbol, quantity_pool)
+            if n_input_sets > 0:
+                models_and_input_sets.append(zip(repeat(model, n_input_sets), input_sets))
+                n_total_input_sets += n_input_sets
+
+        return chain.from_iterable(models_and_input_sets), n_total_input_sets
 
     def derive_quantities(self, new_quantities, quantity_pool=None,
                           allow_model_failure=True, timeout=None):
@@ -701,7 +727,7 @@ class Graph(object):
         Args:
             new_quantities ([Quantity]): list of quantities which to
                 consider as new inputs to models
-            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
+            quantity_pool ({symbol: [Quantity]}): dict of quantity lists
                 keyed by symbol from which to draw additional quantities
                 for model inputs
             allow_model_failure (bool): True allows graph evaluation to
@@ -719,28 +745,33 @@ class Graph(object):
                 quantity pool
         """
         # Update quantity pool
-        quantity_pool = quantity_pool or defaultdict(set)
-        for quantity in new_quantities:
-            quantity_pool[quantity.symbol].add(quantity)
+        quantity_pool = quantity_pool or defaultdict(list)
 
         # Generate all of the models and input sets to be evaluated
 
-        # TODO: With the current implementation of the input set generation, etc.,
-        #       parallelization does not provide any speed-up. Maybe we can look into
-        #       improving the algorithm?
         logger.info("Generating models and input sets for %s", new_quantities)
-        models_and_input_sets = self.generate_models_and_input_sets(
+
+        models_and_input_sets, n_input_sets = self.generate_models_and_input_sets(
             new_quantities, quantity_pool)
 
-        input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
+        for quantity in new_quantities:
+            quantity_pool[quantity.symbol].append(quantity)
 
-        inputs_to_calculate = list(filter(Graph._generates_noncyclic_output,
-                                          input_tuples))
+        # input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
+
+        # This doesn't eliminate many and will be caught by cyclic filter
+        # after evaluation. This is usually only important if the model we'd be
+        # re-evaluating takes a long time, which the majority of our models do not
+        # take a long time...can we move this into the generation step or just before
+        # evaluation so we don't have to break the generator open?
+
+        # inputs_to_calculate = list(filter(Graph._generates_noncyclic_output,
+        #                                   input_tuples))
 
         # Evaluate model for each input set and add new valid quantities
         if not self._parallel:
             with Timer('_graph_evaluation'):
-                added_quantities, model_timings = Graph._run_serial(inputs_to_calculate,
+                added_quantities, model_timings = Graph._run_serial(models_and_input_sets,
                                                                     allow_model_failure=allow_model_failure,
                                                                     timeout=timeout)
         else:
@@ -748,7 +779,8 @@ class Graph(object):
                 self._executor = concurrent.futures.ProcessPoolExecutor(max_workers=self._max_workers)
             with Timer('_graph_evaluation'):
                 added_quantities, model_timings = Graph._run_parallel(self._executor, self._max_workers,
-                                                                      inputs_to_calculate,
+                                                                      models_and_input_sets,
+                                                                      n_input_sets,
                                                                       allow_model_failure=allow_model_failure,
                                                                       timeout=timeout)
 
@@ -779,10 +811,11 @@ class Graph(object):
             if set(model.map_variables_to_symbols(s['inputs'])) == input_symbols:
                 outputs = outputs.union(model.map_variables_to_symbols(s['outputs']))
 
-        model_in_all_trees = all(input_q.provenance.model_in_provenance_tree(model)
+        model_in_all_trees = all(input_q.provenance.model_is_in_tree(model) or
+                                 model == input_q.provenance.model
                                  for input_q in inputs)
 
-        symbol_in_all_trees = all(all(input_q.provenance.symbol_in_provenance_tree(output)
+        symbol_in_all_trees = all(all(input_q.provenance.symbol_is_in_tree(output)
                                       for input_q in inputs)
                                   for output in outputs)
 
@@ -823,6 +856,7 @@ class Graph(object):
 
     @staticmethod
     def _run_parallel(executor, n_workers, models_and_input_sets,
+                      n_total_input_sets,
                       allow_model_failure=True,
                       timeout=None):
         """
@@ -841,7 +875,7 @@ class Graph(object):
         func = partial(Graph._evaluate_model,
                        allow_failure=allow_model_failure,
                        timeout=timeout)
-        chunk_size = int(len(models_and_input_sets) / n_workers) + 1
+        chunk_size = min(int(n_total_input_sets / n_workers) + 1, 200)
         results = executor.map(func, models_and_input_sets, chunksize=chunk_size)
         outputs = []
         model_timings = []
