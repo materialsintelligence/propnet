@@ -27,6 +27,7 @@ import logging
 from collections import defaultdict
 from itertools import chain
 from functools import partial
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +166,7 @@ class AflowAdapter:
                                                             use_web_api=False)
         super(AflowAdapter, self).__init__()
 
-    def __del__(self):
+    def __del__(self):  # pragma: no cover
         if self._executor:
             self._executor.shutdown()
     
@@ -199,15 +200,22 @@ class AflowAdapter:
                 maintaining order of auids
         """
 
-        materials = [m for m in self.generate_materials_by_auids(list(auids), max_request_size)]
-        if not materials:
-            return None
+        try:
+            materials = [m for m in self.generate_materials_by_auids(list(auids), max_request_size)]
+        except ValueError as ex:
+            if ex.args[0].startswith('Empty response'):
+                materials = []
+            else:
+                raise ex
+
         materials_by_auid = dict()
-        for material in materials:
+        for material in materials or []:
             auid = list(material.symbol_quantities_dict['external_identifier_aflow'])[0].value
             materials_by_auid[auid] = material
 
-        return [materials_by_auid[auid] for auid in auids]
+        if len(materials_by_auid) != len(auids):
+            logger.warning("Some materials were unable to be retrieved.")
+        return [materials_by_auid.get(auid, None) for auid in auids]
 
     def generate_materials_by_auids(self, auids, max_request_size=1000):
         """
@@ -381,6 +389,8 @@ class AflowAdapter:
         Returns:
             generator: generates dicts of data, keyed by AFLOW keyword.
         """
+        if not self.store:
+            raise ValueError("No store specified!")
         if not properties:
             properties = list(self.mapping.keys())
         properties_to_retrieve = set(properties)
@@ -450,6 +460,8 @@ class AflowAdapter:
             auid = material.auid
             materials[auid] = material.raw
             for filename in files_to_download:
+                if not self._executor:
+                    self._executor = ThreadPoolExecutor(max_workers=10)
                 future = self._executor.submit(
                     self._get_aflow_file,
                     material.aurl, filename, auid=material.auid,
@@ -460,7 +472,7 @@ class AflowAdapter:
         if futures:
             for future in as_completed(futures):
                 response, auid, filename = future.result()
-                if isinstance(response, HTTPError):
+                if isinstance(response, HTTPError):     # pragma: no cover
                     logger.info("Encountered error downloading file "
                                 "{} for {}:\n{}".format(filename, auid, str(response)))
                     response = None
@@ -477,7 +489,7 @@ class AflowAdapter:
                                 materials[auid][prop] = transformed_data
                     yield self._convert_entry_to_dict(Entry(**materials[auid]))
         else:
-            for material in materials:
+            for material in materials.values():
                 yield self._convert_entry_to_dict(Entry(**material))
 
     @staticmethod
@@ -508,7 +520,8 @@ class AflowAdapter:
         Produces a propnet Material object from a dictionary of AFLOW materials data.
 
         Args:
-            material_data (dict): AFLOW materials data, keyed by AFLOW keyword
+            material_data (dict): AFLOW materials data, keyed by AFLOW keyword, as
+                Python native types, not as strings as they are stored in AFLOW.
 
         Returns:
             propnet.core.materials.Material: propnet material containing the AFLOW data
@@ -564,7 +577,7 @@ class AflowAdapter:
         aff = AflowFile(aurl, filename)
         try:
             data = aff()
-        except HTTPError as ex:
+        except HTTPError as ex:     # pragma: no cover
             data = ex
         if with_metadata:
             return data, auid, filename
@@ -748,13 +761,13 @@ class AflowAPIQuery(_RetrievalQuery):
         logger.debug('Requesting page {} with {} records from url:\n{}'.format(n, k, request_url))
         try:
             is_ok, response = self._get_response(request_url, session=self._session)
-        except ConnectionError as ex:
+        except ConnectionError as ex:       # pragma: no cover
             # We requested SO many things that the server rejected our request
             # outright as opposed to trying to complete the request and failing
             is_ok = False
             response = ex.args
 
-        if not is_ok:
+        if not is_ok:   # pragma: no cover
             if self._auto_adjust_batch_size and self._auto_adjust_num_props:
                 response = self._request_with_fewer_props(n, k, reduce_batch_on_fail=True)
             elif self._auto_adjust_batch_size:
@@ -799,41 +812,73 @@ class AflowAPIQuery(_RetrievalQuery):
         Returns:
             dict: cumulative response from API
         """
+
+        if len(self.responses) == 0:
+            # We are making the very first request, finalize the query.
+            self.finalize()
+
         collected_responses = defaultdict(dict)
         props = self.selects
         chunks = 2
+
+        matchbook_splitter = re.compile(r"(?!\'),(?<!\')")
+        filter_identifier = re.compile(r"\(.+\)")
+        current_matchbook = self._matchbook
+        split_matchbook = matchbook_splitter.split(current_matchbook)
+        orderby_kw = split_matchbook[0]      # Preserves orderby keyword
+        filters = []
+        for item in split_matchbook[1:]:
+            if filter_identifier.search(item):
+                filters.append(item)
+
         while len(props) // chunks >= 1:
             if len(props) / chunks < 2:
                 chunks = len(props) + 1
             query_error = False
             for chunk in grouper(props, (len(props) // chunks) + 1):
                 logger.debug('Requesting property chunk {} with {} records'.format(chunks, k))
-                props_to_request = set(c for c in chunk if c is not None)
-                props_to_request.add(str(self.order))
-                query = AflowAPIQuery.from_pymongo(criteria={},
-                                                   properties=list(props_to_request),
-                                                   request_size=k,
-                                                   batch_reduction=reduce_batch_on_fail)
-                query.filters = self.filters
-                query.orderby(self.order, self.reverse)
-                query._session = self._session
+                props_to_request = list(set(c for c in chunk if c is not None))
+                orderby_prop = None
+                orderby_str = None
+                for prop in props_to_request:
+                    if orderby_kw.startswith(prop):
+                        if orderby_kw.startswith('$'):
+                            orderby_str = orderby_kw[1:]
+                        else:
+                            orderby_str = orderby_kw
+                        orderby_prop = prop
+                        break
+
+                if orderby_prop:
+                    props_to_request.remove(orderby_prop)
+                else:
+                    if orderby_kw.startswith('$'):
+                        orderby_str = orderby_kw
+                    else:
+                        orderby_str = '$' + orderby_kw
+                matchbook_list = [orderby_str] + filters + props_to_request
+
+                query = AflowAPIQuery(batch_reduction=reduce_batch_on_fail)
+                query.finalize()
+                query._matchbook = ",".join(matchbook_list)
+
                 try:
                     query._request(n, k)
-                except ValueError:
+                except ValueError:      # pragma: no cover
                     query_error = True
                 if not query_error:
                     response = query.responses[n]
                     for record_key, record in response.items():
                         collected_responses[record_key].update(record)
-                else:
+                else:       # pragma: no cover
                     break
 
-            if query_error:
+            if query_error:     # pragma: no cover
                 chunks += 1
             else:
                 return collected_responses
 
-        raise ValueError("The API failed to complete the request "
+        raise ValueError("The API failed to complete the request "      # pragma: no cover
                          "and reducing the number of properties failed to fix it.")
 
     def _request_with_smaller_batch(self, original_n, original_k):
@@ -853,6 +898,10 @@ class AflowAPIQuery(_RetrievalQuery):
         Returns:
             dict: cumulative response from API
         """
+        if len(self.responses) == 0:
+            # We are making the very first request, finalize the query.
+            self.finalize()
+
         collected_responses = {}
 
         n, k, n_pages = self._get_next_paging_set(original_n, original_k, original_n, original_k)
@@ -866,13 +915,13 @@ class AflowAPIQuery(_RetrievalQuery):
             request_url = self._get_request_url(server, matchbook, directives)
             try:
                 is_ok, response = self._get_response(request_url, session=self._session)
-            except (ConnectionError, RetryError) as ex:
+            except (ConnectionError, RetryError) as ex:     # pragma: no cover
                 # We requested SO many things that the server rejected our request
                 # outright as opposed to trying to complete the request and failing
                 is_ok = False
                 response = ex.args
 
-            if not is_ok:
+            if not is_ok:   # pragma: no cover
                 n, k, n_pages = self._get_next_paging_set(n, k,
                                                           original_n, original_k)
             else:
@@ -880,7 +929,7 @@ class AflowAPIQuery(_RetrievalQuery):
                 n_pages -= 1
                 collected_responses.update(response)
 
-            if k == 0:
+            if k == 0:      # pragma: no cover
                 raise ValueError("The API failed to complete the request "
                                  "and reducing the batch size failed to fix it.")
 
@@ -905,8 +954,13 @@ class AflowAPIQuery(_RetrievalQuery):
         starting_entry = (n-1)*k+1
         last_entry = original_n*original_k
         new_k = k // 2
-        new_n = starting_entry // new_k + 1
-        new_pages = (last_entry-starting_entry) // new_k + 1
+        new_n = starting_entry // new_k
+        if starting_entry % new_k != 0:
+            new_n += 1
+        n_entries_remaining = last_entry - starting_entry + 1
+        new_pages = n_entries_remaining // new_k
+        if n_entries_remaining % new_k != 0:
+            new_pages += 1
         return new_n, new_k, new_pages
         
     @staticmethod
@@ -935,7 +989,7 @@ class AflowAPIQuery(_RetrievalQuery):
             rawresp = session.get(url)
             is_ok = rawresp.ok
             response = rawresp.json()
-        except (ConnectionError, RetryError) as ex:
+        except (ConnectionError, RetryError) as ex:     # pragma: no cover
             is_ok = False
             response = ex.args
             _msg.err("{}\n\n{}".format(url, response))
