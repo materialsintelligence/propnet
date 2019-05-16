@@ -70,16 +70,17 @@ def violin_plot(correlation_func="mic"):
     data = []
     for p in path_lengths:
         points_p = points[p]
+
         trace = {
             "type": "violin",
-            "x": [p if isinstance(p, int) else 8] * len(points_p),
-            "y": [point[0] for point in points_p],
+            "x": [str(p)] * len(points_p),
+            "y": ["{:0.5f}".format(point[0]) for point in points_p],
             "text": [point[1] for point in points_p],
             "name": str(p),
             "box": {"visible": True},
             "points": "all",
             "meanline": {"visible": True},
-            "hoverinfo": "y+text+name"
+            "hoverinfo": "y+text+name",
         }
         data.append(trace)
 
@@ -87,7 +88,7 @@ def violin_plot(correlation_func="mic"):
         "title": f"Correlation between properties based on {correlation_func} score",
         "yaxis": {"zeroline": False, "showgrid": False, "title": "Correlation score",
                   "range": [ymin, ymax]},
-        "xaxis": {"showticklabels": False},
+        "xaxis": {"showticklabels": False}
     }
 
     return go.Figure(data=data, layout=layout)
