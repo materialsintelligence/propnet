@@ -84,7 +84,7 @@ class PropnetBuilder(MapBuilder):
         props = list(self.materials_symbol_map.keys())
         props += ["task_id", "pretty_formula", "run_type", "is_hubbard",
                   "pseudo_potential", "hubbards", "potcar_symbols", "oxide_type",
-                  "final_energy", "unit_cell_formula", "created_at"]
+                  "final_energy", "unit_cell_formula", "created_at", "deprecated"]
         props = list(set(props))
 
         super(PropnetBuilder, self).__init__(source=materials,
@@ -192,7 +192,8 @@ class PropnetBuilder(MapBuilder):
             doc[symbol.name].update(sub_doc)
 
         doc.update({"task_id": item["task_id"],
-                    "pretty_formula": item.get("pretty_formula")})
+                    "pretty_formula": item.get("pretty_formula"),
+                    "deprecated": item.get("deprecated", False)})
         return jsanitize(doc, strict=True)
 
 
