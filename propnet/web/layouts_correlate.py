@@ -58,8 +58,8 @@ def violin_plot(correlation_func="mic"):
     all_correlations = [d['correlation']
                         for d in store.query(criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
                                              properties=["correlation"])]
-    ymax = np.nanpercentile(all_correlations, 90)
-    ymin = np.nanpercentile(all_correlations, 10)
+    # ymax = np.nanpercentile(all_correlations, 90)
+    # ymin = np.nanpercentile(all_correlations, 10)
 
     points = {p: [] for p in path_lengths}
     for d in docs:
@@ -70,6 +70,8 @@ def violin_plot(correlation_func="mic"):
     data = []
     for p in path_lengths:
         points_p = points[p]
+        if len(points_p) == 0:
+            continue
 
         trace = {
             "type": "violin",
@@ -79,15 +81,14 @@ def violin_plot(correlation_func="mic"):
             "name": str(p),
             "box": {"visible": True},
             "points": "all",
-            "meanline": {"visible": True},
+            "meanline": {"visible": False},
             "hoverinfo": "y+text+name",
         }
         data.append(trace)
 
     layout = {
         "title": f"Correlation between properties based on {correlation_func} score",
-        "yaxis": {"zeroline": False, "showgrid": False, "title": "Correlation score",
-                  "range": [ymin, ymax]},
+        "yaxis": {"zeroline": False, "showgrid": False, "title": "Correlation score"},
         "xaxis": {"showticklabels": False}
     }
 
@@ -109,6 +110,13 @@ def correlate_layout(app):
         value="mic",
     )
 
+    explain_text = dcc.Markdown("""
+_Note: You may encounter some display issues with the mouseover information. These
+issues originate within the library used to create the violin plot, which is still
+in development. To restore the mouseover, double-click the legend entry of the plot
+you want to explore to isolate it on the screen. This should correct the mouseover formatting._
+""")
+
     @app.callback(
         Output("correlation_violin", "figure"),
         [Input("correlation_func_choice", "value")],
@@ -118,6 +126,6 @@ def correlate_layout(app):
             raise PreventUpdate
         return violin_plot(correlation_func)
 
-    layout = html.Div([correlation_func_choice, graph])
+    layout = html.Div([correlation_func_choice, graph, explain_text])
 
     return layout
