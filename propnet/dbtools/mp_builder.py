@@ -180,6 +180,9 @@ class PropnetBuilder(MapBuilder):
         aggregated_quantities = new_material.get_aggregated_quantities()
 
         for symbol, quantity in aggregated_quantities.items():
+            if symbol.name not in doc:
+                # No new quantities were derived
+                continue
             # Store mean and std dev for aggregated quantities
             sub_doc = {"mean": unumpy.nominal_values(quantity.value).tolist(),
                        "std_dev": unumpy.std_devs(quantity.value).tolist(),
