@@ -9,6 +9,7 @@ from monty.serialization import loadfn
 
 # noinspection PyUnresolvedReferences
 import propnet.symbols
+from propnet.core.registry import Registry
 
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -44,29 +45,40 @@ except (ServerSelectionTimeoutError, KeyError, FileNotFoundError) as ex:
 
 correlation_funcs = store.query().distinct("correlation_func")
 
+correlation_func_descriptions = {
+            "mic": "Maximal information coefficient",
+            "linlsq": "Linear least squares, R-squared",
+            "theilsen": "Theil-Sen regression, R-squared",
+            "ransac": "RANSAC regression",
+            "pearson": "Pearson R correlation",
+            "spearman": "Spearman R correlation"
+        }
+
+
 def violin_plot(correlation_func="mic"):
 
     path_lengths = sorted(
         store.query().distinct("shortest_path_length"), key=lambda x: (x is None, x)
     )
 
+    props = {p: True for p in ["property_x", "property_y", "shortest_path_length",
+                               "correlation", "n_points"]}
+    props['_id'] = False
+
     docs = store.query(
         criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
-        properties=["property_x", "property_y", "shortest_path_length", "correlation"],
+        properties=props
     )
 
-    all_correlations = [d['correlation']
-                        for d in store.query(criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
-                                             properties=["correlation"])]
+    # all_correlations = [d['correlation']
+    #                     for d in store.query(criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
+    #                                          properties=["correlation"])]
     # ymax = np.nanpercentile(all_correlations, 90)
     # ymin = np.nanpercentile(all_correlations, 10)
 
     points = {p: [] for p in path_lengths}
     for d in docs:
-        points[d["shortest_path_length"]].append(
-            (d["correlation"], f"{d['property_x']}-{d['property_y']}")
-        )
-
+        points[d["shortest_path_length"]].append(d)
     data = []
     for p in path_lengths:
         points_p = points[p]
@@ -76,18 +88,21 @@ def violin_plot(correlation_func="mic"):
         trace = {
             "type": "violin",
             "x": [str(p)] * len(points_p),
-            "y": ["{:0.5f}".format(point[0]) for point in points_p],
-            "text": [point[1] for point in points_p],
+            "y": ["{:0.5f}".format(point['correlation'])
+                  for point in points_p if point['correlation'] is not None],
+            "customdata": [d for d in points_p],
             "name": str(p),
             "box": {"visible": True},
             "points": "all",
             "meanline": {"visible": False},
-            "hoverinfo": "y+text+name",
+            "hoverinfo": "y",
         }
         data.append(trace)
 
+    func_description = correlation_func_descriptions[correlation_func]
+
     layout = {
-        "title": f"Correlation between properties based on {correlation_func} score",
+        "title": f"Correlation between properties based on {func_description} score",
         "yaxis": {"zeroline": False, "showgrid": False, "title": "Correlation score"},
         "xaxis": {"showticklabels": False}
     }
@@ -110,11 +125,23 @@ def correlate_layout(app):
         value="mic",
     )
 
+    path_length_choice = dcc.Dropdown(
+        id="path_length_choice",
+        options=[],
+        value="",
+    )
+
+    point_information = dcc.Markdown(id="point_info", children="""
+##### Point information
+No point selected
+""")
+
     explain_text = dcc.Markdown("""
-_Note: You may encounter some display issues with the mouseover information. These
-issues originate within the library used to create the violin plot, which is still
-in development. To restore the mouseover, double-click the legend entry of the plot
-you want to explore to isolate it on the screen. This should correct the mouseover formatting._
+_Note: You may encounter some display issues with the mouseover information, particularly when
+zooming or changing the axes value ranges. These issues originate within the external library 
+used to create the violin plot, which is still in development. To restore the mouseover, try
+isolating the plot you wish to explore by double-clicking its legend entry and/or setting the
+axes to a wider display range._
 """)
 
     @app.callback(
@@ -126,6 +153,46 @@ you want to explore to isolate it on the screen. This should correct the mouseov
             raise PreventUpdate
         return violin_plot(correlation_func)
 
-    layout = html.Div([correlation_func_choice, graph, explain_text])
+    @app.callback(
+        Output("point_info", "children"),
+        [Input("correlation_violin", "clickData")],
+        [State("correlation_func_choice", "value")]
+    )
+    def populate_point_information(selected_points, correlation_func):
+        if not selected_points:
+            raise PreventUpdate
+
+        target_data = selected_points['points'][0]['customdata']
+        prop_x_name = Registry("symbols")[target_data['property_x']].display_names[0]
+        prop_y_name = Registry("symbols")[target_data['property_y']].display_names[0]
+        text = f"""
+##### Point information
+**x-axis property:** {prop_x_name}
+
+**y-axis property:** {prop_y_name}
+
+**correlation function used:** {correlation_func_descriptions[correlation_func]}
+
+**correlation value:** {target_data['correlation']:0.5f}
+
+**number of points tested:** {target_data['n_points']}
+"""
+        return text
+
+    plot_display_layout = html.Div([
+        correlation_func_choice,
+        path_length_choice,
+        graph],
+        className="seven columns")
+
+    info_layout = html.Div([point_information],
+                           className="five columns")
+
+    layout = html.Div([
+        html.Div([plot_display_layout, info_layout],
+                 className="row"),
+        html.Div([explain_text],
+                 className="row")
+    ])
 
     return layout
