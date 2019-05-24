@@ -2,10 +2,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table as dt
 
-import numpy as np
-
 from os import environ
-from random import choice
 from monty.serialization import loadfn
 
 # noinspection PyUnresolvedReferences
@@ -16,15 +13,12 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 import plotly.graph_objs as go
-from pydash import get
 
 from pymatgen import MPRester
-from pymatgen.util.string import unicodeify
 
 from pymongo.errors import ServerSelectionTimeoutError
 
 import logging
-from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 mpr = MPRester()
@@ -77,12 +71,6 @@ def violin_plot(correlation_func="mic"):
         criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
         properties=props
     )
-
-    # all_correlations = [d['correlation']
-    #                     for d in store.query(criteria={"correlation_func": correlation_func, "n_points": {"$ne": 0}},
-    #                                          properties=["correlation"])]
-    # ymax = np.nanpercentile(all_correlations, 90)
-    # ymin = np.nanpercentile(all_correlations, 10)
 
     points = {p: [] for p in path_lengths}
     for d in docs:
@@ -141,12 +129,6 @@ def correlate_layout(app):
         value="mic",
     )
 
-    path_length_choice = dcc.Dropdown(
-        id="path_length_choice",
-        options=[],
-        value="",
-    )
-
     explain_text = dcc.Markdown("""
 _Note: You may encounter some display issues with the mouseover information, particularly when
 zooming or changing the axes value ranges. These issues originate within the external library 
@@ -157,7 +139,6 @@ axes to a wider display range._
 
     plot_display_layout = html.Div([
         correlation_func_choice,
-        path_length_choice,
         graph],
         className="six columns")
 
@@ -167,8 +148,11 @@ axes to a wider display range._
 No point selected
 """)])
 
+    point_clicked = dcc.Store(id='point_clicked', storage_type='memory',
+                              data=False)
+
     layout = html.Div([
-        html.Div([plot_display_layout, info_layout],
+        html.Div([plot_display_layout, info_layout, point_clicked],
                  className="row"),
         html.Div([explain_text],
                  className="row")
@@ -184,7 +168,24 @@ No point selected
         return violin_plot(correlation_func)
 
     @app.callback(
-        Output("point_info", "children"),
+        Output("corr-table", "style_data_conditional"),
+        [Input("correlation_violin", "figure")],
+        [State("correlation_func_choice", "value"),
+         State("point_clicked", "data")]
+    )
+    def highlight_table_row(_, selected_func, point_info_populated):
+        if not point_info_populated:
+            raise PreventUpdate
+        table_highlight = [{
+            'if': {'row_index': correlation_funcs.index(selected_func)},
+            "backgroundColor": "#3D9970",
+            'color': 'white'
+        }]
+        return table_highlight
+
+    @app.callback(
+        [Output("point_info", "children"),
+         Output("point_clicked", "data")],
         [Input("correlation_violin", "clickData")],
         [State("correlation_func_choice", "value")]
     )
@@ -193,8 +194,9 @@ No point selected
             raise PreventUpdate
 
         target_data = selected_points['points'][0]['customdata']
-        prop_x_name = Registry("symbols")[target_data['property_x']].display_names[0]
-        prop_y_name = Registry("symbols")[target_data['property_y']].display_names[0]
+        prop_x, prop_y = target_data['property_x'], target_data['property_y']
+        prop_x_name = Registry("symbols")[prop_x].display_names[0]
+        prop_y_name = Registry("symbols")[prop_y].display_names[0]
         if target_data['shortest_path_length'] is None:
             path_text = "the properties not connected"
         elif target_data['shortest_path_length'] == 0:
@@ -242,6 +244,8 @@ No point selected
                                              'font-family': 'HelveticaNeue',
                                              'text-align': 'left'
                                          })
-        return [point_text, correlation_table]
+        link_to_plot = dcc.Link("View the data plot",
+                                href=f'/plot?x={prop_x}&y={prop_y}')
+        return [point_text, correlation_table, link_to_plot], True
 
     return layout

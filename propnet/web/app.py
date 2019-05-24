@@ -6,7 +6,7 @@ from dash.dependencies import Input, Output
 
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_symbols import symbol_layout, symbols_index
-from propnet.web.layouts_plot import plot_layout
+from propnet.web.layouts_plot import get_plot_layout, define_plot_callbacks
 from propnet.web.layouts_home import home_layout
 from propnet.web.layouts_interactive import interactive_layout
 from propnet.web.layouts_correlate import correlate_layout
@@ -59,11 +59,11 @@ app.layout = html.Div(
               html.Div(id='page-content')],
     style={'marginLeft': 200, 'marginRight': 200, 'marginTop': 30})
 
-PLOT_LAYOUT = plot_layout(app)
 CORRELATE_LAYOUT = correlate_layout(app)
 INTERACTIVE_LAYOUT = interactive_layout(app)
 EXPLORE_LAYOUT = explore_layout(app)
 REFS_LAYOUT = refs_layout(app)
+define_plot_callbacks(app)
 
 # routing, current routes defined are:
 # / for home page
@@ -74,18 +74,20 @@ REFS_LAYOUT = refs_layout(app)
 
 
 @app.callback(Output('page-content', 'children'),
-              [Input('url', 'pathname')])
-def display_page(pathname):
+              [Input('url', 'pathname'),
+               Input('url', 'search')])
+def display_page(pathname, search):
     """
 
     Args:
       pathname:
+      search:
 
     Returns:
 
     """
 
-    path_info = parse_path(pathname)
+    path_info = parse_path(pathname, search)
 
     if path_info:
         if path_info['mode'] == 'model':
@@ -102,7 +104,10 @@ def display_page(pathname):
         elif path_info['mode'] == 'explore':
             return EXPLORE_LAYOUT
         elif path_info['mode'] == 'plot':
-            return PLOT_LAYOUT
+            props = None
+            if path_info['value'] is not None:
+                props = path_info['value']
+            return get_plot_layout(props)
         elif path_info['mode'] == 'generate':
             return INTERACTIVE_LAYOUT
         elif path_info['mode'] == 'correlate':
@@ -118,4 +123,4 @@ def display_page(pathname):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)

@@ -331,7 +331,7 @@ class Model(ABC):
                     converted_outputs[var] = ureg.Quantity(quantity, units=unit)
         return converted_outputs
 
-    def evaluate(self, symbol_quantity_dict, allow_failure=True):
+    def evaluate(self, symbol_quantity_dict, allow_failure=True, raise_timeout_errors=True):
         """
         Given a set of symbol values, performs error checking to see
         if the corresponding input variable values represents a valid
@@ -349,6 +349,10 @@ class Model(ABC):
                 symbol names (str) to quantities (BaseQuantity) to be substituted
             allow_failure (bool): whether or not to catch
                 errors in model evaluation
+            raise_timeout_errors (bool): True ignores the value of "allow_failure"
+                and forces TimeoutError exceptions to be raised. This is so they
+                can be caught and handled by Graph, as timeouts are implemented there
+                and not in Model.
 
         Returns:
             dict: dictionary of output symbols with associated values
@@ -387,11 +391,16 @@ class Model(ABC):
                     np.seterrcall(plog)
                     out: dict = self.plug_in(input_variable_value_dict)
         except Exception as err:
-            if allow_failure:
+            # Because the Timeout() context raises a TimeoutError as a response to a
+            # signal from the os, the exception is raised wherever the program is
+            # at the time, which is usually in "plug_in". We want to optionally raise
+            # TimeoutErrors so they are caught by Graph() or an error handler otherwise
+            # outside of this class.
+            if not allow_failure or (isinstance(err, TimeoutError) and raise_timeout_errors):
+                raise err
+            else:
                 return {"successful": False,
                         "message": "{} evaluation failed: {}".format(self, err)}
-            else:
-                raise err
         if not self.check_constraints({**variable_value_dict, **out}):
             return {"successful": False,
                     "message": "Constraints not satisfied"}

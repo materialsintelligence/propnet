@@ -53,26 +53,48 @@ def _ensure_indices():
         store.ensure_index(property_name)
 
 
-DEFAULT_X = 'band_gap'
-DEFAULT_Y = 'volume_unit_cell'
-DEFAULT_Z = 'atomic_density'
-DEFAULT_COLOR = 'energy_above_hull'
+def get_plot_layout(props=None):
+    prop_x = None
+    prop_y = None
+    prop_z = None
+    z_enabled = False
+    create_plot = False
+    if props:
+        if props.get('x') is not None:
+            prop_x = props['x']
+        if props.get('y') is not None:
+            prop_y = props['y']
+        if props.get('z') is not None:
+            prop_z = props['z']
+            z_enabled = True
 
-def plot_layout(app):
+        if prop_x and prop_y:
+            create_plot = True
 
-    graph_layout = dcc.Graph(id='ashby-graph', config={'displayModeBar': False})
+    plot_data = None
+    graph_config = dict(id='ashby-graph', config={'displayModeBar': False})
+    if create_plot:
+        plot_data = get_graph_data(prop_x, prop_y, prop_z, None)
+        graph_figure = get_graph_figure(plot_data, ['zoom'],
+                                        ['enable-z'] if z_enabled else [],
+                                        [], [])
+        graph_config['figure'] = graph_figure
+
+    graph_layout = dcc.Graph(**graph_config)
+    graph_store = dcc.Store(id='plot-data', storage_type='memory',
+                            data=plot_data)
 
     controls_layout = html.Div([
         html.Label('Choose property for x-axis: '),
         dcc.Dropdown(id='choose-x', options=[
             {'label': v.display_names[0], 'value': k} for k, v in
             scalar_symbols.items()
-        ], value=DEFAULT_X),
+        ], value=prop_x),
         html.Label('Choose property for y-axis: '),
         dcc.Dropdown(id='choose-y', options=[
             {'label': v.display_names[0], 'value': k} for k, v in
             scalar_symbols.items()
-        ], value=DEFAULT_Y),
+        ], value=prop_y),
         dcc.Checklist(id='zoom', options=[
             {'label': 'Zoom to 90% percentile', 'value': 'zoom'}],
                       values=['zoom'], labelStyle={'display': 'inline-block'}),
@@ -85,20 +107,22 @@ def plot_layout(app):
             dcc.Dropdown(id='choose-color', options=[
                 {'label': v.display_names[0], 'value': k} for k, v in
                 scalar_symbols.items()
-            ], value=DEFAULT_COLOR),
+            ], value=[]),
             html.Label('Set range for color scale: '),
             dcc.RangeSlider(id='color-scale-range', step=0.01),
-            html.Br()
+            html.Br(),
+            dcc.Store(id='color-scale-property', storage_type='memory')
         ], style={'display': 'none'}, id='color-scale-controls'),
         dcc.Checklist(id='enable-z',
                       options=[{'label': 'Enable z-axis', 'value': 'enable-z'}],
-                      values=[], labelStyle={'display': 'inline-block'}),
+                      values=['enable-z'] if z_enabled else [],
+                      labelStyle={'display': 'inline-block'}),
         html.Div([
             html.Label('Choose property for z-axis: '),
             dcc.Dropdown(id='choose-z', options=[
                 {'label': v.display_names[0], 'value': k} for k, v in
                 scalar_symbols.items()
-            ], value=DEFAULT_Z)], style={'display': 'none'},
+            ], value=prop_z)], style={'display': 'none'} if not z_enabled else {},
             id='z-axis-controls'),
         html.Br(),
         html.Div(id='query-counter')
@@ -122,96 +146,23 @@ def plot_layout(app):
     layout = html.Div([
         html.Div([description_layout, warning_layout, html.Br()],
                  className="row"),
-        html.Div([html.Div([graph_layout], className="seven columns"),
+        html.Div([html.Div([graph_layout, graph_store], className="seven columns"),
                   html.Div([controls_layout], className="five columns")],
                  className="row"),
         html.Div([detail_layout], className="row")
     ])
 
+    return layout
+
+
+def define_plot_callbacks(app):
     @app.callback(
-        Output('color-scale-range', 'value'),
-        [Input('choose-color', 'value'),
-         Input('zoom', 'values')]
+        Output('plot-data', 'data'),
+        [Input('color-scale-range', 'value'),
+         Input('zoom', 'values')],
+        [State('plot-data', 'data')]
     )
-    def update_range_slider_values(color_prop, zoom):
-
-        color_key = '{}.mean'.format(color_prop)
-        data = store.query(criteria={color_key: {"$exists": True}},
-                           properties=[color_key])
-        data = list(data)
-
-        if not data:
-            raise PreventUpdate
-
-        c = [get(d, color_key) for d in data]
-
-        if zoom:
-            color_range = [np.percentile(c, 10), np.percentile(c, 90)]
-        else:
-            color_range = [np.min(c), np.max(c)]
-
-        return color_range
-
-    @app.callback(
-        Output('color-scale-range', 'marks'),
-        [Input('choose-color', 'value')]
-    )
-    def update_range_slider_marks(color_prop):
-
-        color_key = '{}.mean'.format(color_prop)
-        data = store.query(criteria={color_key: {"$exists": True}},
-                           properties=[color_key])
-        data = list(data)
-
-        if not data:
-            raise PreventUpdate
-
-        c = [get(d, color_key) for d in data]
-        units = scalar_symbols[color_prop].unit_as_string
-
-        marks = {
-            np.min(c): f"{np.min(c):.2f} {units}",
-            np.percentile(c, 10): "",  # f"{np.percentile(c, 10):.2f} {units}",
-            np.percentile(c, 50): "",  # f"{np.percentile(c, 50):.2f} {units}",
-            np.percentile(c, 90): "",  # f"{np.percentile(c, 90):.2f} {units}",
-            np.max(c): f"{np.max(c):.2f} {units}",
-        }
-
-        return marks
-
-    @app.callback(
-        Output('color-scale-range', 'min'),
-        [Input('choose-color', 'value')]
-    )
-    def update_range_slider_marks(color_prop):
-
-        color_key = '{}.mean'.format(color_prop)
-        data = store.query(criteria={color_key: {"$exists": True}},
-                           properties=[color_key])
-        data = list(data)
-
-        if not data:
-            raise PreventUpdate
-
-        c = [get(d, color_key) for d in data]
-        return np.min(c)
-
-    @app.callback(
-        Output('color-scale-range', 'max'),
-        [Input('choose-color', 'value')]
-    )
-    def update_range_slider_marks(color_prop):
-
-        color_key = '{}.mean'.format(color_prop)
-        data = store.query(criteria={color_key: {"$exists": True}},
-                           properties=[color_key])
-        data = list(data)
-
-        if not data:
-            raise PreventUpdate
-
-        c = [get(d, color_key) for d in data]
-        return np.max(c)
+    def update_graph_display(color_range, zoom, data):
 
 
     @app.callback(
@@ -276,195 +227,217 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
 
         return info
 
-# {store.query_one(criteria={'task_id': mpid}, properties=[x_prop, y_prop])}
-
     @app.callback(
-        Output('query-counter', 'children'),
+        [Output('plot-data', 'data'),
+         Output('color-scale-range', 'min'),
+         Output('color-scale-range', 'max'),
+         Output('color-scale-range', 'marks'),
+         Output('color-scale-range', 'value')],
         [Input('choose-x', 'value'),
          Input('choose-y', 'value'),
          Input('enable-z', 'values'),
-         Input('enable-color', 'values'),
          Input('choose-z', 'value'),
-         Input('choose-color', 'value')]
+         Input('enable-color', 'values'),
+         Input('choose-color', 'value')],
+        [State('plot-data', 'data'),
+         State('zoom', 'values')]
     )
-    def update_graph_description(x_prop, y_prop,
-                                 enable_z, enable_color, z_prop, color_prop):
+    def update_graph_data(x_prop, y_prop,
+                          enable_z, z_prop,
+                          enable_color, color_prop,
+                          data, zoom):
+        if not x_prop or not y_prop or \
+                (not z_prop and enable_z) or (not color_prop and enable_color):
+            raise PreventUpdate
 
-        x_key = '{}.mean'.format(x_prop)
-        y_key = '{}.mean'.format(y_prop)
-        z_key = '{}.mean'.format(z_prop)
-        color_key = '{}.mean'.format(color_prop)
+        if data and data.get('x_name') == x_prop and data.get('y_name') == y_prop and \
+                data.get('z_name') == z_prop and data.get('color_name') == color_prop:
+            raise PreventUpdate
 
-        criteria = {
-            x_key: {"$exists": True},
-            y_key: {"$exists": True}
-        }
+        data = get_graph_data(x_prop, y_prop,
+                              z_prop if enable_z else None,
+                              color_prop if enable_color else None)
 
-        if enable_z:
-            criteria[z_key] = {"$exists": True}
+        # update color slider
+        slider_min = 0
+        slider_max = 1
+        slider_marks = {0.5: ""}
+        slider_values = [0.1, 0.9]
+        if enable_color and color_prop:
+            c = data['color']
+            slider_min = np.min(c)
+            slider_max = np.max(c)
+            units = scalar_symbols[color_prop].unit_as_string
+            slider_marks = {
+                np.min(c): f"{slider_min:.2f} {units}",
+                np.percentile(c, 10): "",  # f"{np.percentile(c, 10):.2f} {units}",
+                np.percentile(c, 50): "",  # f"{np.percentile(c, 50):.2f} {units}",
+                np.percentile(c, 90): "",  # f"{np.percentile(c, 90):.2f} {units}",
+                np.max(c): f"{slider_max:.2f} {units}",
+            }
+            slider_values = get_color_range(c, zoom)
 
-        if enable_color:
-            criteria[color_key] = {"$exists": True}
-
-        count = store.query(criteria=criteria, properties=[]).count()
-
-        return f"There are {count} data points in the pre-built propnet " \
-               f"database that matches these criteria."
+        return data, slider_min, slider_max, slider_marks, slider_values
 
     @app.callback(
-        Output('ashby-graph', 'figure'),
-        [Input('choose-x', 'value'),
-         Input('choose-y', 'value'),
-         Input('zoom', 'values'),
-         Input('enable-z', 'values'),
-         Input('enable-color', 'values'),
-         Input('choose-z', 'value'),
-         Input('choose-color', 'value'),
-         Input('color-scale-range', 'value')]
+        [Output('ashby-graph', 'figure'),
+         Output('query-counter', 'children')],
+        [Input('plot-data', 'data')],
+        [State('enable-z', 'values')]
     )
-    def update_graph(x_prop, y_prop, zoom,
-                     enable_z, enable_color, z_prop, color_prop, color_range):
+    def update_data_dependencies(data, enable_z, enable_color):
+        if not data:
+            raise PreventUpdate
 
-        x_key = '{}.mean'.format(x_prop)
-        y_key = '{}.mean'.format(y_prop)
-        z_key = '{}.mean'.format(z_prop)
-        color_key = '{}.mean'.format(color_prop)
-        x_std_dev = '{}.std_dev'.format(x_prop)
-        y_std_dev = '{}.std_dev'.format(y_prop)
-        z_std_dev = '{}.std_dev'.format(z_prop)
+        figure = get_graph_figure(data, data['zoom'], enable_z,
+                                  enable_color, data['color_range'])
 
-        criteria = {
-            x_key: {"$exists": True},
-            y_key: {"$exists": True}
-        }
+        n_points = len(data['x'])
+        count_text = f"There are {n_points} data points in the pre-built propnet " \
+            f"database that matches these criteria."
 
-        properties = ['task_id', x_key, y_key]
+        return figure, count_text
 
-        if enable_z:
-            criteria[z_key] = {"$exists": True}
-            properties.append(z_key)
-
-        if enable_color:
-            criteria[color_key] = {"$exists": True}
-            properties.append(color_key)
-
-        data = store.query(criteria=criteria, properties=properties)
-        data = list(data)
-
-        if enable_z:
-
-            x = [get(d, x_key) for d in data]
-            y = [get(d, y_key) for d in data]
-            z = [get(d, z_key) for d in data]
-
-            traces = [
-                {
-                    'x': x,
-                    'y': y,
-                    'z': z,
-                    # 'error_x': {'type': 'data', 'array': [get(d, x_std_dev, 0) for d in data], 'visible': True},
-                    # 'error_y': {'type': 'data', 'array': [get(d, y_std_dev, 0) for d in data], 'visible': True},
-                    'text': [d['task_id'] for d in data],
-                    'mode': 'markers',
-                    'marker': {'size': 5},
-                    'type': 'scatter3d'
-                }
-            ]
-
-            if enable_color:
-
-                c = [get(d, color_key) for d in data]
-                color_title = "{} / {}".format(scalar_symbols[color_prop].display_names[0],
-                                       scalar_symbols[color_prop].unit_as_string)
-
-                traces[0]['marker']['color'] = c
-                traces[0]['marker']['colorscale'] = 'Viridis'
-                traces[0]['marker']['showscale'] = True
-                traces[0]['marker']['colorbar'] = {'title': color_title}
-                traces[0]['marker']['cmin'] = color_range[0]
-                traces[0]['marker']['cmax'] = color_range[1]
-
-
-            x_title = "{} / {}".format(scalar_symbols[x_prop].display_names[0],
-                                       scalar_symbols[x_prop].unit_as_string)
-
-            y_title = "{} / {}".format(scalar_symbols[y_prop].display_names[0],
-                                       scalar_symbols[y_prop].unit_as_string)
-
-            z_title = "{} / {}".format(scalar_symbols[z_prop].display_names[0],
-                                       scalar_symbols[z_prop].unit_as_string)
-
-            layout = {
-                'yaxis': {'title': y_title, 'showgrid': True, 'showline': True,
-                          'zeroline': False},
-                'xaxis': {'title': x_title, 'showgrid': True, 'showline': True,
-                          'zeroline': False},
-                'zaxis': {'title': z_title, 'showgrid': True, 'showline': True,
-                          'zeroline': False},
-                'hovermode': 'closest'
+    @app.callback(
+        [Output('color-scale-range', 'min'),
+         Output('color-scale-range', 'max'),
+         Output('color-scale-range', 'marks'),
+         Output('color-scale-range', 'value')],
+        [Input('color-scale-property', 'data')],
+        [State('plot-data', 'data'),
+         State('enable-color', 'values')]
+    )
+    def update_color_bar_range(color_prop, data, enable_color):
+        # Default values if color range is not enabled
+        slider_min = 0
+        slider_max = 1
+        slider_marks = {0.5: ""}
+        slider_values = [0.1, 0.9]
+        if enable_color and color_prop:
+            c = data['color']
+            slider_min = np.min(c)
+            slider_max = np.max(c)
+            units = scalar_symbols[color_prop].unit_as_string
+            slider_marks = {
+                np.min(c): f"{slider_min:.2f} {units}",
+                np.percentile(c, 10): "",  # f"{np.percentile(c, 10):.2f} {units}",
+                np.percentile(c, 50): "",  # f"{np.percentile(c, 50):.2f} {units}",
+                np.percentile(c, 90): "",  # f"{np.percentile(c, 90):.2f} {units}",
+                np.max(c): f"{slider_max:.2f} {units}",
             }
+            slider_values = get_color_range(c, data['zoom'])
 
-            if zoom:
-                layout['xaxis']['range'] = [np.percentile(x, 10),
-                                            np.percentile(x, 90)]
-                layout['yaxis']['range'] = [np.percentile(y, 10),
-                                            np.percentile(y, 90)]
-                layout['zaxis']['range'] = [np.percentile(z, 10),
-                                            np.percentile(z, 90)]
+        return slider_min, slider_max, slider_marks, slider_values
 
 
-        else:
+def get_graph_data(x_prop, y_prop, z_prop, color_prop):
+    props_to_get = [prop for prop in (x_prop, y_prop, z_prop, color_prop)
+                    if prop is not None]
+    fields = [f'{prop}.mean' for prop in props_to_get]
+    criteria = {field: {'$exists': True}
+                for field in fields}
+    properties = fields + ['task_id']
 
-            x = [get(d, x_key) for d in data]
-            y = [get(d, y_key) for d in data]
+    query = store.query(criteria=criteria, properties=properties)
 
-            traces = [
-                {
-                    'x': x,
-                    'y': y,
-                    # 'error_x': {'type': 'data', 'array': [get(d, x_std_dev, 0) for d in data], 'visible': True},
-                    # 'error_y': {'type': 'data', 'array': [get(d, y_std_dev, 0) for d in data], 'visible': True},
-                    'text': [d['task_id'] for d in data],
-                    'mode': 'markers',
-                    'marker': {'size': 5},
-                    'type': 'scattergl'
-                }
-            ]
+    data = {
+        'x': [],
+        'x_name': x_prop,
+        'y': [],
+        'y_name': y_prop,
+        'mpids': [],
+        'zoom': None,
+        'color_range': None
+    }
+    if z_prop:
+        data.update({'z': [], 'z_name': z_prop})
+    if color_prop:
+        data.update({'color': [], 'color_name': color_prop})
 
-            if enable_color:
+    for item in query:
+        data['x'].append(get(item, x_prop+'.mean'))
+        data['y'].append(get(item, y_prop+'.mean'))
+        data['mpids'].append(item['task_id'])
+        if z_prop:
+            data['y'].append(get(item, z_prop+'.mean'))
+        if color_prop:
+            data['color'].append(get(item, color_prop + '.mean'))
 
-                c = [get(d, color_key) for d in data]
-                color_title = "{} / {}".format(scalar_symbols[color_prop].display_names[0],
+    return data
+
+
+def get_graph_figure(data, zoom, enable_z, enable_color, color_range):
+    x_prop = data['x_name']
+    x = data['x']
+    y_prop = data['y_name']
+    y = data['y']
+    mpids = data['mpids']
+
+    trace = {
+        'x': x,
+        'y': y,
+        'text': mpids,
+        'mode': 'markers',
+        'marker': {'size': 5},
+        'type': 'scattergl'
+    }
+
+    x_title = "{} / {}".format(scalar_symbols[x_prop].display_names[0],
+                               scalar_symbols[x_prop].unit_as_string)
+
+    y_title = "{} / {}".format(scalar_symbols[y_prop].display_names[0],
+                               scalar_symbols[y_prop].unit_as_string)
+
+    layout = {
+        'yaxis': {'title': y_title, 'showgrid': True, 'showline': True,
+                  'zeroline': False},
+        'xaxis': {'title': x_title, 'showgrid': True, 'showline': True,
+                  'zeroline': False},
+        'hovermode': 'closest'
+    }
+    if enable_color:
+        c = data['color']
+        color_prop = data['color_name']
+        color_title = "{} / {}".format(scalar_symbols[color_prop].display_names[0],
                                        scalar_symbols[color_prop].unit_as_string)
+        if not color_range:
+            color_range = get_color_range(c, zoom)
+        trace['marker']['color'] = c
+        trace['marker']['colorscale'] = 'Viridis'
+        trace['marker']['showscale'] = True
+        trace['marker']['colorbar'] = {'title': color_title}
+        trace['marker']['cmin'] = color_range[0]
+        trace['marker']['cmax'] = color_range[1]
 
-                traces[0]['marker']['color'] = c
-                traces[0]['marker']['colorscale'] = 'Viridis'
-                traces[0]['marker']['showscale'] = True
-                traces[0]['marker']['colorbar'] = {'title': color_title}
-                traces[0]['marker']['cmin'] = color_range[0]
-                traces[0]['marker']['cmax'] = color_range[1]
+    if zoom:
+        layout['xaxis']['range'] = [np.percentile(x, 10),
+                                    np.percentile(x, 90)]
+        layout['yaxis']['range'] = [np.percentile(y, 10),
+                                    np.percentile(y, 90)]
+
+    if enable_z:
+        z_prop = data['z_name']
+        z = data['z']
+        trace['z'] = z
+        trace['type'] = 'scatter3d'
+
+        z_title = "{} / {}".format(scalar_symbols[z_prop].display_names[0],
+                                   scalar_symbols[z_prop].unit_as_string)
+
+        layout['zaxis'] = {'title': z_title, 'showgrid': True, 'showline': True,
+                           'zeroline': False}
+
+        if zoom:
+            layout['zaxis']['range'] = [np.percentile(z, 10),
+                                        np.percentile(z, 90)]
+
+    return {'data': [trace], 'layout': layout}
 
 
-            x_title = "{} / {}".format(scalar_symbols[x_prop].display_names[0],
-                                       scalar_symbols[x_prop].unit_as_string)
+def get_color_range(c, zoom):
+    if zoom:
+        color_range = [np.percentile(c, 10), np.percentile(c, 90)]
+    else:
+        color_range = [np.min(c), np.max(c)]
 
-            y_title = "{} / {}".format(scalar_symbols[y_prop].display_names[0],
-                                       scalar_symbols[y_prop].unit_as_string)
-
-            layout = {
-                'yaxis': {'title': y_title, 'showgrid': False, 'showline': True,
-                          'zeroline': False},
-                'xaxis': {'title': x_title, 'showgrid': False, 'showline': True,
-                          'zeroline': False},
-                'hovermode': 'closest'
-            }
-
-            if zoom:
-                layout['xaxis']['range'] = [np.percentile(x, 10),
-                                            np.percentile(x, 90)]
-                layout['yaxis']['range'] = [np.percentile(y, 10),
-                                            np.percentile(y, 90)]
-
-        return {'data': traces, 'layout': layout}
-
-    return layout
+    return color_range
