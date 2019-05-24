@@ -180,6 +180,7 @@ def parse_path(pathname, search=None):
 
     Args:
       pathname (str): path from url
+      search (str): query string from url
 
     Returns:
         (dict) dictionary containing 'mode' ('property', 'model' etc.),
@@ -215,10 +216,8 @@ def parse_path(pathname, search=None):
         mode = 'plot'
         if search:
             q_vals = parse_qs(urlsplit(search).query)
-            value = {'x': q_vals.get('x'),
-                     'y': q_vals.get('y'),
-                     'z': q_vals.get('z')}
-            value = {k: v[0] for k, v in value.items() if v is not None}
+            value = {k: v[0] for k, v in q_vals.items()
+                     if k in ('x', 'y', 'z') and v is not None}
     elif pathname.startswith('/generate'):
         mode = 'generate'
     elif pathname.startswith('/correlate'):

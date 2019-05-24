@@ -125,7 +125,7 @@ def correlate_layout(app):
 
     correlation_func_choice = dcc.Dropdown(
         id="correlation_func_choice",
-        options=[{"label": f, "value": f} for f in correlation_funcs],
+        options=[{"label": v['name'], "value": k} for k, v in correlation_func_info.items()],
         value="mic",
     )
 

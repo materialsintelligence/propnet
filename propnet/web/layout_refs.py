@@ -4,6 +4,10 @@ import dash_html_components as html
 
 def refs_layout(app):
     layout = dcc.Markdown("""
+## Funding
+
+The _propnet_ project is part of the Accelerated Materials Design and Discovery program, funded by
+[Toyota Research Institute](https://www.tri.global/research/).
 
 ## Sources
 The propnet codebase uses data and functionality from a number of open-source databases and repositories.
