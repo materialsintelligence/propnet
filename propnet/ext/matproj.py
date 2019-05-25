@@ -28,7 +28,7 @@ class MPRester(_MPRester):
         "diel.pot_ferroelectric": "potentially_ferroelectric",
         "pretty_formula": "formula",
         "e_above_hull": "energy_above_hull",
-        "elasticity.elastic_tensor": "elastic_tensor_voigt",
+        "elasticity.elastic_tensor_original": "elastic_tensor_voigt",
         # "elasticity.G_Reuss": "shear_modulus",
         # "elasticity.G_VRH": "shear_modulus",
         # "elasticity.G_Voigt": "shear_modulus",
