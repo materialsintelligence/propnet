@@ -128,13 +128,16 @@ class CorrelationBuilder(Builder):
         # produces "BA" so that we don't have to re-query the database.
         for prop_x, prop_y in combinations_with_replacement(self._props, 2):
             if self.from_quantity_db:
-                data = self._get_data_from_quantity_db(prop_x, prop_y)
+                data = self.get_data_from_quantity_db(self.propnet_store,
+                                                      prop_x, prop_y,
+                                                      sample_size=self.sample_size)
             else:
-                data = self._get_data_from_full_db(prop_x, prop_y)
+                data = self.get_data_from_full_db(prop_x, prop_y)
 
             yield from self._make_data_combinations(prop_x, prop_y, data)
 
-    def _get_data_from_quantity_db(self, prop_x, prop_y):
+    @staticmethod
+    def get_data_from_quantity_db(store, *props, sample_size=None, include_id=False):
         """
         Collects scalar data from the quantity-onlu propnet database,
         aggregates it by material and property, and samples it if desired.
@@ -150,56 +153,49 @@ class CorrelationBuilder(Builder):
 
         # This aggregation query collects the quantities, groups them by material
         # and averages the values for that material, then samples them (if specified)
-        pipeline = [{
+        match_stage = {
             '$match': {
                 '$or': [
-                    {'symbol_type': prop_x},
-                    {'symbol_type': prop_y}
+                    {'symbol_type': prop} for prop in props
                 ]}
-            }, {
-            '$group': {
-                '_id': '$material_key',
-                prop_x: {
+        }
+        group_stage = {'$group': {'_id': '$material_key'}}
+        for prop in props:
+            group_stage['$group'].update({
+                prop: {
                     '$avg': {
                         '$cond': [
-                            {"$eq": ['$symbol_type', prop_x]},
-                            '$value',
-                            None
-                        ]
-                    }
-                },
-                prop_y: {
-                    '$avg': {
-                        '$cond': [
-                            {"$eq": ['$symbol_type', prop_y]},
+                            {"$eq": ['$symbol_type', prop]},
                             '$value',
                             None
                         ]
                     }
                 }
-            }
-        }]
+            })
+        pipeline = [match_stage, group_stage]
 
-        if self.sample_size is not None:
+        if sample_size is not None:
             pipeline.append(
-                {'$sample': {'size': self.sample_size}}
+                {'$sample': {'size': sample_size}}
             )
 
-        pn_data = self.propnet_store.collection.aggregate(
+        query = store.collection.aggregate(
             pipeline=pipeline,
             allowDiskUse=True
         )
-        x_data = []
-        y_data = []
-        for m in pn_data:
-            if m[prop_x] is not None and m[prop_y] is not None and \
-                    np.isfinite(m[prop_x]) and np.isfinite(m[prop_y]):
-                x_data.append(m[prop_x])
-                y_data.append(m[prop_y])
 
-        return {prop_x: x_data, prop_y: y_data}
+        data = defaultdict(list)
+        for m in query:
+            if all(m[prop] is not None and np.isfinite(m[prop])
+                   for prop in props):
+                for prop in props:
+                    data[prop].append(m[prop])
+                if include_id:
+                    data['_id'].append(m['_id'])
 
-    def _get_data_from_full_db(self, prop_x, prop_y):
+        return dict(data)
+
+    def get_data_from_full_db(self, prop_x, prop_y):
         """
         Collects scalar data from full propnet database, aggregates it by property,
         and samples it if desired.
