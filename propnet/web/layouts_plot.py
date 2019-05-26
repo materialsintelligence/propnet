@@ -95,7 +95,8 @@ def get_plot_layout(props=None):
         else:
             n_points = 0
         count_text = f"There are {n_points} data points in the pre-built propnet " \
-            f"database that matches these criteria."
+            f"database that matches these criteria. Click a point to see more " \
+            f"information displayed below."
     else:
         count_text = ""
 

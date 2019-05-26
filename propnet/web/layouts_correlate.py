@@ -9,6 +9,8 @@ from monty.serialization import loadfn
 import propnet.symbols
 from propnet.core.registry import Registry
 
+from propnet.web.layouts_plot import scalar_symbols
+
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
@@ -139,6 +141,7 @@ def correlate_layout(app):
         id="correlation_func_choice",
         options=[{"label": v['name'], "value": k} for k, v in correlation_func_info.items()],
         value="mic",
+        placeholder="Select correlation function"
     )
 
     explain_text = dcc.Markdown("""
@@ -171,11 +174,21 @@ axes to a wider display range. The graphing package is in development._
         graph],
         className="seven columns")
 
-    info_layout = html.Div(id="point_info", className="five columns",
-                           children=[dcc.Markdown("""
+    info_layout = html.Div(className="five columns", children=[
+        dcc.Dropdown(id='choose-corr-x', options=[
+            {'label': v.display_names[0], 'value': k} for k, v in
+            scalar_symbols.items()
+        ], placeholder="Select first property"),
+        dcc.Dropdown(id='choose-corr-y', options=[
+            {'label': v.display_names[0], 'value': k} for k, v in
+            scalar_symbols.items()
+        ], placeholder="Select second property"),
+        html.Div(id="point_info",
+                 children=[dcc.Markdown("""
 ##### Point information
 No point selected
 """)])
+    ])
 
     point_clicked = dcc.Store(id='point_clicked', storage_type='memory',
                               data=False)
@@ -213,26 +226,43 @@ No point selected
         return table_highlight
 
     @app.callback(
-        [Output("point_info", "children"),
-         Output("point_clicked", "data")],
-        [Input("correlation_violin", "clickData")],
-        [State("correlation_func_choice", "value")]
+        [Output("choose-corr-x", "value"),
+         Output("choose-corr-y", "value")],
+        [Input("correlation_violin", "clickData")]
     )
-    def populate_point_information(selected_points, current_func):
+    def update_xy_selection(selected_points):
         if not selected_points:
             raise PreventUpdate
-
         target_data = selected_points['points'][0]['customdata']
         prop_x, prop_y = target_data['property_x'], target_data['property_y']
+
+        return prop_x, prop_y
+
+    @app.callback(
+        [Output("point_info", "children"),
+         Output("point_clicked", "data")],
+        [Input("choose-corr-x", "value"),
+         Input("choose-corr-y", "value")],
+        [State("correlation_func_choice", "value")]
+    )
+    def populate_point_information(prop_x, prop_y, current_func):
+        if not (prop_x and prop_y):
+            raise PreventUpdate
+
         prop_x_name = Registry("symbols")[prop_x].display_names[0]
         prop_y_name = Registry("symbols")[prop_y].display_names[0]
-        if target_data['shortest_path_length'] is None:
+
+        data = list(store.query(criteria={'property_x': prop_x,
+                                          'property_y': prop_y}))
+
+        path_length = data[0]['shortest_path_length']
+        if path_length is None:
             path_text = "not connected"
-        elif target_data['shortest_path_length'] == 0:
+        elif path_length == 0:
             path_text = "properties are the same"
         else:
-            path_text = f"separated by {target_data['shortest_path_length']} model"
-            if target_data['shortest_path_length'] > 1:
+            path_text = f"separated by {path_length} model"
+            if path_length > 1:
                 path_text += "s"
         point_text = dcc.Markdown(f"""
 ##### Point information
@@ -242,17 +272,15 @@ No point selected
 
 **distance apart on graph:** {path_text}
 
-**number of data points:** {target_data['n_points']}
+**number of data points:** {data[0]['n_points']}
 """)
-        query = store.query(criteria={'property_x': target_data['property_x'],
-                                      'property_y': target_data['property_y']},
-                            properties=["correlation_func", "correlation"])
+
         # This ensures we know the ordering of the rows
         correlation_data = {
             d['correlation_func']:
                 {'Correlation Function': correlation_func_info[d['correlation_func']]["name"],
                  'Correlation Value': f"{d['correlation']:0.5f}"}
-            for d in query}
+            for d in data}
         correlation_data = [correlation_data[func] for func in correlation_funcs]
 
         correlation_table = dt.DataTable(id='corr-table', data=correlation_data,
