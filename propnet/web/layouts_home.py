@@ -101,14 +101,16 @@ As the code base grows with more models and properties, more data can be derived
 contributions of models and properties (symbols). Please contact us via our GitHub page (linked below).
 """)]),
          html.Details([
-             html.Summary(html.H4("How powerful is propnet?",
+             html.Summary(html.H4("Where can I download the code or make a suggestion?",
                                   style={'display': 'inline'}),
                           style={'display': 'flex',
                                  'align-items': 'center'}),
              dcc.Markdown("""
-Our GitHub repository is available [here](https://github.com/materialsintelligence/propnet),
-if you would like to test _propnet_ locally, please clone the repository, `pip install -r requirements.txt`
+Our GitHub repository is available [here](https://github.com/materialsintelligence/propnet).
+If you would like to test _propnet_ locally, please clone the repository, `pip install -r requirements.txt`
 and `python setup.py develop`.
+
+If you have a suggestion for a feature or for a model, please open an issue or contact the team via GitHub.
 """)]),
          html.Br(),
          html.Div(

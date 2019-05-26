@@ -19,6 +19,7 @@ from pymatgen import MPRester
 from pymongo.errors import ServerSelectionTimeoutError
 
 import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 mpr = MPRester()
@@ -57,7 +58,9 @@ correlation_func_info = {
         }
 
 
-def violin_plot(correlation_func="mic"):
+def violin_plot(correlation_func=None):
+    if correlation_func is None:
+        return go.Figure()
 
     path_lengths = sorted(
         store.query().distinct("shortest_path_length"), key=lambda x: (x is None, x)
@@ -77,6 +80,7 @@ def violin_plot(correlation_func="mic"):
         points[d["shortest_path_length"]].append(d)
     data = []
     bounds_test_func = correlation_func_info[correlation_func]['bounds']
+    pos_idx = 0
     for p in path_lengths:
         points_p = points[p]
         if len(points_p) == 0:
@@ -85,28 +89,36 @@ def violin_plot(correlation_func="mic"):
         custom_data = []
 
         for pt in points_p:
-            if pt['correlation'] is not None and bounds_test_func(pt['correlation']):
-                y_data.append("{:0.5f}".format(pt['correlation']))
+            corr = pt['correlation']
+            if corr is not None and np.isfinite(corr) and bounds_test_func(corr):
+                y_data.append("{:0.5f}".format(corr))
                 custom_data.append(pt)
 
-        x_data = [str(p)] * len(y_data)
+        x_data = [pos_idx] * len(y_data)
+        if p is not None:
+            name = f"{p} model"
+            if p != 1:
+                name += "s"
+        else:
+            name = "Not connected"
         trace = {
             "type": "violin",
             "x": x_data,
             "y": y_data,
             "customdata": custom_data,
-            "name": str(p),
+            "name": name,
             "box": {"visible": True},
             "points": "all",
             "meanline": {"visible": False},
             "hoverinfo": "y",
         }
         data.append(trace)
+        pos_idx += 1
 
     func_description = correlation_func_info[correlation_func]["name"]
 
     layout = {
-        "title": f"Correlation between properties based on {func_description} score",
+        "title": f"Correlation between properties based on<br>{func_description} score",
         "yaxis": {"zeroline": False, "showgrid": False, "title": "Correlation score"},
         "xaxis": {"showticklabels": False}
     }
@@ -140,9 +152,9 @@ axes to a wider display range._
     plot_display_layout = html.Div([
         correlation_func_choice,
         graph],
-        className="six columns")
+        className="seven columns")
 
-    info_layout = html.Div(id="point_info", className="six columns",
+    info_layout = html.Div(id="point_info", className="five columns",
                            children=[dcc.Markdown("""
 ##### Point information
 No point selected
@@ -198,9 +210,9 @@ No point selected
         prop_x_name = Registry("symbols")[prop_x].display_names[0]
         prop_y_name = Registry("symbols")[prop_y].display_names[0]
         if target_data['shortest_path_length'] is None:
-            path_text = "the properties not connected"
+            path_text = "not connected"
         elif target_data['shortest_path_length'] == 0:
-            path_text = "the properties are the same"
+            path_text = "properties are the same"
         else:
             path_text = f"separated by {target_data['shortest_path_length']} model"
             if target_data['shortest_path_length'] > 1:

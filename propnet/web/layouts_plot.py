@@ -42,10 +42,16 @@ except (ServerSelectionTimeoutError, KeyError):
                                      'font-size': '1.2em'})
 else:
     cut_off = 100  # need at least this many available quantities for plot
+    """
     scalar_symbols = {k: v for k, v in Registry("symbols").items()
                       if (v.category == 'property' and v.shape == 1
                           and store.query(
                               criteria={f'{k}.mean': {'$exists': True}}).count() > cut_off)}
+    """
+    scalar_symbols = {
+        k: v for k, v in Registry("symbols").items()
+        if (v.category == 'property' and v.shape == 1
+            and len(store.query(criteria={'symbol_type': k}).distinct("material_key")) > cut_off)}
     warning_layout = html.Div()
 
 
@@ -88,7 +94,7 @@ def get_plot_layout(props=None):
             n_points = len(plot_data['x'])
         else:
             n_points = 0
-        count_text = f"There are {len(plot_data['x'])} data points in the pre-built propnet " \
+        count_text = f"There are {n_points} data points in the pre-built propnet " \
             f"database that matches these criteria."
     else:
         count_text = ""
@@ -329,34 +335,28 @@ def get_graph_data(x_prop, y_prop, z_prop, color_prop):
                 for field in fields}
     properties = fields + ['task_id']
 
-    query = store.query(criteria=criteria, properties=properties)
+    from propnet.dbtools.correlation import CorrelationBuilder
+    data = CorrelationBuilder.get_data_from_quantity_db(store, *props_to_get,
+                                                        include_id=True)
+    # query = store.query(criteria=criteria, properties=properties)
 
-    if query.count() == 0:
+    if len(data[x_prop]) == 0:
         return {'query_success': False}
 
     data = {
         'query_success': True,
-        'x': [],
+        'x': data[x_prop],
         'x_name': x_prop,
-        'y': [],
+        'y': data[y_prop],
         'y_name': y_prop,
-        'mpids': [],
+        'mpids': data['_id'],
         'zoom': None,
         'color_range': None
     }
     if z_prop:
-        data.update({'z': [], 'z_name': z_prop, 'z_enabled': True})
+        data.update({'z': data[z_prop], 'z_name': z_prop, 'z_enabled': True})
     if color_prop:
-        data.update({'color': [], 'color_name': color_prop, 'color_enabled': True})
-
-    for item in query:
-        data['x'].append(get(item, x_prop+'.mean'))
-        data['y'].append(get(item, y_prop+'.mean'))
-        data['mpids'].append(item['task_id'])
-        if z_prop:
-            data['z'].append(get(item, z_prop+'.mean'))
-        if color_prop:
-            data['color'].append(get(item, color_prop + '.mean'))
+        data.update({'color': data[color_prop], 'color_name': color_prop, 'color_enabled': True})
 
     return data
 
