@@ -143,8 +143,13 @@ class CorrelationBuilder(Builder):
         aggregates it by material and property, and samples it if desired.
 
         Args:
-            prop_x (str): name of property x
-            prop_y (str): name of property y
+            store (maggma.stores.Store): MongoDB store instance for quantity databse
+            *props (str): property names as strings
+            sample_size (int): If specified, limits the number of returned records
+                to sample_size, randomly selected. If total of records is less than
+                sample_size, only those records are returned. Default: None (all records)
+            include_id (bool): True includes the '_id' field, which contains the material
+                key for the record. Default: False (do not include the field)
 
         Returns:
             dict: dictionary of data keyed by property name
