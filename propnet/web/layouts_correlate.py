@@ -142,11 +142,28 @@ def correlate_layout(app):
     )
 
     explain_text = dcc.Markdown("""
-_Note: You may encounter some display issues with the mouseover information, particularly when
-zooming or changing the axes value ranges. These issues originate within the external library 
-used to create the violin plot, which is still in development. To restore the mouseover, try
+##### How to read this plot
+
+The plot above is called a "violin plot." The width of the plot shows the density of points that have
+the value on the y-axis. Inscribed in the "violin" is a standard box-and-whisker plot, with lines 
+indicating mean and quartile values. To the left of the violin plot are the actual data points used to
+calculate the statistical data.
+
+Each violin plot shows correlation scores for scalar property pairs separated by different numbers 
+of models on the _propnet_ knowledge graph. Property pairs that are not currently connected by any path 
+are shown on the far right.
+
+Select the dropdown above the plot to choose between different correlation metrics. For certain metrics,
+the data have been filtered to make the plot more readable.
+
+To isolate a single violin plot, double-click its entry in the legend. You can hide/show plots by clicking
+their entries on the legend. To find out more information about a point on the plot, click it and the
+information will be populated on the right. Click "View the data plot" to show the two properties plotted
+against each other in the "Plot" view.
+
+_Note: If you encounter issues with the mouseover labels on the plot, try
 isolating the plot you wish to explore by double-clicking its legend entry and/or setting the
-axes to a wider display range._
+axes to a wider display range. The graphing package is in development._
 """)
 
     plot_display_layout = html.Div([
