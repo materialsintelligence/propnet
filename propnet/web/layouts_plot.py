@@ -12,7 +12,7 @@ from monty.serialization import loadfn
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from pydash import get, set_
+from pydash import set_
 
 from pymatgen import MPRester
 from pymatgen.util.string import unicodeify
@@ -20,6 +20,7 @@ from pymatgen.util.string import unicodeify
 # noinspection PyUnresolvedReferences
 import propnet.symbols
 from propnet.core.registry import Registry
+from propnet.dbtools.correlation import CorrelationBuilder
 
 from pymongo.errors import ServerSelectionTimeoutError
 
@@ -331,15 +332,9 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
 def get_graph_data(x_prop, y_prop, z_prop, color_prop):
     props_to_get = [prop for prop in (x_prop, y_prop, z_prop, color_prop)
                     if prop is not None]
-    fields = [f'{prop}.mean' for prop in props_to_get]
-    criteria = {field: {'$exists': True}
-                for field in fields}
-    properties = fields + ['task_id']
 
-    from propnet.dbtools.correlation import CorrelationBuilder
     data = CorrelationBuilder.get_data_from_quantity_db(store, *props_to_get,
                                                         include_id=True)
-    # query = store.query(criteria=criteria, properties=properties)
 
     if len(data[x_prop]) == 0:
         return {'query_success': False}
