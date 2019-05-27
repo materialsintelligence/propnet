@@ -2,6 +2,7 @@ import logging
 
 from os import path
 import re
+from urllib.parse import parse_qs, urlsplit
 
 from propnet.core.symbols import Symbol
 from propnet.core.models import Model
@@ -172,13 +173,14 @@ def graph_conversion(graph: nx.DiGraph,
     return graph_data
 
 
-def parse_path(pathname):
+def parse_path(pathname, search=None):
     """Utility function to parse URL path for routing purposes etc.
     This function exists because the path has to be parsed in
     a few places for callbacks.
 
     Args:
       pathname (str): path from url
+      search (str): query string from url
 
     Returns:
         (dict) dictionary containing 'mode' ('property', 'model' etc.),
@@ -212,6 +214,10 @@ def parse_path(pathname):
         mode = 'explore'
     elif pathname.startswith('/plot'):
         mode = 'plot'
+        if search:
+            q_vals = parse_qs(urlsplit(search).query)
+            value = {k: v[0] for k, v in q_vals.items()
+                     if k in ('x', 'y', 'z') and v is not None}
     elif pathname.startswith('/generate'):
         mode = 'generate'
     elif pathname.startswith('/correlate'):

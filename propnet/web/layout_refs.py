@@ -3,26 +3,46 @@ import dash_html_components as html
 
 
 def refs_layout(app):
-    layout = dcc.Markdown("""
+    layout = html.Div([
+        dcc.Markdown("""
+## Funding
+
+The _propnet_ project is part of the Accelerated Materials Design and Discovery program, funded by
+[Toyota Research Institute](https://www.tri.global/research/).
 
 ## Sources
 The propnet codebase uses data and functionality from a number of open-source databases and repositories.
 For more detailed information regarding these sources, please see the following references. For reference
 information on individual properties and models, please see the respective model or symbol detail page.
-
-##### The Materials Project
+"""),
+        html.Details([
+            html.Summary(html.H4("The Materials Project",
+                                 style={'display': 'inline'}),
+                         style={'display': 'flex',
+                                'align-items': 'center'}),
+            dcc.Markdown("""
 > Anubhav Jain, Shyue Ping Ong, Geoffroy Hautier, Wei Chen, William Davidson Richards, Stephen Dacek, Shreyas Cholia, Dan Gunter, David Skinner, Gerbrand Ceder, and Kristin A\. Persson\.
 The Materials Project: A materials genome approach to accelerating materials innovation\.
 *APL Materials*, 1\(1\):011002, 2013\.
-URL: [https://aip\.scitation\.org/doi/10\.1063/1\.4812323](https://aip.scitation.org/doi/10.1063/1.4812323), [doi:10\.1063/1\.4812323](https://doi.org/10.1063/1.4812323)\.  
-
-##### Pymatgen
+URL: [https://aip\.scitation\.org/doi/10\.1063/1\.4812323](https://aip.scitation.org/doi/10.1063/1.4812323), [doi:10\.1063/1\.4812323](https://doi.org/10.1063/1.4812323)\.
+""")]),
+        html.Details([
+            html.Summary(html.H4("Pymatgen",
+                                 style={'display': 'inline'}),
+                         style={'display': 'flex',
+                                'align-items': 'center'}),
+            dcc.Markdown("""
 > Shyue Ping Ong, William Davidson Richards, Anubhav Jain, Geoffroy Hautier, Michael Kocher, Shreyas Cholia, Dan Gunter, Vincent L\. Chevrier, Kristin A\. Persson, and Gerbrand Ceder\.
 Python materials genomics \(pymatgen\): a robust, open\-source python library for materials analysis\.
 *Computational Materials Science*, 68:314–319, Feb 2013\.
 URL: [https://doi\.org/10\.1016%2Fj\.commatsci\.2012\.10\.028](https://doi.org/10.1016%2Fj.commatsci.2012.10.028), [doi:10\.1016/j\.commatsci\.2012\.10\.028](https://doi.org/10.1016/j.commatsci.2012.10.028)\.  
-
-##### AFLOW / AFLUX
+""")]),
+        html.Details([
+            html.Summary(html.H4("AFLOW / AFLUX",
+                                 style={'display': 'inline'}),
+                         style={'display': 'flex',
+                                'align-items': 'center'}),
+            dcc.Markdown("""
 > Stefano Curtarolo, Wahyu Setyawan, Gus L\.W\. Hart, Michal Jahnatek, Roman V\. Chepulskii, Richard H\. Taylor, Shidong Wang, Junkai Xue, Kesong Yang, Ohad Levy, Michael J\. Mehl, Harold T\. Stokes, Denis O\. Demchenko, and Dane Morgan\.
 AFLOW: an automatic framework for high\-throughput materials discovery\.
 *Computational Materials Science*, 58:218–226, Jun 2012\.
@@ -37,11 +57,18 @@ URL: [https://doi\.org/10\.1016%2Fj\.commatsci\.2014\.05\.014](https://doi.org/1
 AFLUX: the LUX materials search API for the AFLOW data repositories\.
 *Computational Materials Science*, 137:362–370, Sep 2017\.
 URL: [https://doi\.org/10\.1016%2Fj\.commatsci\.2017\.04\.036](https://doi.org/10.1016%2Fj.commatsci.2017.04.036), [doi:10\.1016/j\.commatsci\.2017\.04\.036](https://doi.org/10.1016/j.commatsci.2017.04.036)\.  
-
-##### AFLUX API Python Wrapper
+""")]),
+        html.Details([
+            html.Summary(html.H4("AFLUX API Python Wrapper",
+                                 style={'display': 'inline'}),
+                         style={'display': 'flex',
+                                'align-items': 'center'}),
+            dcc.Markdown("""
 > Conrad W\. Rosenbrock\.
 A practical Python API for querying AFLOWLIB\.
 2017\.
-[arXiv:arXiv:1710\.00813](https://arxiv.org/abs/arXiv:1710.00813)\.""")
+[arXiv:arXiv:1710\.00813](https://arxiv.org/abs/arXiv:1710.00813)\.""")]),
+        html.Br()
+    ])
 
     return layout
