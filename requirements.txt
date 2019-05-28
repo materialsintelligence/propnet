@@ -11,7 +11,7 @@ dash-cytoscape==0.1.1
 
 # core, utilities
 frozendict>=1.2
-monty>=1.0.3
+monty==2.0.2
 networkx>=2.0
 numpy>=1.15.1
 Pint>=0.8.1
