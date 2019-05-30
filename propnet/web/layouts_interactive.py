@@ -159,18 +159,19 @@ def interactive_layout(app):
         if query.startswith("aflow"):
             identifier = query
             material = AFA.get_material_by_auid(query)
-            formula = material['formula']
+            formula_field = 'formula'
         else:
             if query.startswith("mp-") or query.startswith("mvc-"):
                 identifier = query
             else:
                 identifier = MPR.get_mpid_from_formula(query)
             material = MPR.get_material_for_mpid(identifier)
-            formula = material['pretty_formula']
+            formula_field = 'pretty_formula'
 
         if not material:
             raise PreventUpdate
 
+        formula = material[formula_field]
         logger.info("Retrieved material {} for formula {}".format(
             identifier, formula))
 
