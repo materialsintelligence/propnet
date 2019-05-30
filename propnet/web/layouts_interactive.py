@@ -158,7 +158,7 @@ def interactive_layout(app):
 
         if query.startswith("aflow"):
             identifier = query
-            material = AFA.get_material_by_auid(query)
+            material = AFA.get_material_by_auid(identifier)
             formula_field = 'formula'
         else:
             if query.startswith("mp-") or query.startswith("mvc-"):
