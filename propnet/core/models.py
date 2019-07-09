@@ -39,7 +39,7 @@ class Model(ABC):
 
     _registry_name = "models"
 
-    def __init__(self, name, connections, constraints=None,
+    def __init__(self, name, connections, constraints=None, display_names=None,
                  description=None, categories=None, references=None, implemented_by=None,
                  variable_symbol_map=None, units_for_evaluation=None, test_data=None,
                  is_builtin=False, register=True, overwrite_registry=True):
@@ -57,6 +57,8 @@ class Model(ABC):
                 Constraint objects of some condition on which the model is
                 valid, e. g. ``"n > 0"``, note that this must include variables if
                 there is a variable_symbol_map
+            display_names (`list` of `str`): optional, list of alternative names to use for
+                display
             description (str): long form description of the model
             categories (`list` of `str`): list of categories applicable to
                 the model
@@ -94,6 +96,7 @@ class Model(ABC):
         self.name = name
         self._connections = connections
         self.description = description
+        self.display_names = display_names
         if isinstance(categories, str):
             categories = [categories]
         self.categories = categories or []
@@ -452,6 +455,9 @@ class Model(ABC):
             formatted title, e. g. "band_gap_refractive_index"
             becomes "Band Gap Refractive Index"
         """
+
+        if self.display_names:
+            return self.display_names[0]
         return self.name.replace('_', ' ').title()
 
     # Note: these are formulated in terms of symbols rather than variables
@@ -755,7 +761,7 @@ class EquationModel(Model, MSONable):
 
     """
     def __init__(self, name, equations, connections=None, constraints=None,
-                 variable_symbol_map=None, description=None,
+                 variable_symbol_map=None, display_names=None, description=None,
                  categories=None, references=None, implemented_by=None,
                  units_for_evaluation=None, solve_for_all_variables=False, test_data=None,
                  is_builtin=False, register=True, overwrite_registry=True):
@@ -778,6 +784,8 @@ class EquationModel(Model, MSONable):
                 alternatively, using solve_for_all_variables will derive all
                 possible input-output connections
             constraints (`list` of `str`, `list` of `Constraint`): constraints on models
+            display_names (`list` of `str`): optional, list of alternative names to use for
+                display
             description (str): long form description of the model
             categories (str): list of categories applicable to
                 the model
@@ -828,7 +836,7 @@ class EquationModel(Model, MSONable):
                 connection["_sympy_exprs"] = sympy_exprs
 
         super(EquationModel, self).__init__(
-            name, connections, constraints, description,
+            name, connections, constraints, display_names, description,
             categories, references, implemented_by,
             variable_symbol_map, units_for_evaluation,
             test_data=test_data,
@@ -964,13 +972,13 @@ class PyModel(Model):
     to EquationModels
     """
     def __init__(self, name, connections, plug_in, constraints=None,
-                 description=None, categories=None, references=None,
-                 implemented_by=None, variable_symbol_map=None,
+                 display_names=None, description=None, categories=None,
+                 references=None, implemented_by=None, variable_symbol_map=None,
                  units_for_evaluation=True, test_data=None, is_builtin=False,
                  register=True, overwrite_registry=True):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
-            name, connections, constraints, description,
+            name, connections, constraints, display_names, description,
             categories, references, implemented_by,
             variable_symbol_map, units_for_evaluation,
             test_data=test_data, is_builtin=is_builtin,
