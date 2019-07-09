@@ -1,6 +1,6 @@
 name: volume_unit_cell
 units: angstrom ** 3
-display_names: [Volume per Unit Cell]
+display_names: [Volume per unit cell]
 display_symbols: ["V_{cell}"]
 shape: 1
 comment: ''

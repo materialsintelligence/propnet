@@ -1,5 +1,5 @@
 name: computed_entry
-display_names: ['Computed Entry']
+display_names: ['Computed entry']
 display_symbols: ['Computed Entry']
 comment: 'A computed entry stores information on the output of a DFT calculation, such as total energy, if Hubbard U corrections were used and any relevant corrections.'
 category: object

@@ -1,6 +1,6 @@
 name: electromechanical_coupling
 units: dimensionless
-display_names: ['Electromechanical Coupling Factor']
+display_names: ['Electromechanical coupling factor']
 display_symbols: ['k']
 shape: 1
 comment: 'The efficiency of coupling electrical energy to acoustic energy in a piezoeletric material'

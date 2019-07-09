@@ -39,7 +39,7 @@ test_data = [{
 }]
 
 config = {
-    "name": "eletromechanical_coupling",
+    "name": "electromechanical_coupling",
     "connections": [{
         "inputs": ["e", "S", "d"],
         "outputs": ["k"]
