@@ -473,7 +473,7 @@ class NumQuantity(BaseQuantity):
             if symbol_type.units is None:
                 raise ValueError("No units specified as keyword and no "
                                  "units provided by symbol for NumQuantity")
-            logger.warning("WARNING: No units supplied, assuming default units from symbol.")
+            logger.info("WARNING: No units supplied, assuming default units from symbol.")
 
         units = units or symbol_type.units
 
