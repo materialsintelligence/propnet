@@ -56,11 +56,12 @@ class FittingTests(unittest.TestCase):
                      "band_gap_refractive_index_moss",
                      "band_gap_refractive_index_ravindra",
                      "band_gap_refractive_index_reddy_ahammed",
-                     "band_gap_refractive_index_reddy_anjaneyulu"]
+                     "band_gap_refractive_index_reddy_anjaneyulu",
+        ]
         scores = fit_model_scores(self.evaluated, self.benchmarks,
                                   models=model_names)
         self.assertAlmostEqual(
-            scores['band_gap_refractive_index_herve_vandamme'], 1.371478, 3)
+            scores['band_gap_refractive_index_herve_vandamme'], 0.2652523577828973, 3)
 
 
 if __name__ == "__main__":
