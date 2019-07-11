@@ -66,13 +66,14 @@ REMAINING_DEFAULT_ROWS = [
 
 # I'm sure that the font stuff can be handled by css, but I can't css as of now...
 DATA_TABLE_STYLE = dict(
-    n_fixed_rows=1,
+    fixed_rows={'headers': True},
     style_table={
         'maxHeight': '400px',
-        'overflowY': 'scroll'
+        'overflowY': 'scroll',
     },
     style_cell={
-        'minWidth': '400px', 'width': '400px', 'maxWidth': '400px',
+        # To fix headers to top, these must be explicit pixel widths, not percents
+        'minWidth': '600px', 'width': '600px', 'maxWidth': '600px',
         'whiteSpace': 'no-wrap',
         'overflow': 'hidden',
         'textOverflow': 'clip',
@@ -117,22 +118,23 @@ def interactive_layout(app):
         html.Br(),
         dcc.Markdown(id='calculation-status'),
         html.Br(),
-        html.Div(children=[dt.DataTable(id='db-table',
-                                        data=[{'Property': "", 'Database Value': ""}],
-                                        columns=[{'id': val, 'name': val}
-                                                 for val in ('Property', 'Database Value')],
-                                        editable=False, **DATA_TABLE_STYLE)], id='db-container'),
+        html.Div([dt.DataTable(id='db-table',
+                     data=[{'Property': "", 'Database Value': ""}],
+                     columns=[{'id': val, 'name': val}
+                              for val in ('Property', 'Database Value')],
+                     editable=False, **DATA_TABLE_STYLE)],
+                 style={'width': '1225px'}),
         dcc.Store(id='db-data', storage_type='memory'),
         html.Br(),
         dcc.Markdown(
             'You can also enter your own values of properties below. If units are not '
             'specified, default propnet units will be assigned, but you can '
             'also enter your own units.'),
-        dt.DataTable(id='input-table', data=DEFAULT_ROWS,
+        html.Div([dt.DataTable(id='input-table', data=DEFAULT_ROWS,
                      columns=[{'id': val, 'name': val}
                               for val in ('Property', 'Editable Value')],
-                     editable=True, **DATA_TABLE_STYLE
-        ),
+                     editable=True, **DATA_TABLE_STYLE)],
+                 style={'width': '1225px'}),
         html.Br(),
         dcc.Markdown('## propnet-derived output'),
         dcc.Markdown('Properties derived by propnet will be show below. If there are multiple '
@@ -141,9 +143,9 @@ def interactive_layout(app):
                      'yellow. Models used to derive these properties are in blue. Properties '
                      'shown in grey require additional information to derive.'),
         dcc.Checklist(id='aggregate', options=[{'label': 'Aggregate', 'value': 'aggregate'}],
-                      values=['aggregate'], style={'display': 'inline-block'}),
+                      value=['aggregate'], style={'display': 'inline-block'}),
         html.Br(),
-        html.Div(id='propnet-output'),
+        html.Div(id='propnet-output', style={'width': '1225px'}),
         html.Br()
     ])
 
@@ -158,19 +160,20 @@ def interactive_layout(app):
 
         if query.startswith("aflow"):
             identifier = query
-            material = AFA.get_material_by_auid(query)
-            formula = material['formula']
+            material = AFA.get_material_by_auid(identifier)
+            formula_field = 'formula'
         else:
             if query.startswith("mp-") or query.startswith("mvc-"):
                 identifier = query
             else:
                 identifier = MPR.get_mpid_from_formula(query)
             material = MPR.get_material_for_mpid(identifier)
-            formula = material['pretty_formula']
+            formula_field = 'pretty_formula'
 
         if not material:
             raise PreventUpdate
 
+        formula = material[formula_field]
         logger.info("Retrieved material {} for formula {}".format(
             identifier, formula))
 
@@ -210,7 +213,7 @@ def interactive_layout(app):
         Output('propnet-output', 'children'),
         [Input('input-table', 'data'),
          Input('db-data', 'data'),
-         Input('aggregate', 'values')]
+         Input('aggregate', 'value')]
     )
     def evaluate(input_rows, data, aggregate):
 
@@ -276,7 +279,7 @@ def interactive_layout(app):
                                         'value': 'show_models'},
                                        {'label': 'Show properties',
                                         'value': 'show_properties'}],
-                              values=['show_properties'],
+                              value=['show_properties'],
                               labelStyle={'display': 'inline-block'}),
                 Cytoscape(
                     id='material-graph',
@@ -295,7 +298,7 @@ def interactive_layout(app):
         ]
 
     @app.callback(Output('material-graph', 'elements'),
-                  [Input('material-graph-options', 'values')],
+                  [Input('material-graph-options', 'value')],
                   [State('material-graph', 'elements')])
     def change_material_graph_label_selection(props, elements):
         show_properties = 'show_properties' in props
