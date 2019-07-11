@@ -30,13 +30,13 @@ def explore_layout(app):
                                     'value': 'show_models'},
                                    {'label': 'Show properties',
                                     'value': 'show_properties'}],
-                          values=['show_properties'],
+                          value=['show_properties'],
                           labelStyle={'display': 'inline-block'}),
             html.Div(id='graph_explorer',
                      children=[graph_component])])
 
     @app.callback(Output('pn-graph', 'elements'),
-                  [Input('graph_options', 'values')],
+                  [Input('graph_options', 'value')],
                   [State('pn-graph', 'elements')])
     def change_propnet_graph_label_selection(props, elements):
         show_properties = 'show_properties' in props

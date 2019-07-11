@@ -118,11 +118,11 @@ def get_plot_layout(props=None):
         ], value=prop_y),
         dcc.Checklist(id='zoom', options=[
             {'label': 'Zoom to 90% percentile', 'value': 'zoom'}],
-                      values=['zoom'], labelStyle={'display': 'inline-block'}),
+                      value=['zoom'], labelStyle={'display': 'inline-block'}),
         dcc.Checklist(id='enable-color',
                       options=[{'label': 'Enable color scale',
                                 'value': 'enable-color'}],
-                      values=[], labelStyle={'display': 'inline-block'}),
+                      value=[], labelStyle={'display': 'inline-block'}),
         html.Div([
             html.Label('Choose property for color scale: '),
             dcc.Dropdown(id='choose-color', options=[
@@ -135,7 +135,7 @@ def get_plot_layout(props=None):
         ], style={'display': 'none'}, id='color-scale-controls'),
         dcc.Checklist(id='enable-z',
                       options=[{'label': 'Enable z-axis', 'value': 'enable-z'}],
-                      values=['enable-z'] if z_enabled else [],
+                      value=['enable-z'] if z_enabled else [],
                       labelStyle={'display': 'inline-block'}),
         html.Div([
             html.Label('Choose property for z-axis: '),
@@ -178,7 +178,7 @@ def get_plot_layout(props=None):
 def define_plot_callbacks(app):
     @app.callback(
         Output('z-axis-controls', 'style'),
-        [Input('enable-z', 'values')]
+        [Input('enable-z', 'value')]
     )
     def show_z_axis_controls(enable_z):
         if enable_z:
@@ -188,7 +188,7 @@ def define_plot_callbacks(app):
 
     @app.callback(
         Output('color-scale-controls', 'style'),
-        [Input('enable-color', 'values')]
+        [Input('enable-color', 'value')]
     )
     def show_color_controls(enable_color):
         if enable_color:
@@ -247,12 +247,12 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
          Output('color-scale-range', 'value')],
         [Input('choose-x', 'value'),
          Input('choose-y', 'value'),
-         Input('enable-z', 'values'),
+         Input('enable-z', 'value'),
          Input('choose-z', 'value'),
-         Input('enable-color', 'values'),
+         Input('enable-color', 'value'),
          Input('choose-color', 'value')],
         [State('plot-data', 'data'),
-         State('zoom', 'values'),
+         State('zoom', 'value'),
          State('color-scale-range', 'min'),
          State('color-scale-range', 'max'),
          State('color-scale-range', 'marks'),
@@ -315,9 +315,9 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
         Output('ashby-graph', 'figure'),
         [Input('plot-data', 'data'),
          Input('color-scale-range', 'value'),
-         Input('zoom', 'values')],
-        [State('enable-z', 'values'),
-         State('enable-color', 'values')]
+         Input('zoom', 'value')],
+        [State('enable-z', 'value'),
+         State('enable-color', 'value')]
     )
     def update_data_dependencies(data, color_range, zoom, enable_z, enable_color):
         if not data or not data.get('query_success'):

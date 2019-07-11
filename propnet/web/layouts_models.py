@@ -148,7 +148,7 @@ def model_layout(model_name):
             dcc.Markdown("Propnet models can be called directly, with propnet acting "
                          "as a library of tested materials science models. Sample code for this "
                          "model is as follows:"),
-            dcc.SyntaxHighlighter(model.example_code)
+            dcc.Markdown(f"```{model.example_code}```")
         ])
 
     sublayouts = []
