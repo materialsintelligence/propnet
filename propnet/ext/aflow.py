@@ -713,8 +713,6 @@ class AflowAPIQuery(_RetrievalQuery):
     def from_pymongo(cls, criteria, properties, request_size, **kwargs):
         """Generates an aflow Query object from pymongo-like arguments.
 
-        Note: This function is only re-implmeneted here until matminer's next release.
-
         Args:
             criteria: (dict) Pymongo-like query operator. See the
                 AFLOWDataRetrieval.get_DataFrame method for more details
