@@ -48,7 +48,7 @@ class ModelTest(unittest.TestCase):
             # 'connections': [{'inputs': ['l1', 'l2'], 'outputs': ['a']}],
             'equations': ['a = l1 * l2'],
             # 'unit_map': {'l1': "cm", "l2": "cm", 'a': "cm^2"}
-            'symbol_property_map': {"a": A, "l1": L, "l2": L}
+            'variable_symbol_map': {"a": A, "l1": L, "l2": L}
         }
         model = EquationModel(**get_area_config)
         out = model.evaluate({'l1': QuantityFactory.create_quantity(L, 1, 'meter'),
@@ -71,7 +71,7 @@ class ModelTest(unittest.TestCase):
             # 'connections': [{'inputs': ['b'], 'outputs': ['a']}],
             'equations': ['a = b'],
             # 'unit_map': {'a': "dimensionless", 'a': "dimensionless"}
-            'symbol_property_map': {"a": A, "b": B}
+            'variable_symbol_map': {"a": A, "b": B}
         }
         model = EquationModel(**get_config)
         out = model.evaluate({'b': QuantityFactory.create_quantity(B, float('nan'))},
@@ -93,7 +93,7 @@ class ModelTest(unittest.TestCase):
             # 'connections': [{'inputs': ['b'], 'outputs': ['a']}],
             'equations': ['a = b + 1j'],
             # 'unit_map': {'a': "dimensionless", 'a': "dimensionless"}
-            'symbol_property_map': {"a": A, "b": B}
+            'variable_symbol_map': {"a": A, "b": B}
         }
         model = EquationModel(**get_config)
         out = model.evaluate({'b': QuantityFactory.create_quantity(B, 5)},
@@ -111,7 +111,7 @@ class ModelTest(unittest.TestCase):
         B = Symbol('b', ['B'], ['B'], units='dimensionless', shape=1)
         C = Symbol('c', ['C'], ['C'], units='dimensionless', shape=1)
         D = Symbol('d', ['D'], ['D'], units='dimensionless', shape=1)
-        m = EquationModel('equation_model_to_remove', ['a = b * 3'], symbol_property_map={'a': A, 'b': B})
+        m = EquationModel('equation_model_to_remove', ['a = b * 3'], variable_symbol_map={'a': A, 'b': B})
         self.assertIn(m.name, Registry("models"))
         self.assertTrue(m.registered)
         m.unregister()
@@ -123,7 +123,7 @@ class ModelTest(unittest.TestCase):
             m.register(overwrite_registry=False)
 
         m.unregister()
-        m = EquationModel('equation_model_to_remove', ['a = b * 3'], symbol_property_map={'a': A, 'b': B},
+        m = EquationModel('equation_model_to_remove', ['a = b * 3'], variable_symbol_map={'a': A, 'b': B},
                           register=False)
         self.assertNotIn(m.name, Registry("models"))
         self.assertFalse(m.registered)
@@ -131,11 +131,11 @@ class ModelTest(unittest.TestCase):
         m.register()
         with self.assertRaises(KeyError):
             _ = EquationModel('equation_model_to_remove', ['a = b * 3'],
-                              symbol_property_map={'a': A, 'b': B},
+                              variable_symbol_map={'a': A, 'b': B},
                               register=True, overwrite_registry=False)
 
         m_replacement = EquationModel('equation_model_to_remove', ['c = d * 3'],
-                                      symbol_property_map={'c': C, 'd': D})
+                                      variable_symbol_map={'c': C, 'd': D})
 
         m_registered = Registry("models")['equation_model_to_remove']
         self.assertIs(m_registered, m_replacement)

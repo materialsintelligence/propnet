@@ -1,0 +1,7 @@
+name: piezoelectric_modulus_longitudinal_max_direction
+units: dimensionless
+display_names: ['Max Long. Piezoelectric Modulus Direction']
+display_symbols: ['v_{max}']
+shape: [3, 1]
+comment: 'Direction along which the maximum longitudinal piezoelectric modulus points in crystallographic units'
+category: property

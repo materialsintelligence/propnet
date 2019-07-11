@@ -1,0 +1,7 @@
+name: total_magnetization_per_volume
+units: bohr_magneton / angstrom**3
+display_names: ['Total Magnetization Per Volume', 'Magnetic Moment Per Volume']
+display_symbols: ['M_{vol}']
+shape: 1
+comment: 'Magnetic moment per total volume'
+category: property

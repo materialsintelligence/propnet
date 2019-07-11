@@ -44,7 +44,7 @@ config = {
         "mechanical",
         "machine learning"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "K": "bulk_modulus",
         "G": "shear_modulus",
         "computed_entry": "computed_entry",

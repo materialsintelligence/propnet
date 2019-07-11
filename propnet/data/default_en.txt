@@ -482,3 +482,4 @@ stere = meter ** 3
 # propnet additions
 atom = []
 USD = [currency]
+bohr_magneton = elementary_charge * planck_constant / (4 * pi * electron_mass) = [current] / [length] ** 2

@@ -1,0 +1,6 @@
+name: external_identifier_aflow
+display_names: ['AFLOW ID']
+display_symbols: ['auid']
+comment: 'The unique identifier given by the AFLOW database to a given material.'
+category: object
+object_type: str

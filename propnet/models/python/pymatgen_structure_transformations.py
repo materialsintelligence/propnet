@@ -31,7 +31,7 @@ config = {
         "pymatgen",
         "transformations"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "s": "structure",
         "s_oxi": "structure_oxi"
     },

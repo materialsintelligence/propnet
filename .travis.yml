@@ -18,11 +18,12 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy
   - source activate test-environment
   - pip install -r requirements.txt
+  - pip install -r requirements-optional.txt
   - conda install pygraphviz
   - pip install nose
   - pip install coverage
   - pip install python-coveralls
 script:
-  - nosetests ./ docs/ --with-coverage --cover-package=propnet
+  - nosetests -v ./ docs/ --with-coverage --cover-package=propnet
 after_success:
   - coveralls

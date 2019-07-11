@@ -30,7 +30,7 @@ config = {
     "categories": [
         "meta"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "cost_per_mol": "cost_per_mol",
         "cost_per_kg": "cost_per_kg",
         "formula": "formula"

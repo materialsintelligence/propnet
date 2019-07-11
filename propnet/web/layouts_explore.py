@@ -2,30 +2,25 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
 
-from crystal_toolkit import GraphComponent
-from propnet.web.utils import graph_conversion, AESTHETICS
-from propnet.core.graph import Graph
+from dash_cytoscape import Cytoscape
+from propnet.web.utils import graph_conversion, GRAPH_STYLESHEET, \
+    GRAPH_LAYOUT_CONFIG, GRAPH_SETTINGS, propnet_nx_graph, update_labels
+
 
 from propnet.web.layouts_models import models_index
 from propnet.web.layouts_symbols import symbols_index
 
-from pydash import set_
-
-from uuid import uuid4
-
 
 def explore_layout(app):
-
-    g = Graph().get_networkx_graph()
-
-    graph_data = graph_conversion(g)
+    graph_data = graph_conversion(propnet_nx_graph, hide_unconnected_nodes=False)
     graph_component = html.Div(
         id='graph_component',
-        children=[GraphComponent(id='propnet-graph', graph=graph_data,
-                                 options=AESTHETICS['global_options'])],
-        style={'width': '100%', 'height': '800px'})
+        children=[Cytoscape(id='pn-graph', elements=graph_data,
+                            stylesheet=GRAPH_STYLESHEET,
+                            layout=GRAPH_LAYOUT_CONFIG,
+                            **GRAPH_SETTINGS['full_view'])],
+        )
 
     graph_layout = html.Div(
         id='graph_top_level',
@@ -35,28 +30,21 @@ def explore_layout(app):
                                     'value': 'show_models'},
                                    {'label': 'Show properties',
                                     'value': 'show_properties'}],
-                          values=['show_properties'],
+                          value=['show_properties'],
                           labelStyle={'display': 'inline-block'}),
             html.Div(id='graph_explorer',
                      children=[graph_component])])
 
-    # Define default graph component
-    # TODO: this looks bad, re-evaluate
-    @app.callback(Output('graph_explorer', 'children'),
-                  [Input('graph_options', 'values')])
-    def get_graph_component(props):
-        aesthetics = AESTHETICS.copy()
+    @app.callback(Output('pn-graph', 'elements'),
+                  [Input('graph_options', 'value')],
+                  [State('pn-graph', 'elements')])
+    def change_propnet_graph_label_selection(props, elements):
         show_properties = 'show_properties' in props
         show_models = 'show_models' in props
-        set_(aesthetics, "node_aesthetics.Symbol.show_labels", show_properties)
-        set_(aesthetics, "node_aesthetics.Model.show_labels", show_models)
-        graph_data = graph_conversion(g, aesthetics=aesthetics)
-        graph_component = html.Div(
-            id=str(uuid4()),
-            children=[GraphComponent(id=str(uuid4()), graph=graph_data,
-                                     options=AESTHETICS['global_options'])],
-            style={'width': '100%', 'height': '800px'})
-        return [graph_component]
+
+        update_labels(elements, show_models=show_models, show_symbols=show_properties)
+
+        return elements
 
     layout = html.Div([html.Div([graph_layout], className='row'),
                        html.Div([html.Div([models_index], className='six columns'),

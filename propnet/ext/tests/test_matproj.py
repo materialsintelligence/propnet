@@ -30,12 +30,12 @@ class MPResterTest(unittest.TestCase):
         self.assertEqual("mp-149", mp_id)
 
     def test_get_properties_for_mpids(self):
-        props = self.mpr.get_properties_for_mpids(["mp-124", "mp-81"])
+        props = self.mpr.get_quantities_for_mpids(["mp-124", "mp-81"])
         self.assertAlmostEqual(props[0]['e_above_hull'], 0)
         self.assertAlmostEqual(props[1]['pretty_formula'], 'Au')
 
     def test_get_properties_for_mpid(self):
-        props = self.mpr.get_properties_for_mpid("mp-2")
+        props = self.mpr.get_quantities_for_mpid("mp-2")
         self.assertEqual(props['pretty_formula'], "Pd")
 
     def test_get_materials_for_mpids(self):

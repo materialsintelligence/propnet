@@ -22,7 +22,7 @@ implemented_by:
 - dmrdjenovich
 references: []
 units_for_evaluation: default
-symbol_property_map:
+variable_symbol_map:
   E_g: band_gap
   c: dielectric_figure_of_merit_current_leakage
   epsilon: relative_permittivity

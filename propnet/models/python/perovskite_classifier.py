@@ -38,7 +38,7 @@ config = {
     "categories": [
         "classifier"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "r_A": "ionic_radius_a",
         "r_B": "ionic_radius_b",
         "s": "structure_oxi"

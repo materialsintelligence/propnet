@@ -33,7 +33,7 @@ config = {
     "categories": [
         "mechanical"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "C": "elastic_tensor_voigt",
         "S": "compliance_tensor_voigt",
         "G": "shear_modulus"

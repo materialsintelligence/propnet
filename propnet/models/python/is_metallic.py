@@ -21,7 +21,7 @@ config = {
     "categories": [
         "classifier"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "E_g": "band_gap",
         "is_metallic": "is_metallic"
     },

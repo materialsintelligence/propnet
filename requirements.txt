@@ -1,39 +1,39 @@
-# web app
-dash>=0.28.1
-dash-core-components>=0.22.1
-dash-html-components>=0.10.1
-dash-renderer>=0.12.1
-dash-table-experiments>=0.6.0
-gunicorn>=19.7.1
-plotly>=2.0.15
-crystal-toolkit>=0.0.1
-Flask-Caching==1.3.3
-
 # core, utilities
-frozendict==1.2
-monty==1.0.3
-networkx>=2.0
 numpy>=1.15.1
-Pint==0.8.1
+scipy>=1.0.1
+sympy>=1.3
+frozendict>=1.2
+monty==2.0.2
+networkx>=2.0
+Pint>=0.8.1
 pydash==4.5.0
 scikit-learn>=0.20.0
-uncertainties==3.0.2
+uncertainties>=3.0.2
 pymongo>=3.7.2 # database building
 chronic>=0.3.4 # timings
 pandas>=0.23.4
-scipy>=1.0.1
-sympy>=1.3
+
+# web app
+dash==1.0.1
+gunicorn>=19.7.1
+Flask-Caching>=1.3.3
+dash-cytoscape==0.1.1
 
 # references
-habanero==0.6.0
+habanero>=0.6.0
 isbnlib>=3.9.6
-pybtex==0.21
-pylatexenc==1.2
+pybtex>=0.21
+pylatexenc>=1.2
 
 # materials project codes
-matminer>=0.4.3
+matminer>=0.5.6
 pymatgen>=2018.5.22
-maggma>=0.11.0
+maggma>=0.13.0
+
+# aflow ingestion
+aflow>=0.0.10
+six>=1.12.0
+requests>=2.21.0
 
 # analysis
 minepy>=1.2.3

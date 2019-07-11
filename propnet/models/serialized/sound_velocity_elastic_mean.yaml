@@ -13,7 +13,7 @@ name: sound_velocity_elastic_mean
 implemented_by:
 - dmrdjenovich
 references: []
-symbol_property_map:
+variable_symbol_map:
   v_l: sound_velocity_longitudinal
   v_m: sound_velocity_mean
   v_t: sound_velocity_transverse

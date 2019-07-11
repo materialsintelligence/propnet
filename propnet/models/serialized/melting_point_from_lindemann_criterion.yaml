@@ -21,7 +21,7 @@ units_for_evaluation:
   mbar: amu / atom
   a: angstrom
   T_m: kelvin
-symbol_property_map:
+variable_symbol_map:
   T: debye_temperature
   mbar: mass_per_atom
   a: interatomic_spacing

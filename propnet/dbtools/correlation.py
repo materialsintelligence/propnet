@@ -1,5 +1,5 @@
 from maggma.builders import Builder
-from itertools import product
+from itertools import combinations_with_replacement
 import numpy as np
 import json
 from collections import defaultdict
@@ -25,28 +25,25 @@ class CorrelationBuilder(Builder):
     interactive use does support them.
 
     """
-    # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
-    MP_QUERY_PROPS = ["piezo.eij_max", "elasticity.universal_anisotropy",
-                      "diel.poly_electronic", "total_magnetization", "efermi",
-                      "magnetism.total_magnetization_normalized_vol"]
     PROPNET_PROPS = [v.name for v in Registry("symbols").values()
                      if (v.category == 'property' and v.shape == 1)]
-
-    def __init__(self, propnet_store, mp_store,
+    
+    def __init__(self, propnet_store,
                  correlation_store, out_file=None,
-                 funcs='linlsq', props=None, **kwargs):
+                 funcs='linlsq', props=None,
+                 sample_size=None, from_quantity_db=True,
+                 **kwargs):
         """
         Constructor for the correlation builder.
 
         Args:
-            propnet_store: (Mongolike Store) store instance pointing to propnet collection
+            propnet_store (Mongolike Store): store instance pointing to propnet collection
                 with read access
-            mp_store: (Mongolike Store) store instance pointing to Materials Project collection with read access
-            correlation_store: (Mongolike Store) store instance pointing to collection with write access
-            out_file: (str) optional, filename to output data in JSON format (useful if using a MemoryStore
+            correlation_store (Mongolike Store): store instance pointing to collection with write access
+            out_file (str): optional, filename to output data in JSON format (useful if using a MemoryStore
                 for correlation_store)
-            funcs: (str, function, list<str, function>) functions to use for correlation. Built-in functions can
-                be specified by the following strings:
+            funcs (`str`, `callable`, list of `str` or `callable`) functions to use for correlation.
+                Built-in functions can be specified by the following strings:
 
                 linlsq (default): linear least-squares, reports R^2
                 pearson: Pearson r-correlation, reports r
@@ -55,17 +52,23 @@ class CorrelationBuilder(Builder):
                 ransac: random sample consensus (RANSAC) regression, reports score
                 theilsen: Theil-Sen regression, reports score
                 all: runs all correlation functions above
+            props (`list` of `str`): optional, list of properties for which to calculate the correlation.
+                Default is to calculate for all possible pairs (props=None)
+            sample_size (int): optional, limits correlation calculation data to a random sample of size
+                `sample_size`. Default: None (no limit)
+            from_quantity_db (bool): True means propnet_store follows the quantity-indexed database
+                schema, False means the full, material-indexed database schema. Note: querying quantity-indexed
+                databases is considerably faster than material-indexed.
+                Default: True (quantity schema)
             **kwargs: arguments to the Builder superclass
         """
 
         self.propnet_store = propnet_store
-        self.mp_store = mp_store
+        self.from_quantity_db = from_quantity_db
         self.correlation_store = correlation_store
         self.out_file = out_file
 
-        self._correlation_funcs = {f.replace('_cfunc_', ''): getattr(self, f)
-                                   for f in dir(self)
-                                   if re.match(r'^_cfunc_.+$', f) and callable(getattr(self, f))}
+        self._correlation_funcs = self.get_correlation_funcs()
 
         self._funcs = {}
 
@@ -86,34 +89,193 @@ class CorrelationBuilder(Builder):
         if not self._funcs:
             raise ValueError("No valid correlation functions selected")
 
-        mp_prop_map = {(p.split(".")[1] if len(p.split(".")) == 2 else p): p for p in self.MP_QUERY_PROPS}
-        self._props = props
-        if not props:
-            self.mp_query_props = self.MP_QUERY_PROPS
-            self.mp_props = list(mp_prop_map.keys())
-            self.propnet_props = self.PROPNET_PROPS
-        else:
-            self.propnet_props = []
-            self.mp_props = []
-            self.mp_query_props = []
-            if isinstance(props, str):
-                props = [props]
-            for p in props:
-                if p in self.PROPNET_PROPS:
-                    self.propnet_props.append(p)
-                elif p in mp_prop_map.keys():
-                    self.mp_props.append(p)
-                    self.mp_query_props.append(mp_prop_map[p])
+        self._props = props or self.PROPNET_PROPS
 
-        super(CorrelationBuilder, self).__init__(sources=[propnet_store, mp_store],
+        if sample_size is not None and sample_size < 2:
+            raise ValueError("Sample size must be greater than 1")
+        self.sample_size = sample_size
+        self.total = None
+
+        super(CorrelationBuilder, self).__init__(sources=[propnet_store],
                                                  targets=[correlation_store],
                                                  **kwargs)
 
+    @classmethod
+    def get_correlation_funcs(cls):
+        """
+        Gets built-in correlation functions and their names.
+
+        Returns:
+            dict: dict of function handles keyed by name
+
+        """
+        return {f.replace('_cfunc_', ''): getattr(cls, f)
+                for f in dir(cls)
+                if re.match(r'^_cfunc_.+$', f) and callable(getattr(cls, f))}
+    
     def get_items(self):
         """
-        Collects scalar data from propnet and MP databases, aggregates it by property, and creates
-        a generator to iterate over all pairs of properties, including pairing of the same property
-        with itself for sanity check, and correlation functions.
+        Accumulates data and generates data sets for pairs of properties coupled
+        with correlation functions.
+
+        Returns:
+            (generator): yields dicts of data (see _make_data_combinations())
+        """
+        self.total = len(self._props) ** 2 * len(self._funcs)
+
+        # combinations_with_replacement() produces all possible pairs of properties
+        # without repeating, i.e. will give AB but not BA. Code below manually
+        # produces "BA" so that we don't have to re-query the database.
+        for prop_x, prop_y in combinations_with_replacement(self._props, 2):
+            if self.from_quantity_db:
+                data = self.get_data_from_quantity_db(self.propnet_store,
+                                                      prop_x, prop_y,
+                                                      sample_size=self.sample_size)
+            else:
+                data = self.get_data_from_full_db(prop_x, prop_y)
+
+            yield from self._make_data_combinations(prop_x, prop_y, data)
+
+    @staticmethod
+    def get_data_from_quantity_db(store, *props, sample_size=None, include_id=False):
+        """
+        Collects scalar data from the quantity-onlu propnet database,
+        aggregates it by material and property, and samples it if desired.
+
+        Args:
+            store (maggma.stores.Store): MongoDB store instance for quantity databse
+            *props (str): property names as strings
+            sample_size (int): If specified, limits the number of returned records
+                to sample_size, randomly selected. If total of records is less than
+                sample_size, only those records are returned. Default: None (all records)
+            include_id (bool): True includes the '_id' field, which contains the material
+                key for the record. Default: False (do not include the field)
+
+        Returns:
+            dict: dictionary of data keyed by property name
+
+        """
+
+        # This aggregation query collects the quantities, groups them by material
+        # and averages the values for that material, then samples them (if specified)
+        match_stage = {
+            '$match': {
+                '$or': [
+                    {'symbol_type': prop} for prop in props
+                ]}
+        }
+        group_stage = {'$group': {'_id': '$material_key'}}
+        for prop in props:
+            group_stage['$group'].update({
+                prop: {
+                    '$avg': {
+                        '$cond': [
+                            {"$eq": ['$symbol_type', prop]},
+                            '$value',
+                            None
+                        ]
+                    }
+                }
+            })
+        pipeline = [match_stage, group_stage]
+
+        if sample_size is not None:
+            pipeline.append(
+                {'$sample': {'size': sample_size}}
+            )
+
+        query = store.collection.aggregate(
+            pipeline=pipeline,
+            allowDiskUse=True
+        )
+
+        data = defaultdict(list)
+        for m in query:
+            if all(m[prop] is not None and np.isfinite(m[prop])
+                   for prop in props):
+                for prop in props:
+                    data[prop].append(m[prop])
+                if include_id:
+                    data['_id'].append(m['_id'])
+
+        return dict(data)
+
+    def get_data_from_full_db(self, prop_x, prop_y):
+        """
+        Collects scalar data from full propnet database, aggregates it by property,
+        and samples it if desired.
+
+        Args:
+            prop_x (str): name of property x
+            prop_y (str): name of property y
+
+        Returns:
+            dict: dictionary of data keyed by property name
+
+        """
+
+        # Get all materials which have both properties in the inputs or outputs
+        criteria = {
+                '$and': [
+                    {'$or': [
+                        {'inputs.symbol_type': prop_x},
+                        {prop_x: {'$exists': True}}]},
+                    {'$or': [
+                        {'inputs.symbol_type': prop_y},
+                        {prop_y: {'$exists': True}}]}
+                ]}
+        properties = [prop_x + '.quantities', prop_y + '.quantities', 'inputs']
+
+        if self.sample_size is None:
+            pn_data = self.propnet_store.query(criteria=criteria,
+                                               properties=properties)
+        else:
+            pipeline = [
+                {'$match': criteria},
+                {'$sample': {'size': self.sample_size}},
+                {'$project': {p: True for p in properties}},
+            ]
+            pn_data = self.propnet_store.collection.aggregate(
+                pipeline, allowDiskUse=True
+            )
+
+        x_unit = Registry("units")[prop_x]
+        y_unit = Registry("units")[prop_y]
+        data = defaultdict(list)
+        for material in pn_data:
+            # Collect all data with units for this material
+            # and calculate the mean, convert units, store magnitude of mean
+            if prop_x == prop_y:
+                # This is to avoid duplicating the work and the data
+                props = (prop_x,)
+                units = (x_unit,)
+            else:
+                props = (prop_x, prop_y)
+                units = (x_unit, y_unit)
+            for prop, unit in zip(props, units):
+                qs = [ureg.Quantity(q['value'], q['units'])
+                      for q in material['inputs']
+                      if q['symbol_type'] == prop]
+                if prop in material:
+                    qs.extend([ureg.Quantity(q['value'], q['units'])
+                               for q in material[prop]['quantities']])
+
+                if len(qs) == 0:
+                    raise ValueError("Query for property {} gave no results"
+                                     "".format(prop))
+                prop_mean = sum(qs) / len(qs)
+                data[prop].append(prop_mean.to(unit).magnitude)
+
+        return data
+
+    def _make_data_combinations(self, prop_x, prop_y, data):
+        """
+        Generates combinations of properties and desired correlation functions for evaluation.
+
+        Args:
+            prop_x (str): name of property x
+            prop_y (str): name of property y
+            data (dict): dictionary of data keyed by property name
 
         Returns: (generator) a generator providing a dictionary with the data for correlation:
             {'x_data': (list<float>) data for independent property (x-axis),
@@ -124,82 +286,17 @@ class CorrelationBuilder(Builder):
              }
 
         """
-        data = defaultdict(dict)
-
-        propnet_data = self.propnet_store.query(
-            criteria={},
-            properties=[p + '.mean' for p in self.propnet_props] +
-                       [p + '.units' for p in self.propnet_props] +
-                       [p + '.quantities' for p in self.propnet_props] +
-                       ['task_id', 'inputs'])
-
-        for material in propnet_data:
-            mpid = material['task_id']
-
-            input_d = defaultdict(list)
-            for q in material['inputs']:
-                if q['symbol_type'] in self.propnet_props:
-                    this_q = ureg.Quantity(q['value'], q['units'])
-                    input_d[q['symbol_type']].append(this_q)
-
-            for prop, values in material.items():
-                if prop in self.propnet_props:
-                    if prop in input_d.keys():
-                        for q in values['quantities']:
-                            input_d[prop].append(ureg.Quantity(q['value'], q['units']))
-                    else:
-                        this_q = ureg.Quantity(values['mean'], values['units'])
-                        input_d[prop] = [this_q]
-
-            data[mpid].update(
-                {k: sum(v) / len(v) for k, v in input_d.items()})
-
-        # TODO: Add these symbols to propnet so we don't have to bring them in explicitly?
-
-        mp_data = self.mp_store.query(
-            criteria={},
-            properties=self.mp_query_props + ['task_id']
-        )
-
-        for material in mp_data:
-            mpid = material['task_id']
-            for prop, value in material.items():
-                if isinstance(value, dict):
-                    for sub_prop, sub_value in value.items():
-                        if prop + '.' + sub_prop in self.mp_query_props and sub_value is not None:
-                            data[mpid][sub_prop] = sub_value
-                elif prop in self.mp_query_props and value is not None:
-                    data[mpid][prop] = value
-
-        # product() produces all possible combinations of properties
-        for prop_x, prop_y in product(self.propnet_props + self.mp_props, repeat=2):
-            x = []
-            y = []
-            for props_data in data.values():
-                if prop_x in props_data.keys() and prop_y in props_data.keys():
-                    x.append(props_data[prop_x])
-                    y.append(props_data[prop_y])
-
-            # MP data does not have units listed in database, so will be floats. propnet
-            # data may not have the same units as the MP data, so is stored as pint
-            # quantities. Here, the quantities are coerced into the units of MP data
-            # as stored in symbols and coverts them to floats.
-            if x and any(isinstance(v, ureg.Quantity) for v in x):
-                x_float = [xx.to(Registry("symbols")[prop_x].units).magnitude
-                           if isinstance(xx, ureg.Quantity) else xx for xx in x]
-            else:
-                x_float = x
-            if y and any(isinstance(v, ureg.Quantity) for v in y):
-                y_float = [yy.to(Registry("symbols")[prop_y].units).magnitude
-                           if isinstance(yy, ureg.Quantity) else yy for yy in y]
-            else:
-                y_float = y
-
+        # So we get AB and BA without re-querying, but not two AA
+        if prop_x == prop_y:
+            prop_combos = ((prop_x, prop_x),)
+        else:
+            prop_combos = ((prop_x, prop_y), (prop_y, prop_x))
+        for x, y in prop_combos:
             for name, func in self._funcs.items():
-                data_dict = {'x_data': x_float,
-                             'x_name': prop_x,
-                             'y_data': y_float,
-                             'y_name': prop_y,
+                data_dict = {'x_data': data[x],
+                             'x_name': x,
+                             'y_data': data[y],
+                             'y_name': y,
                              'func': (name, func)}
                 yield data_dict
 
@@ -230,15 +327,27 @@ class CorrelationBuilder(Builder):
 
         g = Graph()
         try:
-            path_length = g.get_degree_of_separation(prop_x, prop_y)
+            path_length_xy = g.get_degree_of_separation(prop_x, prop_y)
+            path_length_yx = g.get_degree_of_separation(prop_y, prop_x)
         except ValueError:
-            path_length = None
+            # This shouldn't happen...but just in case
+            path_length_xy = None
+            path_length_yx = None
+
+        try:
+            path_length = min(path_length_xy, path_length_yx)
+        except TypeError:
+            path_length = path_length_xy or path_length_yx
 
         if n_points < 2:
-            correlation = 0.0
+            result = 0.0
         else:
-            correlation = func(data_x, data_y)
-        return prop_x, prop_y, correlation, func_name, n_points, path_length
+            try:
+                result = func(data_x, data_y)
+            except Exception as ex:
+                # If correlation fails, catch the error, save it, and move on
+                result = ex
+        return prop_x, prop_y, result, func_name, n_points, path_length
 
     @staticmethod
     def _cfunc_mic(x, y):
@@ -351,14 +460,20 @@ class CorrelationBuilder(Builder):
         """
         data = []
         for item in items:
-            prop_x, prop_y, correlation, func_name, n_points, path_length = item
-            data.append({'property_x': prop_x,
-                         'property_y': prop_y,
-                         'correlation': correlation,
-                         'correlation_func': func_name,
-                         'n_points': n_points,
-                         'shortest_path_length': path_length,
-                         'id': hash((prop_x, prop_y)) ^ hash(func_name)})
+            prop_x, prop_y, result, func_name, n_points, path_length = item
+            d = {'property_x': prop_x,
+                 'property_y': prop_y,
+                 'correlation_func': func_name,
+                 'n_points': n_points,
+                 'shortest_path_length': path_length,
+                 'id': hash((prop_x, prop_y)) ^ hash(func_name)}
+            if not isinstance(result, Exception):
+                d['correlation'] = result
+            else:
+                d['correlation'] = None
+                d['error'] = (result.__class__.__name__,
+                              result.args)
+            data.append(d)
         self.correlation_store.update(data, key='id')
 
     def finalize(self, cursor=None):
@@ -370,6 +485,13 @@ class CorrelationBuilder(Builder):
             cursor: (Mongo Store cursor) optional, cursor to close if not automatically closed.
 
         """
+
+        props_to_index = ['property_x', 'property_y', 'correlation_func',
+                          'correlation', 'shortest_path_length']
+        for prop in props_to_index:
+            if not self.correlation_store.ensure_index(prop):
+                logger.warning("Could not add index for property {}".format(prop))
+
         if self.out_file:
             try:
                 self.write_correlation_data_file(self.out_file)

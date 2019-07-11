@@ -1,0 +1,7 @@
+name: relative_permittivity_electronic
+units: dimensionless
+display_names: ['Relative permittivity - Electronic contribution','Dielectric constant - Electronic contribution']
+display_symbols: ['\epsilon_{r}']
+shape: 1
+comment: 'Electronic contribution to the polycrystalline dielectric constant'
+category: property

@@ -42,7 +42,7 @@ units_for_evaluation:
   T: kelvin
   p: atom / angstrom ** 3
   v: meter / second
-symbol_property_map:
+variable_symbol_map:
   T: debye_temperature
   p: atomic_density
   v: sound_velocity_mean

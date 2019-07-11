@@ -27,7 +27,7 @@ implemented_by:
 - dmrdjenovich
 references:
 - url:https://www.sciencedirect.com/science/article/pii/S0257897202005935
-symbol_property_map:
+variable_symbol_map:
   t: thermal_conductivity
   m_atom: mass_per_atom
   d_xtl: density

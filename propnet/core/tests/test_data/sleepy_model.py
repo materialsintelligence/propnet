@@ -26,7 +26,7 @@ config = {
     "categories": [
         "test"
     ],
-    "symbol_property_map": {
+    "variable_symbol_map": {
         "A": "A",
         "B": "B"
     },

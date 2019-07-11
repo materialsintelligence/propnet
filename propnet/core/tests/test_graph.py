@@ -26,7 +26,8 @@ EXPANSION_METHOD_MESSAGE = "Expansion methods (TreeBuilder, etc.) are undergoing
                            "revision and tests are offline until complete"
 # TODO: There's a lot of code duplication here that could be added to setUp
 
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'test_data')
 
 
 class GraphTest(unittest.TestCase):
@@ -136,22 +137,22 @@ class GraphTest(unittest.TestCase):
         # TODO: Resolve the connections issue here
         model1 = EquationModel(name="model1", equations=['B=2*A', 'C=3*A'],
                                connections=[{"inputs": ["A"], "outputs": ['B', 'C']}],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
         model2 = EquationModel(name="model2", equations=['G=5*A'],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
         model3 = EquationModel(name="model3", equations=['F=7*B'],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
         model5 = EquationModel(name="model5", equations=['D=C*G*13'],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
         model6 = EquationModel(name="model6", equations=['A=F*D*17'],
-                               symbol_property_map=sym_map)
+                               variable_symbol_map=sym_map)
 
         if constrain_model_4:
             model4 = EquationModel(name="model4", equations=['D=B*C*11'],
-                                   constraints=["G==0"], symbol_property_map=sym_map)
+                                   constraints=["G==0"], variable_symbol_map=sym_map)
         else:
             model4 = EquationModel(name="model4", equations=['D=B*C*11'],
-                                   symbol_property_map=sym_map)
+                                   variable_symbol_map=sym_map)
 
         models = [model1, model2, model3, model4, model5, model6]
         models_dict = {x.name: x for x in models}
@@ -211,7 +212,8 @@ class GraphTest(unittest.TestCase):
     # which enables model evaluation timeout
     @unittest.skipIf(os.name != 'posix', "Skipping because timeout not implemented on non-Unix systems")
     def test_model_timeout(self):
-        sleepy_model = PyModuleModel('propnet.core.tests.sleepy_model')
+        sleepy_model = PyModuleModel('propnet.core.tests.test_data.'
+                                     'sleepy_model')
         g = Graph(models={sleepy_model.name: sleepy_model})
         q = QuantityFactory.create_quantity("A", 5, 'dimensionless')
         with Timer('model_timeout'):
@@ -302,7 +304,7 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(len(expected_quantities) == len(derived_quantities),
                             "Evaluate did not correctly derive outputs.")
             for q in expected_quantities:
-                self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+                self.assertTrue(q in material_derived.symbol_quantities_dict[q.symbol],
                                 "Evaluate failed to derive all outputs.")
                 self.assertTrue(q in derived_quantities)
 
@@ -329,7 +331,7 @@ class GraphTest(unittest.TestCase):
             self.assertTrue(len(expected_quantities) == len(derived_quantities),
                             "Evaluate did not correctly derive outputs.")
             for q in expected_quantities:
-                self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+                self.assertTrue(q in material_derived.symbol_quantities_dict[q.symbol],
                                 "Evaluate failed to derive all outputs.")
                 self.assertTrue(q in derived_quantities)
 
@@ -363,7 +365,7 @@ class GraphTest(unittest.TestCase):
         self.assertTrue(len(expected_quantities) == len(derived_quantities),
                         "Evaluate did not correctly derive outputs.")
         for q in expected_quantities:
-            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+            self.assertTrue(q in material_derived.symbol_quantities_dict[q.symbol],
                             "Evaluate failed to derive all outputs.")
             self.assertTrue(q in derived_quantities)
 
@@ -390,7 +392,7 @@ class GraphTest(unittest.TestCase):
         self.assertTrue(len(expected_quantities) == len(derived_quantities),
                         "Evaluate did not correctly derive outputs.")
         for q in expected_quantities:
-            self.assertTrue(q in material_derived._symbol_to_quantity[q.symbol],
+            self.assertTrue(q in material_derived.symbol_quantities_dict[q.symbol],
                             "Evaluate failed to derive all outputs.")
             self.assertTrue(q in derived_quantities)
 
@@ -443,7 +445,7 @@ class GraphTest(unittest.TestCase):
         # Test
         for q_expected in s_outputs:
             q = None
-            for q_derived in mat1_derived._symbol_to_quantity[q_expected.symbol]:
+            for q_derived in mat1_derived.symbol_quantities_dict[q_expected.symbol]:
                 if q_derived == q_expected:
                     q = q_derived
             self.assertTrue(q is not None,
@@ -926,7 +928,7 @@ class GraphTest(unittest.TestCase):
         """
         mp_data = {}
         for mpid in ('mp-13', 'mp-24972'):
-            with open(os.path.join(TEST_DIR, "{}.json".format(mpid)), 'r') as f:
+            with open(os.path.join(TEST_DATA_DIR, "{}.json".format(mpid)), 'r') as f:
                 data = json.load(f)
             material = Material()
             for d in data:
@@ -954,9 +956,9 @@ class GraphTest(unittest.TestCase):
 
         cm = g.evaluate_composite(cm, allow_composite_model_failure=False)
 
-        self.assertTrue('pilling_bedworth_ratio' in cm._symbol_to_quantity.keys(),
+        self.assertTrue('pilling_bedworth_ratio' in cm.symbol_quantities_dict.keys(),
                         "Super Evaluate failed to derive expected outputs.")
-        self.assertTrue(len(cm._symbol_to_quantity['pilling_bedworth_ratio']) > 0,
+        self.assertTrue(len(cm.symbol_quantities_dict['pilling_bedworth_ratio']) > 0,
                         "Super Evaluate failed to derive expected outputs.")
 
     def test_provenance(self):
@@ -971,9 +973,9 @@ class GraphTest(unittest.TestCase):
 
         expected_quantities = self.expected_constrained_quantities
 
-        for q in material_derived._symbol_to_quantity[symbols['A']]:
+        for q in material_derived.symbol_quantities_dict[symbols['A']]:
             self.assertTrue(q._provenance.inputs is None)
-        for q in material_derived._symbol_to_quantity[symbols['B']]:
+        for q in material_derived.symbol_quantities_dict[symbols['B']]:
             if q.value == 38:
                 self.assertEquals(q._provenance.model, models['model1'].name,
                                   "provenance improperly calculated")
@@ -984,7 +986,7 @@ class GraphTest(unittest.TestCase):
                                   "provenance improperly calculated")
                 self.assertTrue(expected_quantities[1] in q._provenance.inputs,
                                 "provenance improperly calculated")
-        for q in material_derived._symbol_to_quantity[symbols['C']]:
+        for q in material_derived.symbol_quantities_dict[symbols['C']]:
             if q.value == 57:
                 self.assertEquals(q._provenance.model, models['model1'].name,
                                   "provenance improperly calculated")
@@ -995,7 +997,7 @@ class GraphTest(unittest.TestCase):
                                   "provenance improperly calculated")
                 self.assertTrue(expected_quantities[1] in q._provenance.inputs,
                                 "provenance improperly calculated")
-        for q in material_derived._symbol_to_quantity[symbols['G']]:
+        for q in material_derived.symbol_quantities_dict[symbols['G']]:
             if q.value == 95:
                 self.assertEquals(q._provenance.model, models['model2'].name,
                                   "provenance improperly calculated")
@@ -1006,7 +1008,7 @@ class GraphTest(unittest.TestCase):
                                   "provenance improperly calculated")
                 self.assertTrue(expected_quantities[1] in q._provenance.inputs,
                                 "provenance improperly calculated")
-        for q in material_derived._symbol_to_quantity[symbols['D']]:
+        for q in material_derived.symbol_quantities_dict[symbols['D']]:
             if q.value == 70395:
                 self.assertEquals(q._provenance.model, models['model5'].name,
                                   "provenance improperly calculated")
@@ -1014,17 +1016,6 @@ class GraphTest(unittest.TestCase):
                                 "provenance improperly calculated")
                 self.assertTrue(expected_quantities[12] in q._provenance.inputs,
                                 "provenance improperly calculated")
-
-    @unittest.skip("Skipping creating composite data files")
-    def test_generate_composite_data_files(self):
-        mpr = MPRester()
-        mpids = ['mp-13', 'mp-24972']
-        materials = mpr.get_materials_for_mpids(mpids)
-        for m in materials:
-            mpid = [q.value for q in m.get_quantities() if q.symbol == "external_identifier_mp"][0]
-            with open(os.path.join(TEST_DIR, '{}.json'.format(mpid)), 'w') as f:
-                qs = jsanitize(m.get_quantities(), strict=True)
-                f.write(json.dumps(qs))
 
 
 if __name__ == "__main__":
