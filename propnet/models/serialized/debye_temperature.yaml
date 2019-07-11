@@ -36,7 +36,10 @@ equations:
 name: debye_temperature
 implemented_by:
 - mkhorton
-references: []
+references:
+- url:https://en.wikipedia.org/wiki/Debye_model
+- doi:10.1002/andp.19123441404
+- url:https://eng.libretexts.org/Bookshelves/Materials_Science/Supplemental_Modules_(Materials_Science)/Electronic_Properties/Debye_Model_For_Specific_Heat
 units_for_evaluation:
   T: kelvin
   p: atom / angstrom ** 3
