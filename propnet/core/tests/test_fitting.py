@@ -18,14 +18,15 @@ class FittingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         add_builtin_models_to_registry()
-        path = os.path.join(TEST_DATA_DIR, "fitting_test_data.csv")
+        # This is the visible light dataset used in the propnet paper
+        path = os.path.join(TEST_DATA_DIR, "vis_bg_ri_data.csv")
         test_data = pd.read_csv(path)
         graph = Graph()
         materials = [Material([QuantityFactory.create_quantity("band_gap", bg)])
-                     for bg in test_data['band_gap']]
+                     for bg in test_data['Band Gap']]
         cls.evaluated = [graph.evaluate(mat) for mat in materials]
         cls.benchmarks = [{"refractive_index": n}
-                          for n in test_data['refractive_index']]
+                          for n in test_data['Refractive Index']]
 
     def test_get_sse(self):
         mats = [Material([QuantityFactory.create_quantity("band_gap", n)]) for n in range(1, 5)]
@@ -61,7 +62,14 @@ class FittingTests(unittest.TestCase):
         scores = fit_model_scores(self.evaluated, self.benchmarks,
                                   models=model_names)
         self.assertAlmostEqual(
-            scores['band_gap_refractive_index_herve_vandamme'], 0.2652523577828973, 3)
+            scores['band_gap_refractive_index_herve_vandamme'], 0.30301696337278144, 3)
+
+        # Test with sum of weights constrained to 1. Useful when using a model set
+        # that all produce one property from one other
+        scores = fit_model_scores(self.evaluated, self.benchmarks,
+                                  models=model_names, constrain_sum=True)
+        self.assertAlmostEqual(
+            scores['band_gap_refractive_index_herve_vandamme'], 0.2560501980373589, 3)
 
 
 if __name__ == "__main__":
