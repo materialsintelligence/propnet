@@ -28,7 +28,7 @@ load_extra_layouts()
 
 app = dash.Dash(__name__)
 server = app.server
-app.config.supress_callback_exceptions = True  # TODO: remove this?
+app.config.suppress_callback_exceptions = True  # TODO: remove this?
 app.scripts.config.serve_locally = True
 app.title = "propnet"
 route = dcc.Location(id='url', refresh=False)
