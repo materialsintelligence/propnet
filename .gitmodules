@@ -1,0 +1,3 @@
+[submodule "dash-cytoscape"]
+	path = dash-cytoscape
+	url = https://github.com/clegaspi/dash-cytoscape.git
