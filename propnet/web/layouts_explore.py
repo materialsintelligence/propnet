@@ -1,5 +1,6 @@
 import dash_core_components as dcc
 import dash_html_components as html
+from dash.exceptions import PreventUpdate
 
 from dash.dependencies import Input, Output, State
 
@@ -25,13 +26,19 @@ def explore_layout(app):
     graph_layout = html.Div(
         id='graph_top_level',
         children=[
-            dcc.Checklist(id='graph_options',
-                          options=[{'label': 'Show models',
-                                    'value': 'show_models'},
-                                   {'label': 'Show properties',
-                                    'value': 'show_properties'}],
-                          value=['show_properties'],
-                          labelStyle={'display': 'inline-block'}),
+            html.Div([
+                dcc.Checklist(id='graph_options',
+                              options=[{'label': 'Show models',
+                                        'value': 'show_models'},
+                                       {'label': 'Show properties',
+                                        'value': 'show_properties'}],
+                              value=['show_properties'],
+                              labelStyle={'display': 'inline-block'},
+                              style={'display': 'inline-block'}),
+                html.Button('Download PNG', id='download-png',
+                            style={'display': 'inline-block',
+                                   'margin-left': '10px'})
+            ]),
             html.Div(id='graph_explorer',
                      children=[graph_component])])
 
@@ -46,8 +53,24 @@ def explore_layout(app):
 
         return elements
 
-    layout = html.Div([html.Div([graph_layout], className='row'),
-                       html.Div([html.Div([models_index], className='six columns'),
-                                 html.Div([symbols_index()], className='six columns'),], className='row')])
+    @app.callback(Output('pn-graph', 'generateImage'),
+                  [Input('download-png', 'n_clicks')])
+    def download_image(n_clicks):
+        if n_clicks is None:
+            raise PreventUpdate
+        return {
+            'type': 'png',
+            'action': 'download',
+            'filename': 'pngraph'
+        }
+
+    layout = html.Div([
+        html.Div([graph_layout], className='row'),
+        html.Div([
+            html.Div([models_index], className='six columns'),
+            html.Div([symbols_index()], className='six columns')],
+            className='row'),
+        html.Div(id='emptydiv')
+    ])
 
     return layout
