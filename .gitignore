@@ -126,3 +126,6 @@ propnet/core/alternate_graph_algorithms/graph_parallel_recursive.py
 propnet/core/alternate_graph_algorithms/graph_two_threads.py
 propnet/core/alternate_graph_algorithms/old_graph.py
 mpds-api/
+
+# custom dash-cytoscape
+src/
