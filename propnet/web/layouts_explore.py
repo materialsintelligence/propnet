@@ -11,10 +11,68 @@ from propnet.web.utils import graph_conversion, GRAPH_STYLESHEET, \
 
 from propnet.web.layouts_models import models_index
 from propnet.web.layouts_symbols import symbols_index
+from propnet.core.registry import Registry
 
+models_to_show = [
+        'cost',
+        'hhi',
+        'magnetization_normalized_volume',
+        'molar_mass_from_formula',
+        'gbml',
+        'density_relations',
+        'pymatgen_structure_properties',
+        'clarke_thermal_conductivity',
+        'voigt_bulk_modulus',
+        'hill_bulk_modulus',
+        'reuss_bulk_modulus',
+        'compliance_from_elasticity',
+        'piezoelectric_tensor',
+        'electromechanical_coupling',
+        'homogeneous_elasticity_relations',
+        'debye_temperature',
+        'sound_velocity_elastic_longitudinal',
+        'sound_velocity_elastic_transverse',
+        'sound_velocity_elastic_mean'
+    ]
+symbols_to_show = [
+        'hhi_production',
+        'hhi_reserve',
+        'cost_per_kg',
+        'cost_per_mol',
+        'total_magnetization_per_volume',
+        'total_magnetization',
+        'molar_mass',
+        'volume_unit_cell',
+        'volume_per_atom',
+        'lattice',
+        'composition',
+        'nsites',
+        'mass_per_atom',
+        'density',
+        'computed_entry',
+        'formula',
+        'youngs_modulus',
+        'bulk_modulus',
+        'compliance_tensor_voigt',
+        'elastic_tensor_voigt',
+        'piezoelectric_tensor',
+        'piezoelectric_tensor_converse',
+        'electromechanical_coupling',
+        'thermal_conductivity',
+        'debye_temperature',
+        'sound_velocity_longitudinal',
+        'sound_velocity_transverse',
+        'sound_velocity_mean',
+    ]
+labels = [Registry("models")[v] for v in models_to_show] + [Registry("symbols")[v] for v in symbols_to_show]
 
 def explore_layout(app):
-    graph_data = graph_conversion(propnet_nx_graph, hide_unconnected_nodes=False)
+    # graph_data = graph_conversion(propnet_nx_graph, hide_unconnected_nodes=False)
+
+    graph_data = graph_conversion(propnet_nx_graph, hide_unconnected_nodes=True,
+                                  labels_to_show=labels,
+                                  show_symbol_labels=False,
+                                  show_model_labels=False)
     graph_component = html.Div(
         id='graph_component',
         children=[Cytoscape(id='pn-graph', elements=graph_data,
@@ -49,7 +107,9 @@ def explore_layout(app):
         show_properties = 'show_properties' in props
         show_models = 'show_models' in props
 
-        update_labels(elements, show_models=show_models, show_symbols=show_properties)
+        # update_labels(elements, show_models=show_models, show_symbols=show_properties)
+        update_labels(elements, show_models=show_models, show_symbols=show_properties,
+                      models_to_show=models_to_show, symbols_to_show=symbols_to_show)
 
         return elements
 

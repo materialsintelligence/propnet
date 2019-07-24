@@ -3,6 +3,7 @@ import logging
 from os import path
 import re
 from urllib.parse import parse_qs, urlsplit
+from pydash import get
 
 from propnet.core.symbols import Symbol
 from propnet.core.models import Model
@@ -34,7 +35,8 @@ def graph_conversion(graph: nx.DiGraph,
                      derivation_pathway=None,
                      hide_unconnected_nodes=True,
                      show_symbol_labels=True,
-                     show_model_labels=False):
+                     show_model_labels=False,
+                     labels_to_show=None):
     """Utility function to render a networkx graph
     from Graph.graph for use in GraphComponent
 
@@ -54,12 +56,12 @@ def graph_conversion(graph: nx.DiGraph,
         # TODO: more dumb crap related to graph
         if isinstance(n, Symbol):
             # property
-            name = n.name
+            name = 'symbol_' + n.name
             label = n.display_names[0]
             node_type = 'symbol'
         elif isinstance(n, Model):
             # model
-            name = n.title
+            name = 'model_' + n.name
             label = n.title
             node_type = 'model'
         else:
@@ -78,7 +80,8 @@ def graph_conversion(graph: nx.DiGraph,
             }
 
             if (node_type == 'model' and show_model_labels) or \
-                    (node_type == 'symbol' and show_symbol_labels):
+                    (node_type == 'symbol' and show_symbol_labels) or \
+                    (labels_to_show and n in labels_to_show):
                 node['classes'].append('label-on')
             else:
                 node['classes'].append('label-off')
@@ -89,7 +92,7 @@ def graph_conversion(graph: nx.DiGraph,
 
     # TODO: need to clean up after model refactor
     def get_node_id(node_):
-        return node_.title if isinstance(node_, Model) else node_.name
+        return 'model_' + node_.name if isinstance(node_, Model) else 'symbol_' + node_.name
 
     for n1, n2 in graph.edges():
         id_n1 = get_node_id(n1)
@@ -105,7 +108,7 @@ def graph_conversion(graph: nx.DiGraph,
                     'data': {'source': id_n1, 'target': id_n2},
                     'classes': ['is-input']}
 
-    if not hide_unconnected_nodes or not derivation_pathway:
+    if not hide_unconnected_nodes and not derivation_pathway:
         unconnected_edges = {
             (node['data']['id'], 'unattached_symbols'):
                 {'data': {'source': node['data']['id'],
@@ -233,7 +236,8 @@ def parse_path(pathname, search=None):
     }
 
 
-def update_labels(elements, show_models=True, show_symbols=True):
+def update_labels(elements, show_models=True, show_symbols=True,
+                  models_to_show=None, symbols_to_show=None):
     for elem in elements:
         group = elem['group']
         if group == 'edge':
@@ -252,8 +256,12 @@ def update_labels(elements, show_models=True, show_symbols=True):
             continue
 
         class_to_add = 'label-off'
-        if (is_model and show_models) or (is_symbol and show_symbols):
-            class_to_add = 'label-on'
+        if is_model and show_models:
+            if not models_to_show or (get(elem, 'data.id', '').split('model_', 1)[1] in models_to_show):
+                class_to_add = 'label-on'
+        elif is_symbol and show_symbols:
+            if not symbols_to_show or (get(elem, 'data.id', '').split('symbol_', 1)[1] in symbols_to_show):
+                class_to_add = 'label-on'
 
         for val in ('label-on', 'label-off'):
             try:
