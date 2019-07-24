@@ -1,4 +1,4 @@
--e dash-cytoscape
+-e git+https://github.com/clegaspi/dash-cytoscape.git#egg=dash-cytoscape
 
 # core, utilities
 numpy>=1.15.1
