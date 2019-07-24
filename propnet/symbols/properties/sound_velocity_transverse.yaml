@@ -1,6 +1,6 @@
 name: sound_velocity_transverse
 units: m / s
-display_names: [Elasticity-Derived Transverse Sound Velocity]
+display_names: [Elasticity-derived transverse sound velocity]
 display_symbols: [v_T]
 shape: 1
 comment: ''

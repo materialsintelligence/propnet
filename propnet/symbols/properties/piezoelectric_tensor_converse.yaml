@@ -1,6 +1,6 @@
 name: piezoelectric_tensor_converse
 units: meter / volt
-display_names: ['Converse Piezoelectric Tensor']
+display_names: ['Converse piezoelectric tensor']
 display_symbols: ['d_{ij}']
 shape: [6, 3]
 comment: 'Change in strain with respect to applied voltage under constant applied stress'

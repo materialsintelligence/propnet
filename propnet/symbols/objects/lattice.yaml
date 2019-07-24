@@ -1,5 +1,5 @@
 name: lattice
-display_names: ['Crystallographic Lattice']
+display_names: ['Crystallographic lattice']
 display_symbols: ['Lattice']
 comment: ''
 category: object

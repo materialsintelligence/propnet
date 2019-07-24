@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from scipy.optimize import minimize
+from scipy.optimize import minimize, Bounds, LinearConstraint
 from propnet.core.quantity import QuantityFactory
 
 # noinspection PyUnresolvedReferences
@@ -52,7 +52,7 @@ def get_weight(quantity, model_score_dict=None):
         return 1
     if model_score_dict is None:
         return 1
-    weight = model_score_dict.get(quantity.provenance.model)
+    weight = model_score_dict.get(quantity.provenance.model, 0)
     weight *= np.prod(
         [get_weight(q, model_score_dict) for q in quantity.provenance.inputs])
     return weight
@@ -60,37 +60,50 @@ def get_weight(quantity, model_score_dict=None):
 
 # TODO: Add default graph when this is moved
 def fit_model_scores(materials, benchmarks, models=None,
-                     min_score=0.05, init_scores=None):
+                     init_scores=None, constrain_sum=False):
     """
     Fits a set of model scores to a set of benchmark data
 
     Args:
-        materials ([Material]): list of materials
-        benchmarks ([{Symbol or str: float}]): list of benchmarks,
-            containing
+        materials ([Material]): list of evaluated materials containing
+            symbols for benchmarking
+        benchmarks ([{Symbol or str: float}]): list of dicts, keyed by Symbol
+            or symbol name containing benchmark data for each material in ``materials``.
         models ([Model or str]): list of models which should have their
             scores adjusted in the aggregation weighting scheme
-        min_score (float): minimum score to use in weighting
-            scheme, defaults to 0.05
-        init_scores ({str: float}): scores to initialize minimize
-            procedure with
+        init_scores ({str: float}): initial scores for minimization procedure.
+            If unspecified, all scores are equal. Scores are normalized to sum of
+            scores.
+        constrain_sum (bool): True constrains the sum of weights to 1, False
+            removes this constraint. Default: False (no constraint)
 
     Returns:
         {str: float} scores corresponding to those which minimize
             SSE for the benchmarked dataset
 
     """
+    # Probably not smart to have ALL available models in the list. That's a lot of DOF.
+    # TODO: Perhaps write a method to produce a list of models in the provenance trees
+    #       of the symbols to be benchmarked. Should be easy with the caching we have for provenance.
     model_list = models or list(Registry("models").keys())
 
     def f(f_scores):
-        model_score_dict = {m: max(s, min_score)
+        model_score_dict = {m: s
                             for m, s in zip(model_list, f_scores)}
         return get_sse(materials, benchmarks, model_score_dict)
 
     scores = OrderedDict((m, 1) for m in model_list)
     scores.update(init_scores or {})
-    result = minimize(f, x0=np.array(list(scores.values())))
-    vec = [max(s, min_score) for s in result.x]
+    x0 = np.array(list(scores.values()))
+    x0 = x0 / np.sum(x0)
+    bounds = Bounds([0]*len(x0), [1]*len(x0))
+    if constrain_sum:
+        constraint = [LinearConstraint([1]*len(x0), [1], [1])]
+    else:
+        constraint = []
+    result = minimize(f, x0=x0, method='trust-constr',
+                      bounds=bounds, constraints=constraint)
+    vec = [s for s in result.x]
     return OrderedDict(zip(model_list, vec))
 
 
@@ -114,5 +127,7 @@ def get_sse(materials, benchmarks, model_score_dict=None):
     for material, benchmark in zip(materials, benchmarks):
         for symbol, value in benchmark.items():
             agg = aggregate_quantities(material[symbol], model_score_dict)
+            if np.isnan(agg.magnitude):
+                continue
             sse += (agg.magnitude - benchmark[symbol]) ** 2
     return sse
