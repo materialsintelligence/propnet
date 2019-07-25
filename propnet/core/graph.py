@@ -126,10 +126,6 @@ class Graph(object):
         else:
             self.update_composite_models(composite_models)
 
-    def __del__(self):
-        if self._executor:
-            self._executor.shutdown(wait=True)
-
     def __str__(self):
         """
         Returns a full summary of the graph in terms of the SymbolTypes,
@@ -919,7 +915,8 @@ class Graph(object):
 
         try:
             with Timer(model.name):
-                with Timeout(seconds=timeout):
+                with Timeout(seconds=timeout,
+                             error_message=f"Evaluation took longer than specified timeout"):
                     result = model.evaluate(input_dict,
                                             allow_failure=allow_failure)
         except TimeoutError:

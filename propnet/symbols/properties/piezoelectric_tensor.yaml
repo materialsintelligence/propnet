@@ -1,6 +1,6 @@
 name: piezoelectric_tensor
 units: coulomb / meter**2
-display_names: ['Piezoelectric Tensor']
+display_names: ['Piezoelectric tensor']
 display_symbols: ['e_{ij}']
 shape: [3, 6]
 comment: 'Change in electric displacement field with respect to applied stress under constant applied electric field'

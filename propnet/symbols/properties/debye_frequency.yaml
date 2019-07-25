@@ -1,0 +1,7 @@
+name: debye_frequency
+units: radian / second
+display_names: [Debye frequency]
+display_symbols: [\omega_D]
+shape: 1
+comment: ''
+category: property

@@ -1,6 +1,6 @@
 name: total_magnetization
 units: bohr_magneton
-display_names: ['Total Magnetization', 'Magnetic Moment']
+display_names: ['Total magnetization', 'Magnetic moment']
 display_symbols: ['M']
 shape: 1
 comment: 'Magnetic moment'

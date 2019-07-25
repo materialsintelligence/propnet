@@ -20,6 +20,7 @@ dispersed elements in a chemical compound are.
 
 config = {
     "name": "hhi",
+    "display_names": ['HHI'],
     "connections": [
         {
             "inputs": [

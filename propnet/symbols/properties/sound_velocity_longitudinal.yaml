@@ -1,6 +1,6 @@
 name: sound_velocity_longitudinal
 units: m / s
-display_names: [Elasticity-Derived Longitudinal Sound Velocity]
+display_names: [Elasticity-derived longitudinal sound velocity]
 display_symbols: [v_L]
 shape: 1
 comment: ''

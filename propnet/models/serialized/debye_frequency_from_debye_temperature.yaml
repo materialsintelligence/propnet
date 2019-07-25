@@ -1,0 +1,28 @@
+categories:
+- thermal
+description: '
+The Debye frequency is a parameter in the Debye model.
+It refers to a cut-off angular frequency for waves a harmonic chain of masses, used to describe the movement of
+ions in a crystal lattice and more specifically, to correctly predict the heat capacity in such crystals to
+be constant for high temperatures (Dulong-Petit law).
+'
+equations:
+- omega = 1.3806E-23 * T_D / (6.626E-34 / (2 * 3.1415926))
+name: debye_frequency_from_debye_temperature
+implemented_by:
+- clegaspi
+references:
+- url:https://en.wikipedia.org/wiki/Debye_model
+- doi:10.1002/andp.19123441404
+- url:https://eng.libretexts.org/Bookshelves/Materials_Science/Supplemental_Modules_(Materials_Science)/Electronic_Properties/Debye_Model_For_Specific_Heat
+units_for_evaluation:
+  T_D: kelvin
+  omega: radian / second
+variable_symbol_map:
+  T_D: debye_temperature
+  omega: debye_frequency
+test_data:
+- inputs:
+    T_D: 458.3880285036698
+  outputs:
+    omega: 6.001082058E13

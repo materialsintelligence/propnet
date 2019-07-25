@@ -39,7 +39,7 @@ class Model(ABC):
 
     _registry_name = "models"
 
-    def __init__(self, name, connections, constraints=None,
+    def __init__(self, name, connections, constraints=None, display_names=None,
                  description=None, categories=None, references=None, implemented_by=None,
                  variable_symbol_map=None, units_for_evaluation=None, test_data=None,
                  is_builtin=False, register=True, overwrite_registry=True):
@@ -57,6 +57,8 @@ class Model(ABC):
                 Constraint objects of some condition on which the model is
                 valid, e. g. ``"n > 0"``, note that this must include variables if
                 there is a variable_symbol_map
+            display_names (`list` of `str`): optional, list of alternative names to use for
+                display
             description (str): long form description of the model
             categories (`list` of `str`): list of categories applicable to
                 the model
@@ -94,6 +96,7 @@ class Model(ABC):
         self.name = name
         self._connections = connections
         self.description = description
+        self.display_names = display_names
         if isinstance(categories, str):
             categories = [categories]
         self.categories = categories or []
@@ -331,7 +334,7 @@ class Model(ABC):
                     converted_outputs[var] = ureg.Quantity(quantity, units=unit)
         return converted_outputs
 
-    def evaluate(self, symbol_quantity_dict, allow_failure=True):
+    def evaluate(self, symbol_quantity_dict, allow_failure=True, raise_timeout_errors=True):
         """
         Given a set of symbol values, performs error checking to see
         if the corresponding input variable values represents a valid
@@ -349,6 +352,10 @@ class Model(ABC):
                 symbol names (str) to quantities (BaseQuantity) to be substituted
             allow_failure (bool): whether or not to catch
                 errors in model evaluation
+            raise_timeout_errors (bool): True ignores the value of "allow_failure"
+                and forces TimeoutError exceptions to be raised. This is so they
+                can be caught and handled by Graph, as timeouts are implemented there
+                and not in Model.
 
         Returns:
             dict: dictionary of output symbols with associated values
@@ -387,11 +394,16 @@ class Model(ABC):
                     np.seterrcall(plog)
                     out: dict = self.plug_in(input_variable_value_dict)
         except Exception as err:
-            if allow_failure:
+            # Because the Timeout() context raises a TimeoutError as a response to a
+            # signal from the os, the exception is raised wherever the program is
+            # at the time, which is usually in "plug_in". We want to optionally raise
+            # TimeoutErrors so they are caught by Graph() or an error handler otherwise
+            # outside of this class.
+            if not allow_failure or (isinstance(err, TimeoutError) and raise_timeout_errors):
+                raise err
+            else:
                 return {"successful": False,
                         "message": "{} evaluation failed: {}".format(self, err)}
-            else:
-                raise err
         if not self.check_constraints({**variable_value_dict, **out}):
             return {"successful": False,
                     "message": "Constraints not satisfied"}
@@ -443,6 +455,9 @@ class Model(ABC):
             formatted title, e. g. "band_gap_refractive_index"
             becomes "Band Gap Refractive Index"
         """
+
+        if self.display_names:
+            return self.display_names[0]
         return self.name.replace('_', ' ').title()
 
     # Note: these are formulated in terms of symbols rather than variables
@@ -746,7 +761,7 @@ class EquationModel(Model, MSONable):
 
     """
     def __init__(self, name, equations, connections=None, constraints=None,
-                 variable_symbol_map=None, description=None,
+                 variable_symbol_map=None, display_names=None, description=None,
                  categories=None, references=None, implemented_by=None,
                  units_for_evaluation=None, solve_for_all_variables=False, test_data=None,
                  is_builtin=False, register=True, overwrite_registry=True):
@@ -769,6 +784,8 @@ class EquationModel(Model, MSONable):
                 alternatively, using solve_for_all_variables will derive all
                 possible input-output connections
             constraints (`list` of `str`, `list` of `Constraint`): constraints on models
+            display_names (`list` of `str`): optional, list of alternative names to use for
+                display
             description (str): long form description of the model
             categories (str): list of categories applicable to
                 the model
@@ -819,7 +836,7 @@ class EquationModel(Model, MSONable):
                 connection["_sympy_exprs"] = sympy_exprs
 
         super(EquationModel, self).__init__(
-            name, connections, constraints, description,
+            name, connections, constraints, display_names, description,
             categories, references, implemented_by,
             variable_symbol_map, units_for_evaluation,
             test_data=test_data,
@@ -955,13 +972,13 @@ class PyModel(Model):
     to EquationModels
     """
     def __init__(self, name, connections, plug_in, constraints=None,
-                 description=None, categories=None, references=None,
-                 implemented_by=None, variable_symbol_map=None,
+                 display_names=None, description=None, categories=None,
+                 references=None, implemented_by=None, variable_symbol_map=None,
                  units_for_evaluation=True, test_data=None, is_builtin=False,
                  register=True, overwrite_registry=True):
         self._plug_in = plug_in
         super(PyModel, self).__init__(
-            name, connections, constraints, description,
+            name, connections, constraints, display_names, description,
             categories, references, implemented_by,
             variable_symbol_map, units_for_evaluation,
             test_data=test_data, is_builtin=is_builtin,

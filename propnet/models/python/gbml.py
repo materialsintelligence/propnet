@@ -26,6 +26,7 @@ and training data.
 
 config = {
     "name": "gbml",
+    "display_names": ["GBML"],
     "connections": [
         {
             "inputs": [
