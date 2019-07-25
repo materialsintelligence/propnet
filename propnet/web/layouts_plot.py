@@ -217,7 +217,7 @@ def define_plot_callbacks(app):
         mpid = point['text']
         x = point['x']
         y = point['y']
-        logger.info(f"User clicked: {point}")
+        logger.debug(f"User clicked: {point}")
 
         try:
             s = mpr.get_structure_by_material_id(mpid)
