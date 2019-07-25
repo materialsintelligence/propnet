@@ -217,10 +217,23 @@ def interactive_layout(app):
     )
     def evaluate(input_rows, data, aggregate):
 
-        quantities = [QuantityFactory.create_quantity(symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
-                                                      value=ureg.parse_expression(row['Editable Value']),
-                                                      units=Registry("units").get(ROW_IDX_TO_SYMBOL_NAME[idx]))
-                      for idx, row in enumerate(input_rows) if row['Editable Value']]
+        quantities = []
+
+        for idx, row in enumerate(input_rows):
+            if row['Editable Value']:
+                try:
+                    value = ureg.parse_expression(row['Editable Value'])
+                    units = Registry("units").get(ROW_IDX_TO_SYMBOL_NAME[idx])
+                    value.ito(units)
+                except Exception:
+                    # Someone put an invalid value in the table
+                    # TODO: Make error known to the user
+                    raise PreventUpdate
+                q = QuantityFactory.create_quantity(
+                    symbol_type=ROW_IDX_TO_SYMBOL_NAME[idx],
+                    value=value
+                )
+                quantities.append(q)
 
         if data and len(data) > 0:
             quantities += json.loads(data, cls=MontyDecoder).values()
