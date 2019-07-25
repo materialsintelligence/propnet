@@ -28,7 +28,8 @@ class PropnetBuilder(MapBuilder):
     """
 
     def __init__(self, materials, propstore, materials_symbol_map=None,
-                 criteria=None, source_name="", graph_parallel=False,
+                 criteria=None, source_name="", include_deprecated=False,
+                 graph_parallel=False,
                  max_graph_workers=None, graph_timeout=None,
                  allow_child_process=False, **kwargs):
         """
@@ -40,6 +41,11 @@ class PropnetBuilder(MapBuilder):
             criteria (dict): criteria for Mongodb find() query specifying
                 criteria for records to process
             source_name (str): identifier for record source
+            include_deprecated (bool): True processes materials marked as
+                deprecated via the "deprecated" field. False skips those materials.
+                If an entry does not have the "deprecated" field, it will be processed.
+                Note that False will create a logical "and" with any criteria specified
+                in "criteria". Default: False
             graph_parallel (bool): True runs the graph algorithm in parallel with
                 the number of workers specified by max_workers. Default: False (serial)
                 Note: there will be no substantial speed-up from using a parallel
@@ -64,6 +70,17 @@ class PropnetBuilder(MapBuilder):
         self.materials = materials
         self.propstore = propstore
         self.criteria = criteria
+        self.include_deprecated = include_deprecated
+        if not include_deprecated:
+            deprecated_filter = {
+                "$or": [{"deprecated": {"$exists": False}},
+                        {"deprecated": False}]
+            }
+            if criteria:
+                self.criteria = {'$and': [criteria, deprecated_filter]}
+            else:
+                self.criteria = deprecated_filter
+
         self.materials_symbol_map = materials_symbol_map \
                                     or MPRester.mapping
         if source_name == "":
@@ -84,11 +101,12 @@ class PropnetBuilder(MapBuilder):
         props = list(self.materials_symbol_map.keys())
         props += ["task_id", "pretty_formula", "run_type", "is_hubbard",
                   "pseudo_potential", "hubbards", "potcar_symbols", "oxide_type",
-                  "final_energy", "unit_cell_formula", "created_at"]
+                  "final_energy", "unit_cell_formula", "created_at", "deprecated"]
         props = list(set(props))
 
         super(PropnetBuilder, self).__init__(source=materials,
                                              target=propstore,
+                                             query=self.criteria,
                                              ufn=self.process,
                                              projection=props,
                                              **kwargs)
@@ -180,6 +198,9 @@ class PropnetBuilder(MapBuilder):
         aggregated_quantities = new_material.get_aggregated_quantities()
 
         for symbol, quantity in aggregated_quantities.items():
+            if symbol.name not in doc:
+                # No new quantities were derived
+                continue
             # Store mean and std dev for aggregated quantities
             sub_doc = {"mean": unumpy.nominal_values(quantity.value).tolist(),
                        "std_dev": unumpy.std_devs(quantity.value).tolist(),
@@ -189,7 +210,8 @@ class PropnetBuilder(MapBuilder):
             doc[symbol.name].update(sub_doc)
 
         doc.update({"task_id": item["task_id"],
-                    "pretty_formula": item.get("pretty_formula")})
+                    "pretty_formula": item.get("pretty_formula"),
+                    "deprecated": item.get("deprecated", False)})
         return jsanitize(doc, strict=True)
 
 
