@@ -24,6 +24,10 @@ from propnet.dbtools.correlation import CorrelationBuilder
 
 from pymongo.errors import ServerSelectionTimeoutError
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 mpr = MPRester()
 
 try:
@@ -213,9 +217,14 @@ def define_plot_callbacks(app):
         mpid = point['text']
         x = point['x']
         y = point['y']
-        print(point)
+        logger.info(f"User clicked: {point}")
 
-        s = mpr.get_structure_by_material_id(mpid)
+        try:
+            s = mpr.get_structure_by_material_id(mpid)
+        except IndexError:
+            logger.error(f"{mpid} cannot be found on MP. Database refresh needed?")
+            return f"{mpid} cannot be found on Materials Project. " \
+                f"It may have been deprecated. This error has been logged."
         formula = unicodeify(s.composition.reduced_formula)
 
         info = f"""
@@ -333,26 +342,27 @@ def get_graph_data(x_prop, y_prop, z_prop, color_prop):
     props_to_get = [prop for prop in (x_prop, y_prop, z_prop, color_prop)
                     if prop is not None]
 
-    data = CorrelationBuilder.get_data_from_quantity_db(store, *props_to_get,
-                                                        include_id=True)
+    query_data = CorrelationBuilder.get_data_from_quantity_db(store, *props_to_get,
+                                                              include_id=True)
 
-    if len(data[x_prop]) == 0:
+    if any(prop not in query_data for prop in props_to_get) or \
+            any(len(query_data[prop]) == 0 for prop in props_to_get):
         return {'query_success': False}
 
     data = {
         'query_success': True,
-        'x': data[x_prop],
+        'x': query_data[x_prop],
         'x_name': x_prop,
-        'y': data[y_prop],
+        'y': query_data[y_prop],
         'y_name': y_prop,
-        'mpids': data['_id'],
+        'mpids': query_data['_id'],
         'zoom': None,
         'color_range': None
     }
     if z_prop:
-        data.update({'z': data[z_prop], 'z_name': z_prop, 'z_enabled': True})
+        data.update({'z': query_data[z_prop], 'z_name': z_prop, 'z_enabled': True})
     if color_prop:
-        data.update({'color': data[color_prop], 'color_name': color_prop, 'color_enabled': True})
+        data.update({'color': query_data[color_prop], 'color_name': color_prop, 'color_enabled': True})
 
     return data
 
