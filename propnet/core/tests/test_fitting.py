@@ -36,7 +36,7 @@ class FittingTests(unittest.TestCase):
         self.assertAlmostEqual(err, test_val)
         # Big dataset
         err = get_sse(self.evaluated, self.benchmarks)
-        self.assertAlmostEqual(err, 173.5710251)
+        self.assertAlmostEqual(err, 190.002519386222)
 
     def test_get_weight(self):
         q1 = QuantityFactory.create_quantity("band_gap", 3.2)

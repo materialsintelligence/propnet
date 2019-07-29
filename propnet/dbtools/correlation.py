@@ -293,9 +293,9 @@ class CorrelationBuilder(Builder):
             prop_combos = ((prop_x, prop_y), (prop_y, prop_x))
         for x, y in prop_combos:
             for name, func in self._funcs.items():
-                data_dict = {'x_data': data[x],
+                data_dict = {'x_data': data.get(x, []),
                              'x_name': x,
-                             'y_data': data[y],
+                             'y_data': data.get(y, []),
                              'y_name': y,
                              'func': (name, func)}
                 yield data_dict
