@@ -339,8 +339,8 @@ y = {y:.2f} {scalar_symbols[y_prop].unit_as_string}
 
 
 def get_graph_data(x_prop, y_prop, z_prop, color_prop):
-    props_to_get = [prop for prop in (x_prop, y_prop, z_prop, color_prop)
-                    if prop is not None]
+    props_to_get = set(prop for prop in (x_prop, y_prop, z_prop, color_prop)
+                       if prop is not None)
 
     query_data = CorrelationBuilder.get_data_from_quantity_db(store, *props_to_get,
                                                               include_id=True)
