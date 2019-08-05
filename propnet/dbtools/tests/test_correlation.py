@@ -45,21 +45,21 @@ class CorrelationTest(unittest.TestCase):
 
         # vickers hardness (x-axis) vs. bulk modulus (y-axis)
         cls.correlation_values_vickers_bulk = {
-            'linlsq': 0.609064764013383,
-            'pearson': 0.7804260144391548,
-            'spearman': 0.8263016575414387,
-            'mic': 0.7702655041826725,
-            'theilsen': 0.5931446188624948,
-            'ransac': 0.5799056238559421
+            'linlsq': 0.49302857395714916,
+            'pearson': 0.7021599347421844,
+            'spearman': 0.7658801470036752,
+            'mic': 0.7069707677575771,
+            'theilsen': 0.4498696692135892,
+            'ransac': 0.412850153689996
         }
 
         cls.correlation_values_bulk_vickers = {
-            'linlsq': 0.609064764013383,
-            'pearson': 0.7804260144391548,
-            'spearman': 0.8263016575414387,
-            'mic': 0.7702655041826725,
-            'theilsen': 0.5569071036185801,
-            'ransac': 0.5113782981429206
+            'linlsq': 0.49302857395714916,
+            'pearson': 0.7021599347421844,
+            'spearman': 0.7658801470036752,
+            'mic': 0.7069707677575771,
+            'theilsen': 0.46461142885951223,
+            'ransac': 0.3699261228882036
         }
 
     @classmethod
@@ -104,7 +104,7 @@ class CorrelationTest(unittest.TestCase):
     def test_process_item(self):
         test_props = [['band_gap_pbe', 'atomic_density'],
                       ['bulk_modulus', 'vickers_hardness']]
-        linlsq_correlation_values = [0.05219124923380024, 0.609064764013383]
+        linlsq_correlation_values = [0.011294932700383722, 0.49302857395714916]
         path_lengths = [None, 2]
 
         for source_db, is_quantity_db in zip((self.propstore, self.quantity_store),

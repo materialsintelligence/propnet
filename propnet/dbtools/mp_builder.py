@@ -29,7 +29,7 @@ class PropnetBuilder(MapBuilder):
 
     def __init__(self, materials, propstore, materials_symbol_map=None,
                  criteria=None, source_name="", include_deprecated=False,
-                 graph_parallel=False,
+                 include_sandboxed=False, graph_parallel=False,
                  max_graph_workers=None, graph_timeout=None,
                  allow_child_process=False, **kwargs):
         """
@@ -46,6 +46,9 @@ class PropnetBuilder(MapBuilder):
                 If an entry does not have the "deprecated" field, it will be processed.
                 Note that False will create a logical "and" with any criteria specified
                 in "criteria". Default: False
+            include_sandboxed (bool): True processes materials regardless of their MP
+                sandbox. Note that False will create a logical "and" with any criteria specified
+                in "criteria". False restricts materials to the "core" sandbox. Default: False
             graph_parallel (bool): True runs the graph algorithm in parallel with
                 the number of workers specified by max_workers. Default: False (serial)
                 Note: there will be no substantial speed-up from using a parallel
@@ -69,17 +72,29 @@ class PropnetBuilder(MapBuilder):
         """
         self.materials = materials
         self.propstore = propstore
-        self.criteria = criteria
+
         self.include_deprecated = include_deprecated
+        self.include_sandboxed = include_sandboxed
+
+        filters = []
+        if criteria:
+            filters.append(criteria)
+
         if not include_deprecated:
             deprecated_filter = {
                 "$or": [{"deprecated": {"$exists": False}},
                         {"deprecated": False}]
             }
-            if criteria:
-                self.criteria = {'$and': [criteria, deprecated_filter]}
-            else:
-                self.criteria = deprecated_filter
+            filters.append(deprecated_filter)
+
+        if not include_sandboxed:
+            sandboxed_filter = {'sbxn': 'core'}
+            filters.append(sandboxed_filter)
+
+        if len(filters) > 1:
+            self.criteria = {'$and': filters}
+        else:
+            self.criteria = filters[0] if filters else None
 
         self.materials_symbol_map = materials_symbol_map \
                                     or MPRester.mapping
@@ -101,7 +116,7 @@ class PropnetBuilder(MapBuilder):
         props = list(self.materials_symbol_map.keys())
         props += ["task_id", "pretty_formula", "run_type", "is_hubbard",
                   "pseudo_potential", "hubbards", "potcar_symbols", "oxide_type",
-                  "final_energy", "unit_cell_formula", "created_at", "deprecated"]
+                  "final_energy", "unit_cell_formula", "created_at", "deprecated", "sbxn"]
         props = list(set(props))
 
         super(PropnetBuilder, self).__init__(source=materials,
@@ -212,6 +227,10 @@ class PropnetBuilder(MapBuilder):
         doc.update({"task_id": item["task_id"],
                     "pretty_formula": item.get("pretty_formula"),
                     "deprecated": item.get("deprecated", False)})
+
+        if self.include_sandboxed:
+            doc.update({'sbxn': item.get("sbxn", [])})
+
         return jsanitize(doc, strict=True)
 
 
