@@ -16,7 +16,7 @@ TEST_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              'test_data')
 PROPNET_PROPS = ["band_gap_pbe", "atomic_density", "bulk_modulus", "vickers_hardness"]
 
-
+@unittest.skip
 class CorrelationTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
