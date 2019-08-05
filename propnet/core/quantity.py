@@ -913,7 +913,7 @@ class NumQuantity(BaseQuantity):
             rhs_convert = rhs.to(units_for_comparison)
         except DimensionalityError:
             return False
-        return np.allclose(lhs_convert, rhs_convert)
+        return np.allclose(lhs_convert.magnitude, rhs_convert.magnitude)
 
     def __hash__(self):
         """
