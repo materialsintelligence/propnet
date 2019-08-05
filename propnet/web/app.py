@@ -1,8 +1,12 @@
+import logging
+
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-
 from dash.dependencies import Input, Output
+from dash_cytoscape import load_extra_layouts
+from flask_caching import Cache
+import plotly.io as pio
 
 from propnet.web.layouts_models import model_layout, models_index
 from propnet.web.layouts_symbols import symbol_layout, symbols_index
@@ -12,17 +16,14 @@ from propnet.web.layouts_interactive import interactive_layout
 from propnet.web.layouts_correlate import correlate_layout
 from propnet.web.layouts_explore import explore_layout
 from propnet.web.layout_refs import refs_layout
-
-from dash_cytoscape import load_extra_layouts
-
 from propnet.web.utils import parse_path
-
-from flask_caching import Cache
-import logging
 
 log = logging.getLogger(__name__)
 
 load_extra_layouts()
+
+# Sets default plotly template for the web app
+pio.templates.default = 'none'
 
 # TODO: Fix math rendering
 
