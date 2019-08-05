@@ -24,7 +24,7 @@ def create_correlation_test_docs():
 
     """
     n_materials = 200
-    pnstore = MongograntStore("ro:knowhere.lbl.gov/mp_core", "propnet")
+    pnstore = MongograntStore("ro:mongodb03.nersc.gov/propnet", "propnet_july2019")
     pnstore.connect()
     cursor = pnstore.query(
         criteria={'$and': [
@@ -143,10 +143,21 @@ def create_mp_builder_test_docs():
     Create documents for propnet MP builder tests. Outputs JSON file to test directory.
     """
     formulas = ["BaNiO3", "Si", "Fe2O3", "Cs"]
-    mgstore = MongograntStore("ro:matgen2.lbl.gov/mp_prod", "materials")
+    mgstore = MongograntStore("ro:knowhere.lbl.gov/mp_core", "materials")
     builder = PropnetBuilder(
         mgstore, MemoryStore(), criteria={"pretty_formula": {"$in": formulas},
                                           "e_above_hull": 0})
     builder.connect()
-    dumpfn(list(builder.get_items()), 
-           os.path.join(MP_TEST_DIR, "test_materials.json"))
+
+    materials = list(builder.get_items())
+    deprecated_item = mgstore.query_one({'deprecated': True, 'sbxn': 'core'})
+
+    # Create fake, non-core sandboxed material to represent proprietary info
+    sandboxed_item = materials[0].copy()
+    sandboxed_item.update(
+        {'sbxn': ['test_sbx'],
+         'task_id': 'mp-fakesbx'}
+    )
+    del sandboxed_item['_id']
+    materials.extend([deprecated_item, sandboxed_item])
+    dumpfn(materials, os.path.join(MP_TEST_DIR, "test_materials.json"))

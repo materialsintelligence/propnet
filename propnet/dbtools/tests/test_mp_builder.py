@@ -72,6 +72,40 @@ class MPBuilderTest(unittest.TestCase):
                                  date_value)
                 at_deepest_level = True
 
+    def test_deprecated_filter(self):
+        # Check default (False)
+        builder = PropnetBuilder(self.materials, self.propstore)
+        self.assertFalse(builder.include_deprecated)
+
+        # Check False explicitly
+        builder = PropnetBuilder(self.materials, self.propstore, include_deprecated=False)
+        builder.connect()
+        is_deprecated = [item['deprecated'] for item in builder.get_items()]
+        self.assertTrue(all(not v for v in is_deprecated))
+
+        # Check True explicitly
+        builder = PropnetBuilder(self.materials, self.propstore, include_deprecated=True)
+        builder.connect()
+        is_deprecated = [item['deprecated'] for item in builder.get_items()]
+        self.assertTrue(any(is_deprecated))
+
+    def test_sandboxed_filter(self):
+        # Check default (False)
+        builder = PropnetBuilder(self.materials, self.propstore)
+        self.assertFalse(builder.include_sandboxed)
+
+        # Check False explicitly
+        builder = PropnetBuilder(self.materials, self.propstore, include_sandboxed=False)
+        builder.connect()
+        is_in_core = ['core' in item['sbxn'] for item in builder.get_items()]
+        self.assertTrue(all(v for v in is_in_core))
+
+        # Check True explicitly
+        builder = PropnetBuilder(self.materials, self.propstore, include_sandboxed=True)
+        builder.connect()
+        is_not_in_core = ['core' not in item['sbxn'] for item in builder.get_items()]
+        self.assertTrue(any(is_not_in_core))
+
 
 if __name__ == "__main__":
     unittest.main()
