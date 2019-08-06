@@ -1,18 +1,18 @@
 import unittest
 import os
+import copy
+from itertools import chain
+import warnings
 
 import numpy as np
+from monty.json import jsanitize, MontyDecoder
+from pint import UnitStrippedWarning
 
 from propnet.dbtools.storage import StorageQuantity, ProvenanceStore, ProvenanceStoreQuantity
 from propnet.core.symbols import Symbol
 from propnet.core.quantity import QuantityFactory, NumQuantity, BaseQuantity
 from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
-
-from monty.json import jsanitize, MontyDecoder
-import copy
-from itertools import chain
-
 # noinspection PyUnresolvedReferences
 from propnet.models import add_builtin_models_to_registry
 from propnet.core.registry import Registry
@@ -23,6 +23,8 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 class StorageTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        # Suppress warnings when using numpy functions with pint Quantities
+        warnings.filterwarnings("ignore", category=UnitStrippedWarning)
         add_builtin_models_to_registry()
         # Inspiration was taken from the GraphTest class
         # I tried to construct the dictionaries for comparison
@@ -233,6 +235,7 @@ class StorageTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        warnings.filterwarnings("default", category=UnitStrippedWarning)
         non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
         for sym in non_builtin_syms:
             Registry("symbols").pop(sym)
@@ -513,6 +516,7 @@ class StorageTest(unittest.TestCase):
             self.assertIsInstance(q_from_json_dict, StorageQuantity)
             self.assertEqual(q_from_json_dict._data_type, "NumQuantity")
             self.assertEqual(q_from_json_dict.symbol, q.symbol)
+
             self.assertTrue(np.isclose(q_from_json_dict.value, q.magnitude))
             self.assertEqual(q_from_json_dict.units, q.units)
             self.assertListEqual(q_from_json_dict.tags, q.tags)

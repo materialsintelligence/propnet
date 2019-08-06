@@ -19,7 +19,7 @@ description: 'The refractive index gives the factor by which the speed of light 
   '
 equations:
 - n = sqrt(Ur*Er)
-name: refractive_indexfrom_rel_perm
+name: refractive_index_from_rel_perm
 implemented_by:
 - jpalakapilly
 references:
