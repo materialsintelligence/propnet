@@ -5,8 +5,8 @@ fit: true
 ungrabifyWhileSimulating: true
 maxIterations: 100000
 maxSimulationTime: 3000
-springCoeff: 0.04
-springLength: 140
+springCoeff: 0.2
+springLength: 100
 gravity: -3000
 pull: 0.25
 theta: 0.9
