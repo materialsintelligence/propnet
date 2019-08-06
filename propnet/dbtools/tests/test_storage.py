@@ -235,7 +235,7 @@ class StorageTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        warnings.resetwarnings()
+        warnings.filterwarnings("default", category=UnitStrippedWarning)
         non_builtin_syms = [k for k, v in Registry("symbols").items() if not v.is_builtin]
         for sym in non_builtin_syms:
             Registry("symbols").pop(sym)
