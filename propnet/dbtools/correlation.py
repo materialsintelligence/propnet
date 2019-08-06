@@ -1,13 +1,49 @@
-from maggma.builders import Builder
-from itertools import combinations_with_replacement
-import numpy as np
-import json
-from collections import defaultdict
-from propnet.core.graph import Graph
-from propnet import ureg
+"""Database builder for correlation calculations.
+
+This module calculates correlation scores between scalar materials properties
+to elucidate relationships between properties and writes the results to a MongoDB
+collection with optional output to a file. The builder requires a propnet
+quantity database (preferred) or a full materials database (slower) as input.
+
+Example:
+    The builder can be executed using a ``maggma`` Runner in a Python script:
+
+    >>> from propnet.dbtools.correlation import CorrelationBuilder
+    >>> from maggma.stores import MongoStore
+    >>> from maggma.runner import Runner
+    >>> pn_quantity_db = MongoStore(...)    # read access
+    >>> pn_correlation_db = MongoStore(...) # write access
+    >>> cb = CorrelationBuilder(pn_quantity_db, pn_correlation_db,
+    >>>                         from_quantity_db=True)
+    >>> runner = Runner([cb])
+    >>> runner.run()
+
+    It can also be run using the ``maggma`` command line tool. In Python, build
+    the Runner as above, and then:
+
+    >>> from monty.serialization import dumpfn
+    >>> dumpfn(runner, 'correlation_runner.json')
+
+    And then in the terminal::
+
+        $ mrun -n NUM_PROCS correlation_runner.json
+
+    If running on a large data set (>100k materials), ``NUM_PROCS`` should be small
+    to ensure the system RAM is not used up, especially if using ``'mic'`` correlation.
+
+"""
+
 import logging
 import re
+import json
+from collections import defaultdict
+from itertools import combinations_with_replacement
 
+import numpy as np
+from maggma.builders import Builder
+
+from propnet.core.graph import Graph
+from propnet import ureg
 # noinspection PyUnresolvedReferences
 import propnet.models
 from propnet.core.registry import Registry
@@ -21,47 +57,60 @@ class CorrelationBuilder(Builder):
     using a suite of regression tools. Uses the Builder architecture for optional parallel
     processing of data.
 
-    Note: serialization of builder does not work with custom correlation functions, although
-    interactive use does support them.
+    Notes:
+        - Serialization of builder using ``as_dict()`` does not work with custom correlation
+          functions, although interactive use does support them.
 
+    Args:
+        propnet_store (maggma.stores.Store): store instance pointing to propnet collection
+            with read access
+        correlation_store (maggma.stores.Store): store instance pointing to collection with write access
+        out_file (str): optional, filename to output data in JSON format (useful if using a ``MemoryStore``
+            for ``correlation_store``). Default: None (no file output)
+        funcs (`str`, `callable`, `list` of `str` and/or `callable`): functions to use for correlation. Custom
+            functions can be passed into this argument but are not JSON-serializable.
+            Built-in functions can be specified by the following strings:
+
+            - ``'linlsq'``: linear least-squares, reports R^2 (default)
+            - ``'pearson'``: Pearson r-correlation, reports r
+            - ``'spearman'``: Spearman rank correlation, reports r
+            - ``'mic'``: maximal-information non-parametric exploration, reports maximal information coefficient
+            - ``'ransac'``: random sample consensus (RANSAC) regression, reports score
+            - ``'theilsen'``: Theil-Sen regression, reports score
+            - ``'all'``: runs all correlation functions above
+
+            Default: ``'linlsq'``
+        props (`list` of `str`): optional, list of properties for which to calculate the correlation.
+            Default: ``None`` (calculate for all possible pairs)
+        sample_size (int): optional, limits correlation calculation data to a random sample of size
+            `sample_size`. Default: ``None`` (no limit)
+        from_quantity_db (bool): ``True`` means ``propnet_store`` follows the quantity-indexed database
+            schema, ``False`` means the full, material-indexed database schema. Note: querying quantity-indexed
+            databases is considerably faster than material-indexed.
+            Default: ``True`` (quantity schema)
+        **kwargs: arguments to the ``Builder`` superclass
+
+    Attributes:
+        propnet_store (maggma.stores.Store): MongoDB collection containing quantity or material
+            data to be queried for correlation calculation.
+        correlation_store (maggma.stores.Store): MongoDB collection to which correlation calculation
+            data will be written.
+        from_quantity_db (bool): ``True`` if ``propnet_store`` follows the quantity-based schema created
+            with ``propnet.dbtools.separation.SeparationBuilder``. ``False`` if ``propnet_store`` follows
+            the material-based schema which is default output from ``propnet.dbtools.mp_builder.PropnetBuilder``.
+        out_file (`str` or `None`): file name to output correlation data after builder is complete.
+        sample_size (`int` or `None`): maximum number of randomly-sampled data points to include in
+            correlation calculations. If ``None``, no limit is imposed.
     """
-    PROPNET_PROPS = [v.name for v in Registry("symbols").values()
+    _SCALAR_PROPS = [v.name for v in Registry("symbols").values()
                      if (v.category == 'property' and v.shape == 1)]
+    """List of the names of all scalar properties contained in propnet."""
     
     def __init__(self, propnet_store,
                  correlation_store, out_file=None,
                  funcs='linlsq', props=None,
                  sample_size=None, from_quantity_db=True,
                  **kwargs):
-        """
-        Constructor for the correlation builder.
-
-        Args:
-            propnet_store (Mongolike Store): store instance pointing to propnet collection
-                with read access
-            correlation_store (Mongolike Store): store instance pointing to collection with write access
-            out_file (str): optional, filename to output data in JSON format (useful if using a MemoryStore
-                for correlation_store)
-            funcs (`str`, `callable`, list of `str` or `callable`) functions to use for correlation.
-                Built-in functions can be specified by the following strings:
-
-                linlsq (default): linear least-squares, reports R^2
-                pearson: Pearson r-correlation, reports r
-                spearman: Spearman rank correlation, reports r
-                mic: maximal-information non-parametric exploration, reports maximal information coefficient
-                ransac: random sample consensus (RANSAC) regression, reports score
-                theilsen: Theil-Sen regression, reports score
-                all: runs all correlation functions above
-            props (`list` of `str`): optional, list of properties for which to calculate the correlation.
-                Default is to calculate for all possible pairs (props=None)
-            sample_size (int): optional, limits correlation calculation data to a random sample of size
-                `sample_size`. Default: None (no limit)
-            from_quantity_db (bool): True means propnet_store follows the quantity-indexed database
-                schema, False means the full, material-indexed database schema. Note: querying quantity-indexed
-                databases is considerably faster than material-indexed.
-                Default: True (quantity schema)
-            **kwargs: arguments to the Builder superclass
-        """
 
         self.propnet_store = propnet_store
         self.from_quantity_db = from_quantity_db
@@ -89,16 +138,25 @@ class CorrelationBuilder(Builder):
         if not self._funcs:
             raise ValueError("No valid correlation functions selected")
 
-        self._props = props or self.PROPNET_PROPS
+        self._props = props or self._SCALAR_PROPS
 
         if sample_size is not None and sample_size < 2:
             raise ValueError("Sample size must be greater than 1")
         self.sample_size = sample_size
-        self.total = None
 
         super(CorrelationBuilder, self).__init__(sources=[propnet_store],
                                                  targets=[correlation_store],
                                                  **kwargs)
+
+    @property
+    def total(self):
+        """
+        Calculates total number of calculations that will be performed during build.
+
+        Returns:
+            int: total number of calculations
+        """
+        return len(self._props) ** 2 * len(self._funcs)
 
     @classmethod
     def get_correlation_funcs(cls):
@@ -106,7 +164,7 @@ class CorrelationBuilder(Builder):
         Gets built-in correlation functions and their names.
 
         Returns:
-            dict: dict of function handles keyed by name
+            dict: dictionary of function handles keyed by name
 
         """
         return {f.replace('_cfunc_', ''): getattr(cls, f)
@@ -118,10 +176,15 @@ class CorrelationBuilder(Builder):
         Accumulates data and generates data sets for pairs of properties coupled
         with correlation functions.
 
-        Returns:
-            (generator): yields dicts of data (see _make_data_combinations())
+        Yields:
+            dict: yields dictionaries of data with the following structure:
+
+            - ``'x_data'`` (`list` of `float`): data for independent property (x-axis)
+            - ``'x_name'`` (str): name of independent property
+            - ``'y_data'`` (`list` of `float`): data for dependent property (y-axis)
+            - ``'y_name'`` (str): name of dependent property
+            - ``'func'`` (Tuple[str, callable]): name and function handle for correlation function
         """
-        self.total = len(self._props) ** 2 * len(self._funcs)
 
         # combinations_with_replacement() produces all possible pairs of properties
         # without repeating, i.e. will give AB but not BA. Code below manually
@@ -139,17 +202,17 @@ class CorrelationBuilder(Builder):
     @staticmethod
     def get_data_from_quantity_db(store, *props, sample_size=None, include_id=False):
         """
-        Collects scalar data from the quantity-onlu propnet database,
+        Collects scalar data from the quantity-only propnet database,
         aggregates it by material and property, and samples it if desired.
 
         Args:
-            store (maggma.stores.Store): MongoDB store instance for quantity databse
-            *props (str): property names as strings
-            sample_size (int): If specified, limits the number of returned records
-                to sample_size, randomly selected. If total of records is less than
-                sample_size, only those records are returned. Default: None (all records)
-            include_id (bool): True includes the '_id' field, which contains the material
-                key for the record. Default: False (do not include the field)
+            store (maggma.stores.Store): MongoDB store instance for quantity database
+            *props (str): one or more property names as strings
+            sample_size (int): if specified, limits the number of returned records
+                to ``sample_size``, randomly selected. If total of records is less than
+                ``sample_size``, only those records are returned. Default: ``None`` (all records)
+            include_id (bool): ``True`` includes the ``_id`` field, which contains the material
+                key for the record. Default: ``False`` (do not include the field)
 
         Returns:
             dict: dictionary of data keyed by property name
@@ -201,6 +264,7 @@ class CorrelationBuilder(Builder):
         return dict(data)
 
     def get_data_from_full_db(self, prop_x, prop_y):
+        # TODO: Extract this and the quantity db equivalent as propnet db API class
         """
         Collects scalar data from full propnet database, aggregates it by property,
         and samples it if desired.
@@ -277,13 +341,14 @@ class CorrelationBuilder(Builder):
             prop_y (str): name of property y
             data (dict): dictionary of data keyed by property name
 
-        Returns: (generator) a generator providing a dictionary with the data for correlation:
-            {'x_data': (list<float>) data for independent property (x-axis),
-             'x_name': (str) name of independent property,
-             'y_data': (list<float>) data for dependent property (y-axis),
-             'y_name': (str) name of dependent property,
-             'func': (tuple<str, function>) name and function handle for correlation function
-             }
+        Yields:
+            dict: a dictionary with the data for correlation with the following structure:
+
+            - ``'x_data'`` (`list` of `float`): data for independent property (x-axis),
+            - ``'x_name'`` (str): name of independent property,
+            - ``'y_data'`` (`list` of `float`): data for dependent property (y-axis),
+            - ``'y_name'`` (str): name of dependent property,
+            - ``'func'`` (Tuple[str, callable]): name and function handle for correlation function
 
         """
         # So we get AB and BA without re-querying, but not two AA
@@ -302,23 +367,24 @@ class CorrelationBuilder(Builder):
 
     def process_item(self, item):
         """
-        Run correlation calculation on a pair of properties using the specified function.
+        Runs correlation calculation on a pair of properties using the specified function.
 
         Args:
-            item: (dict) input provided by get_items() (see get_items() for structure)
+            item (dict): input provided by ``get_items()`` (see definition for structure)
 
-        Returns: (tuple<str, str, float, str, int>) output of calculation with necessary
-            information about calculation included. Format in tuple:
-                independent property (x-axis) name,
-                dependent property (y-axis) name,
-                correlation value,
-                correlation function name,
-                number of data points used for correlation
-                length of shortest path between properties on propnet graph where x-axis property
-                    is starting property and y-axis property is ending property.
-                    Note: if no (forward) connection exists, the path length will be None. This does
-                    not preclude y->x having a forward path.
+        Returns:
+            Tuple[str, str, float `or` Exception, str, int]: output of calculation with necessary
+            information about calculation included. Ordering of elements in tuple is:
 
+            - independent property (x-axis) name
+            - dependent property (y-axis) name
+            - correlation value or exception if an error occurs
+            - correlation function name
+            - number of data points used for correlation
+            - length of shortest path between properties on propnet graph where x-axis property
+              is starting property and y-axis property is ending property.
+              Note: if no (forward) connection exists, the path length will be None. This does
+              not preclude y->x having a forward path.
         """
         prop_x, prop_y = item['x_name'], item['y_name']
         data_x, data_y = item['x_data'], item['y_data']
@@ -352,13 +418,14 @@ class CorrelationBuilder(Builder):
     @staticmethod
     def _cfunc_mic(x, y):
         """
-        Get maximal information coefficient for data set.
+        Gets maximal information coefficient for data set.
 
         Args:
-            x: (list<float>) independent property (x-axis)
-            y: (list<float>) dependent property (y-axis)
+            x (`list` of `float`): independent property (x-axis)
+            y (`list` of `float`): dependent property (y-axis)
 
-        Returns: (float) maximal information coefficient
+        Returns:
+            float: maximal information coefficient
 
         """
         from minepy import MINE
@@ -369,13 +436,14 @@ class CorrelationBuilder(Builder):
     @staticmethod
     def _cfunc_linlsq(x, y):
         """
-        Get R^2 value for linear least-squares fit of a data set.
+        Gets R^2 value for linear least-squares fit of a data set.
 
         Args:
-            x: (list<float>) independent property (x-axis)
-            y: (list<float>) dependent property (y-axis)
+            x (`list` of `float`): independent property (x-axis)
+            y (`list` of `float`): dependent property (y-axis)
 
-        Returns: (float) R^2 value
+        Returns:
+            float: R^2 value
 
         """
         from scipy import stats
@@ -385,13 +453,14 @@ class CorrelationBuilder(Builder):
     @staticmethod
     def _cfunc_pearson(x, y):
         """
-        Get R value for Pearson fit of a data set.
+        Gets R value for Pearson fit of a data set.
 
         Args:
-            x: (list<float>) independent property (x-axis)
-            y: (list<float>) dependent property (y-axis)
+            x (`list` of `float`): independent property (x-axis)
+            y (`list` of `float`): dependent property (y-axis)
 
-        Returns: (float) Pearson R value
+        Returns:
+            float: Pearson R value
 
         """
         from scipy import stats
@@ -401,13 +470,14 @@ class CorrelationBuilder(Builder):
     @staticmethod
     def _cfunc_spearman(x, y):
         """
-        Get R value for Spearman fit of a data set.
+        Gets R value for Spearman fit of a data set.
 
         Args:
-            x: (list<float>) independent property (x-axis)
-            y: (list<float>) dependent property (y-axis)
+            x (`list` of `float`): independent property (x-axis)
+            y (`list` of `float`): dependent property (y-axis)
 
-        Returns: (float) Spearman R value
+        Returns:
+            float: Spearman R value
 
         """
         from scipy import stats
@@ -417,13 +487,14 @@ class CorrelationBuilder(Builder):
     @staticmethod
     def _cfunc_ransac(x, y):
         """
-        Get random sample consensus (RANSAC) regression score for data set.
+        Gets random sample consensus (RANSAC) regression score for data set.
 
         Args:
-            x: (list<float>) independent property (x-axis)
-            y: (list<float>) dependent property (y-axis)
+            x (`list` of `float`): independent property (x-axis)
+            y (`list` of `float`): dependent property (y-axis)
 
-        Returns: (float) RANSAC score
+        Returns:
+            float: RANSAC score
 
         """
         from sklearn.linear_model import RANSACRegressor
@@ -435,13 +506,14 @@ class CorrelationBuilder(Builder):
     @staticmethod
     def _cfunc_theilsen(x, y):
         """
-        Get Theil-Sen regression score for data set.
+        Gets Theil-Sen regression score for data set.
 
         Args:
-            x: (list<float>) independent property (x-axis)
-            y: (list<float>) dependent property (y-axis)
+            x (`list` of `float`): independent property (x-axis)
+            y (`list` of `float`): dependent property (y-axis)
 
-        Returns: (float) Theil-Sen score
+        Returns:
+            float: Theil-Sen score
 
         """
         from sklearn.linear_model import TheilSenRegressor
@@ -452,10 +524,10 @@ class CorrelationBuilder(Builder):
 
     def update_targets(self, items):
         """
-        Write correlation data to Mongo store.
+        Writes correlation data to Mongo store.
 
         Args:
-            items: (list<dict>) list of results output by process_item()
+            items (`list` of `tuple`): list of results output by ``process_item()``
 
         """
         data = []
@@ -482,7 +554,8 @@ class CorrelationBuilder(Builder):
         clean-up function for Builder.
 
         Args:
-            cursor: (Mongo Store cursor) optional, cursor to close if not automatically closed.
+            cursor (pymongo.cursor.Cursor): optional, cursor to close if not automatically closed.
+                Default: ``None`` (no cursor to be closed)
 
         """
 
@@ -502,10 +575,10 @@ class CorrelationBuilder(Builder):
 
     def write_correlation_data_file(self, out_file):
         """
-        Gets data dictionary containing correlation matrices and outputs to a file.
+        Writes data from ``get_correlation_matrices()`` to a JSON file.
 
         Args:
-            out_file: (str) file path and name for output to JSON file
+            out_file (str): file path and name of JSON file to write
         """
         matrix = self.get_correlation_matrices()
         with open(out_file, 'w') as f:
@@ -517,18 +590,18 @@ class CorrelationBuilder(Builder):
         correlation algorithm and properties of the data set.
 
         Args:
-            func_name: (str) optional, name of the correlation functions to include in the document
-                default: None, which is to include all that were run by this builder.
+            func_name (str): optional, name of the correlation functions to include in the document.
+                Default: ``None`` (include all that were run by this builder)
 
-        Returns: (dict) document containing correlation data. Format:
-            {'properties': (list<str>) names of properties calculated in order of how they are indexed
-                    in the matrices
-             'n_points': (list<list<int>>) list of lists (i.e. matrix) containing the number of data
-                    points evaluated during the fitting procedure
-             'correlation': (dict<str: list<list<float>>>) dictionary of matrices containing correlation
-                    results, keyed by correlation function name
-            }
+        Returns:
+            dict: dictionary containing correlation data with the following structure:
 
+            - ``'properties'`` (`list` of `str`) - names of properties calculated in order of how
+              they are indexed in the matrices
+            - ``'n_points'`` (`list` of `list` of `int`) - list of lists (i.e. matrix) containing
+              the number of data points evaluated during the fitting procedure
+            - ``'correlation'`` (dict) - dictionary of matrices (list of list of floats) containing
+              correlation results, keyed by correlation function name
         """
 
         prop_data = self.correlation_store.query(criteria={'property_x': {'$exists': True}},
@@ -577,10 +650,12 @@ class CorrelationBuilder(Builder):
     def as_dict(self):
         """
         Returns the representation of the builder as a dictionary in JSON serializable format.
-        Note: because functions are not JSON serializable, custom functions are omitted when
-            serializing the object.
 
-        Returns: (dict) representation of this builder as a JSON-serializable dictionary
+        Note: because functions are not JSON serializable, custom functions are omitted when
+        serializing the object.
+
+        Returns:
+            dict: representation of this builder as a JSON-serializable dictionary
 
         """
         d = super(CorrelationBuilder, self).as_dict()
