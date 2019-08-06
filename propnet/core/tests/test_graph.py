@@ -422,19 +422,19 @@ class GraphTest(unittest.TestCase):
         # Expected outputs
         s_outputs = permeability + permittivity + [
             QuantityFactory.create_quantity('refractive_index', 3 ** 0.5,
-                                            provenance=ProvenanceElement(model="refractive_indexfrom_rel_perm",
+                                            provenance=ProvenanceElement(model="refractive_index_from_rel_perm",
                                                                          inputs=[permeability[0],
                                                                                  permittivity[0]])),
             QuantityFactory.create_quantity('refractive_index', 5 ** 0.5,
-                                            provenance=ProvenanceElement(model="refractive_indexfrom_rel_perm",
+                                            provenance=ProvenanceElement(model="refractive_index_from_rel_perm",
                                                                          inputs=[permeability[0],
                                                                                  permittivity[1]])),
             QuantityFactory.create_quantity('refractive_index', 6 ** 0.5,
-                                            provenance=ProvenanceElement(model="refractive_indexfrom_rel_perm",
+                                            provenance=ProvenanceElement(model="refractive_index_from_rel_perm",
                                                                          inputs=[permeability[1],
                                                                                  permittivity[0]])),
             QuantityFactory.create_quantity('refractive_index', 10 ** 0.5,
-                                            provenance=ProvenanceElement(model="refractive_indexfrom_rel_perm",
+                                            provenance=ProvenanceElement(model="refractive_index_from_rel_perm",
                                                                          inputs=[permeability[1],
                                                                                  permittivity[1]]))]
 

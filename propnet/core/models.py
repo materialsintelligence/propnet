@@ -7,21 +7,21 @@ import re
 import logging
 from abc import ABC, abstractmethod
 from itertools import chain
-
+import warnings
 import six
+
 from monty.serialization import loadfn
 from monty.json import MSONable, MontyDecoder
 import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
+from pint import DimensionalityError, UnitStrippedWarning
 
 from propnet.core.exceptions import ModelEvaluationError, SymbolConstraintError
 from propnet.core.quantity import QuantityFactory, NumQuantity, BaseQuantity
 from propnet.core.utils import references_to_bib, PrintToLogger
 from propnet.core.provenance import ProvenanceElement
 from propnet import ureg
-from pint import DimensionalityError
-
 from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
@@ -389,10 +389,14 @@ class Model(ABC):
 
         # Plug in and check constraints
         try:
-            with PrintToLogger(level="DEBUG") as plog:
-                with np.errstate(all='log'):
-                    np.seterrcall(plog)
-                    out: dict = self.plug_in(input_variable_value_dict)
+            with PrintToLogger(level="DEBUG") as plog, \
+                    np.errstate(all='log'), \
+                    warnings.catch_warnings():
+                # Catch numpy warnings and log them
+                np.seterrcall(plog)
+                # Catch pint warning caused by numpy
+                warnings.simplefilter("ignore", category=UnitStrippedWarning)
+                out: dict = self.plug_in(input_variable_value_dict)
         except Exception as err:
             # Because the Timeout() context raises a TimeoutError as a response to a
             # signal from the os, the exception is raised wherever the program is
