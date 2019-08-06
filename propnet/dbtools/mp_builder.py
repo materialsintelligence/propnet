@@ -217,8 +217,8 @@ class PropnetBuilder(MapBuilder):
                 # No new quantities were derived
                 continue
             # Store mean and std dev for aggregated quantities
-            sub_doc = {"mean": unumpy.nominal_values(quantity.value).tolist(),
-                       "std_dev": unumpy.std_devs(quantity.value).tolist(),
+            sub_doc = {"mean": unumpy.nominal_values(quantity.magnitude).tolist(),
+                       "std_dev": unumpy.std_devs(quantity.magnitude).tolist(),
                        "units": quantity.units.format_babel() if quantity.units else None,
                        "title": quantity.symbol.display_names[0]}
             # Symbol Name -> Sub_Document, listing all Quantities of that type.
