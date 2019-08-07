@@ -49,6 +49,7 @@ import propnet.models
 from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
+"""logging.Logger: Logger for debugging"""
 
 
 class CorrelationBuilder(Builder):
@@ -60,35 +61,6 @@ class CorrelationBuilder(Builder):
     Notes:
         - Serialization of builder using ``as_dict()`` does not work with custom correlation
           functions, although interactive use does support them.
-
-    Args:
-        propnet_store (maggma.stores.Store): store instance pointing to propnet collection
-            with read access
-        correlation_store (maggma.stores.Store): store instance pointing to collection with write access
-        out_file (str): optional, filename to output data in JSON format (useful if using a ``MemoryStore``
-            for ``correlation_store``). Default: None (no file output)
-        funcs (`str`, `callable`, `list` of `str` and/or `callable`): functions to use for correlation. Custom
-            functions can be passed into this argument but are not JSON-serializable.
-            Built-in functions can be specified by the following strings:
-
-            - ``'linlsq'``: linear least-squares, reports R^2 (default)
-            - ``'pearson'``: Pearson r-correlation, reports r
-            - ``'spearman'``: Spearman rank correlation, reports r
-            - ``'mic'``: maximal-information non-parametric exploration, reports maximal information coefficient
-            - ``'ransac'``: random sample consensus (RANSAC) regression, reports score
-            - ``'theilsen'``: Theil-Sen regression, reports score
-            - ``'all'``: runs all correlation functions above
-
-            Default: ``'linlsq'``
-        props (`list` of `str`): optional, list of properties for which to calculate the correlation.
-            Default: ``None`` (calculate for all possible pairs)
-        sample_size (int): optional, limits correlation calculation data to a random sample of size
-            `sample_size`. Default: ``None`` (no limit)
-        from_quantity_db (bool): ``True`` means ``propnet_store`` follows the quantity-indexed database
-            schema, ``False`` means the full, material-indexed database schema. Note: querying quantity-indexed
-            databases is considerably faster than material-indexed.
-            Default: ``True`` (quantity schema)
-        **kwargs: arguments to the ``Builder`` superclass
 
     Attributes:
         propnet_store (maggma.stores.Store): MongoDB collection containing quantity or material
@@ -111,6 +83,37 @@ class CorrelationBuilder(Builder):
                  funcs='linlsq', props=None,
                  sample_size=None, from_quantity_db=True,
                  **kwargs):
+        """
+        Args:
+            propnet_store (maggma.stores.Store): store instance pointing to propnet collection
+                with read access
+            correlation_store (maggma.stores.Store): store instance pointing to collection with write access
+            out_file (str): optional, filename to output data in JSON format (useful if using a ``MemoryStore``
+                for ``correlation_store``). Default: None (no file output)
+            funcs (`str`, `callable`, `list` of `str` and/or `callable`): functions to use for correlation. Custom
+                functions can be passed into this argument but are not JSON-serializable.
+                Built-in functions can be specified by the following strings:
+
+                - ``'linlsq'``: linear least-squares, reports R^2 (default)
+                - ``'pearson'``: Pearson r-correlation, reports r
+                - ``'spearman'``: Spearman rank correlation, reports r
+                - ``'mic'``: maximal-information non-parametric exploration, reports maximal information coefficient
+                - ``'ransac'``: random sample consensus (RANSAC) regression, reports score
+                - ``'theilsen'``: Theil-Sen regression, reports score
+                - ``'all'``: runs all correlation functions above
+
+                Default: ``'linlsq'``
+            props (`list` of `str`): optional, list of properties for which to calculate the correlation.
+                Default: ``None`` (calculate for all possible pairs)
+            sample_size (int): optional, limits correlation calculation data to a random sample of size
+                `sample_size`. Default: ``None`` (no limit)
+            from_quantity_db (bool): ``True`` means ``propnet_store`` follows the quantity-indexed database
+                schema, ``False`` means the full, material-indexed database schema. Note: querying quantity-indexed
+                databases is considerably faster than material-indexed.
+                Default: ``True`` (quantity schema)
+            **kwargs: arguments to the ``Builder`` superclass
+
+        """
 
         self.propnet_store = propnet_store
         self.from_quantity_db = from_quantity_db
@@ -151,10 +154,7 @@ class CorrelationBuilder(Builder):
     @property
     def total(self):
         """
-        Calculates total number of calculations that will be performed during build.
-
-        Returns:
-            int: total number of calculations
+        int: total number of calculations that will be performed during build
         """
         return len(self._props) ** 2 * len(self._funcs)
 

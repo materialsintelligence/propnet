@@ -58,14 +58,14 @@ apidoc_separate_modules = True
 
 
 # Configure autodoc to not skip __init__() functions
-# def skip(app, what, name, obj, would_skip, options):
-#     if name == "__init__":
-#         return False
-#     return would_skip
-#
-#
-# def setup(app):
-#     app.connect("autodoc-skip-member", skip)
+def skip(app, what, name, obj, would_skip, options):
+    if name == "__init__":
+        return False
+    return would_skip
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip)
 
 # Napoleon config
 napoleon_google_docstring = True
