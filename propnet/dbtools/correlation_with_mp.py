@@ -1,24 +1,26 @@
-from maggma.builders import Builder
-from itertools import product
-import numpy as np
+"""
+WARNING: THIS MODULE IS DEPRECATED AND WILL BE REMOVED IN THE NEAR FUTURE.
+This module is only here for backwards compatibility. Use ``propnet.dbtools.correlation`` instead.
+"""
 import json
-from collections import defaultdict
-from propnet.core.graph import Graph
-from propnet import ureg
 import logging
 import re
+from itertools import product
+from collections import defaultdict
+import warnings
 
+from maggma.builders import Builder
+import numpy as np
+
+from propnet.core.graph import Graph
+from propnet import ureg
 # noinspection PyUnresolvedReferences
 import propnet.models
 from propnet.core.registry import Registry
 
+warnings.warn("The correlation_with_mp module is deprecated. Use the correlation module instead.",
+              DeprecationWarning)
 logger = logging.getLogger(__name__)
-
-'''
-WARNING: This class is only here for backwards compatibility.
-Use propnet.dbtools.correlation.CorrelationBuilder instead.
-Will likely be removed in the near future.
-'''
 
 
 class CorrelationBuilder(Builder):
