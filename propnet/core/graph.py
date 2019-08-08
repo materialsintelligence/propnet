@@ -31,7 +31,7 @@ from typing import Set, Dict, Union
 logger = logging.getLogger(__name__)
 
 
-class Graph(object):
+class Graph:
     """
     Class containing methods for creating and interacting with a
     Property Network.
