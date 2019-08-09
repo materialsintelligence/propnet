@@ -1,17 +1,46 @@
-"""
-Module containing classes and methods for graph functionality in Propnet code.
+"""Knowledge graph builder and traversal.
+
+This module contains the class responsible for building the propnet knowledge graph and
+traversing it when materials properties are applied to it in order to derive all possible
+new materials properties.
+
+The knowledge graph is built from the contents of the propnet model and symbol ``Registry``.
+In order to use models and symbols that are built-in to propnet, be sure to:
+
+>>> import propnet.models    # For symbols and models
+>>> import propnet.symbols   # For symbols only
+
+Examples:
+    To run the knowledge graph on a material, import the models and symbols desired from
+    the built-in library (see above) or add your own custom models/symbols to the ``Registry``:
+
+    >>> from propnet.core.symbols import Symbol
+    >>> from propnet.core.models import EquationModel    # Or whichever type you are making
+    >>> from propnet.core.materials import Material
+    >>> sym1 = Symbol(...)      # Register custom symbols (register=True is default)
+    >>> sym2 = Symbol(...)
+    >>> model1 = EquationModel(...)     # Register custom model (register=True is default)
+
+    Then you can run the graph traversal algorithm using the models chosen.
+
+    >>> from propnet.core.graph import Graph
+    >>> g = Graph(parallel=True)    # Can run in parallel mode
+    >>> material = Material(...)    # Create a material with some properties
+    >>> evaluated_material = g.evaluate(material)   # Run graph traversal on material
 """
 
 import logging
 from collections import defaultdict
 from itertools import product, chain, repeat
-from chronic import Timer, timings, clear
-from pandas import DataFrame
 from collections import deque
 import concurrent.futures
 from functools import partial
 from multiprocessing import cpu_count
 import copy
+from typing import Set, Dict, Union
+
+from chronic import Timer, timings, clear
+from pandas import DataFrame
 import numpy as np
 import networkx as nx
 
@@ -20,49 +49,52 @@ from propnet.core.materials import Material
 from propnet.core.models import Model, CompositeModel
 from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import SymbolTree, TreeElement
-from propnet.symbols import Symbol
+from propnet.core.symbols import Symbol
 from propnet.core.utils import Timeout
-
 from propnet.core.registry import Registry
-
-from typing import Set, Dict, Union
-
 
 logger = logging.getLogger(__name__)
 
 
 class Graph:
     """
-    Class containing methods for creating and interacting with a
-    Property Network.
-    The Property Network contains a set of Node namedtuples with
-    connections stored as directed edges between the nodes.
-    Upon initialization a base graph is constructed consisting of all
-    valid SymbolTypes and Models found in surrounding folders. These are
-    Symbol and Model node_types respectively. Connections are formed
-    between the nodes based on given inputs and outputs of the models.
-    At this stage the graph represents a symbolic web of properties
-    without any actual input values.
-    Materials and Properties / Conditions can be added at runtime using
-    appropriate support methods. These methods dynamically create
-    additional PropnetNodes and edges on the graph of Material and
-    Quantity node_types respectively.
-    Given a set of Materials and Properties / Conditions, the symbolic
-    web of properties can be utilized to predict values of connected
-    properties on demand.
-    Attributes:
-        _symbol_types ({str: Symbol}): data structure mapping Symbol
-            name to Symbol object.
-        _models ({str: Model}): data structure mapping Model name to
-            Model object.
-        _input_to_model ({Symbol: {Model}}): data structure mapping
-            Symbol inputs to a set of corresponding Model objects that
-            take that Symbol as an input.
-        _output_to_model ({Symbol: {Model}}): data structure mapping
-            Symbol outputs to a set of corresponding Model objects that
-            produce that Symbol as an output.
-    *** Dictionaries can be searched by supplying Symbol objects or
-        Strings as to their names.
+    Class containing methods for creating and interacting with the propnet knowledge graph.
+    This graph accepts a material (or multiple for composite models) and recursively applies
+    the knowledge graph to derive all possible property values (quantities) available on
+    the graph.
+
+    Notes:
+        To use the built-in propnet models, you must explicitly import them using:
+
+        >>> import propnet.models
+
+        This will register the models in the ``Registry`` and allow you to load them.
+        If you do not import them or supply them yourself at instantiation, the knowledge
+        graph will contain no models.
+
+    Examples:
+        The ``evaluate()`` method will be the main entry point for the graph evaluation.
+
+        >>> from propnet.core.graph import Graph
+        >>> from propnet.core.materials import Material
+        >>> g = Graph()
+        >>> material = Material(...)
+        >>> evaluated_material = g.evaluate(material)
+
+        However, propnet also has limited support for composite materials (materials made up
+        of more than one material). For those materials, use ``evaluate_composite()``.
+
+        >>> from propnet.core.graph import Graph
+        >>> from propnet.core.materials import Material, CompositeMaterial
+        >>> g = Graph()
+        >>> m1 = Material(...)
+        >>> m2 = Material(...)
+        >>> evaluated_material = g.evaluate_composite(CompositeMaterial([m1, m2]))
+
+        The composite evaluation algorithm is somewhat slow and there are not a large number
+        of composite models available in the built-in library. However, we are always
+        accepting contributions!
+
     """
 
     def __init__(self,
@@ -72,19 +104,20 @@ class Graph:
                  parallel: bool = False,
                  max_workers: int = None) -> None:
         """
-        Creates a graph instance.
-
-        Note: models and symbols are selected from the Registry() class unless specified explicitly.
-            To include all built-in propnet models, import them from propnet.models and propnet.symbols.
-
         Args:
-            models (dict): models to use for graph evaluation. Default: all registered models.
-            composite_models (dict): composite models to use for graph evaluation.
-                Default: all registered composite models.
-            symbol_types (dict): symbols to use for graph evaluation. Default: all registered symbols
-            parallel (bool): True creates a pool of workers for parallel graph evaluation. Default: False
-            max_workers (int): Number of workers for parallel worker pool. Default: None, for serial evaluation,
-                max number of available CPUs for parallel.
+            models (`dict` or `None`): optional, dict of models to use for graph evaluation,
+                keyed by model name. Default: ``None`` (dictionary returned by
+                ``Registry('models')``)
+            composite_models (`dict` or `None`): optional, dict of composite models to use for
+                graph evaluation, keyed by model name. Default: ``None`` (dictionary returned by
+                ``Registry('composite_models')``)
+            symbol_types (`dict` or `None`): optional, dict of symbols to use for graph evaluation.
+                Note all symbols used by the desired models must be included or an error will occur.
+                Default: ``None`` (dictionary returned by ``Registry('symbols')``)
+            parallel (bool): ``True`` creates a pool of workers for parallel graph evaluation.
+                Default: ``False`` (runs serially)
+            max_workers (int): Number of workers for parallel worker pool.
+                Default: ``None`` (1 for serial, max number of available CPUs for parallel)
         """
 
         # set our defaults if no models/symbol types supplied
@@ -128,11 +161,12 @@ class Graph:
 
     def __str__(self):
         """
-        Returns a full summary of the graph in terms of the SymbolTypes,
+        Returns a full summary of the graph in terms of the
         Symbols, Materials, and Models that it contains. Connections are
         shown as nesting within the printout.
+
         Returns:
-            (str) representation of this Graph object.
+            str: representation of this Graph object.
         """
         summary = ["Propnet Printout", ""]
         summary += ["Properties"]
@@ -147,26 +181,24 @@ class Graph:
 
     def update_symbol_types(self, symbol_types):
         """
-        Add / redefine user-defined symbol types to the graph. If the
-        input, symbol_types, includes keys in self._symbol_types,
-        they are redefined.
+        Adds Symbol objects to the graph. If a Symbol with a given name
+        is already defined on the graph, it will be replaced.
+
         Args:
-            symbol_types ({name: Symbol}): symbol types to add
-        Returns:
-            None
+            symbol_types (dict): dictionary of ``Symbol`` objects to add,
+                keyed by symbol name
         """
-        for (k, v) in symbol_types.items():
-            self._symbol_types[k] = v
+        self._symbol_types.update(symbol_types)
 
     def remove_symbol_types(self, symbol_types):
         """
-        Removes user-defined Symbol objects to the Graph. Removes
+        Removes Symbol objects from the Graph. Removes
         any models that input or output this Symbol because they
-        are no longer defined without the given symbol_types.
+        can no longer be defined without the given Symbol.
+
         Args:
-            symbol_types ({name:Symbol}): symbol types to remove
-        Returns:
-            None
+            symbol_types (dict): dictionary of ``Symbol`` objects to remove,
+                keyed by symbol name
         """
         models_to_remove = {}
         for symbol in symbol_types.keys():
@@ -189,27 +221,25 @@ class Graph:
 
     def get_symbol_types(self):
         """
-        Getter method, returns a set of all Symbol objects
-        present on the graph.
-        Returns ({Symbol}):
-            set of symbols present on the graph
+        Gets a set of all Symbol objects present on the graph.
+
+        Returns:
+            `set` of `propnet.core.symbols.Symbol`: symbols present on the graph
         """
-        to_return = set()
-        for s in self._symbol_types.values():
-            to_return.add(s)
-        return to_return
+        return set(self._symbol_types.values())
 
     def update_models(self, models):
         """
-        Add / redefine user-defined models to the graph. If the input,
-        models, includes keys in self._models, they are redefined.
+        Adds Model objects to the graph. If a Model with a given name
+        is already defined on the graph, it will be replaced.
         The addition of a model may fail if appropriate Symbol objects
         are not already on the graph.  If any addition operation fails,
         the entire update is aborted.
+
         Args:
-            models ({name: Model}): Instances of the model class
-        Returns:
-            None
+            models (dict): dictionary of ``Model`` objects to add,
+                keyed by model name
+
         """
         added = {}
         for model in models.values():
@@ -235,11 +265,11 @@ class Graph:
 
     def remove_models(self, models):
         """
-        Remove user-defined models from the Graph.
+        Removes models from the graph.
+
         Args:
-            models ({name: Model}): Instances of the model class
-        Returns:
-            None
+            models (dict): dictionary of ``Model`` objects to remove,
+                keyed by model name
         """
         for model in models.keys():
             if model not in self._models.keys():
@@ -257,26 +287,24 @@ class Graph:
 
     def get_models(self) -> Dict[str, Model]:
         """
-        Getter method, returns a set of all model objects present
-        on the graph.
-        Returns ({Model}):
-            set of models in the graph
+        Gets a set of all Model objects present on the graph.
+
+        Returns:
+            dict: dictionary of models present on the graph, keyed by name
         """
-        to_return = dict()
-        for model in self._models.values():
-            to_return[model.name] = model
-        return to_return
+        return {model.name: model for model in self._models.values()}
 
     def update_composite_models(self, composite_models):
         """
-        Add / redefine user-defined composite_models to the graph.
-        If the input, composite_models, includes keys in self._composite_models, they are redefined.
-        The addition of a composite_models may fail if appropriate Symbol objects are not already on the graph.
-        If any addition operation fails, the entire update is aborted.
+        Adds composite models (CompositeModel objects) to the graph.
+        If a CompositeModel with a given name is already defined on the graph,
+        it will be replaced. The addition of a model may fail if appropriate Symbol objects
+        are not already on the graph. If any addition operation fails,
+        the entire update is aborted.
+
         Args:
-            composite_models (dict<str, CompositeModel>): Instances of the CompositeModel class
-        Returns:
-            None
+            composite_models (dict): dictionary of ``CompositeModel`` objects to add,
+                keyed by model name
         """
         added = {}
         for model in composite_models.values():
@@ -286,35 +314,35 @@ class Graph:
                 for input_ in input_set:
                     input_ = CompositeModel.get_variable(input_)
                     if input_ not in self._symbol_types.keys():
+                        self.remove_composite_models(added)
                         raise KeyError("Attempted to add a model to the property "
                                        "network with an unrecognized Symbol. "
                                        "Add {} Symbol to the property network before "
                                        "adding this model.".format(input_))
 
-    def remove_composite_models(self, super_models):
+    def remove_composite_models(self, composite_models):
         """
-        Remove user-defined models from the Graph.
+        Removes composite models from the graph.
+
         Args:
-            super_models (dict<str, SuperModel>): Instances of the SuperModel class
-        Returns:
-            None
+            composite_models (dict): dictionary of ``CompositeModel`` objects to remove,
+                keyed by model name
         """
-        for model in super_models.keys():
+        for model in composite_models.keys():
             if model not in self._composite_models.keys():
                 raise Exception("Attempted to remove a model not currently present in the graph.")
             del self._composite_models[model]
 
     def get_composite_models(self):
         """
-        Getter method, returns a set of all model objects present on the graph.
-        Returns:
-            (set<Model>)
-        """
-        to_return = set()
-        for model in self._composite_models.values():
-            to_return.add(model)
-        return to_return
+        Gets a set of all CompositeModel objects present on the graph.
 
+        Returns:
+            `set` of `propnet.core.models.CompositeModel`: dictionary of composite models
+                present on the graph, keyed by name
+        """
+        return set(self._composite_models.values())
+    # YOU STOPPED HERE
     def get_networkx_graph(self, include_orphans=True):
         """
         Generates a networkX data structure representing the property
