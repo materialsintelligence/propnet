@@ -338,17 +338,24 @@ class Graph:
         Gets a set of all CompositeModel objects present on the graph.
 
         Returns:
-            `set` of `propnet.core.models.CompositeModel`: dictionary of composite models
-                present on the graph, keyed by name
+            `set` of `propnet.core.models.CompositeModel`: composite models
+            present on the graph
         """
         return set(self._composite_models.values())
-    # YOU STOPPED HERE
+
     def get_networkx_graph(self, include_orphans=True):
         """
-        Generates a networkX data structure representing the property
-        network and returns this object.
+        Generates a networkX data structure representing the propnet knowledge
+        graph with Symbol and Model objects as nodes and their input/output as
+        directed edges.
+
+        Args:
+            include_orphans (bool): optional, ``True`` adds symbols which are not
+                connected to any models to the graph object. ``False`` omits them.
+                Default: ``True`` (include unconnected symbols)
+
         Returns:
-            (networkX.multidigraph)
+            networkx.MultiDiGraph: NetworkX representation of knowledge graph
         """
         graph = nx.MultiDiGraph()
 
@@ -369,6 +376,7 @@ class Graph:
                     graph.add_node(symbol)
 
         # Format nodes
+        # TODO: Update nx formatting with current cytoscape style
         for node in graph:
             if isinstance(node, Symbol):
                 nx.set_node_attributes(graph, {node: "#43A1F8"}, "fillcolor")
@@ -385,15 +393,18 @@ class Graph:
     def create_file(self, filename='out.dot', draw=False, prog='dot',
                     include_orphans=False, **kwargs):
         """
-        Output the graph to a file
+        Output the propnet knowledge graph to a file using pygraphviz.
+
         Args:
-            filename (str): filename for file
-            draw (bool): whether to draw or write file
-            include_orphans (bool): whether to include orphan symbols
-                in graph output
-            **kwargs (kwargs): kwargs to draw or write
-        Returns:
-            None
+            filename (str): optional, filename for file. Default: ``'out.dot'``
+            draw (bool): optional, ``True`` renders positions for the nodes and
+                edges with ``pygraphviz.AGraph.draw()``. ``False`` outputs only the
+                abstract node/edge data using ``pygraphviz.AGraph.write()``.
+                Default: ``False`` (write data only)
+            include_orphans (bool): optional, ``True`` adds symbols which are not
+                connected to any models to the graph object. ``False`` omits them.
+                Default: ``True`` (include unconnected symbols)
+            **kwargs: optional parameters to pygraphviz ``draw()`` or ``write()``.
         """
         nxgraph = self.get_networkx_graph(include_orphans)
         agraph = nx.nx_agraph.to_agraph(nxgraph)
@@ -403,39 +414,39 @@ class Graph:
         else:
             agraph.write(filename, **kwargs)
 
-    # TODO: can we remove this?
-    def calculable_properties(self, property_type_set):
+    # TODO: can we remove this or make it simpler?
+    def calculable_properties(self, input_symbols):
         """
-        Given a set of Symbol objects, returns all new Symbol objects
+        Given a set of input Symbol objects, determines all new Symbol objects
         that may be calculable from the inputs. Resulting set contains
         only those new Symbol objects derivable.
-        The result should be used with caution:
-            1) Models may not produce an output if their input
-                conditions are not met.
-            2) Models may require more than one Quantity of a
-                given Symbol type to generate an output.
+
+        Notes:
+            The result should be used with caution:
+            - Models may not produce an output if their input
+              conditions are not met.
+            - Models may require more than one Quantity of a
+              given Symbol type to generate an output.
+
         Args:
-            property_type_set ({Symbol}): the set of Symbol objects
-                taken as starting properties.
+            input_symbols (`set` of `propnet.core.symbols.Symbol`): the set of
+                Symbol objects taken as starting input properties.
+
         Returns:
-            (({Symbol}, {Model})) the set of all Symbol objects that
-                can be derived from the property_type_set, the set of
-                all Model objects that are used in deriving the new
-                Symbol objects.
+            `set` of `propnet.core.symbols.Symbol`: the set of all Symbol objects that
+                can be derived from the given input Symbols
         """
         # Set of theoretically derivable properties.
         derivable = set()
 
         # Set of theoretically available properties.
-        working = set()
-        for property_type in property_type_set:
-            working.add(property_type)
+        working = set(input_symbols)
 
         # Set of all models that could produce output.
         all_models = set()
         c_models = set()
-        for property_type in property_type_set:
-            for model in self._input_to_model[property_type]:
+        for sym in input_symbols:
+            for model in self._input_to_model[sym]:
                 all_models.add(model)
                 c_models.add(model)
 
@@ -498,47 +509,52 @@ class Graph:
 
         return derivable
 
-    def required_inputs_for_property(self, property_):
+    def required_inputs_for_property(self, target):
         """
         Determines all potential paths leading to a given symbol
         object. Answers the question: What sets of properties are
         required to calculate this given property?
+
         Paths are represented as a series of models and required
         input Symbol objects. Paths can be searched to determine
         specifically how to get from one property to another.
-        Warning: Method indicates sets of Symbol objects required
-            to calculate the property.  It does not indicate how
+
+        Notes:
+            Warning: Method indicates sets of Symbol objects required
+            to calculate the property. It does not indicate how
             many of each Symbol is required. It does not guarantee
-            that supplying Quantities of these types will result
-            in a new Symbol output as conditions / assumptions may
+            that supplying Quantity objects of these types will result
+            in a new Symbol output as conditions/constraints may
             not be met.
+
+        Args:
+            target (Symbol): desired target symbol
         Returns:
-            propnet.core.utils.SymbolTree
+            SymbolTree: pathways to target property represented as a tree
         """
-        head = TreeElement(None, {property_}, None, None)
+        head = TreeElement(None, {target}, None, None)
         self._tree_builder(head)
         return SymbolTree(head)
 
-    def _tree_builder(self, to_expand: TreeElement):
+    def _tree_builder(self, tree_to_expand: TreeElement):
         """
-        Recursive helper method to build a SymbolTree.  Fills in
+        Recursive helper method to build a SymbolTree. Fills in
         the children of to_expand by all possible model
         substitutions.
+
         Args:
-            to_expand: (TreeElement) element that will be expanded
-        Returns:
-            None
+            tree_to_expand (TreeElement): element that will be expanded in place
         """
         # Get set of symbols that no longer need to be replaced and
         # symbols that are candidates for replacement.
         replaced_symbols = set()    # set of all symbols already replaced.
                                     # equal to all parents' minus expand's symbols.
-        parent = to_expand.parent
+        parent = tree_to_expand.parent
         while parent is not None:
             replaced_symbols.update(parent.inputs)
             parent = parent.parent
-        replaced_symbols -= to_expand.inputs
-        candidate_symbols = to_expand.inputs - replaced_symbols
+        replaced_symbols -= tree_to_expand.inputs
+        candidate_symbols = tree_to_expand.inputs - replaced_symbols
 
         # Attempt to replace candidate_symbols
         # Replace them with inputs to models that output the candidate_symbols.
@@ -548,7 +564,7 @@ class Graph:
         for symbol in candidate_symbols:
             c_models = self._output_to_model[symbol]
             for model in c_models:
-                parent = to_expand.parent
+                parent = tree_to_expand.parent
                 parent: TreeElement
                 can_continue = True
                 while parent is not None:
@@ -567,28 +583,34 @@ class Graph:
                     if not can_continue:
                         continue
                     input_set = input_set | model.constraint_symbols
-                    new_types = (to_expand.inputs - output_set)
+                    new_types = (tree_to_expand.inputs - output_set)
                     new_types.update(input_set)
                     new_types = {self._symbol_types[x] for x in new_types}
                     if new_types in prev[model]:
                         continue
                     prev[model].append(new_types)
-                    new_element = TreeElement(model, new_types, to_expand, None)
+                    new_element = TreeElement(model, new_types, tree_to_expand, None)
                     self._tree_builder(new_element)
                     outputs.append(new_element)
 
         # Add outputs to children and fill in their elements.
-        to_expand.children = outputs
+        tree_to_expand.children = outputs
 
     # TODO: can we remove this?
     def get_paths(self, start_property, end_property):
         """
-        Returns all Paths
+        Returns all paths between two properties.
+
+        Notes:
+            This method is very computationally expensive in its current implementation.
+            We are actively seeking more efficient ways of calculating pathways between
+            properties.
         Args:
-            start_property: (Symbol) starting Symbol type
-            end_property: (Symbol) ending Symbol type
+            start_property (Symbol): starting Symbol type
+            end_property (Symbol): ending Symbol type
         Returns:
-            (list<SymbolPath>) list enumerating the features of all paths.
+            `list` of `propnet.core.provenance.SymbolPath`: list enumerating the features
+            of all paths
         """
         tree = self.required_inputs_for_property(end_property)
         return tree.get_paths_from(start_property)
@@ -596,10 +618,24 @@ class Graph:
     def get_degree_of_separation(self, start_property: Union[str, Symbol],
                                  end_property: Union[str, Symbol]) -> Union[int, None]:
         """
-        Returns the minimum number of models separating two properties.
-        Returns 0 if the start_property and end_property are equal.
-        Returns None if the start_property and end_properties are not connected.
+        Determines the minimum number of models separating two properties (symbols)
+        on the propnet knowledge graph.
+
+        Notes:
+            Because the propnet knowledge graph is directed, A->B may have a
+            valid pathway, but B->A may not.
+
+        Args:
+            start_property (`str` or `Symbol`): starting/input property
+            end_property (`str` or `Symbol`): ending/derived property
+
+        Returns:
+            `int` or `None`: the minimum number of models separating the two properties,
+            where ``0`` indicates the starting and ending properties are equal and ``None``
+            indicates the two properties are not connected by any models.
         """
+
+        # TODO: Would it be faster to use networkx?
         # Ensure we have the properties in the graph.
         if start_property not in self._symbol_types.keys():
             raise ValueError("Symbol not found: " + str(start_property))
@@ -650,35 +686,45 @@ class Graph:
     @staticmethod
     def generate_input_sets(props, this_quantity_pool):
         """
-        Generates all combinatorially-unique sets of input dicts given
-        a list of property names and a quantity pool
+        Generates all unique combinations of quantities given a list of needed
+        symbols/properties names and a pool of quantities to choose from.
+
         Args:
-            props ([str]): property names
-            this_quantity_pool ({Symbol: Set(Quantity)}): quantities
-                keyed by symbols
-        Returns ([{str: Quantity}]):
-            list of symbol strings mapped to Quantity values.
+            props (`list` of `str` or `propnet.core.symbols.Symbol`): desired properties
+                in input set
+            this_quantity_pool (dict): quantity pool, as a dictionary of sets of quantities
+                keyed by their Symbol or symbol name
+        Yields:
+            `tuple` of `Quantity`: tuple of length ``len(props)`` containing Quantity objects
+            corresponding to each symbol in ``props``.
         """
         aggregated_symbols = []
         for prop in props:
             if prop not in this_quantity_pool.keys():
-                return []
+                return
             aggregated_symbols.append(this_quantity_pool[prop])
-        return product(*aggregated_symbols)
+        yield from product(*aggregated_symbols)
 
     @staticmethod
     def get_input_sets_for_model(model, new_quantities, old_quantities):
         """
-        Generates all of the valid input sets for a given model, a fixed
-        quantity, and a quantity pool from which to draw remaining properties
+        Generates all valid input sets for a given model, containing at least
+        one Quantity from ``new_quantities`` with the remainder drawn from
+        ``old_quantities``.
+
         Args:
             model (Model): model for which to evaluate valid input sets
-            new_quantities ({symbol: [Quantity]}): quantities generated
-                during the most recent iteration of the evaluation loop
-            old_quantities ({symbol: [Quantity]}): quantities generated
-                in previous iterations of the evaluation loop
+            new_quantities (dict): quantities generated
+                during the most recent iteration of the evaluation loop,
+                as lists of Quantity objects keyed by symbol
+            old_quantities (dict): quantities generated
+                in previous iterations of the evaluation loop,
+                as lists of Quantity objects keyed by symbol
         Returns:
-            list of sets of input quantities for the model
+            Tuple[iterator, int]: returns tuple containing:
+
+            - iterator yielding input sets as tuples of Symbol objects
+            - integer corresponding to the number of items in the iterator
         """
 
         all_input_sets = []
@@ -710,17 +756,24 @@ class Graph:
 
     def generate_models_and_input_sets(self, new_quantities, quantity_pool):
         """
-        Helper method to generate input sets for models
+        Produces all input sets for all models on the graph that contain at least
+        one Quantity from ``new_quantities``.
+
         Args:
-            new_quantities ([Quantity]): list of new quantities from which
-                to derive new input sets (these are "fixed" quantities
-                in generate_input_sets_for_model)
-            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
-                keyed by symbol from which to draw additional quantities
+            new_quantities (`list` of `BaseQuantity`): list of new quantities from which
+                to derive new input sets
+            quantity_pool (dict): dict of Quantity sets,
+                keyed by symbol, from which to draw additional quantities
                 for model inputs
         Returns:
-            ([tuple]): list of tuples of models and their associated input
-                sets, uses tuple so duplicate checking can be performed
+            Tuple[iterator, int]: tuple that contains:
+
+            - an iterator containing models and input sets as tuples containing:
+
+                - ``Model`` instance for which the input set is valid
+                - tuple of Quantity objects representing the input set
+
+            - an integer representing the total number of input sets the iterator
         """
         models_and_input_sets = []
         n_total_input_sets = 0
@@ -741,7 +794,7 @@ class Graph:
                 n_total_input_sets += n_input_sets
 
         return chain.from_iterable(models_and_input_sets), n_total_input_sets
-
+    # Left off here
     def derive_quantities(self, new_quantities, quantity_pool=None,
                           allow_model_failure=True, timeout=None):
         """
