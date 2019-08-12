@@ -54,6 +54,7 @@ from propnet.core.utils import Timeout
 from propnet.core.registry import Registry
 
 logger = logging.getLogger(__name__)
+"""logging.Logger: Logger for debugging"""
 
 
 class Graph:
