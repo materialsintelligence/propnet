@@ -39,7 +39,7 @@ from multiprocessing import cpu_count
 import copy
 from typing import Set, Dict, Union
 
-from chronic import Timer, timings, clear
+from chronic import Timer, timings, clear as clear_timings
 from pandas import DataFrame
 import numpy as np
 import networkx as nx
@@ -434,7 +434,8 @@ class Graph:
 
         Returns:
             `set` of `propnet.core.symbols.Symbol`: the set of all Symbol objects that
-                can be derived from the given input Symbols
+            can be derived from the given input Symbols
+
         """
         # Set of theoretically derivable properties.
         derivable = set()
@@ -794,32 +795,34 @@ class Graph:
                 n_total_input_sets += n_input_sets
 
         return chain.from_iterable(models_and_input_sets), n_total_input_sets
-    # Left off here
+
     def derive_quantities(self, new_quantities, quantity_pool=None,
                           allow_model_failure=True, timeout=None):
         """
-        Derives new quantities using at least one quantity from "new_quantities" and the
-        remainder from either "new_quantities" or the specified "quantity_pool" as model inputs.
+        Derives new quantities using the models on the knowledge graph using at least one quantity
+        from ``new_quantities`` and the remainder from either ``new_quantities`` or the specified
+        ``quantity_pool`` as inputs to the models.
 
         Args:
-            new_quantities ([Quantity]): list of quantities which to
+            new_quantities (`list` of `BaseQuantity`): list of quantities which to
                 consider as new inputs to models
-            quantity_pool ({symbol: [Quantity]}): dict of quantity lists
-                keyed by symbol from which to draw additional quantities
-                for model inputs
-            allow_model_failure (bool): True allows graph evaluation to
+            quantity_pool (`dict` or `None`): optional, dict of lists of ``BaseQuantity`` objects,
+                keyed by their ``Symbol`` from which to draw additional quantities
+                for model inputs. Default: ``None`` (no pool)
+            allow_model_failure (bool): ``True`` allows graph evaluation to
                 continue if an Exception is thrown during model evaluation for
-                violation of constraints or any other reason. False will
+                violation of constraints or any other reason. ``False`` will
                 throw any Exception encountered during model evaluation.
-                Default: True
-            timeout (int): number of seconds to allow for a model to evaluate.
+                Default: ``True`` (ignore exceptions)
+            timeout (`int` or `None`): number of seconds to allow for a model to evaluate.
                 After that time, model evaluation will be canceled and deemed
-                failed. "None" allows for infinite evaluation time. Default: None
+                failed. ``None`` allows for infinite evaluation time. Default: ``None`` (no limit)
 
         Returns:
-            additional_quantities ([Quantity]): new derived quantities
-            quantity_pool ({symbol: {Quantity}}): augmented version of
-                quantity pool
+            Tuple[list, dict]: returns a list and dict in a tuple:
+
+                - derived quantities as `list` of `BaseQuantity`
+                - quantity pool augmented with quantities from ``new_quantities``
         """
         # Update quantity pool
         quantity_pool = quantity_pool or defaultdict(list)
@@ -831,12 +834,13 @@ class Graph:
         models_and_input_sets, n_input_sets = self.generate_models_and_input_sets(
             new_quantities, quantity_pool)
 
+        # TODO: Maybe we should do this in evaluate() instead of here
         for quantity in new_quantities:
             quantity_pool[quantity.symbol].append(quantity)
 
         # input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
 
-        # This doesn't eliminate many and will be caught by cyclic filter
+        # The code below doesn't eliminate many and will be caught by cyclic filter
         # after evaluation. This is usually only important if the model we'd be
         # re-evaluating takes a long time, which the majority of our models do not
         # take a long time...can we move this into the generation step or just before
@@ -870,15 +874,15 @@ class Graph:
     @staticmethod
     def _generates_noncyclic_output(input_set):
         """
-        Helper function to determine if an input set of model and input quantities will
-        generate at least one output that is non-cyclic, meaning the output does not have
-        itself as an input in its provenance.
+        Determines if an input set of model and input quantities will generate at least one output that
+        is non-cyclic, meaning the output does not have itself as an input in its provenance.
 
         Args:
-            input_set (tuple(Model, list[Quantity]): input set to evaluate for cyclic outputs
+            input_set (tuple): input set to evaluate for cyclic outputs as a tuple of Model
+                and list of BaseQuantity objects.
 
         Returns:
-            (bool) True if at least one output of the model is non-cyclic. False if all outputs
+            bool: ``True`` if at least one output of the model is non-cyclic. ``False`` if all outputs
             are cyclic.
         """
         model, inputs = input_set
@@ -901,15 +905,18 @@ class Graph:
     @staticmethod
     def _run_serial(models_and_input_sets, allow_model_failure=True, timeout=None):
         """
-        Evaluate a list of input sets serially.
+        Evaluates a list of input sets serially.
 
         Args:
-            models_and_input_sets (list[tuple(model, list[Quantity])]): input sets to evaluate
-            allow_model_failure (bool): True suppresses exceptions raised during model evaluation. Default: True
-            timeout (int): number of seconds after which to timeout model evaluation. Default: None (infinite)
+            models_and_input_sets (`list` of `tuple`): input sets to evaluate as a list of tuples containing
+                a Model and a list of BaseQuantity objects.
+            allow_model_failure (bool): optional, ``True`` suppresses exceptions raised during model evaluation.
+                ``False`` throws them as they are raised. Default: ``True`` (no exceptions raised)
+            timeout (int): optional, number of seconds after which to timeout model evaluation.
+                Default: ``None`` (no limit)
 
         Returns:
-            (list[Quantity]) output quantities from input set evaluation.
+            `list` of `BaseQuantity`: output quantities from input set evaluation.
         """
         outputs = []
         model_timings = []
@@ -937,17 +944,20 @@ class Graph:
                       allow_model_failure=True,
                       timeout=None):
         """
-         Evaluate a list of input sets in parallel.
+        Evaluate a list of input sets in parallel.
 
         Args:
             executor (concurrent.futures.ProcessPoolExecutor): executor for input sets
             n_workers (int): number of processes used by executor
-            models_and_input_sets (list[tuple(model, list[Quantity])]): input sets to evaluate
-            allow_model_failure (bool): True suppresses exceptions raised during model evaluation. Default: True
-            timeout (int): number of seconds after which to timeout model evaluation. Default: None (infinite)
+            models_and_input_sets (`list` of `tuple`): input sets to evaluate as a list of tuples containing
+                a Model and a list of BaseQuantity objects.
+            allow_model_failure (bool): optional, ``True`` suppresses exceptions raised during model evaluation.
+                ``False`` throws them as they are raised. Default: ``True`` (no exceptions raised)
+            timeout (int): optional, number of seconds after which to timeout model evaluation.
+                Default: ``None`` (no limit)
 
         Returns:
-            (list[Quantity]) output quantities from input set evaluation.
+            `list` of `BaseQuantity`: output quantities from input set evaluation.
         """
         func = partial(Graph._evaluate_model,
                        allow_failure=allow_model_failure,
@@ -973,20 +983,27 @@ class Graph:
     @staticmethod
     def _evaluate_model(model_and_input_set, allow_failure=True, timeout=None):
         """
-        Workhorse function to evaluate an input set.
+        Evaluates an input set.
+
+        Notes:
+            The exception is returned instead of thrown because in parallel, the exception will be suppressed
+            by the map() function used to execute the model evaluation in parallel. Additionally, the timings
+            are returned because they do not sum when run in parallel because timing is executed on different
+            processors.
 
         Args:
-            model_and_input_set (tuple(Model, list[Quantity])): input set to evaluate
-            allow_failure (bool): True suppresses exceptions raised during model evaluation. Default: True
-            timeout: number of seconds after which to timeout model evaluation. Default: None (infinite)
+            model_and_input_set (tuple): input set to evaluate as a tuple containing
+                a Model and a list of BaseQuantity objects.
+            allow_failure (bool): optional, ``True`` suppresses exceptions raised during model evaluation.
+                ``False`` throws them as they are raised. Default: ``True`` (no exceptions raised)
 
         Returns:
-            (list): List of quantities calculated from model. If model failed and allow_failure = True, will
-                return an empty list. If allow_failure = False, will return a list with a tuple
-                (Exception, input_set) as its only element.
+            Tuple[list, dict]: tuple containing the following data:
 
-        Note: The exception is returned instead of thrown because in parallel, the exception will be suppressed
-            by the map() function used to execute the model evaluation in parallel.
+                - list of quantities calculated from model. If model failed and allow_failure = True, will
+                  return an empty list. If allow_failure = False, will return a list with a tuple
+                  (Exception, input_set) as its only element.
+                - dictionary of timing data for this model
         """
         # from chronic import Timer as Timer_
         # from chronic import timings as timings_
@@ -1026,21 +1043,22 @@ class Graph:
     def evaluate(self, material, allow_model_failure=True, timeout=None):
         """
         Given a Material object as input, creates a new Material object
-        to include all derivable properties.  Optional argument limits the
-        scope of which models or properties are tested. Returns a
-        reference to the new, augmented Material object.
+        to include all derivable properties for that material.
+
+        Notes:
+            Model timeout does not work on non-Unix machines based on the implementation. ``timeout`` will
+            be ignored on these machines.
 
         Args:
-            material (Material): which material's properties will be expanded.
-            allow_model_failure (bool): whether to continue with graph evaluation
-                if a model fails.
-            timeout (int): number of seconds after which model evaluation should
+            material (Material): a material whose properties will be expanded
+            allow_model_failure (bool): optional, ``True`` continues with graph evaluation
+                if a model fails. ``False`` throws the exception.
+                Default: ``True`` (ignore failed models)
+            timeout (`int` or `None`): optional, number of seconds after which model evaluation should
                 quit. This is to cut off long-running models.
-                Default: None (infinite evaluation time)
+                Default: ``None`` (infinite evaluation time)
         Returns:
-            (Material) reference to the newly derived material object.
-
-        Note: Model timeout does not work on non-Unix machines based on the implementation.
+            Material: material object containing all properties, derived + original inputs
         """
         logger.debug("Beginning evaluation")
 
@@ -1066,21 +1084,23 @@ class Graph:
                            timeout=None):
         """
         Given a CompositeMaterial object as input, creates a new CompositeMaterial
-        object to include all derivable properties.  Returns a reference to
-        the new, augmented CompositeMaterial object.
+        object to include all derivable properties for that material.
 
         Args:
-            material (CompositeMaterial): material for which properties
-                will be expanded.
-            allow_model_failure (bool): True allows non-composite models to fail
-                during graph evaluation of a material. Default: True
-            allow_composite_model_failure (bool): True allows composite model evaluation
-                to fail during evaluation. Default: True
-            timeout (int): number of seconds after which to terminate non-composite
-                model evaluation. Default: None (infinite evaluation time)
+            material (CompositeMaterial): material whose properties
+                will be expanded
+            allow_model_failure (bool): optional, ``True`` continues with graph evaluation
+                if a non-CompositeModel fails. ``False`` throws the exception.
+                Default: ``True`` (ignore failed non-composite models)
+            allow_composite_model_failure (bool): ``True`` continues with graph evaluation
+                if a CompositeModel fails. ``False`` throws the exception.
+                Default: ``True`` (ignore failed composite models)
+            timeout (`int` or `None`): optional, number of seconds after which non-CompositeModel
+                evaluation should quit. This is to cut off long-running models.
+                Default: ``None`` (infinite evaluation time)
 
         Returns:
-            (Material) reference to the newly derived material object.
+            CompositeMaterial: composite material object containing all properties, derived + original inputs
         """
 
         # TODO: Let's parallelize this eventually. It's not immediately obvious to me
@@ -1191,21 +1211,25 @@ class Graph:
         """
         Clears model evaluation timings.
 
-        Note: if you are using chronic.Timer for timing outside this Graph object,
-        this function will clear your timers causing an error if the Timer objects
-        are currently running.
+        Notes:
+            If you are using the ``chronic.Timer`` module for timing outside this Graph object,
+            this function will clear your timers causing an error if the Timer objects
+            are currently running.
 
         """
         self._graph_timings = None
         self._model_timings = None
-        clear()
+        clear_timings()
 
     @property
     def model_evaluation_statistics(self):
         """
-        :return: A Pandas DataFrame containing statistics on how
+        Compiles a pandas DataFrame containing statistics on how
         many times each model was evaluated, average time per model,
         and the total time taken for that model.
+
+        Returns:
+            pandas.DataFrame: model calculation statistics
         """
 
         rows = [{'Model Name': model,
@@ -1222,11 +1246,11 @@ class Graph:
     @staticmethod
     def _append_timing_result(model_timings):
         """
-        Helper function to append model timings collected from parallel processes to
+        Adds model timings collected from parallel processes to
         the timings module in this thread/process.
 
         Args:
-            model_timings (list[dict]): list of model timings returned from evaluation
+            model_timings (`list` of `dict`): list of model timings returned from evaluation
         """
         if 'timings' not in timings['_graph_evaluation']:
             timings['_graph_evaluation']['timings'] = dict()
