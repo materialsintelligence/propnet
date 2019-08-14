@@ -9,9 +9,9 @@ Example:
     material's properties:
 
     >>> from propnet.core.materials import Material
-    >>> from propnet.core.quantity import QuantityFactory
-    >>> band_gap = QuantityFactory.create_quantity('band_gap', 5, 'eV')
-    >>> bulk_modulus = QuantityFactory.create_quantity('bulk_modulus', 100, 'GPa')
+    >>> from propnet.core.quantity import QuantityFactory as QF
+    >>> band_gap = QF.create_quantity('band_gap', 5, 'eV')
+    >>> bulk_modulus = QF.create_quantity('bulk_modulus', 100, 'GPa')
     >>> m = Material([band_gap, bulk_modulus]) # Initialize with list, or...
     >>> m = Material()  # Initialize empty and add properties
     >>> m.add_quantity(band_gap)

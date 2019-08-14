@@ -1,5 +1,74 @@
-"""
-Module containing classes and methods for Model functionality in propnet code.
+"""Models representing connections between materials properties.
+
+This module contains classes that represent models, or the way that materials properties
+are connected to one another. propnet features several kinds of models:
+
+- *EquationModel*: used for relationships between properties of a single material easily expressed as a
+  simple mathematical equation
+- *PyModel*: custom Python modules used for more complex relationships between properties of a single material
+  not easily expressed with a simple mathematical equation
+- *CompositeModel*: Python-based models for calculating properties for mixed/composite materials
+
+These three classes are the main model types used. `PyModuleModel` and `PyModuleCompositeModel` are not intended
+for direct instantiation by the user, but are helper classes for constructing `PyModel` objects from the templated
+Python modules in propnet's core model library.
+
+The `Constraint` class is meant to function similar to an `EquationModel` and constrains the values of properties
+used in a model. They are initialized with an equality or inequality statement that must be satisfied for the input
+or output of the model to be considered valid. These `Constraint` objects can be passed to a model in the
+``'constraints'`` keyword.
+
+The recommended approach to creating models is by following the template approach, as described in the demo
+iPython notebook of the repository (``<root>/demo/Getting Started.ipynb``). Once a YAML (for equation-based models)
+or a Python module template (for more complex models or composite material models) is completed, place them in the
+correct directory under ``<root>/models/`` and they will be imported with ``import propnet.models``.
+However, each model type can be constructed manually. See the individual classes for examples.
+
+Examples:
+    There are two methods to run a model on some input data: ``plug_in()`` and ``evaluate()``. The distinction
+    between the two methods is in the format of the inputs and how that data is handled. Both methods take dictionaries
+    as input arguments.
+
+    As an example, say we have an equation-based model ``model`` which relates some property `symbol_a` to some
+    property `symbol_b` by ``B = 2 * A**3`` where `A` is the variable representing the value of `symbol_a` in units
+    `unit_of_a` and `B` represents the value of `symbol_b` in `unit_of_b` where ``unit_of_b = unit_of_a**3``.
+
+    For ``plug_in()``, the method expects the input dict's keys to be the variable names in the
+    equation or the expected variable names in the Python module. The values are expected to be the raw data, ready
+    to be used by the Python module or plugged into an equation without change. So, they must be of the correct Python
+    type and unit/dimensionality (for numerical inputs). For our example model:
+
+    >>> model.plug_in({'A': 5})
+    {'B': 250}
+
+    The output will be variable keyed with raw values as well. Raw in, raw out.
+
+    For ``evaluate()``, the method expects the input dict's keys to be the symbol names the model requires and the
+    values are expected to be Quantity objects of those symbol types. ``evaluate()`` or the Quantity class will take
+    care of any data type or unit conversions necessary to run the model. For our example model:
+
+    >>> from propnet.core.quantity import QuantityFactory as QF
+    >>> output = model.evaluate({'symbol_a': QF.create_quantity('symbol_a', 5, 'unit_of_a')})
+    >>> print(output)
+    {'symbol_b': <symbol_b, 250 unit_of_b, []>, 'successful': True}
+    >>> type(output['symbol_b'])
+    propnet.core.quantity.NumQuantity
+
+    The output will be symbol indexed with Quantity outputs and a flag to indicate if the model was successfully
+    evaluated. ``evaluate()`` also has more sophisticated checks to ensure that the input and output is valid and
+    does not violate any constraints placed on the model or the symbols that it is using.
+
+    For example, if `A` could have different units `other_a_unit` where ``unit_of_a = 100 * other_a_unit``,
+    ``evaluate()`` would know how to handle the unit conversion, if needed, whereas ``plug_in()`` does not.
+
+    >>> model.evaluate({'symbol_a': QF.create_quantity('symbol_a', 0.05, 'other_a_unit')})
+    {'symbol_b': <symbol_b, 250 unit_of_b, []>, 'successful': True}
+    >>> model.plug_in({'A': 0.05})
+    {'B': 0.00025}
+
+    If the model requires the inputs be in certain units to be evaluated correctly (i.e. if your model is empirical),
+    models can be designed to convert units automatically upon calling ``evaluate()`` by invoking the
+    ``units_for_evaluation`` keyword upon instantiation.
 """
 
 import os
@@ -33,11 +102,25 @@ TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
 
 class Model(ABC):
     """
-    Abstract model class for all models appearing in propnet
+    Abstract model class for all models appearing in propnet. All models will have the attributes and
+    functions described here, although some will behave differently based on implementation.
 
+    Attributes:
+        name (str): unique name for the model
+        description (str): information about the model and its origin, constraints, etc. This information
+            is displayed on the website.
+        display_names (`list` of `str`): nicely formatted name(s) of the model
+        categories (`list` of `str`): metadata categorizing the model ("empirical", "electronic",
+            "mechanical", etc.)
+        implemented_by (`list` of `str`): list of authors (GitHub usernames, preferably) who implemented
+            the model
+        references (`list` of `str`): BibTeX strings of scholarly references for the model
+        constraints (`list` of `propnet.core.models.Constraint`): list of Constraint objects representing
+            requirements that must be met for inputs/outputs to the model
     """
 
     _registry_name = "models"
+    """str: name of the Registry in which to register instances of this class"""
 
     def __init__(self, name, connections, constraints=None, display_names=None,
                  description=None, categories=None, references=None, implemented_by=None,
@@ -48,7 +131,7 @@ class Model(ABC):
         Abstract base class for model implementation.
 
         Args:
-            name (str): title of the model
+            name (str): unique name for the model
             connections (`list` of `dict`): list of connections dictionaries, which take
                 the form ``{"inputs": [variables], "outputs": [variables]}``, e. g.:
                 ``connections = [{"inputs": ["p", "T"], "outputs": ["V"]},``
@@ -96,7 +179,13 @@ class Model(ABC):
         self.name = name
         self._connections = connections
         self.description = description
-        self.display_names = display_names
+        if display_names:
+            if isinstance(display_names, str):
+                self.display_names = [display_names]
+            else:
+                self.display_names = display_names
+        else:
+            self.display_names = [self.name.replace("_", " ").title()]
         if isinstance(categories, str):
             categories = [categories]
         self.categories = categories or []
@@ -760,8 +849,24 @@ returns {example_outputs}
 
 class EquationModel(Model, MSONable):
     """
-    Equation model is a Model subclass which is invoked
-    from a list of equations
+    For models which are simple equations, use the ``EquationModel`` class. To construct a relationship between
+    some property `symbol_a` and some other property `symbol_b`, both of which are registered in the propnet
+    Registry, you can do the following:
+
+    >>> from propnet.core.models import EquationModel
+    >>> em = EquationModel('my_model', ['symbol_b = 2*symbol_a**3'])
+    >>> em.plug_in({'symbol_a': 5})
+    {'symbol_b': 250}
+
+    Equations must be strings parsable by the ``sympy`` package. Note that the variable names in the equation are
+    the same names as the symbols. If you would rather use a symbolic representation of the symbol names,
+    specify the ``variable_symbol_map`` upon creation:
+
+    >>> from propnet.core.quantity import QuantityFactory as QF
+    >>> em = EquationModel('my_model', ['B = 2*A**3'],
+    >>>                    variable_symbol_map={'A': 'symbol_a', 'B': 'symbol_b'})
+    >>> em.plug_in({'A': 5})
+    {'B': 250}
 
     """
     def __init__(self, name, equations, connections=None, constraints=None,
