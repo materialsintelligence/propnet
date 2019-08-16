@@ -78,6 +78,7 @@ from abc import ABC, abstractmethod
 from itertools import chain
 import warnings
 import six
+from copy import deepcopy
 
 from monty.serialization import loadfn
 from monty.json import MSONable, MontyDecoder
@@ -128,52 +129,61 @@ class Model(ABC):
                  is_builtin=False, register=True, overwrite_registry=True):
 
         """
-        Abstract base class for model implementation.
-
         Args:
             name (str): unique name for the model
             connections (`list` of `dict`): list of connections dictionaries, which take
-                the form ``{"inputs": [variables], "outputs": [variables]}``, e. g.:
+                the form ``{"inputs": [variables], "outputs": [variables]}``, e.g.:
                 ``connections = [{"inputs": ["p", "T"], "outputs": ["V"]},``
                 ``{"inputs": ["T", "V"], "outputs": ["p"]}]``
-            constraints (str, Constraint): string expressions or
+            constraints (str, Constraint, None): optional, string expressions or
                 Constraint objects of some condition on which the model is
                 valid, e. g. ``"n > 0"``, note that this must include variables if
-                there is a variable_symbol_map
-            display_names (`list` of `str`): optional, list of alternative names to use for
-                display
-            description (str): long form description of the model
-            categories (`list` of `str`): list of categories applicable to
+                there is a ``variable_symbol_map``. Default: ``None`` (no constraints)
+            display_names (`list` of `str`, `None`): optional, list of formatted names to use for
+                display. Default: ``None`` (sets ``display_name`` property to a list with one item,
+                which is the name in title case with underscores replaced with spaces,
+                e.g. "name_of_a_model" would become "Name of a Model")
+            description (str, None): optional, long form description of the model
+            categories (`list` of `str`, `None`): optional, list of categories applicable to
                 the model
-            references (`list` of `str`): list of the informational links
-                explaining / supporting the model
-            implemented_by (`list` of `str`): list of authors of the model by their
-                github usernames
-            variable_symbol_map (dict): mapping of variable strings enumerated
-                in the plug-in method to canonical symbols, e. g.
-                ``{"n": "index_of_refraction"}`` etc.
-            units_for_evaluation (`str`, `dict`): if specified, coerces the units of
+            references (`list` of `str`, `None`): list of the informational links
+                explaining / supporting the model. These strings should be a BibTeX string or
+                in the form ``"type:info"`` where ``type`` is one of "url", "doi", or "isbn"
+                and ``info`` contains the relevant data. These types will be automatically converted
+                to BibTeX strings by automatic lookup using ``propnet.core.utils.references_to_bib()``.
+                Users should verify the accuracy of the generated BibTeX strings.
+                Default: ``None`` (no references...please add them if contributing!)
+            implemented_by (`list` of `str`, `None`): optional, list of authors of the model by their
+                GitHub usernames. Default: ``None`` (no authors...please attribute authorship if
+                contributing!)
+            variable_symbol_map (dict, None): optional, mapping of variables used as inputs/outputs to symbol names
+                (e.g. ``{"n": "index_of_refraction"}`` etc.). Default: ``None`` (all inputs/outputs are
+                named exactly the same as they symbols they represent)
+            units_for_evaluation (str, dict, None): optional, if specified, coerces the units of
                 inputs prior to evaluation and outputs post-evaluation to the units
-                specified. If not specified, the inputs/outputs are not used as is.
-                If ``units_for_evaluation = 'default'``, all inputs/outputs will be
-                converted to the unit specified by the associated Symbol object. If
+                specified. If ``units_for_evaluation = 'default'``, all inputs/outputs will be
+                converted to the unit specified by their associated Symbol object. If
                 ``units_for_evaluation`` is a variable-keyed dict, the inputs/outputs
-                will be converted to the units specified in the dict. If a variable is
+                will be converted to the units specified as values in the dict. If a variable is
                 missing, it will be converted to the unit of the associated Symbol object.
-            test_data (`list` of `dict`): test data with
-                which to evaluate the model. Format:
+                Default: ``'default'`` (all inputs/outputs are converted to canonical units for evaluation)
+            test_data (`list` of `dict`, `None`): optional, test data with
+                which to evaluate the model to verify correct function. Format:
                 ``{'input': {variable: value}, 'output': {variable: value}}`` where `value`
-                can be a string with unit ('1.0 kg'), BaseQuantity object, or bare number.
+                can be a string with unit (``'1.0 kg'``), BaseQuantity object, or bare number.
                 Bare numbers will be assumed to be the units specified by ``units_for_evaluation``.
                 If ``units_for_evaluation`` is not specified, units will be assumed from the
-                associated Symbol object.
-            is_builtin (bool): True if the model is a default model included with propnet
-                (this option not intended to be set by users)
-            register (bool): True registers the model with the model registry named by
-                ``self._registry_name``
-            overwrite_registry (bool): True overwrites the model registry if a model with
-                the same name exists. False throws an error if a model with the same name
-                exists in the registry.
+                associated Symbol object. Default: ``None`` (no test data)
+            is_builtin (bool): **This option not intended to be set by users.** ``True`` if the model
+                is included in propnet's core model library.
+                Default: ``False`` (model is not in core library)
+            register (bool): ``True`` registers the model with the model registry named by
+                ``self._registry_name``. ``False`` instantiates the object without registering it.
+                Registration fails if the name exists in the registry and ``overwrite_registry=False``.
+                Default: ``True`` (register the model)
+            overwrite_registry (bool): ``True`` overwrites the model registry if a model with
+                the same name exists. ``False`` throws an error if a model with the same name
+                exists in the registry. Default: ``True`` (replace same-named models)
         """
 
         self.name = name
@@ -184,8 +194,10 @@ class Model(ABC):
                 self.display_names = [display_names]
             else:
                 self.display_names = display_names
-        else:
+        elif self.name:
             self.display_names = [self.name.replace("_", " ").title()]
+        else:
+            self.display_names = []
         if isinstance(categories, str):
             categories = [categories]
         self.categories = categories or []
@@ -195,11 +207,20 @@ class Model(ABC):
         self.references = references_to_bib(references or [])
         self._is_builtin = is_builtin
 
-        # variable symbol map initialized as symbol name->symbol, then updated
+        # TODO: Should probably make the variable_symbol_map always be keyed
+        #       by a string and valued by a symbol object for consistency
+        # TODO: The creation of the VSM is weirdly cyclic but it works. Is there
+        #       a better way to do this?
+        # variable symbol map initialized as symbol name->symbol name, then updated
         # with any customization of variable to symbol mapping
-        self._variable_symbol_map = {k: k for k in self.all_symbols}
-        self._variable_symbol_map.update(variable_symbol_map or {})
+        self._variable_symbol_map = {k: k for k in self.all_input_variables | self.all_output_variables}
+        if variable_symbol_map:
+            model_variable_symbol_map = {v: s for v, s in variable_symbol_map.items()
+                                         if v in self._variable_symbol_map}
+            self._variable_symbol_map.update(model_variable_symbol_map)
         self._verify_symbols_are_registered()
+        self._variable_symbol_map = {v: Registry("symbols").get(s) or s
+                                     for v, s in self._variable_symbol_map.items()}
 
         if units_for_evaluation or 'empirical' in self.categories:
             self._variable_unit_map = {prop_name: Registry("units").get(prop_name)
@@ -220,7 +241,7 @@ class Model(ABC):
                 self.constraints.append(constraint)
             else:
                 self.constraints.append(Constraint(constraint,
-                                                   variable_symbol_map=self._variable_symbol_map))
+                                                   variable_symbol_map=variable_symbol_map))
 
         # Ensures our test data is variable-keyed and in the correct format
         test_data = test_data or self.load_test_data()
@@ -244,7 +265,6 @@ class Model(ABC):
         Raises:
             KeyError: if `overwrite_registry=False` and a model with the same
                 name is already registered, this error is raised.
-
         """
         if not overwrite_registry and self.name in Registry(self._registry_name).keys():
             raise KeyError("Model '{}' already exists in the registry '{}'".format(self.name,
@@ -253,7 +273,7 @@ class Model(ABC):
 
     def unregister(self):
         """
-        Removes the symbol from all applicable registries.
+        Removes the model from its registry.
 
         """
         Registry(self._registry_name).pop(self.name, None)
@@ -264,14 +284,14 @@ class Model(ABC):
         Indicates if a model is registered with the model registry.
 
         Returns:
-            bool: True if the model is registered. False otherwise.
+            bool: ``True`` if the model is registered. ``False`` otherwise.
 
         """
         return self.name in Registry(self._registry_name)
 
     def _clean_test_data(self, test_data):
         """
-        Coerces test data into a value-unit format.
+        Coerces test data into a value-unit string format (e.g. "5.0 kg").
 
         Args:
             test_data (`list` of `dict`): structured test data (see ``__init__()``)
@@ -324,25 +344,44 @@ class Model(ABC):
     @property
     def is_builtin(self):
         """
-        Indicates whether the model is a propnet built-in.
+        Indicates whether the model is in the propnet core library.
 
         Returns:
-            bool: ``True`` if the model is a built-in, ``False``
+            bool: ``True`` if the model is in the core library, ``False``
                 if it is a custom-created model
         """
         return self._is_builtin
 
     @property
     def connections(self):
+        """`list` of `dict`: list of connections dictionaries, which take
+        the form:
+
+        >>> {"inputs": [variables], "outputs": [variables]}
+
+        For example:
+
+        >>> connections = [
+        >>>     {"inputs": ["p", "T"], "outputs": ["V"]},
+        >>>     {"inputs": ["T", "V"], "outputs": ["p"]}
+        >>> ]
+
+        """
         return self._connections
 
     @property
     def variable_unit_map(self):
+        """dict: variables mapped to the units, as ``pint`` Unit objects,
+        representing the units used for the variables in the model. If a
+        variable does not have a unit, the value is ``None``.
+        """
         return {k: ureg.Unit(v) if v is not None else None
                 for k, v in self._variable_unit_map.items()}
 
     @property
     def variable_symbol_map(self):
+        """dict: variables mapped to the Symbol types that those variables represent
+        """
         return self._variable_symbol_map
 
     @abstractmethod
@@ -734,6 +773,8 @@ class Model(ABC):
                 return False
         return True
 
+    # TODO: Can we roll this into the model module itself rather than hard coding
+    #       this file path and loading from there?
     def load_test_data(self, test_data_path=None, deserialize=True):
         """
         Loads test data from preset or specified directory.
@@ -958,7 +999,10 @@ class EquationModel(Model, MSONable):
     def as_dict(self):
         d = {k if not k.startswith("_") else k.split('_', 1)[1]: v
              for k, v in self.__getstate__().items()}
-        d['units_for_evaluation'] = d.pop('unit_map')
+        d['units_for_evaluation'] = d.pop('variable_unit_map')
+        del d['is_builtin']
+        for connection in d['connections']:
+            del connection['_sympy_exprs']
         return d
 
     @classmethod
@@ -982,7 +1026,7 @@ class EquationModel(Model, MSONable):
                 connection['_lambdas'][output_var] = sp_lambda
 
     def __getstate__(self):
-        d = self.__dict__.copy()
+        d = deepcopy(self.__dict__)
         for connection in d['_connections']:
             if '_lambdas' in connection.keys():
                 del connection['_lambdas']

@@ -3,6 +3,7 @@ import unittest
 # noinspection PyUnresolvedReferences
 from propnet.models import add_builtin_models_to_registry
 from propnet.core.registry import Registry
+from propnet.core.symbols import Symbol
 from collections import defaultdict
 
 
@@ -118,7 +119,7 @@ class DefaultModelsTest(unittest.TestCase):
             for key in model.variable_symbol_map.keys():
                 self.assertTrue(isinstance(key, str), 'Invalid variable_symbol_map key: ' + str(key))
                 self.assertTrue(
-                    isinstance(model.variable_symbol_map[key], str)
+                    isinstance(model.variable_symbol_map[key], Symbol)
                     and model.variable_symbol_map[key] in Registry("symbols").keys(), msg=msg)
             self.assertTrue(
                 model.connections is not None and isinstance(model.connections, list) and len(model.connections) > 0,
