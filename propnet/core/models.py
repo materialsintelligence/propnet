@@ -387,60 +387,102 @@ class Model(ABC):
     @abstractmethod
     def plug_in(self, variable_value_dict):
         """
-        Plugs in a variable to quantity dictionary
+        Evaluates the model by plugging values in directly from
+        a variable to value dictionary. The dictionary is keyed with
+        variable names expected by the model, valued by Python
+        data types expected by the model.
+
+        **This function is abstract and must be implemented by subclasses.**
 
         Args:
             variable_value_dict (dict): a mapping
-                of variables to values to be substituted
-                into the model to yield output
+                of variable names as keys to raw data values
+                to be substituted into the model to yield output,
+                e.g. ``{'A': 5}``
 
         Returns:
             dict: output variables with associated
-                values generated from the input
+            raw data values generated from the input
         """
         return
 
     def map_symbols_to_variables(self, symbols):
         """
-        Helper method to convert symbol-keyed dictionary or list to
-        variable-keyed dictionary or list
+        Converts a symbol-keyed dictionary or list of symbols to
+        variable-keyed dictionary or list of variables as defined
+        for this model.
 
         Args:
             symbols (list or dict): list of symbols or symbol-
                 keyed dictionary
 
-        Returns (list or dict):
-            list of variables or variable-keyed dict
+        Returns:
+            `list` or `dict`: same object type as ``symbols`` with symbols
+             replaced with variables
         """
         rev_map = {v: k for k, v in getattr(self, "variable_symbol_map", {}).items()}
         return remap(symbols, rev_map)
 
     def map_variables_to_symbols(self, variables):
         """
-        Helper method to convert variable-keyed dictionary or list to
-        symbol-keyed dictionary or list
+        Converts a variable-keyed dictionary or a list/set of variable names to
+        symbol-keyed dictionary or list/set of symbols as defined
+        for this model. If two dictionary keys or items in the set correspond
+        to the same Symbol, only one instance will be returned.
 
         Args:
             variables (`list`, `dict`, `set`): list of variables or variable-keyed
                 dictionary
 
         Returns:
-            `list` or `dict` or `set: list of symbols or symbol-keyed dict
+            `list` or `dict` or `set`: same object type as ``variables`` with variables
+             replaced with Symbols.
         """
         return remap(variables, getattr(self, "variable_symbol_map", {}))
 
     def _convert_inputs_for_plugin(self, inputs):
+        """
+        Converts input BaseQuantity objects to the format required by ``plug_in()``
+        including unit conversion.
+
+        **This function is not abstract, but may require different behavior for subclasses.**
+
+        In this implementation, the function converts numerical quantities to the units specified
+        in the ``variable_unit_map`` and returns the raw numerical value only. For other objects,
+        it returns the object stored in the BaseQuantity object's "value" field.
+
+        Args:
+            inputs (dict): variable-keyed dictionary with values as BaseQuantity objects
+                representing inputs to be converted for model evaluation
+
+        Returns:
+            dict: dictionary with values converted to the required raw data format
+        """
         converted_inputs = {}
         for var, quantity in inputs.items():
             converted_inputs[var] = quantity.value
             if self.variable_unit_map.get(var) is not None:
-                # Units are being assumed by equation and we need to strip them
-                # or pint might get angry if it has to add or subtract quantities
-                # with unmatched dimensions
+                # Convert units and return only the magnitude as to not
+                # have issues with dimension mismatch
                 converted_inputs[var] = quantity.to(self.variable_unit_map[var]).magnitude
         return converted_inputs
 
     def _convert_outputs_from_plugin(self, outputs):
+        """
+        Converts output raw data from ``plug_in()`` to the correct type and assigns units as needed.
+
+        **This function is not abstract, but may require different behavior for subclasses.**
+
+        In this implementation, raw numerical outputs are converted to pint Quantity objects with the
+        units specified in the ``variable_unit_map``. Other outputs are returned as is.
+
+        Args:
+            outputs (dict): variable-keyed dictionary with values as raw data
+                representing outputs to be converted to BaseQuantity objects
+
+        Returns:
+            dict: dictionary with values converted to objects ready to be converted to BaseQuantity objects
+        """
         converted_outputs = {}
         for var, quantity in outputs.items():
             symbol = self._variable_symbol_map[var]
@@ -461,7 +503,7 @@ class Model(ABC):
                 else:
                     converted_outputs[var] = ureg.Quantity(quantity, units=unit)
         return converted_outputs
-
+    # Stopped here
     def evaluate(self, symbol_quantity_dict, allow_failure=True, raise_timeout_errors=True):
         """
         Given a set of symbol values, performs error checking to see
