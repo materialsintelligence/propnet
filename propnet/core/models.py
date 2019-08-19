@@ -41,8 +41,8 @@ class Model(ABC):
 
     def __init__(self, name, connections, constraints=None, display_names=None,
                  description=None, categories=None, references=None, implemented_by=None,
-                 variable_symbol_map=None, units_for_evaluation=None, test_data=None,
-                 is_builtin=False, register=True, overwrite_registry=True):
+                 variable_symbol_map=None, units_for_evaluation=None,
+                 test_data=None, is_builtin=False, register=True, overwrite_registry=True):
 
         """
         Abstract base class for model implementation.
@@ -60,7 +60,7 @@ class Model(ABC):
             display_names (`list` of `str`): optional, list of alternative names to use for
                 display
             description (str): long form description of the model
-            categories (`list` of `str`): list of categories applicable to
+            categories (`list` of `str`, str): list of categories applicable to
                 the model
             references (`list` of `str`): list of the informational links
                 explaining / supporting the model
@@ -68,7 +68,8 @@ class Model(ABC):
                 github usernames
             variable_symbol_map (dict): mapping of variable strings enumerated
                 in the plug-in method to canonical symbols, e. g.
-                ``{"n": "index_of_refraction"}`` etc.
+                ``{"n": "index_of_refraction"}`` etc. This excludes variables that
+                are specified in ``constants``.
             units_for_evaluation (`str`, `dict`): if specified, coerces the units of
                 inputs prior to evaluation and outputs post-evaluation to the units
                 specified. If not specified, the inputs/outputs are not used as is.
@@ -108,7 +109,9 @@ class Model(ABC):
 
         # variable symbol map initialized as symbol name->symbol, then updated
         # with any customization of variable to symbol mapping
-        self._variable_symbol_map = {k: k for k in self.all_symbols}
+        self._variable_symbol_map = {
+            k: k for k in (self.all_input_variables | self.all_output_variables)
+        }
         self._variable_symbol_map.update(variable_symbol_map or {})
         self._verify_symbols_are_registered()
 
@@ -765,7 +768,7 @@ class EquationModel(Model, MSONable):
 
     """
     def __init__(self, name, equations, connections=None, constraints=None,
-                 variable_symbol_map=None, display_names=None, description=None,
+                 variable_symbol_map=None, constants=None, display_names=None, description=None,
                  categories=None, references=None, implemented_by=None,
                  units_for_evaluation=None, solve_for_all_variables=False, test_data=None,
                  is_builtin=False, register=True, overwrite_registry=True):
@@ -788,6 +791,10 @@ class EquationModel(Model, MSONable):
                 alternatively, using solve_for_all_variables will derive all
                 possible input-output connections
             constraints (`list` of `str`, `list` of `Constraint`): constraints on models
+            constants (dict): mapping of variable strings enumerated
+                in the plug-in method that represent constants with dimensions to their values,
+                e. g. ``{"c": "speed_of_light"}`` or ``{"k": "1.23e-4 1/s"}``.
+                This excludes variables that are specified in ``variable_symbol_map``.
             display_names (`list` of `str`): optional, list of alternative names to use for
                 display
             description (str): long form description of the model
@@ -805,6 +812,16 @@ class EquationModel(Model, MSONable):
         self.equations = equations
         sympy_expressions = [parse_expr(eq.replace('=', '-(')+')')
                              for eq in equations]
+
+        self._constants = {}
+        if constants:
+            for var, value in constants.items():
+                if var in variable_symbol_map:
+                    raise ValueError(f"Cannot have variable {var} in both 'constants'"
+                                     " and 'variable_symbol_map.")
+                q = ureg.Quantity(value)
+                self._constants[var] = (q.magnitude, q.units.format_babel())
+
         # If no connections specified, derive connections
         if connections is None:
             connections = []
@@ -812,6 +829,8 @@ class EquationModel(Model, MSONable):
                 connections, equations = [], []
                 for expr in sympy_expressions:
                     for var in expr.free_symbols:
+                        if var in self._constants:
+                            continue
                         new = sp.solve(expr, var)
                         inputs = get_vars_from_expression(new)
                         connections.append(
@@ -820,10 +839,18 @@ class EquationModel(Model, MSONable):
                              "_sympy_exprs": {str(var): new}
                              })
             else:
+                # TODO: The logic of parsing could use some refining
+                #       to ensure that the lhs is parsed correctly, like if
+                #       there is a constant or number times a variable?
                 for eqn in equations:
                     output_expr, input_expr = eqn.split('=')
                     inputs = get_vars_from_expression(input_expr)
                     outputs = get_vars_from_expression(output_expr)
+                    if len(outputs) > 1:
+                        raise ValueError("Equation must have an isolated variable on "
+                                         f"the left-hand side if 'solve_for_all_symbols'==False:\n{eqn}")
+                    if outputs[0] in self._constants:
+                        raise ValueError(f"Cannot have a constant on the left-hand side: {outputs[0]}")
                     connections.append(
                         {"inputs": inputs,
                          "outputs": outputs,
@@ -925,7 +952,7 @@ class EquationModel(Model, MSONable):
 
         output = {}
         for connection in self.connections:
-            if set(connection['inputs']) == set(variable_value_dict.keys()):
+            if set(connection['inputs']) == set(variable_value_dict.keys()) | set(self._constants.keys()):
                 for output_var, func in connection['_lambdas'].items():
                     output_vals = func(**variable_value_dict)
                     # TODO: this decision to only take max real values should
