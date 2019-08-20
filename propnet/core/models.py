@@ -307,7 +307,11 @@ class Model(ABC):
     def _convert_inputs_for_plugin(self, inputs):
         converted_inputs = {}
         for var, quantity in inputs.items():
-            converted_inputs[var] = quantity.value
+            if isinstance(quantity, BaseQuantity):
+                converted_inputs[var] = quantity.value
+            else:
+                # Assume pint quantity
+                converted_inputs[var] = quantity
             if self.variable_unit_map.get(var) is not None:
                 # Units are being assumed by equation and we need to strip them
                 # or pint might get angry if it has to add or subtract quantities
@@ -576,8 +580,8 @@ class Model(ABC):
         outputs_from_model = self.evaluate(evaluate_inputs, allow_failure=False)
         outputs_from_model = self.map_symbols_to_variables(outputs_from_model)
         errmsg = "{} model test failed on ".format(self.name) + "{}\n"
-        errmsg += "{}(test data) = {}\n"
-        errmsg += "{}(model output) = {}"
+        errmsg += "{} (actual): {}\n"
+        errmsg += "{} (expected): {}"
         for var, known_output in outputs.items():
             symbol = self.variable_symbol_map[var]
             if isinstance(known_output, BaseQuantity):
@@ -819,8 +823,10 @@ class EquationModel(Model, MSONable):
                 if var in variable_symbol_map:
                     raise ValueError(f"Cannot have variable {var} in both 'constants'"
                                      " and 'variable_symbol_map.")
-                q = ureg.Quantity(value)
-                self._constants[var] = (q.magnitude, q.units.format_babel())
+                self._constants[var] = ureg.Quantity(value)
+                if units_for_evaluation and var not in units_for_evaluation:
+                    # If the units aren't specified, assume SI (mks)
+                    units_for_evaluation[var] = self._constants[var].to_base_units().units.format_babel()
 
         # If no connections specified, derive connections
         if connections is None:
@@ -833,11 +839,11 @@ class EquationModel(Model, MSONable):
                             continue
                         new = sp.solve(expr, var)
                         inputs = get_vars_from_expression(new)
-                        connections.append(
-                            {"inputs": inputs,
-                             "outputs": [str(var)],
-                             "_sympy_exprs": {str(var): new}
-                             })
+                        connections.append({
+                            "inputs": [v for v in inputs if v not in self._constants],
+                            "outputs": [str(var)],
+                            "_sympy_exprs": {str(var): new}
+                        })
             else:
                 # TODO: The logic of parsing could use some refining
                 #       to ensure that the lhs is parsed correctly, like if
@@ -848,19 +854,26 @@ class EquationModel(Model, MSONable):
                     outputs = get_vars_from_expression(output_expr)
                     if len(outputs) > 1:
                         raise ValueError("Equation must have an isolated variable on "
-                                         f"the left-hand side if 'solve_for_all_symbols'==False:\n{eqn}")
+                                         f"the left-hand side if solve_for_all_symbols=False:\n{eqn}")
                     if outputs[0] in self._constants:
                         raise ValueError(f"Cannot have a constant on the left-hand side: {outputs[0]}")
-                    connections.append(
-                        {"inputs": inputs,
-                         "outputs": outputs,
-                         "_sympy_exprs": {outputs[0]: parse_expr(input_expr)}
-                         })
+                    connections.append({
+                        "inputs": [v for v in inputs if v not in self._constants],
+                        "outputs": outputs,
+                        "_sympy_exprs": {outputs[0]: parse_expr(input_expr)}
+                    })
         else:
             # TODO: I don't think this needs to be supported necessarily
             #       but it's causing problems with models with one input
             #       and two outputs where you only want one connection
             for connection in connections:
+                if any(var in self._constants for var in connection['inputs']):
+                    logger.warning("Constants found in input connections. They have been removed.")
+                    connection['inputs'] = [var for var in connection['inputs'] 
+                                            if var not in self._constants]
+                if any(var in self._constants for var in connection['outputs']):
+                    raise ValueError("Output connection contains constant. Remove constants and try "
+                                     f"again:\nConnection: {connection}")
                 new = sp.solve(sympy_expressions, connection['outputs'])
                 sympy_exprs = {str(sym): solved
                                for sym, solved in new.items()}
@@ -881,6 +894,7 @@ class EquationModel(Model, MSONable):
         d = {k if not k.startswith("_") else k.split('_', 1)[1]: v
              for k, v in self.__getstate__().items()}
         d['units_for_evaluation'] = d.pop('unit_map')
+        d['constants'] = {k: str(v) for k, v in d['constants'].items()}
         return d
 
     @classmethod
@@ -898,7 +912,8 @@ class EquationModel(Model, MSONable):
     def _generate_lambdas(self):
         for connection in self._connections:
             for output_var, sympy_expr in connection['_sympy_exprs'].items():
-                sp_lambda = sp.lambdify(connection['inputs'], sympy_expr)
+                sp_lambda = sp.lambdify(connection['inputs'] + list(self._constants.keys()),
+                                        sympy_expr)
                 if '_lambdas' not in connection.keys():
                     connection['_lambdas'] = dict()
                 connection['_lambdas'][output_var] = sp_lambda
@@ -952,9 +967,11 @@ class EquationModel(Model, MSONable):
 
         output = {}
         for connection in self.connections:
-            if set(connection['inputs']) == set(variable_value_dict.keys()) | set(self._constants.keys()):
+            if set(connection['inputs']) == set(variable_value_dict.keys()):
+                input_set = variable_value_dict.copy()
+                input_set.update(self._convert_inputs_for_plugin(self._constants))
                 for output_var, func in connection['_lambdas'].items():
-                    output_vals = func(**variable_value_dict)
+                    output_vals = func(**input_set)
                     # TODO: this decision to only take max real values should
                     #       should probably be reevaluated at some point
                     # Scrub nan values and take max
