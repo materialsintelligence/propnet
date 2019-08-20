@@ -923,9 +923,12 @@ class EquationModel(Model, MSONable):
         for connection in d['_connections']:
             if '_lambdas' in connection.keys():
                 del connection['_lambdas']
+        d['_constants'] = {var: q.to_tuple() for var, q in d['_constants'].items()}
         return d
 
     def __setstate__(self, state):
+        state['_constants'] = {var: ureg.Quantity.from_tuple(q)
+                               for var, q in state['_constants'].items()}
         self.__dict__.update(state)
         self._generate_lambdas()
 
