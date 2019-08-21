@@ -503,34 +503,43 @@ class Model(ABC):
                 else:
                     converted_outputs[var] = ureg.Quantity(quantity, units=unit)
         return converted_outputs
-    # Stopped here
+
     def evaluate(self, symbol_quantity_dict, allow_failure=True, raise_timeout_errors=True):
         """
-        Given a set of symbol values, performs error checking to see
-        if the corresponding input variable values represents a valid
-        input set based on the self.connections() method. If so, returns
-        a dictionary representing the value of plug_in() applied to the
-        input. The dictionary contains a "successful" key
-        representing if plug_in() was successful.
+        Evaluates the model given Quantity objects corresponding to a
+        valid input set to the model. If the input set is invalid, the
+        model will fail to evaluate, throwing an error or more gracefully
+        exiting, depending on the setting for ``allow_failure``.
 
         The key distinction between evaluate() and plug_in() is symbols
         in, symbols out vs. variables in, variables out.  In addition,
-        evaluate also handles any requisite unit mapping.
+        evaluate also handles any required unit conversion and data type
+        coercion.
 
         Args:
             symbol_quantity_dict (dict): a mapping of
-                symbol names (str) to quantities (BaseQuantity) to be substituted
+                symbol names (str) to quantities (BaseQuantity) to be evaluated
             allow_failure (bool): whether or not to catch
-                errors in model evaluation
-            raise_timeout_errors (bool): True ignores the value of "allow_failure"
+                errors in model evaluation. ``True`` catches errors and exits
+                gracefully, returning ``'successful' = False`` in the output with
+                a descriptive error message in ``'message'``. The behavior of ``True``
+                can be modified for TimeoutError with ``raise_timeout_errors``.
+                ``False`` raises exceptions as they occur during model evaluation.
+                Default: ``True`` (exit gracefully)
+            raise_timeout_errors (bool): ``True`` ignores the value of ``allow_failure``
                 and forces TimeoutError exceptions to be raised. This is so they
-                can be caught and handled by Graph, as timeouts are implemented there
-                and not in Model.
+                can be caught and handled by ``Graph`` or another wrapping function
+                which forcibly terminates models after a certain time. (Note: this
+                functionality may be moved within Model to make this kwarg obsolete)
 
         Returns:
-            dict: dictionary of output symbols with associated values
-                generated from the input, along with "successful" if the
-                substitution succeeds
+            dict: dictionary of output from the model:
+
+                - Symbol name (str, Symbol): output values generated from the input
+                  as BaseQuantity objects, keyed by symbol name
+                - ``'successful'`` (bool): ``True`` if the model evaluation succeeds, ``False`` otherwise
+                - ``'message'`` (str): contains an error message if ``'successful'=False``
+                  and ``allow_failure=True``
         """
         # Remap symbols and units if symbol map isn't none
 
@@ -573,7 +582,9 @@ class Model(ABC):
             # at the time, which is usually in "plug_in". We want to optionally raise
             # TimeoutErrors so they are caught by Graph() or an error handler otherwise
             # outside of this class.
+            # TODO: Move timeout functionality here so we don't need the raise_timeout_errors kwarg
             if not allow_failure or (isinstance(err, TimeoutError) and raise_timeout_errors):
+                # TODO: Maybe write custom error handler so it cleans up all these return statements
                 raise err
             else:
                 return {"successful": False,
@@ -616,6 +627,8 @@ class Model(ABC):
 
             out[symbol] = quantity
 
+        # TODO: Change schema for output so results are under a key like "result/output". That way
+        #       we won't accidentally have any key clashes with symbols
         out['successful'] = True
         return out
 
