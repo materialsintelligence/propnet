@@ -15,7 +15,7 @@ for line in txt:
 setup(
     name='propnet',
     packages=['propnet'],
-    version='0.0',
+    version='2019.09.25',
     author='Propnet Development Team',
     author_email='matt@mkhorton.net',
     description='Materials Science models, pre-alpha.',
