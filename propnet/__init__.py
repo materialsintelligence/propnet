@@ -5,6 +5,8 @@ from pint import UnitRegistry
 from io import StringIO
 from os import path
 
+__version__ = "2019.09.25"
+
 # module-wide logger
 logger = logging.getLogger(__name__)
 print_logger = logging.getLogger(__name__ + "_print_log")
