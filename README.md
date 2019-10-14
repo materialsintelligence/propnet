@@ -1,8 +1,3 @@
-# WEBSITE DOWNTIME
-_Updated October 9, 2019 12:18 PM PDT_
-
-For anyone who may be concerned, the propnet website at [propnet.lbl.gov](https://propnet.lbl.gov) is currently down because of an emergency power outage at the server location for local wildfire control operations initiated by the local electric utility. The website will return when power has been restored and the servers are running again, which may be in the next 1-4 days.
-
 # Propnet
 
 Propnet is a knowledge graph for materials science. Given a set of *properties* about a given material, it can try to derive additional properties of that material using *models*. It is intended to integrate closely with the [Materials Project](http://materialsproject.org) and its large database of materials properties. However, it is designed to be agnostic to the data source, with support for other open-source databases planned.
