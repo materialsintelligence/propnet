@@ -1,0 +1,8 @@
+name: propnet
+dependencies:
+  - python=3.6
+  - numpy=1.15.1
+  - scipy=1.0.1
+  - pip
+  - pip:
+    - -r requirements.txt

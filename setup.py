@@ -15,10 +15,10 @@ for line in txt:
 setup(
     name='propnet',
     packages=['propnet'],
-    version='0.0',
+    version='2019.09.25',
     author='Propnet Development Team',
-    author_email='matt@mkhorton.net',
-    description='Materials Science models, pre-alpha.',
+    author_email='mkhorton@lbl.gov',
+    description='A knowledge graph for Materials Science. Not yet ready for public use.',
     url='https://github.com/materialsintelligence/propnet',
     download_url='https://github.com/materialsintelligence/propnet/archive/0.0.tar.gz',
     entry_points={"console_scripts": ["propnet = propnet.cli:main"]},
