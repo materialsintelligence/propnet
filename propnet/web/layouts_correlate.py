@@ -2,8 +2,9 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table as dt
 
-from os import environ
+import os
 from monty.serialization import loadfn
+from monty.json import MontyDecoder
 
 # noinspection PyUnresolvedReferences
 import propnet.symbols
@@ -26,9 +27,15 @@ import numpy as np
 logger = logging.getLogger(__name__)
 mpr = MPRester()
 
+
 try:
-    store = loadfn(
-        environ["PROPNET_CORRELATION_STORE_FILE"])
+    store_data = os.environ["PROPNET_CORRELATION_STORE_FILE"]
+    if os.path.exists(store_data):
+        # If store_data contains a file path
+        store = loadfn(store_data)
+    else:
+        # Store data contains a json string
+        store = MontyDecoder().decode(store_data)
     store.connect()
 except (ServerSelectionTimeoutError, KeyError, FileNotFoundError) as ex:
     if isinstance(ex, ServerSelectionTimeoutError):

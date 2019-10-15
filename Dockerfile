@@ -15,7 +15,7 @@ ENV PROPNET_NUM_WORKERS=8
 
 # this can be obtained from materialsproject.org
 ENV PMG_MAPI_KEY='MATERIALS_PROJECT_KEY_HERE'
-ENV PROPNET_CORRELATION_STORE_FILE="/mnt/propnet_correlation_store.json"
+ENV PROPNET_CORRELATION_STORE_FILE="CORRELATION_STORE_FILE_OR_JSON_STRING"
 
 ADD . /home/project/dash_app
 
