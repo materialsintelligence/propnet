@@ -1,8 +1,8 @@
 language: python
-dist: xenial
+# dist: xenial
 services: mongodb
 python:
-  - "3.6.8"
+  - "3.7"
 install:
   - apt-get update
   - apt-get install graphviz libgraphviz-dev -y
