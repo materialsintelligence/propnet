@@ -23,6 +23,7 @@ from pymongo.errors import ServerSelectionTimeoutError
 
 import logging
 import numpy as np
+from json import JSONDecodeError
 
 logger = logging.getLogger(__name__)
 mpr = MPRester()
@@ -37,13 +38,15 @@ try:
         # Store data contains a json string
         store = MontyDecoder().decode(store_data)
     store.connect()
-except (ServerSelectionTimeoutError, KeyError, FileNotFoundError) as ex:
+except (ServerSelectionTimeoutError, KeyError, FileNotFoundError, JSONDecodeError) as ex:
     if isinstance(ex, ServerSelectionTimeoutError):
         logger.warning("Unable to connect to propnet correlation db!")
     if isinstance(ex, KeyError):
         logger.warning("PROPNET_CORRELATION_STORE_FILE var not set!")
     if isinstance(ex, FileNotFoundError):
         logger.warning("File specified in PROPNET_CORRELATION_STORE_FILE not found!")
+    if isinstance(ex, JSONDecodeError):
+        logger.warning("PROPNET_CORRELATION_STORE_FILE does not contain a file or a valid monty JSON string!")
     from maggma.stores import MemoryStore
     store = MemoryStore()
     store.connect()
