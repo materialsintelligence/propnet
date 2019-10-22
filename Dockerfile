@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # requirements for binder
 RUN pip install --no-cache-dir notebook==5.*
-ARG NB_USER=binder_user
+ARG NB_USER=jovyan
 ARG NB_UID=1000
 ENV USER ${NB_USER}
 ENV NB_UID ${NB_UID}
