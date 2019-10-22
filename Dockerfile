@@ -15,6 +15,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 ADD . /home/project/dash_app
 RUN pip install -e .
 
+# set up propnet env vars
+ENV PROPNET_NUM_WORKERS=8
+ENV PMG_MAPI_KEY='MATERIALS_PROJECT_KEY_HERE'
+ENV PROPNET_CORRELATION_STORE_FILE="CORRELATION_STORE_FILE_OR_JSON_STRING"
+
 # requirements for binder
 RUN pip install --no-cache-dir notebook==5.*
 ARG NB_USER=jovyan
@@ -27,18 +32,12 @@ RUN adduser --disabled-password \
     --gecos "Default user" \
     --uid ${NB_UID} \
     ${NB_USER}
-# Make sure the contents of our repo are in ${HOME}
+
 COPY . ${HOME}
 USER root
 RUN chown -R ${NB_UID} ${HOME}
 USER ${NB_USER}
 
-
-
-# set up propnet env vars
-ENV PROPNET_NUM_WORKERS=8
-ENV PMG_MAPI_KEY='MATERIALS_PROJECT_KEY_HERE'
-ENV PROPNET_CORRELATION_STORE_FILE="CORRELATION_STORE_FILE_OR_JSON_STRING"
 
 # start web server
 EXPOSE 8000
