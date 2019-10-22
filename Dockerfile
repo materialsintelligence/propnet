@@ -12,6 +12,9 @@ ADD requirements.txt /home/project/dash_app/requirements.txt
 ADD setup.py /home/project/dash_app/setup.py
 RUN pip install --no-cache-dir -r requirements.txt
 
+ADD . /home/project/dash_app
+RUN pip install -e .
+
 # requirements for binder
 RUN pip install --no-cache-dir notebook==5.*
 ARG NB_USER=jovyan
@@ -37,8 +40,6 @@ ENV PROPNET_NUM_WORKERS=8
 ENV PMG_MAPI_KEY='MATERIALS_PROJECT_KEY_HERE'
 ENV PROPNET_CORRELATION_STORE_FILE="CORRELATION_STORE_FILE_OR_JSON_STRING"
 
-ADD . /home/project/dash_app
-RUN pip install -e .
-
+# start web server
 EXPOSE 8000
 CMD gunicorn --workers=$PROPNET_NUM_WORKERS --timeout=300 --bind=0.0.0.0 app:server
