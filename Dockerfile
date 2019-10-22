@@ -11,7 +11,6 @@ RUN pip install numpy scipy pygraphviz
 ADD requirements.txt /home/project/dash_app/requirements.txt
 ADD setup.py /home/project/dash_app/setup.py
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install -e .
 
 # requirements for binder
 RUN pip install --no-cache-dir notebook==5.*
@@ -39,6 +38,7 @@ ENV PMG_MAPI_KEY='MATERIALS_PROJECT_KEY_HERE'
 ENV PROPNET_CORRELATION_STORE_FILE="CORRELATION_STORE_FILE_OR_JSON_STRING"
 
 ADD . /home/project/dash_app
+RUN pip install -e .
 
 EXPOSE 8000
 CMD gunicorn --workers=$PROPNET_NUM_WORKERS --timeout=300 --bind=0.0.0.0 app:server
