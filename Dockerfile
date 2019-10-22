@@ -9,6 +9,7 @@ RUN apt-get update
 RUN apt-get install graphviz libgraphviz-dev -y
 RUN pip install numpy scipy pygraphviz
 ADD requirements.txt /home/project/dash_app/requirements.txt
+ADD setup.py /home/project/dash_app/setup.py
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install -e .
 
