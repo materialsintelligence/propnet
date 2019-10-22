@@ -10,6 +10,7 @@ RUN apt-get install graphviz libgraphviz-dev -y
 RUN pip install numpy scipy pygraphviz
 ADD requirements.txt /home/project/dash_app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -e .
 
 # requirements for binder
 RUN pip install --no-cache-dir notebook==5.*
