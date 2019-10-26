@@ -1,3 +1,6 @@
+# WEBSITE OUTAGE
+The local electric utility company is again performing a Public Safety Power Shutoff in the region of Lawrence Berkeley National Lab, where our web server is hosted. As a result, the website will be offline until at least Monday, October 28. Apologies for any inconvenience this may cause. 
+
 # Propnet
 
 Propnet is a knowledge graph for materials science. Given a set of *properties* about a given material, it can try to derive additional properties of that material using *models*. It is intended to integrate closely with the [Materials Project](http://materialsproject.org) and its large database of materials properties. However, it is designed to be agnostic to the data source, with support for other open-source databases planned.
