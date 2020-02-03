@@ -1,6 +1,7 @@
 """
 Module defining exception and warning classes.
 """
+# TODO: Maybe expand these?
 
 
 class ModelEvaluationError(RuntimeError):

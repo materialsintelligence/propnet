@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('.'))
 # -- Project information -----------------------------------------------------
 
 project = u'propnet'
-copyright = u'2018, The Propnet Development Team'
+copyright = u'2019, The Propnet Development Team'
 author = u'The Propnet Development Team'
 
 # The short X.Y version

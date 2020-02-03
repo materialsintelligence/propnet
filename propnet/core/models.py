@@ -1,5 +1,74 @@
-"""
-Module containing classes and methods for Model functionality in propnet code.
+"""Models representing connections between materials properties.
+
+This module contains classes that represent models, or the way that materials properties
+are connected to one another. propnet features several kinds of models:
+
+- *EquationModel*: used for relationships between properties of a single material easily expressed as a
+  simple mathematical equation
+- *PyModel*: custom Python modules used for more complex relationships between properties of a single material
+  not easily expressed with a simple mathematical equation
+- *CompositeModel*: Python-based models for calculating properties for mixed/composite materials
+
+These three classes are the main model types used. `PyModuleModel` and `PyModuleCompositeModel` are not intended
+for direct instantiation by the user, but are helper classes for constructing `PyModel` objects from the templated
+Python modules in propnet's core model library.
+
+The `Constraint` class is meant to function similar to an `EquationModel` and constrains the values of properties
+used in a model. They are initialized with an equality or inequality statement that must be satisfied for the input
+or output of the model to be considered valid. These `Constraint` objects can be passed to a model in the
+``'constraints'`` keyword.
+
+The recommended approach to creating models is by following the template approach, as described in the demo
+iPython notebook of the repository (``<root>/demo/Getting Started.ipynb``). Once a YAML (for equation-based models)
+or a Python module template (for more complex models or composite material models) is completed, place them in the
+correct directory under ``<root>/models/`` and they will be imported with ``import propnet.models``.
+However, each model type can be constructed manually. See the individual classes for examples.
+
+Examples:
+    There are two methods to run a model on some input data: ``plug_in()`` and ``evaluate()``. The distinction
+    between the two methods is in the format of the inputs and how that data is handled. Both methods take dictionaries
+    as input arguments.
+
+    As an example, say we have an equation-based model ``model`` which relates some property `symbol_a` to some
+    property `symbol_b` by ``B = 2 * A**3`` where `A` is the variable representing the value of `symbol_a` in units
+    `unit_of_a` and `B` represents the value of `symbol_b` in `unit_of_b` where ``unit_of_b = unit_of_a**3``.
+
+    For ``plug_in()``, the method expects the input dict's keys to be the variable names in the
+    equation or the expected variable names in the Python module. The values are expected to be the raw data, ready
+    to be used by the Python module or plugged into an equation without change. So, they must be of the correct Python
+    type and unit/dimensionality (for numerical inputs). For our example model:
+
+    >>> model.plug_in({'A': 5})
+    {'B': 250}
+
+    The output will be variable keyed with raw values as well. Raw in, raw out.
+
+    For ``evaluate()``, the method expects the input dict's keys to be the symbol names the model requires and the
+    values are expected to be Quantity objects of those symbol types. ``evaluate()`` or the Quantity class will take
+    care of any data type or unit conversions necessary to run the model. For our example model:
+
+    >>> from propnet.core.quantity import QuantityFactory as QF
+    >>> output = model.evaluate({'symbol_a': QF.create_quantity('symbol_a', 5, 'unit_of_a')})
+    >>> print(output)
+    {'symbol_b': <symbol_b, 250 unit_of_b, []>, 'successful': True}
+    >>> type(output['symbol_b'])
+    propnet.core.quantity.NumQuantity
+
+    The output will be symbol indexed with Quantity outputs and a flag to indicate if the model was successfully
+    evaluated. ``evaluate()`` also has more sophisticated checks to ensure that the input and output is valid and
+    does not violate any constraints placed on the model or the symbols that it is using.
+
+    For example, if `A` could have different units `other_a_unit` where ``unit_of_a = 100 * other_a_unit``,
+    ``evaluate()`` would know how to handle the unit conversion, if needed, whereas ``plug_in()`` does not.
+
+    >>> model.evaluate({'symbol_a': QF.create_quantity('symbol_a', 0.05, 'other_a_unit')})
+    {'symbol_b': <symbol_b, 250 unit_of_b, []>, 'successful': True}
+    >>> model.plug_in({'A': 0.05})
+    {'B': 0.00025}
+
+    If the model requires the inputs be in certain units to be evaluated correctly (i.e. if your model is empirical),
+    models can be designed to convert units automatically upon calling ``evaluate()`` by invoking the
+    ``units_for_evaluation`` keyword upon instantiation.
 """
 
 import os
@@ -9,6 +78,7 @@ from abc import ABC, abstractmethod
 from itertools import chain
 import warnings
 import six
+from copy import deepcopy
 
 from monty.serialization import loadfn
 from monty.json import MSONable, MontyDecoder
@@ -33,11 +103,25 @@ TEST_DATA_LOC = os.path.join(os.path.dirname(__file__), "..",
 
 class Model(ABC):
     """
-    Abstract model class for all models appearing in propnet
+    Abstract model class for all models appearing in propnet. All models will have the attributes and
+    functions described here, although some will behave differently based on implementation.
 
+    Attributes:
+        name (str): unique name for the model
+        description (str): information about the model and its origin, constraints, etc. This information
+            is displayed on the website.
+        display_names (`list` of `str`): nicely formatted name(s) of the model
+        categories (`list` of `str`): metadata categorizing the model ("empirical", "electronic",
+            "mechanical", etc.)
+        implemented_by (`list` of `str`): list of authors (GitHub usernames, preferably) who implemented
+            the model
+        references (`list` of `str`): BibTeX strings of scholarly references for the model
+        constraints (`list` of `propnet.core.models.Constraint`): list of Constraint objects representing
+            requirements that must be met for inputs/outputs to the model
     """
 
     _registry_name = "models"
+    """str: name of the Registry in which to register instances of this class"""
 
     def __init__(self, name, connections, constraints=None, display_names=None,
                  description=None, categories=None, references=None, implemented_by=None,
@@ -45,58 +129,75 @@ class Model(ABC):
                  is_builtin=False, register=True, overwrite_registry=True):
 
         """
-        Abstract base class for model implementation.
-
         Args:
-            name (str): title of the model
+            name (str): unique name for the model
             connections (`list` of `dict`): list of connections dictionaries, which take
-                the form ``{"inputs": [variables], "outputs": [variables]}``, e. g.:
+                the form ``{"inputs": [variables], "outputs": [variables]}``, e.g.:
                 ``connections = [{"inputs": ["p", "T"], "outputs": ["V"]},``
                 ``{"inputs": ["T", "V"], "outputs": ["p"]}]``
-            constraints (str, Constraint): string expressions or
+            constraints (str, Constraint, None): optional, string expressions or
                 Constraint objects of some condition on which the model is
                 valid, e. g. ``"n > 0"``, note that this must include variables if
-                there is a variable_symbol_map
-            display_names (`list` of `str`): optional, list of alternative names to use for
-                display
-            description (str): long form description of the model
-            categories (`list` of `str`): list of categories applicable to
+                there is a ``variable_symbol_map``. Default: ``None`` (no constraints)
+            display_names (`list` of `str`, `None`): optional, list of formatted names to use for
+                display. Default: ``None`` (sets ``display_name`` property to a list with one item,
+                which is the name in title case with underscores replaced with spaces,
+                e.g. "name_of_a_model" would become "Name of a Model")
+            description (str, None): optional, long form description of the model
+            categories (`list` of `str`, `None`): optional, list of categories applicable to
                 the model
-            references (`list` of `str`): list of the informational links
-                explaining / supporting the model
-            implemented_by (`list` of `str`): list of authors of the model by their
-                github usernames
-            variable_symbol_map (dict): mapping of variable strings enumerated
-                in the plug-in method to canonical symbols, e. g.
-                ``{"n": "index_of_refraction"}`` etc.
-            units_for_evaluation (`str`, `dict`): if specified, coerces the units of
+            references (`list` of `str`, `None`): list of the informational links
+                explaining / supporting the model. These strings should be a BibTeX string or
+                in the form ``"type:info"`` where ``type`` is one of "url", "doi", or "isbn"
+                and ``info`` contains the relevant data. These types will be automatically converted
+                to BibTeX strings by automatic lookup using ``propnet.core.utils.references_to_bib()``.
+                Users should verify the accuracy of the generated BibTeX strings.
+                Default: ``None`` (no references...please add them if contributing!)
+            implemented_by (`list` of `str`, `None`): optional, list of authors of the model by their
+                GitHub usernames. Default: ``None`` (no authors...please attribute authorship if
+                contributing!)
+            variable_symbol_map (dict, None): optional, mapping of variables used as inputs/outputs to symbol names
+                (e.g. ``{"n": "index_of_refraction"}`` etc.). Default: ``None`` (all inputs/outputs are
+                named exactly the same as they symbols they represent)
+            units_for_evaluation (str, dict, None): optional, if specified, coerces the units of
                 inputs prior to evaluation and outputs post-evaluation to the units
-                specified. If not specified, the inputs/outputs are not used as is.
-                If ``units_for_evaluation = 'default'``, all inputs/outputs will be
-                converted to the unit specified by the associated Symbol object. If
+                specified. If ``units_for_evaluation = 'default'``, all inputs/outputs will be
+                converted to the unit specified by their associated Symbol object. If
                 ``units_for_evaluation`` is a variable-keyed dict, the inputs/outputs
-                will be converted to the units specified in the dict. If a variable is
+                will be converted to the units specified as values in the dict. If a variable is
                 missing, it will be converted to the unit of the associated Symbol object.
-            test_data (`list` of `dict`): test data with
-                which to evaluate the model. Format:
+                Default: ``'default'`` (all inputs/outputs are converted to canonical units for evaluation)
+            test_data (`list` of `dict`, `None`): optional, test data with
+                which to evaluate the model to verify correct function. Format:
                 ``{'input': {variable: value}, 'output': {variable: value}}`` where `value`
-                can be a string with unit ('1.0 kg'), BaseQuantity object, or bare number.
+                can be a string with unit (``'1.0 kg'``), BaseQuantity object, or bare number.
                 Bare numbers will be assumed to be the units specified by ``units_for_evaluation``.
                 If ``units_for_evaluation`` is not specified, units will be assumed from the
-                associated Symbol object.
-            is_builtin (bool): True if the model is a default model included with propnet
-                (this option not intended to be set by users)
-            register (bool): True registers the model with the model registry named by
-                ``self._registry_name``
-            overwrite_registry (bool): True overwrites the model registry if a model with
-                the same name exists. False throws an error if a model with the same name
-                exists in the registry.
+                associated Symbol object. Default: ``None`` (no test data)
+            is_builtin (bool): **This option not intended to be set by users.** ``True`` if the model
+                is included in propnet's core model library.
+                Default: ``False`` (model is not in core library)
+            register (bool): ``True`` registers the model with the model registry named by
+                ``self._registry_name``. ``False`` instantiates the object without registering it.
+                Registration fails if the name exists in the registry and ``overwrite_registry=False``.
+                Default: ``True`` (register the model)
+            overwrite_registry (bool): ``True`` overwrites the model registry if a model with
+                the same name exists. ``False`` throws an error if a model with the same name
+                exists in the registry. Default: ``True`` (replace same-named models)
         """
 
         self.name = name
         self._connections = connections
         self.description = description
-        self.display_names = display_names
+        if display_names:
+            if isinstance(display_names, str):
+                self.display_names = [display_names]
+            else:
+                self.display_names = display_names
+        elif self.name:
+            self.display_names = [self.name.replace("_", " ").title()]
+        else:
+            self.display_names = []
         if isinstance(categories, str):
             categories = [categories]
         self.categories = categories or []
@@ -106,11 +207,20 @@ class Model(ABC):
         self.references = references_to_bib(references or [])
         self._is_builtin = is_builtin
 
-        # variable symbol map initialized as symbol name->symbol, then updated
+        # TODO: Should probably make the variable_symbol_map always be keyed
+        #       by a string and valued by a symbol object for consistency
+        # TODO: The creation of the VSM is weirdly cyclic but it works. Is there
+        #       a better way to do this?
+        # variable symbol map initialized as symbol name->symbol name, then updated
         # with any customization of variable to symbol mapping
-        self._variable_symbol_map = {k: k for k in self.all_symbols}
-        self._variable_symbol_map.update(variable_symbol_map or {})
+        self._variable_symbol_map = {k: k for k in self.all_input_variables | self.all_output_variables}
+        if variable_symbol_map:
+            model_variable_symbol_map = {v: s for v, s in variable_symbol_map.items()
+                                         if v in self._variable_symbol_map}
+            self._variable_symbol_map.update(model_variable_symbol_map)
         self._verify_symbols_are_registered()
+        self._variable_symbol_map = {v: Registry("symbols").get(s) or s
+                                     for v, s in self._variable_symbol_map.items()}
 
         if units_for_evaluation or 'empirical' in self.categories:
             self._variable_unit_map = {prop_name: Registry("units").get(prop_name)
@@ -131,7 +241,7 @@ class Model(ABC):
                 self.constraints.append(constraint)
             else:
                 self.constraints.append(Constraint(constraint,
-                                                   variable_symbol_map=self._variable_symbol_map))
+                                                   variable_symbol_map=variable_symbol_map))
 
         # Ensures our test data is variable-keyed and in the correct format
         test_data = test_data or self.load_test_data()
@@ -155,7 +265,6 @@ class Model(ABC):
         Raises:
             KeyError: if `overwrite_registry=False` and a model with the same
                 name is already registered, this error is raised.
-
         """
         if not overwrite_registry and self.name in Registry(self._registry_name).keys():
             raise KeyError("Model '{}' already exists in the registry '{}'".format(self.name,
@@ -164,7 +273,7 @@ class Model(ABC):
 
     def unregister(self):
         """
-        Removes the symbol from all applicable registries.
+        Removes the model from its registry.
 
         """
         Registry(self._registry_name).pop(self.name, None)
@@ -175,14 +284,14 @@ class Model(ABC):
         Indicates if a model is registered with the model registry.
 
         Returns:
-            bool: True if the model is registered. False otherwise.
+            bool: ``True`` if the model is registered. ``False`` otherwise.
 
         """
         return self.name in Registry(self._registry_name)
 
     def _clean_test_data(self, test_data):
         """
-        Coerces test data into a value-unit format.
+        Coerces test data into a value-unit string format (e.g. "5.0 kg").
 
         Args:
             test_data (`list` of `dict`): structured test data (see ``__init__()``)
@@ -235,84 +344,145 @@ class Model(ABC):
     @property
     def is_builtin(self):
         """
-        Indicates whether the model is a propnet built-in.
+        Indicates whether the model is in the propnet core library.
 
         Returns:
-            bool: ``True`` if the model is a built-in, ``False``
+            bool: ``True`` if the model is in the core library, ``False``
                 if it is a custom-created model
         """
         return self._is_builtin
 
     @property
     def connections(self):
+        """`list` of `dict`: list of connections dictionaries, which take
+        the form:
+
+        >>> {"inputs": [variables], "outputs": [variables]}
+
+        For example:
+
+        >>> connections = [
+        >>>     {"inputs": ["p", "T"], "outputs": ["V"]},
+        >>>     {"inputs": ["T", "V"], "outputs": ["p"]}
+        >>> ]
+
+        """
         return self._connections
 
     @property
     def variable_unit_map(self):
+        """dict: variables mapped to the units, as ``pint`` Unit objects,
+        representing the units used for the variables in the model. If a
+        variable does not have a unit, the value is ``None``.
+        """
         return {k: ureg.Unit(v) if v is not None else None
                 for k, v in self._variable_unit_map.items()}
 
     @property
     def variable_symbol_map(self):
+        """dict: variables mapped to the Symbol types that those variables represent
+        """
         return self._variable_symbol_map
 
     @abstractmethod
     def plug_in(self, variable_value_dict):
         """
-        Plugs in a variable to quantity dictionary
+        Evaluates the model by plugging values in directly from
+        a variable to value dictionary. The dictionary is keyed with
+        variable names expected by the model, valued by Python
+        data types expected by the model.
+
+        **This function is abstract and must be implemented by subclasses.**
 
         Args:
             variable_value_dict (dict): a mapping
-                of variables to values to be substituted
-                into the model to yield output
+                of variable names as keys to raw data values
+                to be substituted into the model to yield output,
+                e.g. ``{'A': 5}``
 
         Returns:
             dict: output variables with associated
-                values generated from the input
+            raw data values generated from the input
         """
         return
 
     def map_symbols_to_variables(self, symbols):
         """
-        Helper method to convert symbol-keyed dictionary or list to
-        variable-keyed dictionary or list
+        Converts a symbol-keyed dictionary or list of symbols to
+        variable-keyed dictionary or list of variables as defined
+        for this model.
 
         Args:
             symbols (list or dict): list of symbols or symbol-
                 keyed dictionary
 
-        Returns (list or dict):
-            list of variables or variable-keyed dict
+        Returns:
+            `list` or `dict`: same object type as ``symbols`` with symbols
+             replaced with variables
         """
         rev_map = {v: k for k, v in getattr(self, "variable_symbol_map", {}).items()}
         return remap(symbols, rev_map)
 
     def map_variables_to_symbols(self, variables):
         """
-        Helper method to convert variable-keyed dictionary or list to
-        symbol-keyed dictionary or list
+        Converts a variable-keyed dictionary or a list/set of variable names to
+        symbol-keyed dictionary or list/set of symbols as defined
+        for this model. If two dictionary keys or items in the set correspond
+        to the same Symbol, only one instance will be returned.
 
         Args:
             variables (`list`, `dict`, `set`): list of variables or variable-keyed
                 dictionary
 
         Returns:
-            `list` or `dict` or `set: list of symbols or symbol-keyed dict
+            `list` or `dict` or `set`: same object type as ``variables`` with variables
+             replaced with Symbols.
         """
         return remap(variables, getattr(self, "variable_symbol_map", {}))
 
     def _convert_inputs_for_plugin(self, inputs):
+        """
+        Converts input BaseQuantity objects to the format required by ``plug_in()``
+        including unit conversion.
+
+        **This function is not abstract, but may require different behavior for subclasses.**
+
+        In this implementation, the function converts numerical quantities to the units specified
+        in the ``variable_unit_map`` and returns the raw numerical value only. For other objects,
+        it returns the object stored in the BaseQuantity object's "value" field.
+
+        Args:
+            inputs (dict): variable-keyed dictionary with values as BaseQuantity objects
+                representing inputs to be converted for model evaluation
+
+        Returns:
+            dict: dictionary with values converted to the required raw data format
+        """
         converted_inputs = {}
         for var, quantity in inputs.items():
             converted_inputs[var] = quantity.value
             if self.variable_unit_map.get(var) is not None:
-                # Units are being assumed by equation and we need to strip them
-                # or pint might get angry if it has to add or subtract quantities
-                # with unmatched dimensions
+                # Convert units and return only the magnitude as to not
+                # have issues with dimension mismatch
                 converted_inputs[var] = quantity.to(self.variable_unit_map[var]).magnitude
         return converted_inputs
 
     def _convert_outputs_from_plugin(self, outputs):
+        """
+        Converts output raw data from ``plug_in()`` to the correct type and assigns units as needed.
+
+        **This function is not abstract, but may require different behavior for subclasses.**
+
+        In this implementation, raw numerical outputs are converted to pint Quantity objects with the
+        units specified in the ``variable_unit_map``. Other outputs are returned as is.
+
+        Args:
+            outputs (dict): variable-keyed dictionary with values as raw data
+                representing outputs to be converted to BaseQuantity objects
+
+        Returns:
+            dict: dictionary with values converted to objects ready to be converted to BaseQuantity objects
+        """
         converted_outputs = {}
         for var, quantity in outputs.items():
             symbol = self._variable_symbol_map[var]
@@ -336,31 +506,40 @@ class Model(ABC):
 
     def evaluate(self, symbol_quantity_dict, allow_failure=True, raise_timeout_errors=True):
         """
-        Given a set of symbol values, performs error checking to see
-        if the corresponding input variable values represents a valid
-        input set based on the self.connections() method. If so, returns
-        a dictionary representing the value of plug_in() applied to the
-        input. The dictionary contains a "successful" key
-        representing if plug_in() was successful.
+        Evaluates the model given Quantity objects corresponding to a
+        valid input set to the model. If the input set is invalid, the
+        model will fail to evaluate, throwing an error or more gracefully
+        exiting, depending on the setting for ``allow_failure``.
 
         The key distinction between evaluate() and plug_in() is symbols
         in, symbols out vs. variables in, variables out.  In addition,
-        evaluate also handles any requisite unit mapping.
+        evaluate also handles any required unit conversion and data type
+        coercion.
 
         Args:
             symbol_quantity_dict (dict): a mapping of
-                symbol names (str) to quantities (BaseQuantity) to be substituted
+                symbol names (str) to quantities (BaseQuantity) to be evaluated
             allow_failure (bool): whether or not to catch
-                errors in model evaluation
-            raise_timeout_errors (bool): True ignores the value of "allow_failure"
+                errors in model evaluation. ``True`` catches errors and exits
+                gracefully, returning ``'successful' = False`` in the output with
+                a descriptive error message in ``'message'``. The behavior of ``True``
+                can be modified for TimeoutError with ``raise_timeout_errors``.
+                ``False`` raises exceptions as they occur during model evaluation.
+                Default: ``True`` (exit gracefully)
+            raise_timeout_errors (bool): ``True`` ignores the value of ``allow_failure``
                 and forces TimeoutError exceptions to be raised. This is so they
-                can be caught and handled by Graph, as timeouts are implemented there
-                and not in Model.
+                can be caught and handled by ``Graph`` or another wrapping function
+                which forcibly terminates models after a certain time. (Note: this
+                functionality may be moved within Model to make this kwarg obsolete)
 
         Returns:
-            dict: dictionary of output symbols with associated values
-                generated from the input, along with "successful" if the
-                substitution succeeds
+            dict: dictionary of output from the model:
+
+                - Symbol name (str, Symbol): output values generated from the input
+                  as BaseQuantity objects, keyed by symbol name
+                - ``'successful'`` (bool): ``True`` if the model evaluation succeeds, ``False`` otherwise
+                - ``'message'`` (str): contains an error message if ``'successful'=False``
+                  and ``allow_failure=True``
         """
         # Remap symbols and units if symbol map isn't none
 
@@ -403,7 +582,9 @@ class Model(ABC):
             # at the time, which is usually in "plug_in". We want to optionally raise
             # TimeoutErrors so they are caught by Graph() or an error handler otherwise
             # outside of this class.
+            # TODO: Move timeout functionality here so we don't need the raise_timeout_errors kwarg
             if not allow_failure or (isinstance(err, TimeoutError) and raise_timeout_errors):
+                # TODO: Maybe write custom error handler so it cleans up all these return statements
                 raise err
             else:
                 return {"successful": False,
@@ -446,6 +627,8 @@ class Model(ABC):
 
             out[symbol] = quantity
 
+        # TODO: Change schema for output so results are under a key like "result/output". That way
+        #       we won't accidentally have any key clashes with symbols
         out['successful'] = True
         return out
 
@@ -645,6 +828,8 @@ class Model(ABC):
                 return False
         return True
 
+    # TODO: Can we roll this into the model module itself rather than hard coding
+    #       this file path and loading from there?
     def load_test_data(self, test_data_path=None, deserialize=True):
         """
         Loads test data from preset or specified directory.
@@ -760,8 +945,24 @@ returns {example_outputs}
 
 class EquationModel(Model, MSONable):
     """
-    Equation model is a Model subclass which is invoked
-    from a list of equations
+    For models which are simple equations, use the ``EquationModel`` class. To construct a relationship between
+    some property `symbol_a` and some other property `symbol_b`, both of which are registered in the propnet
+    Registry, you can do the following:
+
+    >>> from propnet.core.models import EquationModel
+    >>> em = EquationModel('my_model', ['symbol_b = 2*symbol_a**3'])
+    >>> em.plug_in({'symbol_a': 5})
+    {'symbol_b': 250}
+
+    Equations must be strings parsable by the ``sympy`` package. Note that the variable names in the equation are
+    the same names as the symbols. If you would rather use a symbolic representation of the symbol names,
+    specify the ``variable_symbol_map`` upon creation:
+
+    >>> from propnet.core.quantity import QuantityFactory as QF
+    >>> em = EquationModel('my_model', ['B = 2*A**3'],
+    >>>                    variable_symbol_map={'A': 'symbol_a', 'B': 'symbol_b'})
+    >>> em.plug_in({'A': 5})
+    {'B': 250}
 
     """
     def __init__(self, name, equations, connections=None, constraints=None,
@@ -853,7 +1054,10 @@ class EquationModel(Model, MSONable):
     def as_dict(self):
         d = {k if not k.startswith("_") else k.split('_', 1)[1]: v
              for k, v in self.__getstate__().items()}
-        d['units_for_evaluation'] = d.pop('unit_map')
+        d['units_for_evaluation'] = d.pop('variable_unit_map')
+        del d['is_builtin']
+        for connection in d['connections']:
+            del connection['_sympy_exprs']
         return d
 
     @classmethod
@@ -877,7 +1081,7 @@ class EquationModel(Model, MSONable):
                 connection['_lambdas'][output_var] = sp_lambda
 
     def __getstate__(self):
-        d = self.__dict__.copy()
+        d = deepcopy(self.__dict__)
         for connection in d['_connections']:
             if '_lambdas' in connection.keys():
                 del connection['_lambdas']

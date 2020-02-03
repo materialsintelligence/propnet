@@ -1,17 +1,46 @@
-"""
-Module containing classes and methods for graph functionality in Propnet code.
+"""Knowledge graph builder and traversal.
+
+This module contains the class responsible for building the propnet knowledge graph and
+traversing it when materials properties are applied to it in order to derive all possible
+new materials properties.
+
+The knowledge graph is built from the contents of the propnet model and symbol ``Registry``.
+In order to use models and symbols that are built-in to propnet, be sure to:
+
+>>> import propnet.models    # For symbols and models
+>>> import propnet.symbols   # For symbols only
+
+Examples:
+    To run the knowledge graph on a material, import the models and symbols desired from
+    the built-in library (see above) or add your own custom models/symbols to the ``Registry``:
+
+    >>> from propnet.core.symbols import Symbol
+    >>> from propnet.core.models import EquationModel    # Or whichever type you are making
+    >>> from propnet.core.materials import Material
+    >>> sym1 = Symbol(...)      # Register custom symbols (register=True is default)
+    >>> sym2 = Symbol(...)
+    >>> model1 = EquationModel(...)     # Register custom model (register=True is default)
+
+    Then you can run the graph traversal algorithm using the models chosen.
+
+    >>> from propnet.core.graph import Graph
+    >>> g = Graph(parallel=True)    # Can run in parallel mode
+    >>> material = Material(...)    # Create a material with some properties
+    >>> evaluated_material = g.evaluate(material)   # Run graph traversal on material
 """
 
 import logging
 from collections import defaultdict
 from itertools import product, chain, repeat
-from chronic import Timer, timings, clear
-from pandas import DataFrame
 from collections import deque
 import concurrent.futures
 from functools import partial
 from multiprocessing import cpu_count
 import copy
+from typing import Set, Dict, Union
+
+from chronic import Timer, timings, clear as clear_timings
+from pandas import DataFrame
 import numpy as np
 import networkx as nx
 
@@ -20,49 +49,53 @@ from propnet.core.materials import Material
 from propnet.core.models import Model, CompositeModel
 from propnet.core.quantity import QuantityFactory
 from propnet.core.provenance import SymbolTree, TreeElement
-from propnet.symbols import Symbol
+from propnet.core.symbols import Symbol
 from propnet.core.utils import Timeout
-
 from propnet.core.registry import Registry
 
-from typing import Set, Dict, Union
-
-
 logger = logging.getLogger(__name__)
+"""logging.Logger: Logger for debugging"""
 
 
-class Graph(object):
+class Graph:
     """
-    Class containing methods for creating and interacting with a
-    Property Network.
-    The Property Network contains a set of Node namedtuples with
-    connections stored as directed edges between the nodes.
-    Upon initialization a base graph is constructed consisting of all
-    valid SymbolTypes and Models found in surrounding folders. These are
-    Symbol and Model node_types respectively. Connections are formed
-    between the nodes based on given inputs and outputs of the models.
-    At this stage the graph represents a symbolic web of properties
-    without any actual input values.
-    Materials and Properties / Conditions can be added at runtime using
-    appropriate support methods. These methods dynamically create
-    additional PropnetNodes and edges on the graph of Material and
-    Quantity node_types respectively.
-    Given a set of Materials and Properties / Conditions, the symbolic
-    web of properties can be utilized to predict values of connected
-    properties on demand.
-    Attributes:
-        _symbol_types ({str: Symbol}): data structure mapping Symbol
-            name to Symbol object.
-        _models ({str: Model}): data structure mapping Model name to
-            Model object.
-        _input_to_model ({Symbol: {Model}}): data structure mapping
-            Symbol inputs to a set of corresponding Model objects that
-            take that Symbol as an input.
-        _output_to_model ({Symbol: {Model}}): data structure mapping
-            Symbol outputs to a set of corresponding Model objects that
-            produce that Symbol as an output.
-    *** Dictionaries can be searched by supplying Symbol objects or
-        Strings as to their names.
+    Class containing methods for creating and interacting with the propnet knowledge graph.
+    This graph accepts a material (or multiple for composite models) and recursively applies
+    the knowledge graph to derive all possible property values (quantities) available on
+    the graph.
+
+    Notes:
+        To use the built-in propnet models, you must explicitly import them using:
+
+        >>> import propnet.models
+
+        This will register the models in the ``Registry`` and allow you to load them.
+        If you do not import them or supply them yourself at instantiation, the knowledge
+        graph will contain no models.
+
+    Examples:
+        The ``evaluate()`` method will be the main entry point for the graph evaluation.
+
+        >>> from propnet.core.graph import Graph
+        >>> from propnet.core.materials import Material
+        >>> g = Graph()
+        >>> material = Material(...)
+        >>> evaluated_material = g.evaluate(material)
+
+        However, propnet also has limited support for composite materials (materials made up
+        of more than one material). For those materials, use ``evaluate_composite()``.
+
+        >>> from propnet.core.graph import Graph
+        >>> from propnet.core.materials import Material, CompositeMaterial
+        >>> g = Graph()
+        >>> m1 = Material(...)
+        >>> m2 = Material(...)
+        >>> evaluated_material = g.evaluate_composite(CompositeMaterial([m1, m2]))
+
+        The composite evaluation algorithm is somewhat slow and there are not a large number
+        of composite models available in the built-in library. However, we are always
+        accepting contributions!
+
     """
 
     def __init__(self,
@@ -72,19 +105,20 @@ class Graph(object):
                  parallel: bool = False,
                  max_workers: int = None) -> None:
         """
-        Creates a graph instance.
-
-        Note: models and symbols are selected from the Registry() class unless specified explicitly.
-            To include all built-in propnet models, import them from propnet.models and propnet.symbols.
-
         Args:
-            models (dict): models to use for graph evaluation. Default: all registered models.
-            composite_models (dict): composite models to use for graph evaluation.
-                Default: all registered composite models.
-            symbol_types (dict): symbols to use for graph evaluation. Default: all registered symbols
-            parallel (bool): True creates a pool of workers for parallel graph evaluation. Default: False
-            max_workers (int): Number of workers for parallel worker pool. Default: None, for serial evaluation,
-                max number of available CPUs for parallel.
+            models (`dict` or `None`): optional, dict of models to use for graph evaluation,
+                keyed by model name. Default: ``None`` (dictionary returned by
+                ``Registry('models')``)
+            composite_models (`dict` or `None`): optional, dict of composite models to use for
+                graph evaluation, keyed by model name. Default: ``None`` (dictionary returned by
+                ``Registry('composite_models')``)
+            symbol_types (`dict` or `None`): optional, dict of symbols to use for graph evaluation.
+                Note all symbols used by the desired models must be included or an error will occur.
+                Default: ``None`` (dictionary returned by ``Registry('symbols')``)
+            parallel (bool): ``True`` creates a pool of workers for parallel graph evaluation.
+                Default: ``False`` (runs serially)
+            max_workers (int): Number of workers for parallel worker pool.
+                Default: ``None`` (1 for serial, max number of available CPUs for parallel)
         """
 
         # set our defaults if no models/symbol types supplied
@@ -128,11 +162,12 @@ class Graph(object):
 
     def __str__(self):
         """
-        Returns a full summary of the graph in terms of the SymbolTypes,
+        Returns a full summary of the graph in terms of the
         Symbols, Materials, and Models that it contains. Connections are
         shown as nesting within the printout.
+
         Returns:
-            (str) representation of this Graph object.
+            str: representation of this Graph object.
         """
         summary = ["Propnet Printout", ""]
         summary += ["Properties"]
@@ -147,26 +182,24 @@ class Graph(object):
 
     def update_symbol_types(self, symbol_types):
         """
-        Add / redefine user-defined symbol types to the graph. If the
-        input, symbol_types, includes keys in self._symbol_types,
-        they are redefined.
+        Adds Symbol objects to the graph. If a Symbol with a given name
+        is already defined on the graph, it will be replaced.
+
         Args:
-            symbol_types ({name: Symbol}): symbol types to add
-        Returns:
-            None
+            symbol_types (dict): dictionary of ``Symbol`` objects to add,
+                keyed by symbol name
         """
-        for (k, v) in symbol_types.items():
-            self._symbol_types[k] = v
+        self._symbol_types.update(symbol_types)
 
     def remove_symbol_types(self, symbol_types):
         """
-        Removes user-defined Symbol objects to the Graph. Removes
+        Removes Symbol objects from the Graph. Removes
         any models that input or output this Symbol because they
-        are no longer defined without the given symbol_types.
+        can no longer be defined without the given Symbol.
+
         Args:
-            symbol_types ({name:Symbol}): symbol types to remove
-        Returns:
-            None
+            symbol_types (dict): dictionary of ``Symbol`` objects to remove,
+                keyed by symbol name
         """
         models_to_remove = {}
         for symbol in symbol_types.keys():
@@ -189,27 +222,25 @@ class Graph(object):
 
     def get_symbol_types(self):
         """
-        Getter method, returns a set of all Symbol objects
-        present on the graph.
-        Returns ({Symbol}):
-            set of symbols present on the graph
+        Gets a set of all Symbol objects present on the graph.
+
+        Returns:
+            `set` of `propnet.core.symbols.Symbol`: symbols present on the graph
         """
-        to_return = set()
-        for s in self._symbol_types.values():
-            to_return.add(s)
-        return to_return
+        return set(self._symbol_types.values())
 
     def update_models(self, models):
         """
-        Add / redefine user-defined models to the graph. If the input,
-        models, includes keys in self._models, they are redefined.
+        Adds Model objects to the graph. If a Model with a given name
+        is already defined on the graph, it will be replaced.
         The addition of a model may fail if appropriate Symbol objects
         are not already on the graph.  If any addition operation fails,
         the entire update is aborted.
+
         Args:
-            models ({name: Model}): Instances of the model class
-        Returns:
-            None
+            models (dict): dictionary of ``Model`` objects to add,
+                keyed by model name
+
         """
         added = {}
         for model in models.values():
@@ -235,11 +266,11 @@ class Graph(object):
 
     def remove_models(self, models):
         """
-        Remove user-defined models from the Graph.
+        Removes models from the graph.
+
         Args:
-            models ({name: Model}): Instances of the model class
-        Returns:
-            None
+            models (dict): dictionary of ``Model`` objects to remove,
+                keyed by model name
         """
         for model in models.keys():
             if model not in self._models.keys():
@@ -257,26 +288,24 @@ class Graph(object):
 
     def get_models(self) -> Dict[str, Model]:
         """
-        Getter method, returns a set of all model objects present
-        on the graph.
-        Returns ({Model}):
-            set of models in the graph
+        Gets a set of all Model objects present on the graph.
+
+        Returns:
+            dict: dictionary of models present on the graph, keyed by name
         """
-        to_return = dict()
-        for model in self._models.values():
-            to_return[model.name] = model
-        return to_return
+        return {model.name: model for model in self._models.values()}
 
     def update_composite_models(self, composite_models):
         """
-        Add / redefine user-defined composite_models to the graph.
-        If the input, composite_models, includes keys in self._composite_models, they are redefined.
-        The addition of a composite_models may fail if appropriate Symbol objects are not already on the graph.
-        If any addition operation fails, the entire update is aborted.
+        Adds composite models (CompositeModel objects) to the graph.
+        If a CompositeModel with a given name is already defined on the graph,
+        it will be replaced. The addition of a model may fail if appropriate Symbol objects
+        are not already on the graph. If any addition operation fails,
+        the entire update is aborted.
+
         Args:
-            composite_models (dict<str, CompositeModel>): Instances of the CompositeModel class
-        Returns:
-            None
+            composite_models (dict): dictionary of ``CompositeModel`` objects to add,
+                keyed by model name
         """
         added = {}
         for model in composite_models.values():
@@ -286,41 +315,48 @@ class Graph(object):
                 for input_ in input_set:
                     input_ = CompositeModel.get_variable(input_)
                     if input_ not in self._symbol_types.keys():
+                        self.remove_composite_models(added)
                         raise KeyError("Attempted to add a model to the property "
                                        "network with an unrecognized Symbol. "
                                        "Add {} Symbol to the property network before "
                                        "adding this model.".format(input_))
 
-    def remove_composite_models(self, super_models):
+    def remove_composite_models(self, composite_models):
         """
-        Remove user-defined models from the Graph.
+        Removes composite models from the graph.
+
         Args:
-            super_models (dict<str, SuperModel>): Instances of the SuperModel class
-        Returns:
-            None
+            composite_models (dict): dictionary of ``CompositeModel`` objects to remove,
+                keyed by model name
         """
-        for model in super_models.keys():
+        for model in composite_models.keys():
             if model not in self._composite_models.keys():
                 raise Exception("Attempted to remove a model not currently present in the graph.")
             del self._composite_models[model]
 
     def get_composite_models(self):
         """
-        Getter method, returns a set of all model objects present on the graph.
+        Gets a set of all CompositeModel objects present on the graph.
+
         Returns:
-            (set<Model>)
+            `set` of `propnet.core.models.CompositeModel`: composite models
+            present on the graph
         """
-        to_return = set()
-        for model in self._composite_models.values():
-            to_return.add(model)
-        return to_return
+        return set(self._composite_models.values())
 
     def get_networkx_graph(self, include_orphans=True):
         """
-        Generates a networkX data structure representing the property
-        network and returns this object.
+        Generates a networkX data structure representing the propnet knowledge
+        graph with Symbol and Model objects as nodes and their input/output as
+        directed edges.
+
+        Args:
+            include_orphans (bool): optional, ``True`` adds symbols which are not
+                connected to any models to the graph object. ``False`` omits them.
+                Default: ``True`` (include unconnected symbols)
+
         Returns:
-            (networkX.multidigraph)
+            networkx.MultiDiGraph: NetworkX representation of knowledge graph
         """
         graph = nx.MultiDiGraph()
 
@@ -341,6 +377,7 @@ class Graph(object):
                     graph.add_node(symbol)
 
         # Format nodes
+        # TODO: Update nx formatting with current cytoscape style
         for node in graph:
             if isinstance(node, Symbol):
                 nx.set_node_attributes(graph, {node: "#43A1F8"}, "fillcolor")
@@ -357,15 +394,18 @@ class Graph(object):
     def create_file(self, filename='out.dot', draw=False, prog='dot',
                     include_orphans=False, **kwargs):
         """
-        Output the graph to a file
+        Output the propnet knowledge graph to a file using pygraphviz.
+
         Args:
-            filename (str): filename for file
-            draw (bool): whether to draw or write file
-            include_orphans (bool): whether to include orphan symbols
-                in graph output
-            **kwargs (kwargs): kwargs to draw or write
-        Returns:
-            None
+            filename (str): optional, filename for file. Default: ``'out.dot'``
+            draw (bool): optional, ``True`` renders positions for the nodes and
+                edges with ``pygraphviz.AGraph.draw()``. ``False`` outputs only the
+                abstract node/edge data using ``pygraphviz.AGraph.write()``.
+                Default: ``False`` (write data only)
+            include_orphans (bool): optional, ``True`` adds symbols which are not
+                connected to any models to the graph object. ``False`` omits them.
+                Default: ``True`` (include unconnected symbols)
+            **kwargs: optional parameters to pygraphviz ``draw()`` or ``write()``.
         """
         nxgraph = self.get_networkx_graph(include_orphans)
         agraph = nx.nx_agraph.to_agraph(nxgraph)
@@ -375,39 +415,40 @@ class Graph(object):
         else:
             agraph.write(filename, **kwargs)
 
-    # TODO: can we remove this?
-    def calculable_properties(self, property_type_set):
+    # TODO: can we remove this or make it simpler?
+    def calculable_properties(self, input_symbols):
         """
-        Given a set of Symbol objects, returns all new Symbol objects
+        Given a set of input Symbol objects, determines all new Symbol objects
         that may be calculable from the inputs. Resulting set contains
         only those new Symbol objects derivable.
-        The result should be used with caution:
-            1) Models may not produce an output if their input
-                conditions are not met.
-            2) Models may require more than one Quantity of a
-                given Symbol type to generate an output.
+
+        Notes:
+            The result should be used with caution:
+            - Models may not produce an output if their input
+              conditions are not met.
+            - Models may require more than one Quantity of a
+              given Symbol type to generate an output.
+
         Args:
-            property_type_set ({Symbol}): the set of Symbol objects
-                taken as starting properties.
+            input_symbols (`set` of `propnet.core.symbols.Symbol`): the set of
+                Symbol objects taken as starting input properties.
+
         Returns:
-            (({Symbol}, {Model})) the set of all Symbol objects that
-                can be derived from the property_type_set, the set of
-                all Model objects that are used in deriving the new
-                Symbol objects.
+            `set` of `propnet.core.symbols.Symbol`: the set of all Symbol objects that
+            can be derived from the given input Symbols
+
         """
         # Set of theoretically derivable properties.
         derivable = set()
 
         # Set of theoretically available properties.
-        working = set()
-        for property_type in property_type_set:
-            working.add(property_type)
+        working = set(input_symbols)
 
         # Set of all models that could produce output.
         all_models = set()
         c_models = set()
-        for property_type in property_type_set:
-            for model in self._input_to_model[property_type]:
+        for sym in input_symbols:
+            for model in self._input_to_model[sym]:
                 all_models.add(model)
                 c_models.add(model)
 
@@ -470,47 +511,52 @@ class Graph(object):
 
         return derivable
 
-    def required_inputs_for_property(self, property_):
+    def required_inputs_for_property(self, target):
         """
         Determines all potential paths leading to a given symbol
         object. Answers the question: What sets of properties are
         required to calculate this given property?
+
         Paths are represented as a series of models and required
         input Symbol objects. Paths can be searched to determine
         specifically how to get from one property to another.
-        Warning: Method indicates sets of Symbol objects required
-            to calculate the property.  It does not indicate how
+
+        Notes:
+            Warning: Method indicates sets of Symbol objects required
+            to calculate the property. It does not indicate how
             many of each Symbol is required. It does not guarantee
-            that supplying Quantities of these types will result
-            in a new Symbol output as conditions / assumptions may
+            that supplying Quantity objects of these types will result
+            in a new Symbol output as conditions/constraints may
             not be met.
+
+        Args:
+            target (Symbol): desired target symbol
         Returns:
-            propnet.core.utils.SymbolTree
+            SymbolTree: pathways to target property represented as a tree
         """
-        head = TreeElement(None, {property_}, None, None)
+        head = TreeElement(None, {target}, None, None)
         self._tree_builder(head)
         return SymbolTree(head)
 
-    def _tree_builder(self, to_expand: TreeElement):
+    def _tree_builder(self, tree_to_expand: TreeElement):
         """
-        Recursive helper method to build a SymbolTree.  Fills in
+        Recursive helper method to build a SymbolTree. Fills in
         the children of to_expand by all possible model
         substitutions.
+
         Args:
-            to_expand: (TreeElement) element that will be expanded
-        Returns:
-            None
+            tree_to_expand (TreeElement): element that will be expanded in place
         """
         # Get set of symbols that no longer need to be replaced and
         # symbols that are candidates for replacement.
         replaced_symbols = set()    # set of all symbols already replaced.
                                     # equal to all parents' minus expand's symbols.
-        parent = to_expand.parent
+        parent = tree_to_expand.parent
         while parent is not None:
             replaced_symbols.update(parent.inputs)
             parent = parent.parent
-        replaced_symbols -= to_expand.inputs
-        candidate_symbols = to_expand.inputs - replaced_symbols
+        replaced_symbols -= tree_to_expand.inputs
+        candidate_symbols = tree_to_expand.inputs - replaced_symbols
 
         # Attempt to replace candidate_symbols
         # Replace them with inputs to models that output the candidate_symbols.
@@ -520,7 +566,7 @@ class Graph(object):
         for symbol in candidate_symbols:
             c_models = self._output_to_model[symbol]
             for model in c_models:
-                parent = to_expand.parent
+                parent = tree_to_expand.parent
                 parent: TreeElement
                 can_continue = True
                 while parent is not None:
@@ -539,28 +585,34 @@ class Graph(object):
                     if not can_continue:
                         continue
                     input_set = input_set | model.constraint_symbols
-                    new_types = (to_expand.inputs - output_set)
+                    new_types = (tree_to_expand.inputs - output_set)
                     new_types.update(input_set)
                     new_types = {self._symbol_types[x] for x in new_types}
                     if new_types in prev[model]:
                         continue
                     prev[model].append(new_types)
-                    new_element = TreeElement(model, new_types, to_expand, None)
+                    new_element = TreeElement(model, new_types, tree_to_expand, None)
                     self._tree_builder(new_element)
                     outputs.append(new_element)
 
         # Add outputs to children and fill in their elements.
-        to_expand.children = outputs
+        tree_to_expand.children = outputs
 
     # TODO: can we remove this?
     def get_paths(self, start_property, end_property):
         """
-        Returns all Paths
+        Returns all paths between two properties.
+
+        Notes:
+            This method is very computationally expensive in its current implementation.
+            We are actively seeking more efficient ways of calculating pathways between
+            properties.
         Args:
-            start_property: (Symbol) starting Symbol type
-            end_property: (Symbol) ending Symbol type
+            start_property (Symbol): starting Symbol type
+            end_property (Symbol): ending Symbol type
         Returns:
-            (list<SymbolPath>) list enumerating the features of all paths.
+            `list` of `propnet.core.provenance.SymbolPath`: list enumerating the features
+            of all paths
         """
         tree = self.required_inputs_for_property(end_property)
         return tree.get_paths_from(start_property)
@@ -568,10 +620,24 @@ class Graph(object):
     def get_degree_of_separation(self, start_property: Union[str, Symbol],
                                  end_property: Union[str, Symbol]) -> Union[int, None]:
         """
-        Returns the minimum number of models separating two properties.
-        Returns 0 if the start_property and end_property are equal.
-        Returns None if the start_property and end_properties are not connected.
+        Determines the minimum number of models separating two properties (symbols)
+        on the propnet knowledge graph.
+
+        Notes:
+            Because the propnet knowledge graph is directed, A->B may have a
+            valid pathway, but B->A may not.
+
+        Args:
+            start_property (`str` or `Symbol`): starting/input property
+            end_property (`str` or `Symbol`): ending/derived property
+
+        Returns:
+            `int` or `None`: the minimum number of models separating the two properties,
+            where ``0`` indicates the starting and ending properties are equal and ``None``
+            indicates the two properties are not connected by any models.
         """
+
+        # TODO: Would it be faster to use networkx?
         # Ensure we have the properties in the graph.
         if start_property not in self._symbol_types.keys():
             raise ValueError("Symbol not found: " + str(start_property))
@@ -622,35 +688,45 @@ class Graph(object):
     @staticmethod
     def generate_input_sets(props, this_quantity_pool):
         """
-        Generates all combinatorially-unique sets of input dicts given
-        a list of property names and a quantity pool
+        Generates all unique combinations of quantities given a list of needed
+        symbols/properties names and a pool of quantities to choose from.
+
         Args:
-            props ([str]): property names
-            this_quantity_pool ({Symbol: Set(Quantity)}): quantities
-                keyed by symbols
-        Returns ([{str: Quantity}]):
-            list of symbol strings mapped to Quantity values.
+            props (`list` of `str` or `propnet.core.symbols.Symbol`): desired properties
+                in input set
+            this_quantity_pool (dict): quantity pool, as a dictionary of sets of quantities
+                keyed by their Symbol or symbol name
+        Yields:
+            `tuple` of `Quantity`: tuple of length ``len(props)`` containing Quantity objects
+            corresponding to each symbol in ``props``.
         """
         aggregated_symbols = []
         for prop in props:
             if prop not in this_quantity_pool.keys():
-                return []
+                return
             aggregated_symbols.append(this_quantity_pool[prop])
-        return product(*aggregated_symbols)
+        yield from product(*aggregated_symbols)
 
     @staticmethod
     def get_input_sets_for_model(model, new_quantities, old_quantities):
         """
-        Generates all of the valid input sets for a given model, a fixed
-        quantity, and a quantity pool from which to draw remaining properties
+        Generates all valid input sets for a given model, containing at least
+        one Quantity from ``new_quantities`` with the remainder drawn from
+        ``old_quantities``.
+
         Args:
             model (Model): model for which to evaluate valid input sets
-            new_quantities ({symbol: [Quantity]}): quantities generated
-                during the most recent iteration of the evaluation loop
-            old_quantities ({symbol: [Quantity]}): quantities generated
-                in previous iterations of the evaluation loop
+            new_quantities (dict): quantities generated
+                during the most recent iteration of the evaluation loop,
+                as lists of Quantity objects keyed by symbol
+            old_quantities (dict): quantities generated
+                in previous iterations of the evaluation loop,
+                as lists of Quantity objects keyed by symbol
         Returns:
-            list of sets of input quantities for the model
+            Tuple[iterator, int]: returns tuple containing:
+
+            - iterator yielding input sets as tuples of Symbol objects
+            - integer corresponding to the number of items in the iterator
         """
 
         all_input_sets = []
@@ -682,17 +758,24 @@ class Graph(object):
 
     def generate_models_and_input_sets(self, new_quantities, quantity_pool):
         """
-        Helper method to generate input sets for models
+        Produces all input sets for all models on the graph that contain at least
+        one Quantity from ``new_quantities``.
+
         Args:
-            new_quantities ([Quantity]): list of new quantities from which
-                to derive new input sets (these are "fixed" quantities
-                in generate_input_sets_for_model)
-            quantity_pool ({symbol: {Quantity}}): dict of quantity sets
-                keyed by symbol from which to draw additional quantities
+            new_quantities (`list` of `BaseQuantity`): list of new quantities from which
+                to derive new input sets
+            quantity_pool (dict): dict of Quantity sets,
+                keyed by symbol, from which to draw additional quantities
                 for model inputs
         Returns:
-            ([tuple]): list of tuples of models and their associated input
-                sets, uses tuple so duplicate checking can be performed
+            Tuple[iterator, int]: tuple that contains:
+
+            - an iterator containing models and input sets as tuples containing:
+
+                - ``Model`` instance for which the input set is valid
+                - tuple of Quantity objects representing the input set
+
+            - an integer representing the total number of input sets the iterator
         """
         models_and_input_sets = []
         n_total_input_sets = 0
@@ -717,28 +800,30 @@ class Graph(object):
     def derive_quantities(self, new_quantities, quantity_pool=None,
                           allow_model_failure=True, timeout=None):
         """
-        Derives new quantities using at least one quantity from "new_quantities" and the
-        remainder from either "new_quantities" or the specified "quantity_pool" as model inputs.
+        Derives new quantities using the models on the knowledge graph using at least one quantity
+        from ``new_quantities`` and the remainder from either ``new_quantities`` or the specified
+        ``quantity_pool`` as inputs to the models.
 
         Args:
-            new_quantities ([Quantity]): list of quantities which to
+            new_quantities (`list` of `BaseQuantity`): list of quantities which to
                 consider as new inputs to models
-            quantity_pool ({symbol: [Quantity]}): dict of quantity lists
-                keyed by symbol from which to draw additional quantities
-                for model inputs
-            allow_model_failure (bool): True allows graph evaluation to
+            quantity_pool (`dict` or `None`): optional, dict of lists of ``BaseQuantity`` objects,
+                keyed by their ``Symbol`` from which to draw additional quantities
+                for model inputs. Default: ``None`` (no pool)
+            allow_model_failure (bool): ``True`` allows graph evaluation to
                 continue if an Exception is thrown during model evaluation for
-                violation of constraints or any other reason. False will
+                violation of constraints or any other reason. ``False`` will
                 throw any Exception encountered during model evaluation.
-                Default: True
-            timeout (int): number of seconds to allow for a model to evaluate.
+                Default: ``True`` (ignore exceptions)
+            timeout (`int` or `None`): number of seconds to allow for a model to evaluate.
                 After that time, model evaluation will be canceled and deemed
-                failed. "None" allows for infinite evaluation time. Default: None
+                failed. ``None`` allows for infinite evaluation time. Default: ``None`` (no limit)
 
         Returns:
-            additional_quantities ([Quantity]): new derived quantities
-            quantity_pool ({symbol: {Quantity}}): augmented version of
-                quantity pool
+            Tuple[list, dict]: returns a list and dict in a tuple:
+
+                - derived quantities as `list` of `BaseQuantity`
+                - quantity pool augmented with quantities from ``new_quantities``
         """
         # Update quantity pool
         quantity_pool = quantity_pool or defaultdict(list)
@@ -750,12 +835,13 @@ class Graph(object):
         models_and_input_sets, n_input_sets = self.generate_models_and_input_sets(
             new_quantities, quantity_pool)
 
+        # TODO: Maybe we should do this in evaluate() instead of here
         for quantity in new_quantities:
             quantity_pool[quantity.symbol].append(quantity)
 
         # input_tuples = [(v[0], v[1:]) for v in models_and_input_sets]
 
-        # This doesn't eliminate many and will be caught by cyclic filter
+        # The code below doesn't eliminate many and will be caught by cyclic filter
         # after evaluation. This is usually only important if the model we'd be
         # re-evaluating takes a long time, which the majority of our models do not
         # take a long time...can we move this into the generation step or just before
@@ -789,15 +875,15 @@ class Graph(object):
     @staticmethod
     def _generates_noncyclic_output(input_set):
         """
-        Helper function to determine if an input set of model and input quantities will
-        generate at least one output that is non-cyclic, meaning the output does not have
-        itself as an input in its provenance.
+        Determines if an input set of model and input quantities will generate at least one output that
+        is non-cyclic, meaning the output does not have itself as an input in its provenance.
 
         Args:
-            input_set (tuple(Model, list[Quantity]): input set to evaluate for cyclic outputs
+            input_set (tuple): input set to evaluate for cyclic outputs as a tuple of Model
+                and list of BaseQuantity objects.
 
         Returns:
-            (bool) True if at least one output of the model is non-cyclic. False if all outputs
+            bool: ``True`` if at least one output of the model is non-cyclic. ``False`` if all outputs
             are cyclic.
         """
         model, inputs = input_set
@@ -820,15 +906,18 @@ class Graph(object):
     @staticmethod
     def _run_serial(models_and_input_sets, allow_model_failure=True, timeout=None):
         """
-        Evaluate a list of input sets serially.
+        Evaluates a list of input sets serially.
 
         Args:
-            models_and_input_sets (list[tuple(model, list[Quantity])]): input sets to evaluate
-            allow_model_failure (bool): True suppresses exceptions raised during model evaluation. Default: True
-            timeout (int): number of seconds after which to timeout model evaluation. Default: None (infinite)
+            models_and_input_sets (`list` of `tuple`): input sets to evaluate as a list of tuples containing
+                a Model and a list of BaseQuantity objects.
+            allow_model_failure (bool): optional, ``True`` suppresses exceptions raised during model evaluation.
+                ``False`` throws them as they are raised. Default: ``True`` (no exceptions raised)
+            timeout (int): optional, number of seconds after which to timeout model evaluation.
+                Default: ``None`` (no limit)
 
         Returns:
-            (list[Quantity]) output quantities from input set evaluation.
+            `list` of `BaseQuantity`: output quantities from input set evaluation.
         """
         outputs = []
         model_timings = []
@@ -856,17 +945,20 @@ class Graph(object):
                       allow_model_failure=True,
                       timeout=None):
         """
-         Evaluate a list of input sets in parallel.
+        Evaluate a list of input sets in parallel.
 
         Args:
             executor (concurrent.futures.ProcessPoolExecutor): executor for input sets
             n_workers (int): number of processes used by executor
-            models_and_input_sets (list[tuple(model, list[Quantity])]): input sets to evaluate
-            allow_model_failure (bool): True suppresses exceptions raised during model evaluation. Default: True
-            timeout (int): number of seconds after which to timeout model evaluation. Default: None (infinite)
+            models_and_input_sets (`list` of `tuple`): input sets to evaluate as a list of tuples containing
+                a Model and a list of BaseQuantity objects.
+            allow_model_failure (bool): optional, ``True`` suppresses exceptions raised during model evaluation.
+                ``False`` throws them as they are raised. Default: ``True`` (no exceptions raised)
+            timeout (int): optional, number of seconds after which to timeout model evaluation.
+                Default: ``None`` (no limit)
 
         Returns:
-            (list[Quantity]) output quantities from input set evaluation.
+            `list` of `BaseQuantity`: output quantities from input set evaluation.
         """
         func = partial(Graph._evaluate_model,
                        allow_failure=allow_model_failure,
@@ -892,20 +984,27 @@ class Graph(object):
     @staticmethod
     def _evaluate_model(model_and_input_set, allow_failure=True, timeout=None):
         """
-        Workhorse function to evaluate an input set.
+        Evaluates an input set.
+
+        Notes:
+            The exception is returned instead of thrown because in parallel, the exception will be suppressed
+            by the map() function used to execute the model evaluation in parallel. Additionally, the timings
+            are returned because they do not sum when run in parallel because timing is executed on different
+            processors.
 
         Args:
-            model_and_input_set (tuple(Model, list[Quantity])): input set to evaluate
-            allow_failure (bool): True suppresses exceptions raised during model evaluation. Default: True
-            timeout: number of seconds after which to timeout model evaluation. Default: None (infinite)
+            model_and_input_set (tuple): input set to evaluate as a tuple containing
+                a Model and a list of BaseQuantity objects.
+            allow_failure (bool): optional, ``True`` suppresses exceptions raised during model evaluation.
+                ``False`` throws them as they are raised. Default: ``True`` (no exceptions raised)
 
         Returns:
-            (list): List of quantities calculated from model. If model failed and allow_failure = True, will
-                return an empty list. If allow_failure = False, will return a list with a tuple
-                (Exception, input_set) as its only element.
+            Tuple[list, dict]: tuple containing the following data:
 
-        Note: The exception is returned instead of thrown because in parallel, the exception will be suppressed
-            by the map() function used to execute the model evaluation in parallel.
+                - list of quantities calculated from model. If model failed and allow_failure = True, will
+                  return an empty list. If allow_failure = False, will return a list with a tuple
+                  (Exception, input_set) as its only element.
+                - dictionary of timing data for this model
         """
         # from chronic import Timer as Timer_
         # from chronic import timings as timings_
@@ -945,21 +1044,22 @@ class Graph(object):
     def evaluate(self, material, allow_model_failure=True, timeout=None):
         """
         Given a Material object as input, creates a new Material object
-        to include all derivable properties.  Optional argument limits the
-        scope of which models or properties are tested. Returns a
-        reference to the new, augmented Material object.
+        to include all derivable properties for that material.
+
+        Notes:
+            Model timeout does not work on non-Unix machines based on the implementation. ``timeout`` will
+            be ignored on these machines.
 
         Args:
-            material (Material): which material's properties will be expanded.
-            allow_model_failure (bool): whether to continue with graph evaluation
-                if a model fails.
-            timeout (int): number of seconds after which model evaluation should
+            material (Material): a material whose properties will be expanded
+            allow_model_failure (bool): optional, ``True`` continues with graph evaluation
+                if a model fails. ``False`` throws the exception.
+                Default: ``True`` (ignore failed models)
+            timeout (`int` or `None`): optional, number of seconds after which model evaluation should
                 quit. This is to cut off long-running models.
-                Default: None (infinite evaluation time)
+                Default: ``None`` (infinite evaluation time)
         Returns:
-            (Material) reference to the newly derived material object.
-
-        Note: Model timeout does not work on non-Unix machines based on the implementation.
+            Material: material object containing all properties, derived + original inputs
         """
         logger.debug("Beginning evaluation")
 
@@ -985,21 +1085,23 @@ class Graph(object):
                            timeout=None):
         """
         Given a CompositeMaterial object as input, creates a new CompositeMaterial
-        object to include all derivable properties.  Returns a reference to
-        the new, augmented CompositeMaterial object.
+        object to include all derivable properties for that material.
 
         Args:
-            material (CompositeMaterial): material for which properties
-                will be expanded.
-            allow_model_failure (bool): True allows non-composite models to fail
-                during graph evaluation of a material. Default: True
-            allow_composite_model_failure (bool): True allows composite model evaluation
-                to fail during evaluation. Default: True
-            timeout (int): number of seconds after which to terminate non-composite
-                model evaluation. Default: None (infinite evaluation time)
+            material (CompositeMaterial): material whose properties
+                will be expanded
+            allow_model_failure (bool): optional, ``True`` continues with graph evaluation
+                if a non-CompositeModel fails. ``False`` throws the exception.
+                Default: ``True`` (ignore failed non-composite models)
+            allow_composite_model_failure (bool): ``True`` continues with graph evaluation
+                if a CompositeModel fails. ``False`` throws the exception.
+                Default: ``True`` (ignore failed composite models)
+            timeout (`int` or `None`): optional, number of seconds after which non-CompositeModel
+                evaluation should quit. This is to cut off long-running models.
+                Default: ``None`` (infinite evaluation time)
 
         Returns:
-            (Material) reference to the newly derived material object.
+            CompositeMaterial: composite material object containing all properties, derived + original inputs
         """
 
         # TODO: Let's parallelize this eventually. It's not immediately obvious to me
@@ -1110,21 +1212,25 @@ class Graph(object):
         """
         Clears model evaluation timings.
 
-        Note: if you are using chronic.Timer for timing outside this Graph object,
-        this function will clear your timers causing an error if the Timer objects
-        are currently running.
+        Notes:
+            If you are using the ``chronic.Timer`` module for timing outside this Graph object,
+            this function will clear your timers causing an error if the Timer objects
+            are currently running.
 
         """
         self._graph_timings = None
         self._model_timings = None
-        clear()
+        clear_timings()
 
     @property
     def model_evaluation_statistics(self):
         """
-        :return: A Pandas DataFrame containing statistics on how
+        Compiles a pandas DataFrame containing statistics on how
         many times each model was evaluated, average time per model,
         and the total time taken for that model.
+
+        Returns:
+            pandas.DataFrame: model calculation statistics
         """
 
         rows = [{'Model Name': model,
@@ -1141,11 +1247,11 @@ class Graph(object):
     @staticmethod
     def _append_timing_result(model_timings):
         """
-        Helper function to append model timings collected from parallel processes to
+        Adds model timings collected from parallel processes to
         the timings module in this thread/process.
 
         Args:
-            model_timings (list[dict]): list of model timings returned from evaluation
+            model_timings (`list` of `dict`): list of model timings returned from evaluation
         """
         if 'timings' not in timings['_graph_evaluation']:
             timings['_graph_evaluation']['timings'] = dict()

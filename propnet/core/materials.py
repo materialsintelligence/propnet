@@ -1,48 +1,62 @@
-"""
-Module containing classes and methods for Material functionality in propnet code.
+"""Materials objects to hold properties of materials for evaluation.
+
+This module establishes objects to represent single (Material) and mixed (CompositeMaterial) materials.
+They are effectively containers for their properties (and processing conditions). The material objects
+are the expected inputs for propnet's Graph class.
+
+Example:
+    Material objects can be instantiated empty or with a list of Quantity objects representing the
+    material's properties:
+
+    >>> from propnet.core.materials import Material
+    >>> from propnet.core.quantity import QuantityFactory as QF
+    >>> band_gap = QF.create_quantity('band_gap', 5, 'eV')
+    >>> bulk_modulus = QF.create_quantity('bulk_modulus', 100, 'GPa')
+    >>> m = Material([band_gap, bulk_modulus]) # Initialize with list, or...
+    >>> m = Material()  # Initialize empty and add properties
+    >>> m.add_quantity(band_gap)
+    >>> m.add_quantity(bulk_modulus)
+
 """
 
+import logging
 from collections import defaultdict
 from itertools import chain
 
-from propnet.core.quantity import QuantityFactory, NumQuantity
+from propnet.core.quantity import QuantityFactory, NumQuantity, BaseQuantity
 from propnet.core.symbols import Symbol
-
-# noinspection PyUnresolvedReferences
-import propnet.symbols
 from propnet.core.registry import Registry
-import logging
 
 logger = logging.getLogger(__name__)
+"""logging.Logger: Logger for debugging"""
 
 
-class Material(object):
+class Material:
     """
-    Class containing methods for creating and interacting with Material objects.
+    Class containing methods to interact with materials with a single composition. This class is intended to
+    be a container for materials properties.
 
-    Under the Propnet infrastructure, Materials are the medium through which properties are
-    communicated. While Model and Symbol nodes create a web of interconnected properties,
-    Materials, as collections of Quantity nodes, provide concrete numbers to those properties.
-    At runtime, a Material can be constructed and added to a Graph instance, merging the two
-    graphs and allowing for propagation of concrete numbers through the property web.
+    Examples:
+        The example shown above largely demonstrates the utility of this class. However, it is worth noting
+        that a Material object can be accessed like a dictionary keyed by Symbol objects to retrieve the
+        set of quantities that correspond to that symbol.
 
-    A unique hashcode is stored with each Material upon instantiation. This is used to
-    differentiate between different materials at runtime.
-
-    Attributes:
-        symbol_quantities_dict (dict<Symbol, set<Quantity>>): data structure mapping Symbols to a list of corresponding
-                                                           Quantity objects of that type.
+        >>> m = Material([...])
+        >>> quantities = m['band_gap']
+        >>> print(quantities)
+        {<band_gap, ...>, ...}
 
     """
+
     def __init__(self, quantities=None, add_default_quantities=False):
         """
-        Creates a Material instance, instantiating a trivial graph of one node.
-
         Args:
-            quantities ([Quantity]): list of quantities to add to
-                the material
-            add_default_quantities (bool): whether to add default
-                quantities (e. g. room temperature) to the graph
+            quantities (`list` of `BaseQuantity` or `None`): optional, list of quantities to add to
+                the material. Default: ``None`` (no properties added)
+            add_default_quantities (bool): ``True`` adds default quantities (e.g. room temperature)
+                to the graph. ``False`` omits them. Default quantities are defined as Symbols who have
+                a default value specified and are registered in ``Registry('symbol_values')``.
+                Default: ``False`` (omit default quantities)
         """
         self._quantities_by_symbol = defaultdict(set)
         if quantities is not None:
@@ -54,38 +68,29 @@ class Material(object):
 
     def add_quantity(self, quantity):
         """
-        Adds a property to this property collection.
+        Adds a property to this material.
 
         Args:
-            quantity (Quantity): property to be bound to the material.
-
-        Returns:
-            None
+            quantity (BaseQuantity): property to be bound to the material.
         """
         self._quantities_by_symbol[quantity.symbol].add(quantity)
 
     def remove_quantity(self, quantity):
         """
-        Removes the Quantity object attached to this Material.
+        Removes a quantity attached to this Material.
 
         Args:
-            quantity (Quantity): Quantity object reference indicating
-            which property is to be removed from this Material.
-
-        Returns:
-            None
+            quantity (BaseQuantity): reference to quantity object to be removed
         """
         if quantity.symbol not in self._quantities_by_symbol:
-            raise Exception("Attempting to remove quantity not present in "
-                            "the material.")
+            raise KeyError("Attempting to remove quantity not present in "
+                           "the material.")
         self._quantities_by_symbol[quantity.symbol].remove(quantity)
 
     def add_default_quantities(self):
         """
-        Adds any default symbols which are not present in the graph
-
-        Returns:
-            None
+        Adds any default symbols which are not present in the graph. Default symbols
+        are sourced from ``Registry('symbol_values')``.
         """
         new_syms = set(Registry("symbol_values").keys())
         new_syms -= set(self._quantities_by_symbol.keys())
@@ -97,47 +102,48 @@ class Material(object):
 
     def remove_symbol(self, symbol):
         """
-        Removes all Quantity Nodes attached to this Material of type symbol.
+        Removes all quantities attached to this material of a particular Symbol type.
 
         Args:
-            symbol (Symbol): object indicating which property type
-                is to be removed from this material.
-
-        Returns:
-            None
+            symbol (Symbol): symbol to be removed from the material
         """
         if symbol not in self._quantities_by_symbol:
-            raise Exception("Attempting to remove Symbol not present in the material.")
+            raise KeyError("Attempting to remove Symbol not present in the material.")
         del self._quantities_by_symbol[symbol]
 
     def get_symbols(self):
         """
-        Obtains all Symbol objects bound to this Material.
+        Obtains all Symbol types bound to this material.
 
         Returns:
-            (set<Symbol>) set containing all symbols bound to this Material.
+            `set` of `propnet.core.symbols.Symbol`: set containing all symbols bound to this material
         """
         return set(self._quantities_by_symbol.keys())
 
     def get_quantities(self):
         """
-        Method obtains all Quantity objects bound to this Material.
+        Obtains all quantity objects bound to this material.
+
         Returns:
-            (list<Quantity>) list of all Quantity objects bound to this Material.
+            `list` of `propnet.core.quantity.BaseQuantity`: list of all quantity objects bound to this material
         """
         return list(chain.from_iterable(self._quantities_by_symbol.values()))
     
     @property
     def symbol_quantities_dict(self):
+        """
+        dict: mapping of Symbols to the set of quantities of that Symbol type attached to the material
+        """
+        # TODO: This may not be safe enough. Might need deep copy.
         return self._quantities_by_symbol.copy()
     
     def get_aggregated_quantities(self):
         """
-        Return mean values for all quantities for each symbol.
+        Aggregates multiple quantities of the same symbol by calculating their mean. Does not mutate this
+        Material object.
 
         Returns:
-            (dict<Symbol, weighted_mean) mapping from a Symbol to
-            an aggregated statistic.
+            dict: dictionary mapping numerical Symbols to their aggregated mean value as ``NumQuantity`` objects.
         """
         # TODO: proper weighting system, and more flexibility in object handling
         aggregated = {}
@@ -147,6 +153,12 @@ class Material(object):
         return aggregated
 
     def __str__(self):
+        """
+        Builds summary of the material object including some properties.
+
+        Returns:
+            str: string representation of material
+        """
         QUANTITY_LENGTH_CAP = 50
         building = []
         building += ["Material: " + str(hex(id(self))), ""]
@@ -161,6 +173,15 @@ class Material(object):
         return "\n".join(building)
 
     def __eq__(self, other):
+        """
+        Equality function for material. Two materials are equal if they have the same quantities.
+
+        Args:
+            other (object): the object to compare the Material to
+
+        Returns:
+            bool: ``True`` if equal, ``False`` if not or not the same type
+        """
         if not isinstance(other, Material):
             return False
         if len(self._quantities_by_symbol) != len(other._quantities_by_symbol):
@@ -177,10 +198,22 @@ class Material(object):
 
     @property
     def quantity_types(self):
+        """
+        list: the Symbol objects contained in this material
+        """
         return list(self._quantities_by_symbol.keys())
 
     def __getitem__(self, item):
-        return self._quantities_by_symbol[item]
+        """
+        Retrieve quantities in material by Symbol or symbol name.
+
+        Args:
+            item (`str` or `Symbol`): symbol to retrieve
+
+        Returns:
+            set: set containing the quantities attached to the material of the specified Symbol
+        """
+        return self._quantities_by_symbol.get(item, set())
 
 
 class CompositeMaterial(Material):
@@ -188,21 +221,19 @@ class CompositeMaterial(Material):
     Class representing a material composed of one or more sub-materials.
 
     Useful for representing materials properties that arise from
-    multiple materials (i. e. contact voltage in metals)
+    multiple materials (i.e. contact voltage in metals).
+
+    Notes:
+        The functionality of this class is limited, but expansion is planned.
 
     Attributes:
-        symbol_quantities_dict (dict<Symbol, set<Quantity>>): data-structure
-            storing all properties / descriptors that arise from the
-            joining of multiple materials
-        materials (list<Material>): set of materials contained in the Composite
+        materials (`list` of `Material`): list of materials contained in the CompositeMaterial
     """
-    def __init__(self, materials_list):
+    def __init__(self, materials):
         """
-        Creates a Composite Material instance.
-
         Args:
-            materials_list (list<Material>): list of materials contained
-                in the Composite
+            materials (`list` of `Material`): list of materials contained
+                in the CompositeMaterial
         """
-        self.materials = materials_list
+        self.materials = materials
         super(CompositeMaterial, self).__init__()
