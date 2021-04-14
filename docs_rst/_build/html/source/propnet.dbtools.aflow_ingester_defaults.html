@@ -1,0 +1,243 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.dbtools.aflow_ingester_defaults module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.dbtools.aflow_ingester_defaults.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.dbtools.aflow_ingester_defaults module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.dbtools.aflow_ingester_defaults.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.dbtools.aflow_ingester_defaults">
+<span id="propnet-dbtools-aflow-ingester-defaults-module"></span><h1>propnet.dbtools.aflow_ingester_defaults module<a class="headerlink" href="#module-propnet.dbtools.aflow_ingester_defaults" title="Permalink to this headline">¶</a></h1>
+<dl class="py data">
+<dt id="propnet.dbtools.aflow_ingester_defaults.default_files_to_ingest">
+<code class="sig-prename descclassname"><span class="pre">propnet.dbtools.aflow_ingester_defaults.</span></code><code class="sig-name descname"><span class="pre">default_files_to_ingest</span></code><em class="property"> <span class="pre">=</span> <span class="pre">['CONTCAR.relax.vasp',</span> <span class="pre">'AEL_elastic_tensor.json']</span></em><a class="headerlink" href="#propnet.dbtools.aflow_ingester_defaults.default_files_to_ingest" title="Permalink to this definition">¶</a></dt>
+<dd><p>File names to download for each entry if they exist.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="propnet.dbtools.aflow_ingester_defaults.default_query_configs">
+<code class="sig-prename descclassname"><span class="pre">propnet.dbtools.aflow_ingester_defaults.</span></code><code class="sig-name descname"><span class="pre">default_query_configs</span></code><em class="property"> <span class="pre">=</span> <span class="pre">[{'catalog':</span> <span class="pre">'icsd',</span> <span class="pre">'k':</span> <span class="pre">200000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'icsd',</span> <span class="pre">'k':</span> <span class="pre">200000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'icsd',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib1',</span> <span class="pre">'k':</span> <span class="pre">200000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib1',</span> <span class="pre">'k':</span> <span class="pre">200000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib1',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib2',</span> <span class="pre">'k':</span> <span class="pre">200000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib2',</span> <span class="pre">'k':</span> <span class="pre">200000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib2',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:0')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:0')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:0')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:1')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:1')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:1')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:2')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:2')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:2')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:3')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:3')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:3')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:4')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:4')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:4')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:5')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:5')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:5')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:6')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:6')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:6')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:7')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:7')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:7')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:8')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:8')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:8')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:9')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:9')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:9')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:a')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:a')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:a')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:b')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:b')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:b')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:c')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:c')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:c')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:d')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:d')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:d')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:e')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:e')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:e')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">[],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:f')],</span> <span class="pre">'select':</span> <span class="pre">['auid',</span> <span class="pre">'aurl',</span> <span class="pre">'compound'],</span> <span class="pre">'targets':</span> <span class="pre">['data',</span> <span class="pre">'auid']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">50000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound',</span> <span class="pre">'aurl'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:f')],</span> <span class="pre">'select':</span> <span class="pre">[],</span> <span class="pre">'targets':</span> <span class="pre">['data']},</span> <span class="pre">{'catalog':</span> <span class="pre">'lib3',</span> <span class="pre">'k':</span> <span class="pre">10000,</span> <span class="pre">'exclude':</span> <span class="pre">['compound'],</span> <span class="pre">'filter':</span> <span class="pre">[('auid',</span> <span class="pre">'__gt__',</span> <span class="pre">'aflow:f')],</span> <span class="pre">'select':</span> <span class="pre">['files',</span> <span class="pre">'aurl'],</span> <span class="pre">'targets':</span> <span class="pre">['data']}]</span></em><a class="headerlink" href="#propnet.dbtools.aflow_ingester_defaults.default_query_configs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default set of query configurations for downloading the AFLOW database.
+All entries must include the following keys in the format specified:</p>
+<dl class="simple">
+<dt>catalog (str): must specify the AFLOW catalog to query. Value can be None, but</dt><dd><p>it is recommended that the catalog be specified because AFLUX queries tend to
+be more stable and take less time when catalog is specified.</p>
+</dd>
+<dt>exclude (list of str): list of keywords to explicity exclude from the query result.</dt><dd><p>May be empty list.</p>
+</dd>
+<dt>targets (list of str): list of strings to specify which MongoDB stores will be updated</dt><dd><p>with the data from the query. Must be ‘data’ and/or ‘auid’.</p>
+</dd>
+<dt>select (list of str): list of keywords as strings to include in the query. Empty list means</dt><dd><p>to request all possible keywords.</p>
+</dd>
+</dl>
+<p>k (int): how many records to request with each HTTP request.
+filter (list of tuples): tuples which represent an AFLOW filter specification</p>
+<blockquote>
+<div><p>(see <cite>aflow.control.Query</cite> for more information). For example, to request materials with
+band gap &lt; 1 and formula that contains Fe, filter would contain:
+<cite>[(‘Egap’, ‘__lt__’, 1), (‘compound’, ‘__mod__’, ‘Fe’)]</cite>
+This is equivalent to the following using the AFLOW Python wrapper query:
+<code class="docutils literal notranslate"><span class="pre">`</span>
+<span class="pre">from</span> <span class="pre">aflow</span> <span class="pre">import</span> <span class="pre">K</span>
+<span class="pre">from</span> <span class="pre">aflow.control</span> <span class="pre">import</span> <span class="pre">search</span>
+<span class="pre">query</span> <span class="pre">=</span> <span class="pre">search().filter((K.Egap</span> <span class="pre">&lt;</span> <span class="pre">1)</span> <span class="pre">&amp;</span> <span class="pre">(K.compound</span> <span class="pre">%</span> <span class="pre">'Fe'))</span>
+<span class="pre">`</span></code></p>
+</div></blockquote>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

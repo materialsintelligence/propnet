@@ -1,0 +1,892 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.models module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.core.models.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.core.models module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.core.models.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.core.models">
+<span id="propnet-core-models-module"></span><h1>propnet.core.models module<a class="headerlink" href="#module-propnet.core.models" title="Permalink to this headline">¶</a></h1>
+<p>Module containing classes and methods for Model functionality in propnet code.</p>
+<dl class="py class">
+<dt id="propnet.core.models.CompositeModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">CompositeModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plug_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#CompositeModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.CompositeModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.core.models.PyModel" title="propnet.core.models.PyModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.core.models.PyModel</span></code></a></p>
+<p>Model based on deriving emerging properties (symbols) from collections of
+materials of known properties (symbols).</p>
+<p>Model requires the unambiguous assignment of materials to labels.
+These labeled materials’ properties (symbols) are then referenced.</p>
+<dl class="py method">
+<dt id="propnet.core.models.CompositeModel.gen_material_mappings">
+<code class="sig-name descname"><span class="pre">gen_material_mappings</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">materials</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#CompositeModel.gen_material_mappings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.CompositeModel.gen_material_mappings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of materials, returns a mapping from each material label
+found in self.connections to a Material object.
+:param materials: list of candidate Material objects.
+:type materials: list&lt;Material&gt;</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>(list&lt;dict&lt;String, Material&gt;&gt;) mapping from material label</dt><dd><p>to Material object.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.CompositeModel.get_material">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">get_material</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#CompositeModel.get_material"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.CompositeModel.get_material" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input</strong> (<em>String</em>) – inputs entry from the connections instance variable.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>String or None only material identifiers from the input argument.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.CompositeModel.get_variable">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">get_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#CompositeModel.get_variable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.CompositeModel.get_variable" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input_value</strong> (<em>String</em>) – inputs entry from the connections.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>String only variable identifiers from the input argument.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.models.Constraint">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">Constraint</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expression</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Constraint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Constraint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.core.models.Model" title="propnet.core.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.core.models.Model</span></code></a></p>
+<p>Constraint class, resembles a model, but should outputs
+true or false based on a string expression containing
+input variables</p>
+<dl class="py method">
+<dt id="propnet.core.models.Constraint.plug_in">
+<code class="sig-name descname"><span class="pre">plug_in</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_value_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Constraint.plug_in"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Constraint.plug_in" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates the expression with sympy and provided values
+and returns the boolean of that expression</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>variable_value_dict</strong> (<em>dict</em>) – dict containing
+variable-keyed values to substitute</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>value of substituted expression</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Constraint.register">
+<code class="sig-name descname"><span class="pre">register</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Constraint.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Constraint.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers the model with the appropriate model registry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>overwrite_registry</strong> (<em>bool</em>) – If a model with the same name
+as the current is already registered, <cite>True</cite> will overwrite
+the old model with the current and <cite>False</cite> will raise a
+KeyError.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – if <cite>overwrite_registry=False</cite> and a model with the same
+    name is already registered, this error is raised.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.models.EquationModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">EquationModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_symbol_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">references</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implemented_by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units_for_evaluation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solve_for_all_variables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_builtin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">register</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#EquationModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.EquationModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.core.models.Model" title="propnet.core.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.core.models.Model</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">monty.json.MSONable</span></code></p>
+<p>Equation model is a Model subclass which is invoked
+from a list of equations</p>
+<dl class="py method">
+<dt id="propnet.core.models.EquationModel.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#EquationModel.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.EquationModel.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>A JSON serializable dict representation of an object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.EquationModel.connections">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">connections</span></code><a class="headerlink" href="#propnet.core.models.EquationModel.connections" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.EquationModel.from_dict">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_dict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#EquationModel.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.EquationModel.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.EquationModel.from_file">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_file</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_builtin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">register</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#EquationModel.from_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.EquationModel.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invokes EquationModel from filename</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>str</em>) – filename containing model</p></li>
+<li><p><strong>is_builtin</strong> (<em>bool</em>) – See <code class="docutils literal notranslate"><span class="pre">Model.__init__()</span></code></p></li>
+<li><p><strong>register</strong> (<em>bool</em>) – See <code class="docutils literal notranslate"><span class="pre">Model.__init__()</span></code></p></li>
+<li><p><strong>overwrite_registry</strong> (<em>bool</em>) – See <code class="docutils literal notranslate"><span class="pre">Model.__init__()</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>model corresponding to contents of file</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#propnet.core.models.EquationModel" title="propnet.core.models.EquationModel">EquationModel</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.EquationModel.plug_in">
+<code class="sig-name descname"><span class="pre">plug_in</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_value_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#EquationModel.plug_in"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.EquationModel.plug_in" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equation plug-in solves the equation for all input
+and output combinations, returning the corresponding
+output values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>variable_value_dict</strong> (<em>dict</em>) – variable-keyed
+dict of values to be substituted</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>variable-keyed output dictionary</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.models.Model">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">Model</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">references</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implemented_by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_symbol_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units_for_evaluation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_builtin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">register</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Abstract model class for all models appearing in propnet</p>
+<dl class="py method">
+<dt id="propnet.core.models.Model.all_input_variables">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">all_input_variables</span></code><a class="headerlink" href="#propnet.core.models.Model.all_input_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of all input variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.all_inputs">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">all_inputs</span></code><a class="headerlink" href="#propnet.core.models.Model.all_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of all input symbols</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.all_output_variables">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">all_output_variables</span></code><a class="headerlink" href="#propnet.core.models.Model.all_output_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of all output variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.all_outputs">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">all_outputs</span></code><a class="headerlink" href="#propnet.core.models.Model.all_outputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of all output symbols</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.all_symbols">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">all_symbols</span></code><a class="headerlink" href="#propnet.core.models.Model.all_symbols" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of all symbols</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.all_variables">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">all_variables</span></code><a class="headerlink" href="#propnet.core.models.Model.all_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of all variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.check_constraints">
+<code class="sig-name descname"><span class="pre">check_constraints</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_symbols</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.check_constraints"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.check_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the constraints based on input symbol set</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input_symbols</strong> (<em>dict</em>) – symbol-value
+dictionary for input to constraints</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if constraints are satisfied, false if not</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.connections">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">connections</span></code><a class="headerlink" href="#propnet.core.models.Model.connections" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.constraint_symbols">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">constraint_symbols</span></code><a class="headerlink" href="#propnet.core.models.Model.constraint_symbols" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns:
+set: set of constraint input symbols</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.constraint_variables">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">constraint_variables</span></code><a class="headerlink" href="#propnet.core.models.Model.constraint_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns:
+set: set of variables which are constrained</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.evaluate">
+<code class="sig-name descname"><span class="pre">evaluate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol_quantity_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_failure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_timeout_errors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of symbol values, performs error checking to see
+if the corresponding input variable values represents a valid
+input set based on the self.connections() method. If so, returns
+a dictionary representing the value of plug_in() applied to the
+input. The dictionary contains a “successful” key
+representing if plug_in() was successful.</p>
+<p>The key distinction between evaluate() and plug_in() is symbols
+in, symbols out vs. variables in, variables out.  In addition,
+evaluate also handles any requisite unit mapping.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>symbol_quantity_dict</strong> (<em>dict</em>) – a mapping of
+symbol names (str) to quantities (BaseQuantity) to be substituted</p></li>
+<li><p><strong>allow_failure</strong> (<em>bool</em>) – whether or not to catch
+errors in model evaluation</p></li>
+<li><p><strong>raise_timeout_errors</strong> (<em>bool</em>) – True ignores the value of “allow_failure”
+and forces TimeoutError exceptions to be raised. This is so they
+can be caught and handled by Graph, as timeouts are implemented there
+and not in Model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary of output symbols with associated values</dt><dd><p>generated from the input, along with “successful” if the
+substitution succeeds</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.evaluation_list">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">evaluation_list</span></code><a class="headerlink" href="#propnet.core.models.Model.evaluation_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets everything one needs to call the evaluate method, which
+is all of the input symbols and constraints</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list of input sets with constraint symbols included</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>list</cite> of <cite>set</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.example_code">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">example_code</span></code><a class="headerlink" href="#propnet.core.models.Model.example_code" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates example code from test data, useful for
+documentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>example code for this model</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.input_sets">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">input_sets</span></code><a class="headerlink" href="#propnet.core.models.Model.input_sets" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of input symbol sets</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.input_variable_sets">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">input_variable_sets</span></code><a class="headerlink" href="#propnet.core.models.Model.input_variable_sets" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of input variable sets</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.is_builtin">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">is_builtin</span></code><a class="headerlink" href="#propnet.core.models.Model.is_builtin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether the model is a propnet built-in.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">True</span></code> if the model is a built-in, <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p>if it is a custom-created model</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.load_test_data">
+<code class="sig-name descname"><span class="pre">load_test_data</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test_data_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deserialize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.load_test_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.load_test_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads test data from preset or specified directory.
+Finds a json or yaml file with the prefix “name” and
+loads it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>test_data_path</strong> (<em>str</em>) – test data file location</p></li>
+<li><p><strong>deserialize</strong> (<em>bool</em>) – whether or not to deserialize the test
+data, primarily used for printing example code</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary of test data</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.map_symbols_to_variables">
+<code class="sig-name descname"><span class="pre">map_symbols_to_variables</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbols</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.map_symbols_to_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.map_symbols_to_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper method to convert symbol-keyed dictionary or list to
+variable-keyed dictionary or list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>symbols</strong> (<em>list</em><em> or </em><em>dict</em>) – list of symbols or symbol-
+keyed dictionary</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns (list or dict):</dt><dd><p>list of variables or variable-keyed dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.map_variables_to_symbols">
+<code class="sig-name descname"><span class="pre">map_variables_to_symbols</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.map_variables_to_symbols"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.map_variables_to_symbols" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper method to convert variable-keyed dictionary or list to
+symbol-keyed dictionary or list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>variables</strong> (<cite>list</cite>, <cite>dict</cite>, <cite>set</cite>) – list of variables or variable-keyed
+dictionary</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of symbols or symbol-keyed dict</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>list</cite> or <cite>dict</cite> or <a href="#id1"><span class="problematic" id="id2">`</span></a>set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.output_sets">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">output_sets</span></code><a class="headerlink" href="#propnet.core.models.Model.output_sets" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of output symbol sets</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.output_variable_sets">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">output_variable_sets</span></code><a class="headerlink" href="#propnet.core.models.Model.output_variable_sets" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of output variable sets</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Returns (set)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.plug_in">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">plug_in</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_value_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.plug_in"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.plug_in" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plugs in a variable to quantity dictionary</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>variable_value_dict</strong> (<em>dict</em>) – a mapping
+of variables to values to be substituted
+into the model to yield output</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>output variables with associated</dt><dd><p>values generated from the input</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.register">
+<code class="sig-name descname"><span class="pre">register</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers the model with the appropriate model registry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>overwrite_registry</strong> (<em>bool</em>) – If a model with the same name
+as the current is already registered, <cite>True</cite> will overwrite
+the old model with the current and <cite>False</cite> will raise a
+KeyError.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – if <cite>overwrite_registry=False</cite> and a model with the same
+    name is already registered, this error is raised.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.registered">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">registered</span></code><a class="headerlink" href="#propnet.core.models.Model.registered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates if a model is registered with the model registry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if the model is registered. False otherwise.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.test">
+<code class="sig-name descname"><span class="pre">test</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outputs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs a test of the model to determine whether its operation
+is consistent with the specified inputs and outputs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inputs</strong> (<em>dict</em>) – set of input names to values</p></li>
+<li><p><strong>outputs</strong> (<em>dict</em>) – set of output names to values</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if test succeeds</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.title">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">title</span></code><a class="headerlink" href="#propnet.core.models.Model.title" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fancy formatted name, removes underscores and capitalizes
+all words of name</p>
+<dl class="simple">
+<dt>Returns (str):</dt><dd><p>formatted title, e. g. “band_gap_refractive_index”
+becomes “Band Gap Refractive Index”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.unregister">
+<code class="sig-name descname"><span class="pre">unregister</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.unregister"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.unregister" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the symbol from all applicable registries.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.validate_from_preset_test">
+<code class="sig-name descname"><span class="pre">validate_from_preset_test</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#Model.validate_from_preset_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.Model.validate_from_preset_test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates from test data based on the model name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if validation completes successfully</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.variable_symbol_map">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">variable_symbol_map</span></code><a class="headerlink" href="#propnet.core.models.Model.variable_symbol_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.models.Model.variable_unit_map">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">variable_unit_map</span></code><a class="headerlink" href="#propnet.core.models.Model.variable_unit_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.models.PyModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">PyModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plug_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">references</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implemented_by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_symbol_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units_for_evaluation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_builtin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">register</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#PyModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.PyModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.core.models.Model" title="propnet.core.models.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.core.models.Model</span></code></a></p>
+<p>Purely python based model which allows for a flexible “plug_in”
+method as input, then invokes that method in the defined plug-in
+method.  Note that PyModels scrub units by default, in contrast
+to EquationModels</p>
+<dl class="py method">
+<dt id="propnet.core.models.PyModel.plug_in">
+<code class="sig-name descname"><span class="pre">plug_in</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable_value_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#PyModel.plug_in"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.PyModel.plug_in" title="Permalink to this definition">¶</a></dt>
+<dd><p>plug_in for PyModel uses the attached _plug_in attribute
+as a method with the input variable_value_dict</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>{variable</strong> (<em>variable_value_dict</em>) – value}): dict containing
+variable-keyed values to substitute</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>value of substituted expression</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.models.PyModuleCompositeModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">PyModuleCompositeModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_builtin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">register</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#PyModuleCompositeModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.PyModuleCompositeModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.core.models.CompositeModel" title="propnet.core.models.CompositeModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.core.models.CompositeModel</span></code></a></p>
+<p>PyModuleModel is a class instantiated by a model path only,
+which exists primarily for the purpose of serializing python models</p>
+<dl class="py method">
+<dt id="propnet.core.models.PyModuleCompositeModel.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#PyModuleCompositeModel.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.PyModuleCompositeModel.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.models.PyModuleModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">PyModuleModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_builtin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">register</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#PyModuleModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.PyModuleModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.core.models.PyModel" title="propnet.core.models.PyModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.core.models.PyModel</span></code></a></p>
+<p>PyModuleModel is a class instantiated by a model path only,
+which exists primarily for the purpose of serializing python models</p>
+<dl class="py method">
+<dt id="propnet.core.models.PyModuleModel.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#PyModuleModel.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.PyModuleModel.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="propnet.core.models.get_vars_from_expression">
+<code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">get_vars_from_expression</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expression</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#get_vars_from_expression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.get_vars_from_expression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to get all sympy symbols (vars) from a string expression</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>expression</strong> (<em>str</em><em> or </em><em>sympy expression</em>) – string or sympy expression</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="propnet.core.models.remap">
+<code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">remap</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapping</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#remap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.remap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper method to remap entries in a list or keys in a dictionary
+based on an input map, used to translate variables to symbols
+and vice-versa</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> (<cite>list</cite>, <cite>dict</cite>, <cite>set</cite>) – an iterable of symbols or symbol-keyed
+dictionary to be remapped using variables.</p></li>
+<li><p><strong>mapping</strong> (<em>dict</em>) – dictionary of values to remap</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>remapped list of items or item-keyed dictionary</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>list</cite>, <cite>dict</cite>, <cite>set</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="propnet.core.models.will_it_float">
+<code class="sig-prename descclassname"><span class="pre">propnet.core.models.</span></code><code class="sig-name descname"><span class="pre">will_it_float</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_to_test</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/models.html#will_it_float"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.models.will_it_float" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function to determine if input string can be cast to float</p>
+<p>“If she weights the same as a duck… she’s made of wood”</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input_to_test</strong> (<em>str</em>) – input string to be tested</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

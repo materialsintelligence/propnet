@@ -1,0 +1,235 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.registry module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.core.registry.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.core.registry module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.core.registry.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.core.registry">
+<span id="propnet-core-registry-module"></span><h1>propnet.core.registry module<a class="headerlink" href="#module-propnet.core.registry" title="Permalink to this headline">¶</a></h1>
+<p>Module containing metaclasses for the registry pattern in propnet
+This also enforces a single instance per name</p>
+<dl class="py class">
+<dt id="propnet.core.registry.Registry">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.registry.</span></code><code class="sig-name descname"><span class="pre">Registry</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/registry.html#Registry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.registry.Registry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+<dl class="py attribute">
+<dt id="propnet.core.registry.Registry.all_instances">
+<code class="sig-name descname"><span class="pre">all_instances</span></code><em class="property"> <span class="pre">=</span> <span class="pre">{'models':</span> <span class="pre">{'band_gap_refractive_index_herve_vandamme':</span> <span class="pre">Model:</span> <span class="pre">band_gap_refractive_index_herve_vandamme,</span> <span class="pre">'band_gap_refractive_index_moss':</span> <span class="pre">Model:</span> <span class="pre">band_gap_refractive_index_moss,</span> <span class="pre">'band_gap_refractive_index_ravindra':</span> <span class="pre">Model:</span> <span class="pre">band_gap_refractive_index_ravindra,</span> <span class="pre">'band_gap_refractive_index_reddy_ahammed':</span> <span class="pre">Model:</span> <span class="pre">band_gap_refractive_index_reddy_ahammed,</span> <span class="pre">'band_gap_refractive_index_reddy_anjaneyulu':</span> <span class="pre">Model:</span> <span class="pre">band_gap_refractive_index_reddy_anjaneyulu,</span> <span class="pre">'belomestnikh_gruneisen':</span> <span class="pre">Model:</span> <span class="pre">belomestnikh_gruneisen,</span> <span class="pre">'cahill_thermal_conductivity':</span> <span class="pre">Model:</span> <span class="pre">cahill_thermal_conductivity,</span> <span class="pre">'clarke_thermal_conductivity':</span> <span class="pre">Model:</span> <span class="pre">clarke_thermal_conductivity,</span> <span class="pre">'complex_refr_from_complex_perm':</span> <span class="pre">Model:</span> <span class="pre">complex_refr_from_complex_perm,</span> <span class="pre">'compliance_from_elasticity':</span> <span class="pre">Model:</span> <span class="pre">compliance_from_elasticity,</span> <span class="pre">'cost':</span> <span class="pre">Model:</span> <span class="pre">cost,</span> <span class="pre">'debye_frequency_from_debye_temperature':</span> <span class="pre">Model:</span> <span class="pre">debye_frequency_from_debye_temperature,</span> <span class="pre">'debye_temperature':</span> <span class="pre">Model:</span> <span class="pre">debye_temperature,</span> <span class="pre">'density_relations':</span> <span class="pre">Model:</span> <span class="pre">density_relations,</span> <span class="pre">'dielectric_figure_of_merit_current_leakage':</span> <span class="pre">Model:</span> <span class="pre">dielectric_figure_of_merit_current_leakage,</span> <span class="pre">'dielectric_figure_of_merit_energy':</span> <span class="pre">Model:</span> <span class="pre">dielectric_figure_of_merit_energy,</span> <span class="pre">'dimensionality_cheon':</span> <span class="pre">Model:</span> <span class="pre">dimensionality_cheon,</span> <span class="pre">'dimensionality_gorai':</span> <span class="pre">Model:</span> <span class="pre">dimensionality_gorai,</span> <span class="pre">'el_resistivity_from_el_conductivity':</span> <span class="pre">Model:</span> <span class="pre">el_resistivity_from_el_conductivity,</span> <span class="pre">'electrical_conductivity_from_carrier_densities_and_mobilities':</span> <span class="pre">Model:</span> <span class="pre">electrical_conductivity_from_carrier_densities_and_mobilities,</span> <span class="pre">'electromechanical_coupling':</span> <span class="pre">Model:</span> <span class="pre">electromechanical_coupling,</span> <span class="pre">'electron_mobility_from_mean_free_time':</span> <span class="pre">Model:</span> <span class="pre">electron_mobility_from_mean_free_time,</span> <span class="pre">'empirical_band_gap_setyawan':</span> <span class="pre">Model:</span> <span class="pre">empirical_band_gap_setyawan,</span> <span class="pre">'empirical_band_gaps_garcia_gw':</span> <span class="pre">Model:</span> <span class="pre">empirical_band_gaps_garcia_gw,</span> <span class="pre">'empirical_band_gaps_garcia_pbe':</span> <span class="pre">Model:</span> <span class="pre">empirical_band_gaps_garcia_pbe,</span> <span class="pre">'empirical_band_gaps_metal_conversion':</span> <span class="pre">Model:</span> <span class="pre">empirical_band_gaps_metal_conversion,</span> <span class="pre">'hall_coefficient_from_carrier_densities_and_mobilities':</span> <span class="pre">Model:</span> <span class="pre">hall_coefficient_from_carrier_densities_and_mobilities,</span> <span class="pre">'heat_capacity_conversion':</span> <span class="pre">Model:</span> <span class="pre">heat_capacity_conversion,</span> <span class="pre">'hole_mobility_from_mean_free_time':</span> <span class="pre">Model:</span> <span class="pre">hole_mobility_from_mean_free_time,</span> <span class="pre">'interatomic_spacing_average':</span> <span class="pre">Model:</span> <span class="pre">interatomic_spacing_average,</span> <span class="pre">'loss_function_from_complex_perm':</span> <span class="pre">Model:</span> <span class="pre">loss_function_from_complex_perm,</span> <span class="pre">'magnetization_normalized_volume':</span> <span class="pre">Model:</span> <span class="pre">magnetization_normalized_volume,</span> <span class="pre">'melting_point_from_lindemann_criterion':</span> <span class="pre">Model:</span> <span class="pre">melting_point_from_lindemann_criterion,</span> <span class="pre">'optical_absorbance':</span> <span class="pre">Model:</span> <span class="pre">optical_absorbance,</span> <span class="pre">'optical_absorption_coefficient':</span> <span class="pre">Model:</span> <span class="pre">optical_absorption_coefficient,</span> <span class="pre">'optical_reflectance':</span> <span class="pre">Model:</span> <span class="pre">optical_reflectance,</span> <span class="pre">'optical_transmittance':</span> <span class="pre">Model:</span> <span class="pre">optical_transmittance,</span> <span class="pre">'peierls_stress':</span> <span class="pre">Model:</span> <span class="pre">peierls_stress,</span> <span class="pre">'phonon_mean_free_path':</span> <span class="pre">Model:</span> <span class="pre">phonon_mean_free_path,</span> <span class="pre">'pugh_ratio':</span> <span class="pre">Model:</span> <span class="pre">pugh_ratio,</span> <span class="pre">'refractive_index_from_rel_perm':</span> <span class="pre">Model:</span> <span class="pre">refractive_index_from_rel_perm,</span> <span class="pre">'schmids_law':</span> <span class="pre">Model:</span> <span class="pre">schmids_law,</span> <span class="pre">'semi_empirical_mobility':</span> <span class="pre">Model:</span> <span class="pre">semi_empirical_mobility,</span> <span class="pre">'slack_equation':</span> <span class="pre">Model:</span> <span class="pre">slack_equation,</span> <span class="pre">'sound_velocity_elastic_longitudinal':</span> <span class="pre">Model:</span> <span class="pre">sound_velocity_elastic_longitudinal,</span> <span class="pre">'sound_velocity_elastic_mean':</span> <span class="pre">Model:</span> <span class="pre">sound_velocity_elastic_mean,</span> <span class="pre">'sound_velocity_elastic_transverse':</span> <span class="pre">Model:</span> <span class="pre">sound_velocity_elastic_transverse,</span> <span class="pre">'thermal_expansion_from_gruneisen':</span> <span class="pre">Model:</span> <span class="pre">thermal_expansion_from_gruneisen,</span> <span class="pre">'vickers_hardness_chen':</span> <span class="pre">Model:</span> <span class="pre">vickers_hardness_chen,</span> <span class="pre">'vickers_hardness_tian':</span> <span class="pre">Model:</span> <span class="pre">vickers_hardness_tian,</span> <span class="pre">'wiedemann_franz_law':</span> <span class="pre">Model:</span> <span class="pre">wiedemann_franz_law},</span> <span class="pre">'symbol_values':</span> <span class="pre">{'relative_permeability':</span> <span class="pre">1,</span> <span class="pre">'temperature':</span> <span class="pre">300},</span> <span class="pre">'symbols':</span> <span class="pre">{'absorbance':</span> <span class="pre">property&lt;absorbance&gt;,</span> <span class="pre">'absorption_coefficient':</span> <span class="pre">property&lt;absorption_coefficient&gt;,</span> <span class="pre">'applied_stress':</span> <span class="pre">condition&lt;applied_stress&gt;,</span> <span class="pre">'atomic_density':</span> <span class="pre">property&lt;atomic_density&gt;,</span> <span class="pre">'band_gap':</span> <span class="pre">property&lt;band_gap&gt;,</span> <span class="pre">'band_gap_gw':</span> <span class="pre">property&lt;band_gap_gw&gt;,</span> <span class="pre">'band_gap_pbe':</span> <span class="pre">property&lt;band_gap_pbe&gt;,</span> <span class="pre">'bulk_modulus':</span> <span class="pre">property&lt;bulk_modulus&gt;,</span> <span class="pre">'compliance_tensor_voigt':</span> <span class="pre">property&lt;compliance_tensor_voigt&gt;,</span> <span class="pre">'composition':</span> <span class="pre">object&lt;composition&gt;,</span> <span class="pre">'computed_entry':</span> <span class="pre">object&lt;computed_entry&gt;,</span> <span class="pre">'cost_per_kg':</span> <span class="pre">property&lt;cost_per_kg&gt;,</span> <span class="pre">'cost_per_mol':</span> <span class="pre">property&lt;cost_per_mol&gt;,</span> <span class="pre">'debye_frequency':</span> <span class="pre">property&lt;debye_frequency&gt;,</span> <span class="pre">'debye_temperature':</span> <span class="pre">property&lt;debye_temperature&gt;,</span> <span class="pre">'density':</span> <span class="pre">property&lt;density&gt;,</span> <span class="pre">'dielectric_figure_of_merit_current_leakage':</span> <span class="pre">property&lt;dielectric_figure_of_merit_current_leakage&gt;,</span> <span class="pre">'dielectric_figure_of_merit_energy':</span> <span class="pre">property&lt;dielectric_figure_of_merit_energy&gt;,</span> <span class="pre">'dielectric_tensor':</span> <span class="pre">property&lt;dielectric_tensor&gt;,</span> <span class="pre">'dimensionality':</span> <span class="pre">object&lt;dimensionality&gt;,</span> <span class="pre">'dislocation_movement_stress':</span> <span class="pre">property&lt;dislocation_movement_stress&gt;,</span> <span class="pre">'elastic_anisotropy':</span> <span class="pre">property&lt;elastic_anisotropy&gt;,</span> <span class="pre">'elastic_tensor_voigt':</span> <span class="pre">property&lt;elastic_tensor_voigt&gt;,</span> <span class="pre">'electrical_conductivity':</span> <span class="pre">property&lt;electrical_conductivity&gt;,</span> <span class="pre">'electrical_resistivity':</span> <span class="pre">property&lt;electrical_resistivity&gt;,</span> <span class="pre">'electromechanical_coupling':</span> <span class="pre">property&lt;electromechanical_coupling&gt;,</span> <span class="pre">'electron_concentration':</span> <span class="pre">property&lt;electron_concentration&gt;,</span> <span class="pre">'electron_effective_mass':</span> <span class="pre">property&lt;electron_effective_mass&gt;,</span> <span class="pre">'electron_mean_free_time':</span> <span class="pre">property&lt;electron_mean_free_time&gt;,</span> <span class="pre">'electron_mobility':</span> <span class="pre">property&lt;electron_mobility&gt;,</span> <span class="pre">'electronic_thermal_conductivity':</span> <span class="pre">property&lt;electronic_thermal_conductivity&gt;,</span> <span class="pre">'energy_above_hull':</span> <span class="pre">property&lt;energy_above_hull&gt;,</span> <span class="pre">'energy_per_atom':</span> <span class="pre">property&lt;energy_per_atom&gt;,</span> <span class="pre">'external_identifier_aflow':</span> <span class="pre">object&lt;external_identifier_aflow&gt;,</span> <span class="pre">'external_identifier_mp':</span> <span class="pre">object&lt;external_identifier_mp&gt;,</span> <span class="pre">'extinction_coefficient':</span> <span class="pre">property&lt;extinction_coefficient&gt;,</span> <span class="pre">'formation_energy_per_atom':</span> <span class="pre">property&lt;formation_energy_per_atom&gt;,</span> <span class="pre">'formula':</span> <span class="pre">object&lt;formula&gt;,</span> <span class="pre">'goldschmidt_tolerance_factor':</span> <span class="pre">property&lt;goldschmidt_tolerance_factor&gt;,</span> <span class="pre">'grain_diameter':</span> <span class="pre">condition&lt;grain_diameter&gt;,</span> <span class="pre">'gruneisen_parameter':</span> <span class="pre">property&lt;gruneisen_parameter&gt;,</span> <span class="pre">'hall_coefficient':</span> <span class="pre">property&lt;hall_coefficient&gt;,</span> <span class="pre">'hhi_production':</span> <span class="pre">property&lt;hhi_production&gt;,</span> <span class="pre">'hhi_reserve':</span> <span class="pre">property&lt;hhi_reserve&gt;,</span> <span class="pre">'hole_concentration':</span> <span class="pre">property&lt;hole_concentration&gt;,</span> <span class="pre">'hole_effective_mass':</span> <span class="pre">property&lt;hole_effective_mass&gt;,</span> <span class="pre">'hole_mean_free_time':</span> <span class="pre">property&lt;hole_mean_free_time&gt;,</span> <span class="pre">'hole_mobility':</span> <span class="pre">property&lt;hole_mobility&gt;,</span> <span class="pre">'interatomic_spacing':</span> <span class="pre">property&lt;interatomic_spacing&gt;,</span> <span class="pre">'interplanar_spacing':</span> <span class="pre">property&lt;interplanar_spacing&gt;,</span> <span class="pre">'ionic_radius':</span> <span class="pre">property&lt;ionic_radius&gt;,</span> <span class="pre">'ionic_radius_a':</span> <span class="pre">property&lt;ionic_radius_a&gt;,</span> <span class="pre">'ionic_radius_b':</span> <span class="pre">property&lt;ionic_radius_b&gt;,</span> <span class="pre">'is_metallic':</span> <span class="pre">object&lt;is_metallic&gt;,</span> <span class="pre">'isentropic_compressibility':</span> <span class="pre">property&lt;isentropic_compressibility&gt;,</span> <span class="pre">'isothermal_compressibility':</span> <span class="pre">property&lt;isothermal_compressibility&gt;,</span> <span class="pre">'lame_first_parameter':</span> <span class="pre">property&lt;lame_first_parameter&gt;,</span> <span class="pre">'lattice':</span> <span class="pre">object&lt;lattice&gt;,</span> <span class="pre">'lattice_unit_cell':</span> <span class="pre">property&lt;lattice_unit_cell&gt;,</span> <span class="pre">'loss_function':</span> <span class="pre">property&lt;loss_function&gt;,</span> <span class="pre">'magnetic_order':</span> <span class="pre">object&lt;magnetic_order&gt;,</span> <span class="pre">'mass_per_atom':</span> <span class="pre">property&lt;mass_per_atom&gt;,</span> <span class="pre">'melting_point':</span> <span class="pre">property&lt;melting_point&gt;,</span> <span class="pre">'molar_heat_capacity_constant_pressure':</span> <span class="pre">property&lt;molar_heat_capacity_constant_pressure&gt;,</span> <span class="pre">'molar_heat_capacity_constant_volume':</span> <span class="pre">property&lt;molar_heat_capacity_constant_volume&gt;,</span> <span class="pre">'molar_mass':</span> <span class="pre">property&lt;molar_mass&gt;,</span> <span class="pre">'nsites':</span> <span class="pre">property&lt;nsites&gt;,</span> <span class="pre">'oxide_type':</span> <span class="pre">object&lt;oxide_type&gt;,</span> <span class="pre">'p_wave_modulus':</span> <span class="pre">property&lt;p_wave_modulus&gt;,</span> <span class="pre">'peierls_stress':</span> <span class="pre">property&lt;peierls_stress&gt;,</span> <span class="pre">'phonon_mean_free_path':</span> <span class="pre">property&lt;phonon_mean_free_path&gt;,</span> <span class="pre">'piezoelectric_modulus_longitudinal_max':</span> <span class="pre">property&lt;piezoelectric_modulus_longitudinal_max&gt;,</span> <span class="pre">'piezoelectric_modulus_longitudinal_max_direction':</span> <span class="pre">property&lt;piezoelectric_modulus_longitudinal_max_direction&gt;,</span> <span class="pre">'piezoelectric_tensor':</span> <span class="pre">property&lt;piezoelectric_tensor&gt;,</span> <span class="pre">'piezoelectric_tensor_converse':</span> <span class="pre">property&lt;piezoelectric_tensor_converse&gt;,</span> <span class="pre">'pilling_bedworth_ratio':</span> <span class="pre">property&lt;pilling_bedworth_ratio&gt;,</span> <span class="pre">'poisson_ratio':</span> <span class="pre">property&lt;poisson_ratio&gt;,</span> <span class="pre">'potentially_ferroelectric':</span> <span class="pre">object&lt;potentially_ferroelectric&gt;,</span> <span class="pre">'prototype':</span> <span class="pre">object&lt;prototype&gt;,</span> <span class="pre">'pugh_ratio':</span> <span class="pre">property&lt;pugh_ratio&gt;,</span> <span class="pre">'reflectance':</span> <span class="pre">property&lt;reflectance&gt;,</span> <span class="pre">'refractive_index':</span> <span class="pre">property&lt;refractive_index&gt;,</span> <span class="pre">'relative_permeability':</span> <span class="pre">property&lt;relative_permeability&gt;,</span> <span class="pre">'relative_permittivity':</span> <span class="pre">property&lt;relative_permittivity&gt;,</span> <span class="pre">'relative_permittivity_electronic':</span> <span class="pre">property&lt;relative_permittivity_electronic&gt;,</span> <span class="pre">'relative_permittivity_im':</span> <span class="pre">property&lt;relative_permittivity_im&gt;,</span> <span class="pre">'resolved_shear_stress':</span> <span class="pre">condition&lt;resolved_shear_stress&gt;,</span> <span class="pre">'schmid_factor':</span> <span class="pre">condition&lt;schmid_factor&gt;,</span> <span class="pre">'shear_modulus':</span> <span class="pre">property&lt;shear_modulus&gt;,</span> <span class="pre">'snyder_acoustic_sound_velocity':</span> <span class="pre">property&lt;snyder_acoustic_sound_velocity&gt;,</span> <span class="pre">'snyder_optical_sound_velocity':</span> <span class="pre">property&lt;snyder_optical_sound_velocity&gt;,</span> <span class="pre">'snyder_total_sound_velocity':</span> <span class="pre">property&lt;snyder_total_sound_velocity&gt;,</span> <span class="pre">'sound_velocity_longitudinal':</span> <span class="pre">property&lt;sound_velocity_longitudinal&gt;,</span> <span class="pre">'sound_velocity_mean':</span> <span class="pre">property&lt;sound_velocity_mean&gt;,</span> <span class="pre">'sound_velocity_transverse':</span> <span class="pre">property&lt;sound_velocity_transverse&gt;,</span> <span class="pre">'specific_heat_capacity_constant_pressure':</span> <span class="pre">property&lt;specific_heat_capacity_constant_pressure&gt;,</span> <span class="pre">'specific_heat_capacity_constant_volume':</span> <span class="pre">property&lt;specific_heat_capacity_constant_volume&gt;,</span> <span class="pre">'strengthening_coefficient':</span> <span class="pre">property&lt;strengthening_coefficient&gt;,</span> <span class="pre">'structure':</span> <span class="pre">object&lt;structure&gt;,</span> <span class="pre">'structure_oxi':</span> <span class="pre">object&lt;structure_oxi&gt;,</span> <span class="pre">'temperature':</span> <span class="pre">condition&lt;temperature&gt;,</span> <span class="pre">'thermal_conductivity':</span> <span class="pre">property&lt;thermal_conductivity&gt;,</span> <span class="pre">'thermal_expansion_coefficient':</span> <span class="pre">property&lt;thermal_expansion_coefficient&gt;,</span> <span class="pre">'thickness':</span> <span class="pre">condition&lt;thickness&gt;,</span> <span class="pre">'total_magnetization':</span> <span class="pre">property&lt;total_magnetization&gt;,</span> <span class="pre">'total_magnetization_per_volume':</span> <span class="pre">property&lt;total_magnetization_per_volume&gt;,</span> <span class="pre">'transmittance':</span> <span class="pre">property&lt;transmittance&gt;,</span> <span class="pre">'unit_cell_heat_capacity_constant_pressure':</span> <span class="pre">property&lt;unit_cell_heat_capacity_constant_pressure&gt;,</span> <span class="pre">'unit_cell_heat_capacity_constant_volume':</span> <span class="pre">property&lt;unit_cell_heat_capacity_constant_volume&gt;,</span> <span class="pre">'universal_anisotropy':</span> <span class="pre">property&lt;universal_anisotropy&gt;,</span> <span class="pre">'vickers_hardness':</span> <span class="pre">property&lt;vickers_hardness&gt;,</span> <span class="pre">'volume_per_atom':</span> <span class="pre">property&lt;volume_per_atom&gt;,</span> <span class="pre">'volume_unit_cell':</span> <span class="pre">property&lt;volume_unit_cell&gt;,</span> <span class="pre">'wavelength':</span> <span class="pre">condition&lt;wavelength&gt;,</span> <span class="pre">'yield_stress':</span> <span class="pre">property&lt;yield_stress&gt;,</span> <span class="pre">'youngs_modulus':</span> <span class="pre">property&lt;youngs_modulus&gt;},</span> <span class="pre">'units':</span> <span class="pre">{'absorbance':</span> <span class="pre">'dimensionless',</span> <span class="pre">'absorption_coefficient':</span> <span class="pre">'1</span> <span class="pre">/</span> <span class="pre">centimeter',</span> <span class="pre">'applied_stress':</span> <span class="pre">'gigapascal',</span> <span class="pre">'atomic_density':</span> <span class="pre">'atom</span> <span class="pre">/</span> <span class="pre">angstrom</span> <span class="pre">**</span> <span class="pre">3',</span> <span class="pre">'band_gap':</span> <span class="pre">'electron_volt',</span> <span class="pre">'band_gap_gw':</span> <span class="pre">'electron_volt',</span> <span class="pre">'band_gap_pbe':</span> <span class="pre">'electron_volt',</span> <span class="pre">'bulk_modulus':</span> <span class="pre">'gigapascal',</span> <span class="pre">'compliance_tensor_voigt':</span> <span class="pre">'1</span> <span class="pre">/</span> <span class="pre">gigapascal',</span> <span class="pre">'composition':</span> <span class="pre">None,</span> <span class="pre">'computed_entry':</span> <span class="pre">None,</span> <span class="pre">'cost_per_kg':</span> <span class="pre">'USD</span> <span class="pre">/</span> <span class="pre">kilogram',</span> <span class="pre">'cost_per_mol':</span> <span class="pre">'USD</span> <span class="pre">/</span> <span class="pre">mole',</span> <span class="pre">'debye_frequency':</span> <span class="pre">'radian</span> <span class="pre">/</span> <span class="pre">second',</span> <span class="pre">'debye_temperature':</span> <span class="pre">'kelvin',</span> <span class="pre">'density':</span> <span class="pre">'gram</span> <span class="pre">/</span> <span class="pre">centimeter</span> <span class="pre">**</span> <span class="pre">3',</span> <span class="pre">'dielectric_figure_of_merit_current_leakage':</span> <span class="pre">'dimensionless',</span> <span class="pre">'dielectric_figure_of_merit_energy':</span> <span class="pre">'dimensionless',</span> <span class="pre">'dielectric_tensor':</span> <span class="pre">'dimensionless',</span> <span class="pre">'dimensionality':</span> <span class="pre">None,</span> <span class="pre">'dislocation_movement_stress':</span> <span class="pre">'gigapascal',</span> <span class="pre">'elastic_anisotropy':</span> <span class="pre">'dimensionless',</span> <span class="pre">'elastic_tensor_voigt':</span> <span class="pre">'gigapascal',</span> <span class="pre">'electrical_conductivity':</span> <span class="pre">'1</span> <span class="pre">/</span> <span class="pre">meter</span> <span class="pre">/</span> <span class="pre">ohm',</span> <span class="pre">'electrical_resistivity':</span> <span class="pre">'meter</span> <span class="pre">*</span> <span class="pre">ohm',</span> <span class="pre">'electromechanical_coupling':</span> <span class="pre">'dimensionless',</span> <span class="pre">'electron_concentration':</span> <span class="pre">'1</span> <span class="pre">/</span> <span class="pre">meter</span> <span class="pre">**</span> <span class="pre">3',</span> <span class="pre">'electron_effective_mass':</span> <span class="pre">'dimensionless',</span> <span class="pre">'electron_mean_free_time':</span> <span class="pre">'second',</span> <span class="pre">'electron_mobility':</span> <span class="pre">'centimeter</span> <span class="pre">**</span> <span class="pre">2</span> <span class="pre">/</span> <span class="pre">second</span> <span class="pre">/</span> <span class="pre">volt',</span> <span class="pre">'electronic_thermal_conductivity':</span> <span class="pre">'watt</span> <span class="pre">/</span> <span class="pre">kelvin</span> <span class="pre">/</span> <span class="pre">meter',</span> <span class="pre">'energy_above_hull':</span> <span class="pre">'electron_volt</span> <span class="pre">/</span> <span class="pre">atom',</span> <span class="pre">'energy_per_atom':</span> <span class="pre">'electron_volt</span> <span class="pre">/</span> <span class="pre">atom',</span> <span class="pre">'external_identifier_aflow':</span> <span class="pre">None,</span> <span class="pre">'external_identifier_mp':</span> <span class="pre">None,</span> <span class="pre">'extinction_coefficient':</span> <span class="pre">'dimensionless',</span> <span class="pre">'formation_energy_per_atom':</span> <span class="pre">'electron_volt</span> <span class="pre">/</span> <span class="pre">atom',</span> <span class="pre">'formula':</span> <span class="pre">None,</span> <span class="pre">'goldschmidt_tolerance_factor':</span> <span class="pre">'dimensionless',</span> <span class="pre">'grain_diameter':</span> <span class="pre">'nanometer',</span> <span class="pre">'gruneisen_parameter':</span> <span class="pre">'dimensionless',</span> <span class="pre">'hall_coefficient':</span> <span class="pre">'meter</span> <span class="pre">**</span> <span class="pre">3</span> <span class="pre">/</span> <span class="pre">coulomb',</span> <span class="pre">'hhi_production':</span> <span class="pre">'dimensionless',</span> <span class="pre">'hhi_reserve':</span> <span class="pre">'dimensionless',</span> <span class="pre">'hole_concentration':</span> <span class="pre">'1</span> <span class="pre">/</span> <span class="pre">meter</span> <span class="pre">**</span> <span class="pre">3',</span> <span class="pre">'hole_effective_mass':</span> <span class="pre">'dimensionless',</span> <span class="pre">'hole_mean_free_time':</span> <span class="pre">'second',</span> <span class="pre">'hole_mobility':</span> <span class="pre">'centimeter</span> <span class="pre">**</span> <span class="pre">2</span> <span class="pre">/</span> <span class="pre">second</span> <span class="pre">/</span> <span class="pre">volt',</span> <span class="pre">'interatomic_spacing':</span> <span class="pre">'angstrom',</span> <span class="pre">'interplanar_spacing':</span> <span class="pre">'angstrom',</span> <span class="pre">'ionic_radius':</span> <span class="pre">'angstrom',</span> <span class="pre">'ionic_radius_a':</span> <span class="pre">'angstrom',</span> <span class="pre">'ionic_radius_b':</span> <span class="pre">'angstrom',</span> <span class="pre">'is_metallic':</span> <span class="pre">None,</span> <span class="pre">'isentropic_compressibility':</span> <span class="pre">'1</span> <span class="pre">/</span> <span class="pre">gigapascal',</span> <span class="pre">'isothermal_compressibility':</span> <span class="pre">'1</span> <span class="pre">/</span> <span class="pre">gigapascal',</span> <span class="pre">'lame_first_parameter':</span> <span class="pre">'gigapascal',</span> <span class="pre">'lattice':</span> <span class="pre">None,</span> <span class="pre">'lattice_unit_cell':</span> <span class="pre">'angstrom',</span> <span class="pre">'loss_function':</span> <span class="pre">'dimensionless',</span> <span class="pre">'magnetic_order':</span> <span class="pre">None,</span> <span class="pre">'mass_per_atom':</span> <span class="pre">'atomic_mass_unit</span> <span class="pre">/</span> <span class="pre">atom',</span> <span class="pre">'melting_point':</span> <span class="pre">'kelvin',</span> <span class="pre">'molar_heat_capacity_constant_pressure':</span> <span class="pre">'joule</span> <span class="pre">/</span> <span class="pre">kelvin</span> <span class="pre">/</span> <span class="pre">mole',</span> <span class="pre">'molar_heat_capacity_constant_volume':</span> <span class="pre">'joule</span> <span class="pre">/</span> <span class="pre">kelvin</span> <span class="pre">/</span> <span class="pre">mole',</span> <span class="pre">'molar_mass':</span> <span class="pre">'gram</span> <span class="pre">/</span> <span class="pre">mole',</span> <span class="pre">'nsites':</span> <span class="pre">'dimensionless',</span> <span class="pre">'oxide_type':</span> <span class="pre">None,</span> <span class="pre">'p_wave_modulus':</span> <span class="pre">'gigapascal',</span> <span class="pre">'peierls_stress':</span> <span class="pre">'gigapascal',</span> <span class="pre">'phonon_mean_free_path':</span> <span class="pre">'angstrom',</span> <span class="pre">'piezoelectric_modulus_longitudinal_max':</span> <span class="pre">'coulomb</span> <span class="pre">/</span> <span class="pre">meter</span> <span class="pre">**</span> <span class="pre">2',</span> <span class="pre">'piezoelectric_modulus_longitudinal_max_direction':</span> <span class="pre">'dimensionless',</span> <span class="pre">'piezoelectric_tensor':</span> <span class="pre">'coulomb</span> <span class="pre">/</span> <span class="pre">meter</span> <span class="pre">**</span> <span class="pre">2',</span> <span class="pre">'piezoelectric_tensor_converse':</span> <span class="pre">'meter</span> <span class="pre">/</span> <span class="pre">volt',</span> <span class="pre">'pilling_bedworth_ratio':</span> <span class="pre">'dimensionless',</span> <span class="pre">'poisson_ratio':</span> <span class="pre">'dimensionless',</span> <span class="pre">'potentially_ferroelectric':</span> <span class="pre">None,</span> <span class="pre">'prototype':</span> <span class="pre">None,</span> <span class="pre">'pugh_ratio':</span> <span class="pre">'dimensionless',</span> <span class="pre">'reflectance':</span> <span class="pre">'dimensionless',</span> <span class="pre">'refractive_index':</span> <span class="pre">'dimensionless',</span> <span class="pre">'relative_permeability':</span> <span class="pre">'dimensionless',</span> <span class="pre">'relative_permittivity':</span> <span class="pre">'dimensionless',</span> <span class="pre">'relative_permittivity_electronic':</span> <span class="pre">'dimensionless',</span> <span class="pre">'relative_permittivity_im':</span> <span class="pre">'dimensionless',</span> <span class="pre">'resolved_shear_stress':</span> <span class="pre">'gigapascal',</span> <span class="pre">'schmid_factor':</span> <span class="pre">'dimensionless',</span> <span class="pre">'shear_modulus':</span> <span class="pre">'gigapascal',</span> <span class="pre">'snyder_acoustic_sound_velocity':</span> <span class="pre">'meter</span> <span class="pre">/</span> <span class="pre">second',</span> <span class="pre">'snyder_optical_sound_velocity':</span> <span class="pre">'meter</span> <span class="pre">/</span> <span class="pre">second',</span> <span class="pre">'snyder_total_sound_velocity':</span> <span class="pre">'meter</span> <span class="pre">/</span> <span class="pre">second',</span> <span class="pre">'sound_velocity_longitudinal':</span> <span class="pre">'meter</span> <span class="pre">/</span> <span class="pre">second',</span> <span class="pre">'sound_velocity_mean':</span> <span class="pre">'meter</span> <span class="pre">/</span> <span class="pre">second',</span> <span class="pre">'sound_velocity_transverse':</span> <span class="pre">'meter</span> <span class="pre">/</span> <span class="pre">second',</span> <span class="pre">'specific_heat_capacity_constant_pressure':</span> <span class="pre">'joule</span> <span class="pre">/</span> <span class="pre">kelvin</span> <span class="pre">/</span> <span class="pre">kilogram',</span> <span class="pre">'specific_heat_capacity_constant_volume':</span> <span class="pre">'joule</span> <span class="pre">/</span> <span class="pre">kelvin</span> <span class="pre">/</span> <span class="pre">kilogram',</span> <span class="pre">'strengthening_coefficient':</span> <span class="pre">'megapascal</span> <span class="pre">*</span> <span class="pre">meter</span> <span class="pre">**</span> <span class="pre">0.5',</span> <span class="pre">'structure':</span> <span class="pre">None,</span> <span class="pre">'structure_oxi':</span> <span class="pre">None,</span> <span class="pre">'temperature':</span> <span class="pre">'kelvin',</span> <span class="pre">'thermal_conductivity':</span> <span class="pre">'watt</span> <span class="pre">/</span> <span class="pre">kelvin</span> <span class="pre">/</span> <span class="pre">meter',</span> <span class="pre">'thermal_expansion_coefficient':</span> <span class="pre">'1</span> <span class="pre">/</span> <span class="pre">kelvin',</span> <span class="pre">'thickness':</span> <span class="pre">'nanometer',</span> <span class="pre">'total_magnetization':</span> <span class="pre">'bohr_magneton',</span> <span class="pre">'total_magnetization_per_volume':</span> <span class="pre">'bohr_magneton</span> <span class="pre">/</span> <span class="pre">angstrom</span> <span class="pre">**</span> <span class="pre">3',</span> <span class="pre">'transmittance':</span> <span class="pre">'dimensionless',</span> <span class="pre">'unit_cell_heat_capacity_constant_pressure':</span> <span class="pre">'joule</span> <span class="pre">/</span> <span class="pre">kelvin',</span> <span class="pre">'unit_cell_heat_capacity_constant_volume':</span> <span class="pre">'joule</span> <span class="pre">/</span> <span class="pre">kelvin',</span> <span class="pre">'universal_anisotropy':</span> <span class="pre">'dimensionless',</span> <span class="pre">'vickers_hardness':</span> <span class="pre">'dimensionless',</span> <span class="pre">'volume_per_atom':</span> <span class="pre">'angstrom</span> <span class="pre">**</span> <span class="pre">3</span> <span class="pre">/</span> <span class="pre">atom',</span> <span class="pre">'volume_unit_cell':</span> <span class="pre">'angstrom</span> <span class="pre">**</span> <span class="pre">3',</span> <span class="pre">'wavelength':</span> <span class="pre">'nanometer',</span> <span class="pre">'yield_stress':</span> <span class="pre">'gigapascal',</span> <span class="pre">'youngs_modulus':</span> <span class="pre">'gigapascal'}}</span></em><a class="headerlink" href="#propnet.core.registry.Registry.all_instances" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.registry.RegistryMeta">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.registry.</span></code><code class="sig-name descname"><span class="pre">RegistryMeta</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/registry.html#RegistryMeta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.registry.RegistryMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABCMeta</span></code></p>
+<dl class="py attribute">
+<dt id="propnet.core.registry.RegistryMeta.all_instances">
+<code class="sig-name descname"><span class="pre">all_instances</span></code><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#propnet.core.registry.RegistryMeta.all_instances" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.registry.RegistryMeta.clear_all_registries">
+<code class="sig-name descname"><span class="pre">clear_all_registries</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/registry.html#RegistryMeta.clear_all_registries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.registry.RegistryMeta.clear_all_registries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

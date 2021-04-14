@@ -1,0 +1,362 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.provenance module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.core.provenance.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.core.provenance module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.core.provenance.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.core.provenance">
+<span id="propnet-core-provenance-module"></span><h1>propnet.core.provenance module<a class="headerlink" href="#module-propnet.core.provenance" title="Permalink to this headline">¶</a></h1>
+<p>Module containing classes and methods for provenance generation and parsing</p>
+<dl class="py class">
+<dt id="propnet.core.provenance.ProvenanceElement">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.provenance.</span></code><code class="sig-name descname"><span class="pre">ProvenanceElement</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/provenance.html#ProvenanceElement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">monty.json.MSONable</span></code></p>
+<p>Tree-like data structure for representing provenance.</p>
+<dl class="py method">
+<dt id="propnet.core.provenance.ProvenanceElement.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/provenance.html#ProvenanceElement.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>A JSON serializable dict representation of an object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.provenance.ProvenanceElement.inputs">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">inputs</span></code><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement.inputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.provenance.ProvenanceElement.model">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">model</span></code><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement.model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.provenance.ProvenanceElement.model_is_in_tree">
+<code class="sig-name descname"><span class="pre">model_is_in_tree</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/provenance.html#ProvenanceElement.model_is_in_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement.model_is_in_tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a model is in the provenance tree. Does NOT include the model used to derive
+the quantity with which the <cite>ProvenanceElement</cite> is associated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>model</strong> (<cite>propnet.core.models.Model</cite> or <cite>str</cite>) – a propnet model or its name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if the model is in the tree, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.provenance.ProvenanceElement.models_in_tree">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">models_in_tree</span></code><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement.models_in_tree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.provenance.ProvenanceElement.source">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">source</span></code><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement.source" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.provenance.ProvenanceElement.symbol_is_in_tree">
+<code class="sig-name descname"><span class="pre">symbol_is_in_tree</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/provenance.html#ProvenanceElement.symbol_is_in_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement.symbol_is_in_tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a symbol is in the provenance tree. Does NOT include the symbol of
+the quantity with which the <cite>ProvenanceElement</cite> is associated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>symbol</strong> (<cite>propnet.core.symbols.Symbol</cite> or <cite>str</cite>) – a propnet symbol or its name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if the symbol is in the tree, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.provenance.ProvenanceElement.symbols_in_tree">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">symbols_in_tree</span></code><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement.symbols_in_tree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.provenance.ProvenanceElement.update_caches">
+<code class="sig-name descname"><span class="pre">update_caches</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/provenance.html#ProvenanceElement.update_caches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.provenance.ProvenanceElement.update_caches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates caches holding the set of models and symbols in the provenance tree
+for quick lookup.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.provenance.SymbolPath">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.provenance.</span></code><code class="sig-name descname"><span class="pre">SymbolPath</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/provenance.html#SymbolPath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.provenance.SymbolPath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Utility class to store elements of a Symbol path through
+various inputs and outputs.</p>
+<dl class="py attribute">
+<dt id="propnet.core.provenance.SymbolPath.model_path">
+<code class="sig-name descname"><span class="pre">model_path</span></code><a class="headerlink" href="#propnet.core.provenance.SymbolPath.model_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.provenance.SymbolPath.symbol_set">
+<code class="sig-name descname"><span class="pre">symbol_set</span></code><a class="headerlink" href="#propnet.core.provenance.SymbolPath.symbol_set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.provenance.SymbolTree">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.provenance.</span></code><code class="sig-name descname"><span class="pre">SymbolTree</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">head</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/provenance.html#SymbolTree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.provenance.SymbolTree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper around TreeElement data structure for export from
+the method, encapsulating functionality.</p>
+<dl class="py method">
+<dt id="propnet.core.provenance.SymbolTree.get_paths_from">
+<code class="sig-name descname"><span class="pre">get_paths_from</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/provenance.html#SymbolTree.get_paths_from"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.provenance.SymbolTree.get_paths_from" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets all paths from input to symbol
+:param symbol: (Symbol) we are searching for paths from</p>
+<blockquote>
+<div><p>this symbol to head.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(list&lt;SymbolPath&gt;)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.provenance.SymbolTree.head">
+<code class="sig-name descname"><span class="pre">head</span></code><a class="headerlink" href="#propnet.core.provenance.SymbolTree.head" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.provenance.TreeElement">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.provenance.</span></code><code class="sig-name descname"><span class="pre">TreeElement</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">children</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/provenance.html#TreeElement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.provenance.TreeElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Tree-like data structure for representing property
+relationship paths.</p>
+<dl class="py attribute">
+<dt id="propnet.core.provenance.TreeElement.children">
+<code class="sig-name descname"><span class="pre">children</span></code><a class="headerlink" href="#propnet.core.provenance.TreeElement.children" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.provenance.TreeElement.inputs">
+<code class="sig-name descname"><span class="pre">inputs</span></code><a class="headerlink" href="#propnet.core.provenance.TreeElement.inputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.provenance.TreeElement.m">
+<code class="sig-name descname"><span class="pre">m</span></code><a class="headerlink" href="#propnet.core.provenance.TreeElement.m" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.provenance.TreeElement.parent">
+<code class="sig-name descname"><span class="pre">parent</span></code><a class="headerlink" href="#propnet.core.provenance.TreeElement.parent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

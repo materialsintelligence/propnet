@@ -1,0 +1,366 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.symbols module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.core.symbols.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.core.symbols module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.core.symbols.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.core.symbols">
+<span id="propnet-core-symbols-module"></span><h1>propnet.core.symbols module<a class="headerlink" href="#module-propnet.core.symbols" title="Permalink to this headline">¶</a></h1>
+<p>This module defines classes related to Symbol descriptions</p>
+<dl class="py class">
+<dt id="propnet.core.symbols.Symbol">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.symbols.</span></code><code class="sig-name descname"><span class="pre">Symbol</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_symbols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">category</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'property'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_builtin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">register</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/symbols.html#Symbol"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.symbols.Symbol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">monty.json.MSONable</span></code></p>
+<p>Class storing the complete description of a Symbol.</p>
+<p>These classes are typically instantiated at runtime when all
+.yaml files are read in from the symbols folder.</p>
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/symbols.html#Symbol.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.symbols.Symbol.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>A JSON serializable dict representation of an object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.compatible_units">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">compatible_units</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.compatible_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a list of units with compatible dimensionality to the symbol’s unit</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>compatible units</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>list</cite> of <cite>str</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.constraint">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">constraint</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.constraint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets callable constraint function for this symbol.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>sympy lambda function representing the symbol constraint</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.dimension_as_string">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">dimension_as_string</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.dimension_as_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produces the shape including form factor (scalar, vector, matrix, tensor)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>shape of property (np.shape) as a human-readable string</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.is_builtin">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">is_builtin</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.is_builtin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether the symbol is a propnet built-in.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">True</span></code> if the symbol is a built-in, <code class="docutils literal notranslate"><span class="pre">False</span></code></dt><dd><p>if it is a custom-created symbol</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.is_correct_object_type">
+<code class="sig-name descname"><span class="pre">is_correct_object_type</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/symbols.html#Symbol.is_correct_object_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.symbols.Symbol.is_correct_object_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.object_class">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">object_class</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.object_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.object_module">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">object_module</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.object_module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.register">
+<code class="sig-name descname"><span class="pre">register</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">overwrite_registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/symbols.html#Symbol.register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.symbols.Symbol.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers the symbol with the symbol registry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>overwrite_registry</strong> (<em>bool</em>) – If a symbol with the same name
+as the current is already registered, <cite>True</cite> will overwrite
+the old symbol with the current and <cite>False</cite> will raise a
+KeyError.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – if <cite>overwrite_registry=False</cite> and a symbol with the same
+    name is already registered, this error is raised.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.registered">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">registered</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.registered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates if a symbol is registered with the symbol registry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if the symbol is registered. False otherwise.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.summary">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">summary</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints a full summary of the symbol</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.to_yaml">
+<code class="sig-name descname"><span class="pre">to_yaml</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/symbols.html#Symbol.to_yaml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.symbols.Symbol.to_yaml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to serialize the symbol in a yaml format</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.unit_as_string">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">unit_as_string</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.unit_as_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produces units of the symbol as a human-readable string</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>units</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.units">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">units</span></code><a class="headerlink" href="#propnet.core.symbols.Symbol.units" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.symbols.Symbol.unregister">
+<code class="sig-name descname"><span class="pre">unregister</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/symbols.html#Symbol.unregister"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.symbols.Symbol.unregister" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the symbol from all applicable registries.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

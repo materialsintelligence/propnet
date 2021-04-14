@@ -1,0 +1,259 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.models.python.electromechanical_coupling &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.gov_modules/propnet/models/python/electromechanical_coupling.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, rgba(23,162,135,1) 0%, rgba(0,192,136,1) 100%)" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>propnet.models.python.electromechanical_coupling</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for propnet.models.python.electromechanical_coupling</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="plug_in"><a class="viewcode-back" href="../../../../source/propnet.models.python.electromechanical_coupling.html#propnet.models.python.electromechanical_coupling.plug_in">[docs]</a><span class="k">def</span> <span class="nf">plug_in</span><span class="p">(</span><span class="n">symbol_values</span><span class="p">):</span>
+
+    <span class="n">req_symbols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;S&quot;</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">]</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span> <span class="ow">in</span> <span class="n">symbol_values</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">req_symbols</span><span class="p">):</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">symbol_values</span><span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">]</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="n">symbol_values</span><span class="p">[</span><span class="s2">&quot;S&quot;</span><span class="p">]</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">symbol_values</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="p">]</span>
+
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;k&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">S</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">]))</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<span class="n">DESCRIPTION</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">Model calculating the electromechanical coupling factor,</span>
+<span class="s2">which is the efficiency of converting eletrical energy</span>
+<span class="s2">to acoustic energy in a piezoeletric transducer or filter</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">test_data</span> <span class="o">=</span> <span class="p">[{</span>
+    <span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;S&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mf">0.007482236755310126</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.002827041595205337</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.002827041595205337</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+              <span class="p">[</span><span class="o">-</span><span class="mf">0.002827041595205337</span><span class="p">,</span> <span class="mf">0.007482236755310125</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.002827041595205337</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+              <span class="p">[</span><span class="o">-</span><span class="mf">0.0028270415952053366</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.002827041595205337</span><span class="p">,</span> <span class="mf">0.007482236755310125</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+              <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.010309278350515464</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.010309278350515464</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+              <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.010309278350515464</span><span class="p">]],</span>
+        <span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mf">18.65</span><span class="p">,</span> <span class="mf">0.00</span><span class="p">,</span> <span class="mf">0.00</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.00</span><span class="p">,</span> <span class="mf">18.65</span><span class="p">,</span> <span class="mf">0.00</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.00</span><span class="p">,</span> <span class="mf">0.00</span><span class="p">,</span> <span class="mf">7.88</span><span class="p">]],</span>
+        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="o">-</span><span class="mf">0.0412497</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.28686697</span><span class="p">,</span> <span class="mf">0.06342802</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.05065159</span><span class="p">,</span> <span class="mf">0.26064878</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.04828778</span><span class="p">],</span>
+              <span class="p">[</span><span class="mf">0.08828203</span><span class="p">,</span> <span class="mf">0.5660897</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.11520665</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.16218673</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.92468949</span><span class="p">,</span> <span class="mf">0.2109461</span><span class="p">],</span>
+              <span class="p">[</span><span class="mf">0.02485558</span><span class="p">,</span> <span class="mf">0.03232004</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.02421919</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.06636329</span><span class="p">,</span> <span class="mf">0.46541895</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.09526407</span><span class="p">]]</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;outputs&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.47445902984</span>
+    <span class="p">}</span>
+<span class="p">}]</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;electromechanical_coupling&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;connections&quot;</span><span class="p">:</span> <span class="p">[{</span>
+        <span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;S&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;outputs&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;k&quot;</span><span class="p">]</span>
+    <span class="p">}],</span>
+    <span class="s2">&quot;categories&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;mechanical&quot;</span><span class="p">,</span> <span class="s2">&quot;electrical&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;variable_symbol_map&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;S&quot;</span><span class="p">:</span> <span class="s2">&quot;compliance_tensor_voigt&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="s2">&quot;dielectric_tensor&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;piezoelectric_tensor_converse&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="s2">&quot;electromechanical_coupling&quot;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">DESCRIPTION</span><span class="p">,</span>
+    <span class="s2">&quot;implemented_by&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;shyamd&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;references&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;plug_in&quot;</span><span class="p">:</span> <span class="n">plug_in</span><span class="p">,</span>
+    <span class="s2">&quot;test_data&quot;</span><span class="p">:</span> <span class="n">test_data</span>
+<span class="p">}</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

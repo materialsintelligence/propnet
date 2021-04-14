@@ -1,0 +1,541 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.utils &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.gov_modules/propnet/core/utils.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, rgba(23,162,135,1) 0%, rgba(0,192,136,1) 100%)" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>propnet.core.utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for propnet.core.utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
+<span class="kn">from</span> <span class="nn">monty.serialization</span> <span class="kn">import</span> <span class="n">loadfn</span><span class="p">,</span> <span class="n">dumpfn</span>
+<span class="kn">from</span> <span class="nn">habanero.cn</span> <span class="kn">import</span> <span class="n">content_negotiation</span>
+<span class="kn">from</span> <span class="nn">propnet</span> <span class="kn">import</span> <span class="n">print_logger</span><span class="p">,</span> <span class="n">print_stream</span>
+
+<span class="kn">from</span> <span class="nn">isbnlib</span> <span class="kn">import</span> <span class="n">meta</span>
+<span class="kn">from</span> <span class="nn">isbnlib.registry</span> <span class="kn">import</span> <span class="n">bibformatters</span>
+
+<span class="kn">from</span> <span class="nn">pybtex.database.input.bibtex</span> <span class="kn">import</span> <span class="n">Parser</span>
+<span class="kn">from</span> <span class="nn">pybtex.plugin</span> <span class="kn">import</span> <span class="n">find_plugin</span>
+<span class="kn">from</span> <span class="nn">pybtex.style.template</span> <span class="kn">import</span> <span class="n">FieldIsMissing</span>
+
+
+<span class="n">_REFERENCE_CACHE_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span>
+                                     <span class="s1">&#39;../data/reference_cache.json&#39;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">_REFERENCE_CACHE_PATH</span><span class="p">):</span>
+    <span class="n">_REFERENCE_CACHE</span> <span class="o">=</span> <span class="n">loadfn</span><span class="p">(</span><span class="n">_REFERENCE_CACHE_PATH</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">_REFERENCE_CACHE</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="references_to_bib"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.references_to_bib">[docs]</a><span class="k">def</span> <span class="nf">references_to_bib</span><span class="p">(</span><span class="n">refs</span><span class="p">,</span> <span class="n">check_if_valid_citation</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Takes a list of reference strings and converts them to bibtex</span>
+<span class="sd">    entries</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        refs ([str]): list of string references, which can be</span>
+<span class="sd">            bibtex entries, digital object identifiers (&quot;doi:DOI_GOES_HERE&quot;)</span>
+<span class="sd">            or urls (&quot;url:URL_GOES_HERE&quot;)</span>
+<span class="sd">        check_if_valid_citation (bool): True checks to see if the</span>
+<span class="sd">            reference generates a valid markdown-style citation. Throws ValueError</span>
+<span class="sd">            if conversion is not successful.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (list): list of bibtex formatted strings</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parsed_refs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">refs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">_REFERENCE_CACHE</span><span class="p">:</span>
+            <span class="n">parsed_ref</span> <span class="o">=</span> <span class="n">_REFERENCE_CACHE</span><span class="p">[</span><span class="n">ref</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">ref</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">):</span>
+            <span class="n">parsed_ref</span> <span class="o">=</span> <span class="n">ref</span>
+        <span class="k">elif</span> <span class="n">ref</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;url:&#39;</span><span class="p">):</span>
+            <span class="c1"># uses arbitrary key</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;url:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">parsed_ref</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;@misc{{url:</span><span class="si">{0}</span><span class="s2">,</span>
+<span class="s2">                       url = {{</span><span class="si">{1}</span><span class="s2">}}</span>
+<span class="s2">                       }}&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">url</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">],</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ref</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;doi:&#39;</span><span class="p">):</span>
+            <span class="n">doi</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;doi:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">parsed_ref</span> <span class="o">=</span> <span class="n">content_negotiation</span><span class="p">(</span><span class="n">doi</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;bibentry&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ref</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;isbn:&#39;</span><span class="p">):</span>
+            <span class="n">isbn</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;isbn:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">parsed_ref</span> <span class="o">=</span> <span class="n">bibformatters</span><span class="p">[</span><span class="s1">&#39;bibtex&#39;</span><span class="p">](</span><span class="n">meta</span><span class="p">(</span><span class="n">isbn</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown reference style for &#39;</span>
+                             <span class="s1">&#39;reference: </span><span class="si">{}</span><span class="s1"> (please either &#39;</span>
+                             <span class="s1">&#39;supply a BibTeX string, or a string &#39;</span>
+                             <span class="s1">&#39;starting with url: followed by a URL or &#39;</span>
+                             <span class="s1">&#39;starting with doi: followed by a DOI)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ref</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">check_if_valid_citation</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">references_to_markdown</span><span class="p">(</span><span class="n">parsed_ref</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Reference &#39;</span><span class="si">{}</span><span class="s2">&#39; returned the following error.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                                 <span class="s2">&quot;You may need to manually generate a bibtex string:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ex</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ref</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_REFERENCE_CACHE</span><span class="p">:</span>
+            <span class="n">_REFERENCE_CACHE</span><span class="p">[</span><span class="n">ref</span><span class="p">]</span> <span class="o">=</span> <span class="n">parsed_ref</span>
+            <span class="n">dumpfn</span><span class="p">(</span><span class="n">_REFERENCE_CACHE</span><span class="p">,</span> <span class="n">_REFERENCE_CACHE_PATH</span><span class="p">)</span>
+        <span class="n">parsed_refs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parsed_ref</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parsed_refs</span></div>
+
+
+<div class="viewcode-block" id="references_to_markdown"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.references_to_markdown">[docs]</a><span class="k">def</span> <span class="nf">references_to_markdown</span><span class="p">(</span><span class="n">references</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Utility function to convert a BibTeX string containing</span>
+<span class="sd">    references into a Markdown string.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      references: BibTeX string</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      Markdown string</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">pybtex_style</span> <span class="o">=</span> <span class="n">find_plugin</span><span class="p">(</span><span class="s1">&#39;pybtex.style.formatting&#39;</span><span class="p">,</span> <span class="s1">&#39;plain&#39;</span><span class="p">)()</span>
+    <span class="n">pybtex_md_backend</span> <span class="o">=</span> <span class="n">find_plugin</span><span class="p">(</span><span class="s1">&#39;pybtex.backends&#39;</span><span class="p">,</span> <span class="s1">&#39;markdown&#39;</span><span class="p">)</span>
+    <span class="n">pybtex_parser</span> <span class="o">=</span> <span class="n">Parser</span><span class="p">()</span>
+
+    <span class="c1"># hack to not print labels (may remove this later)</span>
+    <span class="k">def</span> <span class="nf">write_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">  </span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">text</span><span class="p">)</span>
+    <span class="n">pybtex_md_backend</span><span class="o">.</span><span class="n">write_entry</span> <span class="o">=</span> <span class="n">write_entry</span>
+    <span class="n">pybtex_md_backend</span> <span class="o">=</span> <span class="n">pybtex_md_backend</span><span class="p">()</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pybtex_parser</span><span class="o">.</span><span class="n">parse_stream</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">references</span><span class="p">))</span>
+    <span class="n">data_formatted</span> <span class="o">=</span> <span class="n">pybtex_style</span><span class="o">.</span><span class="n">format_entries</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pybtex_md_backend</span><span class="o">.</span><span class="n">write_to_stream</span><span class="p">(</span><span class="n">data_formatted</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">FieldIsMissing</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Reference is missing &#39;</span><span class="si">{}</span><span class="s2">&#39; field&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">field_name</span><span class="p">))</span>
+
+    <span class="c1"># add blockquote style</span>
+    <span class="n">references_md</span> <span class="o">=</span> <span class="s1">&#39;&gt; </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">getvalue</span><span class="p">())</span>
+    <span class="n">references_md</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&gt; &#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">references_md</span></div>
+
+
+<div class="viewcode-block" id="PrintToLogger"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.PrintToLogger">[docs]</a><span class="k">class</span> <span class="nc">PrintToLogger</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class provides a context manager to redirect stdout to a logger (propnet.print_logger).</span>
+<span class="sd">    This way any print statements received from user-implemented functions</span>
+<span class="sd">    can be automatically logged instead of being printed to the screen.</span>
+
+<span class="sd">    Usage example:</span>
+<span class="sd">        my_method()     # Statement whose output is not suppressed</span>
+
+<span class="sd">        with PrintToLogger():</span>
+<span class="sd">            foo()  # Some statement(s) which may produce screen output to suppress</span>
+
+<span class="sd">        some_other_method()     # Statement whose output is not suppressed</span>
+<span class="sd">        log = PrintToLogger.get_print_log() # Record anything printed by foo()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s1">&#39;INFO&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">print_logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PrintToLogger.write"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.PrintToLogger.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buf</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">buf</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="PrintToLogger.flush"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.PrintToLogger.flush">[docs]</a>    <span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="PrintToLogger.get_print_log"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.PrintToLogger.get_print_log">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_print_log</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets contents of print log, containing any text printed to the screen while</span>
+<span class="sd">        running under a PrintToLogger context.</span>
+
+<span class="sd">        Returns: (str) contents of print log</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">print_stream</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_original_stdout</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original_stdout</span></div>
+
+
+<div class="viewcode-block" id="LogSniffer"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.LogSniffer">[docs]</a><span class="k">class</span> <span class="nc">LogSniffer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class provides a context manager or explicit object to capture output written</span>
+<span class="sd">    to an existing logging.Logger and write it to a string. Purpose is for debugging</span>
+<span class="sd">    and verifying warning output in tests.</span>
+
+<span class="sd">    Output is available while within the established context by using get_output(),</span>
+<span class="sd">    when the LogSniffer object is stopped using stop(), or after stopping using get_output()</span>
+
+<span class="sd">    Usage example:</span>
+<span class="sd">        # Get logger whose messages you want to capture</span>
+<span class="sd">        logger = logging.getLogger(&#39;my_logger_name&#39;)</span>
+
+<span class="sd">        # Context manager usage</span>
+<span class="sd">        with LogSniffer(logger) as ls:</span>
+<span class="sd">            foo()  # Some statement(s) which write to the logger</span>
+<span class="sd">            output = ls.get_output(replace_newline=&#39;&#39;) # Gets logger output and replaces newline characters</span>
+<span class="sd">            expected_output = &quot;Expected output&quot;</span>
+<span class="sd">            self.assertEqual(output, expected_output)</span>
+
+<span class="sd">        # Explicit object usage</span>
+<span class="sd">        ls = LogSniffer(logger)</span>
+<span class="sd">        ls.start()      # Start capturing logger output</span>
+<span class="sd">        foo()           # Statements which output to logger</span>
+<span class="sd">        output = ls.stop()  # Get output and stop sniffer</span>
+<span class="sd">        expected_output = &quot;Expected output\n&quot;</span>
+<span class="sd">        self.assertEqual(output, expected_output)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s1">&#39;INFO&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Need valid logger for sniffing&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer_handler</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_level</span> <span class="o">=</span> <span class="n">level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_old_logger_level</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_output</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+<div class="viewcode-block" id="LogSniffer.start"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.LogSniffer.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Starts recording messages passed to the logger. If already started, does nothing.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_started</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_output</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_level</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sniffer_handler</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">getEffectiveLevel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer_handler</span><span class="o">.</span><span class="n">level</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_old_logger_level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">getEffectiveLevel</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_level</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LogSniffer.is_started"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.LogSniffer.is_started">[docs]</a>    <span class="k">def</span> <span class="nf">is_started</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks if the sniffer is actively sniffing.</span>
+
+<span class="sd">        Returns: (bool) true if the sniffer is active, false otherwise</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="LogSniffer.stop"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.LogSniffer.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stops recording messages passed to the logger, removes the sniffer,</span>
+<span class="sd">        and returns the captured output. Returns None if sniffer is inactive.</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            replace_newline (str): a string with which to replace newline characters.</span>
+<span class="sd">                default: &#39;\n&#39; (no replacement)</span>
+<span class="sd">        Returns: (str) the output captured by the sniffer</span>
+<span class="sd">            or None if sniffer is inactive</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_started</span><span class="p">():</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_output</span> <span class="o">=</span> <span class="n">output</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sniffer_handler</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer_handler</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_old_logger_level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_old_logger_level</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_old_logger_level</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">output</span></div>
+
+<div class="viewcode-block" id="LogSniffer.get_output"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.LogSniffer.get_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replace_newline</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the output captured by the sniffer so far. Returns None if</span>
+<span class="sd">        sniffer has never been started. If the sniffer had been started previously,</span>
+<span class="sd">        but is currently stopped, returns the last output stored by the sniffer.</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            replace_newline (str): a string with which to replace newline characters.</span>
+<span class="sd">                default: &#39;\n&#39; (no replacement)</span>
+<span class="sd">        Returns: (str) the output captured by the sniffer,</span>
+<span class="sd">            or None if sniffer has never been started</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_started</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">replace_newline</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_output</span></div>
+
+<div class="viewcode-block" id="LogSniffer.clear"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.LogSniffer.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Clears the captured output while keeping the sniffer active.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_started</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span><span class="o">.</span><span class="n">truncate</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div></div>
+
+<span class="c1"># TODO: This should be exactly the same as maggma.utils.Timeout, but at the time of</span>
+<span class="c1">#       writing, the package has not been updated on PyPI. Remove and replace usages</span>
+<span class="c1">#       with version from maggma when it becomes available</span>
+
+
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;posix&#39;</span><span class="p">:</span>
+    <span class="c1"># signal package is not supported by non-Unix systems, and so in turn, we cannot</span>
+    <span class="c1"># timeout models on those platforms. There are few elegant solutions to killing threads in Python</span>
+    <span class="c1"># that are cross-platform. If something better comes up, implement it.</span>
+    <span class="kn">import</span> <span class="nn">signal</span>
+
+    <span class="k">class</span> <span class="nc">Timeout</span><span class="p">:</span>
+        <span class="c1"># implementation courtesy of https://stackoverflow.com/a/22348885/637562</span>
+
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">error_message</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Set a maximum running time for functions.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                seconds (int): Seconds before TimeoutError raised, set to None to disable</span>
+<span class="sd">                error_message (str): Error message to display with TimeoutError</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span> <span class="k">if</span> <span class="n">seconds</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error_message</span> <span class="o">=</span> <span class="n">error_message</span>
+
+        <span class="k">def</span> <span class="nf">_handle_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signum</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TimeoutError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error_message</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seconds</span><span class="p">:</span>
+                <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGALRM</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_timeout</span><span class="p">)</span>
+                <span class="n">signal</span><span class="o">.</span><span class="n">alarm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seconds</span><span class="p">:</span>
+                <span class="n">signal</span><span class="o">.</span><span class="n">alarm</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+<div class="viewcode-block" id="Timeout"><a class="viewcode-back" href="../../../source/propnet.core.utils.html#propnet.core.utils.Timeout">[docs]</a>    <span class="k">class</span> <span class="nc">Timeout</span><span class="p">:</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Timeout class not implemented on non-Unix machines.&quot;</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">pass</span>
+
+        <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+            <span class="k">pass</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

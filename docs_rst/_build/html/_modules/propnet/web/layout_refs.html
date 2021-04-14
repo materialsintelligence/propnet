@@ -1,0 +1,270 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.web.layout_refs &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.gov_modules/propnet/web/layout_refs.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, rgba(23,162,135,1) 0%, rgba(0,192,136,1) 100%)" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>propnet.web.layout_refs</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for propnet.web.layout_refs</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">dash_core_components</span> <span class="k">as</span> <span class="nn">dcc</span>
+<span class="kn">import</span> <span class="nn">dash_html_components</span> <span class="k">as</span> <span class="nn">html</span>
+
+
+<div class="viewcode-block" id="refs_layout"><a class="viewcode-back" href="../../../source/propnet.web.layout_refs.html#propnet.web.layout_refs.refs_layout">[docs]</a><span class="k">def</span> <span class="nf">refs_layout</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="n">layout</span> <span class="o">=</span> <span class="n">html</span><span class="o">.</span><span class="n">Div</span><span class="p">([</span>
+        <span class="n">dcc</span><span class="o">.</span><span class="n">Markdown</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">### Funding</span>
+
+<span class="s2">The _propnet_ project is part of the Accelerated Materials Design and Discovery program, funded by</span>
+<span class="s2">[Toyota Research Institute](https://www.tri.global/research/).</span>
+
+<span class="s2">### Sources</span>
+<span class="s2">The _propnet_ codebase uses data and functionality from a number of open-source databases and repositories.</span>
+<span class="s2">For more detailed information regarding these sources, please see the following references. For reference</span>
+<span class="s2">information on individual properties and models, please see the respective model or symbol detail page.</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">),</span>
+        <span class="n">html</span><span class="o">.</span><span class="n">Details</span><span class="p">([</span>
+            <span class="n">html</span><span class="o">.</span><span class="n">Summary</span><span class="p">(</span><span class="n">html</span><span class="o">.</span><span class="n">H5</span><span class="p">(</span><span class="s2">&quot;The Materials Project&quot;</span><span class="p">,</span>
+                                 <span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;display&#39;</span><span class="p">:</span> <span class="s1">&#39;inline-block&#39;</span><span class="p">,</span>
+                                        <span class="s1">&#39;vertical-align&#39;</span><span class="p">:</span> <span class="s1">&#39;middle&#39;</span><span class="p">})),</span>
+            <span class="n">dcc</span><span class="o">.</span><span class="n">Markdown</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">&gt; Anubhav Jain, Shyue Ping Ong, Geoffroy Hautier, Wei Chen, William Davidson Richards, Stephen Dacek, Shreyas Cholia, Dan Gunter, David Skinner, Gerbrand Ceder, and Kristin A\. Persson\.</span>
+<span class="s2">The Materials Project: A materials genome approach to accelerating materials innovation\.</span>
+<span class="s2">*APL Materials*, 1\(1\):011002, 2013\.</span>
+<span class="s2">URL: [https://aip\.scitation\.org/doi/10\.1063/1\.4812323](https://aip.scitation.org/doi/10.1063/1.4812323), [doi:10\.1063/1\.4812323](https://doi.org/10.1063/1.4812323)\.</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)]),</span>
+        <span class="n">html</span><span class="o">.</span><span class="n">Details</span><span class="p">([</span>
+            <span class="n">html</span><span class="o">.</span><span class="n">Summary</span><span class="p">(</span><span class="n">html</span><span class="o">.</span><span class="n">H5</span><span class="p">(</span><span class="s2">&quot;Pymatgen&quot;</span><span class="p">,</span>
+                                 <span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;display&#39;</span><span class="p">:</span> <span class="s1">&#39;inline-block&#39;</span><span class="p">,</span>
+                                        <span class="s1">&#39;vertical-align&#39;</span><span class="p">:</span> <span class="s1">&#39;middle&#39;</span><span class="p">})),</span>
+            <span class="n">dcc</span><span class="o">.</span><span class="n">Markdown</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">&gt; Shyue Ping Ong, William Davidson Richards, Anubhav Jain, Geoffroy Hautier, Michael Kocher, Shreyas Cholia, Dan Gunter, Vincent L\. Chevrier, Kristin A\. Persson, and Gerbrand Ceder\.</span>
+<span class="s2">Python materials genomics \(pymatgen\): a robust, open\-source python library for materials analysis\.</span>
+<span class="s2">*Computational Materials Science*, 68:314–319, Feb 2013\.</span>
+<span class="s2">URL: [https://doi\.org/10\.1016</span><span class="si">%2F</span><span class="s2">j\.commatsci\.2012\.10\.028](https://doi.org/10.1016</span><span class="si">%2F</span><span class="s2">j.commatsci.2012.10.028), [doi:10\.1016/j\.commatsci\.2012\.10\.028](https://doi.org/10.1016/j.commatsci.2012.10.028)\.  </span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)]),</span>
+        <span class="n">html</span><span class="o">.</span><span class="n">Details</span><span class="p">([</span>
+            <span class="n">html</span><span class="o">.</span><span class="n">Summary</span><span class="p">(</span><span class="n">html</span><span class="o">.</span><span class="n">H5</span><span class="p">(</span><span class="s2">&quot;AFLOW / AFLUX&quot;</span><span class="p">,</span>
+                                 <span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;display&#39;</span><span class="p">:</span> <span class="s1">&#39;inline-block&#39;</span><span class="p">,</span>
+                                        <span class="s1">&#39;vertical-align&#39;</span><span class="p">:</span> <span class="s1">&#39;middle&#39;</span><span class="p">})),</span>
+            <span class="n">dcc</span><span class="o">.</span><span class="n">Markdown</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">&gt; Stefano Curtarolo, Wahyu Setyawan, Gus L\.W\. Hart, Michal Jahnatek, Roman V\. Chepulskii, Richard H\. Taylor, Shidong Wang, Junkai Xue, Kesong Yang, Ohad Levy, Michael J\. Mehl, Harold T\. Stokes, Denis O\. Demchenko, and Dane Morgan\.</span>
+<span class="s2">AFLOW: an automatic framework for high\-throughput materials discovery\.</span>
+<span class="s2">*Computational Materials Science*, 58:218–226, Jun 2012\.</span>
+<span class="s2">URL: [https://doi\.org/10\.1016</span><span class="si">%2F</span><span class="s2">j\.commatsci\.2012\.02\.005](https://doi.org/10.1016</span><span class="si">%2F</span><span class="s2">j.commatsci.2012.02.005), [doi:10\.1016/j\.commatsci\.2012\.02\.005](https://doi.org/10.1016/j.commatsci.2012.02.005)\.  </span>
+
+<span class="s2">&gt; Richard H\. Taylor, Frisco Rose, Cormac Toher, Ohad Levy, Kesong Yang, Marco Buongiorno Nardelli, and Stefano Curtarolo\.</span>
+<span class="s2">A RESTful API for exchanging materials data in the AFLOWLIB\.org consortium\.</span>
+<span class="s2">*Computational Materials Science*, 93:178–192, Oct 2014\.</span>
+<span class="s2">URL: [https://doi\.org/10\.1016</span><span class="si">%2F</span><span class="s2">j\.commatsci\.2014\.05\.014](https://doi.org/10.1016</span><span class="si">%2F</span><span class="s2">j.commatsci.2014.05.014), [doi:10\.1016/j\.commatsci\.2014\.05\.014](https://doi.org/10.1016/j.commatsci.2014.05.014)\.  </span>
+
+<span class="s2">&gt; Frisco Rose, Cormac Toher, Eric Gossett, Corey Oses, Marco Buongiorno Nardelli, Marco Fornari, and Stefano Curtarolo\.</span>
+<span class="s2">AFLUX: the LUX materials search API for the AFLOW data repositories\.</span>
+<span class="s2">*Computational Materials Science*, 137:362–370, Sep 2017\.</span>
+<span class="s2">URL: [https://doi\.org/10\.1016</span><span class="si">%2F</span><span class="s2">j\.commatsci\.2017\.04\.036](https://doi.org/10.1016</span><span class="si">%2F</span><span class="s2">j.commatsci.2017.04.036), [doi:10\.1016/j\.commatsci\.2017\.04\.036](https://doi.org/10.1016/j.commatsci.2017.04.036)\.  </span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)]),</span>
+        <span class="n">html</span><span class="o">.</span><span class="n">Details</span><span class="p">([</span>
+            <span class="n">html</span><span class="o">.</span><span class="n">Summary</span><span class="p">(</span><span class="n">html</span><span class="o">.</span><span class="n">H5</span><span class="p">(</span><span class="s2">&quot;AFLUX API Python Wrapper&quot;</span><span class="p">,</span>
+                                 <span class="n">style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;display&#39;</span><span class="p">:</span> <span class="s1">&#39;inline-block&#39;</span><span class="p">,</span>
+                                        <span class="s1">&#39;vertical-align&#39;</span><span class="p">:</span> <span class="s1">&#39;middle&#39;</span><span class="p">})),</span>
+            <span class="n">dcc</span><span class="o">.</span><span class="n">Markdown</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">&gt; Conrad W\. Rosenbrock\.</span>
+<span class="s2">A practical Python API for querying AFLOWLIB\.</span>
+<span class="s2">2017\.</span>
+<span class="s2">[arXiv:arXiv:1710\.00813](https://arxiv.org/abs/arXiv:1710.00813)\.&quot;&quot;&quot;</span><span class="p">)]),</span>
+        <span class="n">html</span><span class="o">.</span><span class="n">Br</span><span class="p">()</span>
+    <span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">layout</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

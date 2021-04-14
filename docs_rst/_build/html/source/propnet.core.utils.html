@@ -1,0 +1,391 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.utils module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.core.utils.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.core.utils module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.core.utils.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.core.utils">
+<span id="propnet-core-utils-module"></span><h1>propnet.core.utils module<a class="headerlink" href="#module-propnet.core.utils" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="propnet.core.utils.LogSniffer">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.utils.</span></code><code class="sig-name descname"><span class="pre">LogSniffer</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'INFO'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#LogSniffer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.LogSniffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<blockquote>
+<div><p>This class provides a context manager or explicit object to capture output written
+to an existing logging.Logger and write it to a string. Purpose is for debugging
+and verifying warning output in tests.</p>
+<p>Output is available while within the established context by using get_output(),
+when the LogSniffer object is stopped using stop(), or after stopping using get_output()</p>
+<dl>
+<dt>Usage example:</dt><dd><p># Get logger whose messages you want to capture
+logger = logging.getLogger(‘my_logger_name’)</p>
+<p># Context manager usage
+with LogSniffer(logger) as ls:</p>
+<blockquote>
+<div><p>foo()  # Some statement(s) which write to the logger
+output = ls.get_output(replace_newline=’’) # Gets logger output and replaces newline characters
+expected_output = “Expected output”
+self.assertEqual(output, expected_output)</p>
+</div></blockquote>
+<p># Explicit object usage
+ls = LogSniffer(logger)
+ls.start()      # Start capturing logger output
+foo()           # Statements which output to logger
+output = ls.stop()  # Get output and stop sniffer
+expected_output = “Expected output</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="simple">
+<dt>“</dt><dd><p>self.assertEqual(output, expected_output)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="propnet.core.utils.LogSniffer.clear">
+<code class="sig-name descname"><span class="pre">clear</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#LogSniffer.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.LogSniffer.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the captured output while keeping the sniffer active.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.utils.LogSniffer.get_output">
+<code class="sig-name descname"><span class="pre">get_output</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">replace_newline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\n'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#LogSniffer.get_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.LogSniffer.get_output" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Returns the output captured by the sniffer so far. Returns None if
+sniffer has never been started. If the sniffer had been started previously,
+but is currently stopped, returns the last output stored by the sniffer.</p>
+<dl class="simple">
+<dt>Keyword Args:</dt><dd><dl class="simple">
+<dt>replace_newline (str): a string with which to replace newline characters.</dt><dd><p>default: ‘</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="simple">
+<dt>‘ (no replacement)</dt><dd><dl class="simple">
+<dt>Returns: (str) the output captured by the sniffer,</dt><dd><p>or None if sniffer has never been started</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.utils.LogSniffer.is_started">
+<code class="sig-name descname"><span class="pre">is_started</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#LogSniffer.is_started"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.LogSniffer.is_started" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the sniffer is actively sniffing.</p>
+<p>Returns: (bool) true if the sniffer is active, false otherwise</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.utils.LogSniffer.start">
+<code class="sig-name descname"><span class="pre">start</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#LogSniffer.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.LogSniffer.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts recording messages passed to the logger. If already started, does nothing.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.utils.LogSniffer.stop">
+<code class="sig-name descname"><span class="pre">stop</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#LogSniffer.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.LogSniffer.stop" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Stops recording messages passed to the logger, removes the sniffer,
+and returns the captured output. Returns None if sniffer is inactive.</p>
+<dl class="simple">
+<dt>Keyword Args:</dt><dd><dl class="simple">
+<dt>replace_newline (str): a string with which to replace newline characters.</dt><dd><p>default: ‘</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="simple">
+<dt>‘ (no replacement)</dt><dd><dl class="simple">
+<dt>Returns: (str) the output captured by the sniffer</dt><dd><p>or None if sniffer is inactive</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.utils.PrintToLogger">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.utils.</span></code><code class="sig-name descname"><span class="pre">PrintToLogger</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'INFO'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#PrintToLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.PrintToLogger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class provides a context manager to redirect stdout to a logger (propnet.print_logger).
+This way any print statements received from user-implemented functions
+can be automatically logged instead of being printed to the screen.</p>
+<dl>
+<dt>Usage example:</dt><dd><p>my_method()     # Statement whose output is not suppressed</p>
+<dl class="simple">
+<dt>with PrintToLogger():</dt><dd><p>foo()  # Some statement(s) which may produce screen output to suppress</p>
+</dd>
+</dl>
+<p>some_other_method()     # Statement whose output is not suppressed
+log = PrintToLogger.get_print_log() # Record anything printed by foo()</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="propnet.core.utils.PrintToLogger.flush">
+<code class="sig-name descname"><span class="pre">flush</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#PrintToLogger.flush"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.PrintToLogger.flush" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.utils.PrintToLogger.get_print_log">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">get_print_log</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#PrintToLogger.get_print_log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.PrintToLogger.get_print_log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets contents of print log, containing any text printed to the screen while
+running under a PrintToLogger context.</p>
+<p>Returns: (str) contents of print log</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.utils.PrintToLogger.write">
+<code class="sig-name descname"><span class="pre">write</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buf</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#PrintToLogger.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.PrintToLogger.write" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.utils.Timeout">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.utils.</span></code><code class="sig-name descname"><span class="pre">Timeout</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#Timeout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.Timeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="propnet.core.utils.references_to_bib">
+<code class="sig-prename descclassname"><span class="pre">propnet.core.utils.</span></code><code class="sig-name descname"><span class="pre">references_to_bib</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_if_valid_citation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#references_to_bib"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.references_to_bib" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a list of reference strings and converts them to bibtex
+entries</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>refs</strong> (<em>[</em><em>str</em><em>]</em>) – list of string references, which can be
+bibtex entries, digital object identifiers (“doi:DOI_GOES_HERE”)
+or urls (“url:URL_GOES_HERE”)</p></li>
+<li><p><strong>check_if_valid_citation</strong> (<em>bool</em>) – True checks to see if the
+reference generates a valid markdown-style citation. Throws ValueError
+if conversion is not successful.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of bibtex formatted strings</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(list)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="propnet.core.utils.references_to_markdown">
+<code class="sig-prename descclassname"><span class="pre">propnet.core.utils.</span></code><code class="sig-name descname"><span class="pre">references_to_markdown</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">references</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/utils.html#references_to_markdown"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.utils.references_to_markdown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility function to convert a BibTeX string containing
+references into a Markdown string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>references</strong> – BibTeX string</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Markdown string</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

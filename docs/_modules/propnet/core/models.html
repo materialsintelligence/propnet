@@ -1,0 +1,1563 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.models &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.gov_modules/propnet/core/models.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, rgba(23,162,135,1) 0%, rgba(0,192,136,1) 100%)" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>propnet.core.models</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for propnet.core.models</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module containing classes and methods for Model functionality in propnet code.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">six</span>
+
+<span class="kn">from</span> <span class="nn">monty.serialization</span> <span class="kn">import</span> <span class="n">loadfn</span>
+<span class="kn">from</span> <span class="nn">monty.json</span> <span class="kn">import</span> <span class="n">MSONable</span><span class="p">,</span> <span class="n">MontyDecoder</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">from</span> <span class="nn">sympy.parsing.sympy_parser</span> <span class="kn">import</span> <span class="n">parse_expr</span>
+<span class="kn">from</span> <span class="nn">pint</span> <span class="kn">import</span> <span class="n">DimensionalityError</span><span class="p">,</span> <span class="n">UnitStrippedWarning</span>
+
+<span class="kn">from</span> <span class="nn">propnet.core.exceptions</span> <span class="kn">import</span> <span class="n">ModelEvaluationError</span><span class="p">,</span> <span class="n">SymbolConstraintError</span>
+<span class="kn">from</span> <span class="nn">propnet.core.quantity</span> <span class="kn">import</span> <span class="n">QuantityFactory</span><span class="p">,</span> <span class="n">NumQuantity</span><span class="p">,</span> <span class="n">BaseQuantity</span>
+<span class="kn">from</span> <span class="nn">propnet.core.utils</span> <span class="kn">import</span> <span class="n">references_to_bib</span><span class="p">,</span> <span class="n">PrintToLogger</span>
+<span class="kn">from</span> <span class="nn">propnet.core.provenance</span> <span class="kn">import</span> <span class="n">ProvenanceElement</span>
+<span class="kn">from</span> <span class="nn">propnet</span> <span class="kn">import</span> <span class="n">ureg</span>
+<span class="kn">from</span> <span class="nn">propnet.core.registry</span> <span class="kn">import</span> <span class="n">Registry</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># TODO: maybe this should go somewhere else, like a dedicated settings.py</span>
+<span class="n">TEST_DATA_LOC</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span>
+                             <span class="s2">&quot;models&quot;</span><span class="p">,</span> <span class="s2">&quot;tests&quot;</span><span class="p">,</span> <span class="s2">&quot;pymodel_test_data&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract model class for all models appearing in propnet</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_registry_name</span> <span class="o">=</span> <span class="s2">&quot;models&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">connections</span><span class="p">,</span> <span class="n">constraints</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">display_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">implemented_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">variable_symbol_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">units_for_evaluation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">test_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">is_builtin</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">overwrite_registry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Abstract base class for model implementation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): title of the model</span>
+<span class="sd">            connections (`list` of `dict`): list of connections dictionaries, which take</span>
+<span class="sd">                the form ``{&quot;inputs&quot;: [variables], &quot;outputs&quot;: [variables]}``, e. g.:</span>
+<span class="sd">                ``connections = [{&quot;inputs&quot;: [&quot;p&quot;, &quot;T&quot;], &quot;outputs&quot;: [&quot;V&quot;]},``</span>
+<span class="sd">                ``{&quot;inputs&quot;: [&quot;T&quot;, &quot;V&quot;], &quot;outputs&quot;: [&quot;p&quot;]}]``</span>
+<span class="sd">            constraints (str, Constraint): string expressions or</span>
+<span class="sd">                Constraint objects of some condition on which the model is</span>
+<span class="sd">                valid, e. g. ``&quot;n &gt; 0&quot;``, note that this must include variables if</span>
+<span class="sd">                there is a variable_symbol_map</span>
+<span class="sd">            display_names (`list` of `str`): optional, list of alternative names to use for</span>
+<span class="sd">                display</span>
+<span class="sd">            description (str): long form description of the model</span>
+<span class="sd">            categories (`list` of `str`): list of categories applicable to</span>
+<span class="sd">                the model</span>
+<span class="sd">            references (`list` of `str`): list of the informational links</span>
+<span class="sd">                explaining / supporting the model</span>
+<span class="sd">            implemented_by (`list` of `str`): list of authors of the model by their</span>
+<span class="sd">                github usernames</span>
+<span class="sd">            variable_symbol_map (dict): mapping of variable strings enumerated</span>
+<span class="sd">                in the plug-in method to canonical symbols, e. g.</span>
+<span class="sd">                ``{&quot;n&quot;: &quot;index_of_refraction&quot;}`` etc.</span>
+<span class="sd">            units_for_evaluation (`str`, `dict`): if specified, coerces the units of</span>
+<span class="sd">                inputs prior to evaluation and outputs post-evaluation to the units</span>
+<span class="sd">                specified. If not specified, the inputs/outputs are not used as is.</span>
+<span class="sd">                If ``units_for_evaluation = &#39;default&#39;``, all inputs/outputs will be</span>
+<span class="sd">                converted to the unit specified by the associated Symbol object. If</span>
+<span class="sd">                ``units_for_evaluation`` is a variable-keyed dict, the inputs/outputs</span>
+<span class="sd">                will be converted to the units specified in the dict. If a variable is</span>
+<span class="sd">                missing, it will be converted to the unit of the associated Symbol object.</span>
+<span class="sd">            test_data (`list` of `dict`): test data with</span>
+<span class="sd">                which to evaluate the model. Format:</span>
+<span class="sd">                ``{&#39;input&#39;: {variable: value}, &#39;output&#39;: {variable: value}}`` where `value`</span>
+<span class="sd">                can be a string with unit (&#39;1.0 kg&#39;), BaseQuantity object, or bare number.</span>
+<span class="sd">                Bare numbers will be assumed to be the units specified by ``units_for_evaluation``.</span>
+<span class="sd">                If ``units_for_evaluation`` is not specified, units will be assumed from the</span>
+<span class="sd">                associated Symbol object.</span>
+<span class="sd">            is_builtin (bool): True if the model is a default model included with propnet</span>
+<span class="sd">                (this option not intended to be set by users)</span>
+<span class="sd">            register (bool): True registers the model with the model registry named by</span>
+<span class="sd">                ``self._registry_name``</span>
+<span class="sd">            overwrite_registry (bool): True overwrites the model registry if a model with</span>
+<span class="sd">                the same name exists. False throws an error if a model with the same name</span>
+<span class="sd">                exists in the registry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span> <span class="o">=</span> <span class="n">connections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">display_names</span> <span class="o">=</span> <span class="n">display_names</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">categories</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">categories</span> <span class="o">=</span> <span class="p">[</span><span class="n">categories</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">categories</span> <span class="o">=</span> <span class="n">categories</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">implemented_by</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">implemented_by</span> <span class="o">=</span> <span class="p">[</span><span class="n">implemented_by</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">implemented_by</span> <span class="o">=</span> <span class="n">implemented_by</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">references</span> <span class="o">=</span> <span class="n">references_to_bib</span><span class="p">(</span><span class="n">references</span> <span class="ow">or</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_builtin</span> <span class="o">=</span> <span class="n">is_builtin</span>
+
+        <span class="c1"># variable symbol map initialized as symbol name-&gt;symbol, then updated</span>
+        <span class="c1"># with any customization of variable to symbol mapping</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_variable_symbol_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_symbols</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_variable_symbol_map</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">variable_symbol_map</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_verify_symbols_are_registered</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">units_for_evaluation</span> <span class="ow">or</span> <span class="s1">&#39;empirical&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">categories</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_variable_unit_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">prop_name</span><span class="p">:</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prop_name</span><span class="p">)</span>
+                                       <span class="k">for</span> <span class="n">prop_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_symbols</span><span class="p">}</span>
+            <span class="c1"># Update with explicitly supplied units if specified</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">units_for_evaluation</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">units_for_evaluation</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">format_babel</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">units_for_evaluation</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_variable_unit_map</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_variables_to_symbols</span><span class="p">(</span><span class="n">units_for_evaluation</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_variable_unit_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_symbols_to_variables</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_unit_map</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_variable_unit_map</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Define constraints by constraint objects or invoke from strings</span>
+        <span class="n">constraints</span> <span class="o">=</span> <span class="n">constraints</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">constraint</span> <span class="ow">in</span> <span class="n">constraints</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">constraint</span><span class="p">,</span> <span class="n">Constraint</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">constraint</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Constraint</span><span class="p">(</span><span class="n">constraint</span><span class="p">,</span>
+                                                   <span class="n">variable_symbol_map</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_variable_symbol_map</span><span class="p">))</span>
+
+        <span class="c1"># Ensures our test data is variable-keyed and in the correct format</span>
+        <span class="n">test_data</span> <span class="o">=</span> <span class="n">test_data</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_test_data</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">test_data</span><span class="p">:</span>
+            <span class="n">test_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_test_data</span><span class="p">(</span><span class="n">test_data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_test_data</span> <span class="o">=</span> <span class="n">test_data</span>
+
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">overwrite_registry</span><span class="o">=</span><span class="n">overwrite_registry</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Model.register"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.register">[docs]</a>    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">overwrite_registry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Registers the model with the appropriate model registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            overwrite_registry (bool): If a model with the same name</span>
+<span class="sd">                as the current is already registered, `True` will overwrite</span>
+<span class="sd">                the old model with the current and `False` will raise a</span>
+<span class="sd">                KeyError.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: if `overwrite_registry=False` and a model with the same</span>
+<span class="sd">                name is already registered, this error is raised.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite_registry</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">Registry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_registry_name</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Model &#39;</span><span class="si">{}</span><span class="s2">&#39; already exists in the registry &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                                                                   <span class="bp">self</span><span class="o">.</span><span class="n">_registry_name</span><span class="p">))</span>
+        <span class="n">Registry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_registry_name</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="Model.unregister"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.unregister">[docs]</a>    <span class="k">def</span> <span class="nf">unregister</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes the symbol from all applicable registries.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Registry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_registry_name</span><span class="p">)</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">registered</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Indicates if a model is registered with the model registry.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if the model is registered. False otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">Registry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_registry_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_clean_test_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Coerces test data into a value-unit format.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            test_data (`list` of `dict`): structured test data (see ``__init__()``)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `list` of `dict`: test data converted to the value-unit format</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">clean_test_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">io_data_set</span> <span class="ow">in</span> <span class="n">test_data</span><span class="p">:</span>
+            <span class="n">clean_data_set</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">io</span><span class="p">,</span> <span class="n">data_set</span> <span class="ow">in</span> <span class="n">io_data_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">variable_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_symbols_to_variables</span><span class="p">(</span><span class="n">data_set</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">variable</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">variable_value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_symbol_map</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+                    <span class="n">clean_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_unit_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span> <span class="ow">or</span> <span class="n">Registry</span><span class="p">(</span><span class="s1">&#39;units&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">symbol</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)[</span><span class="n">symbol</span><span class="p">]</span><span class="o">.</span><span class="n">category</span> <span class="o">!=</span> <span class="s1">&#39;object&#39;</span><span class="p">:</span>
+                        <span class="c1"># If not an object, check to see if number is specified</span>
+                        <span class="c1"># with units as a tuple/list or as a string. If so,</span>
+                        <span class="c1"># convert it.</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">q</span> <span class="o">=</span> <span class="kc">None</span>
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                                <span class="n">q</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="o">*</span><span class="n">value</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                                <span class="n">q</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">BaseQuantity</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">)):</span>
+                                <span class="n">q</span> <span class="o">=</span> <span class="n">value</span>
+                            <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">clean_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="n">q</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">format_babel</span><span class="p">()</span> <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">units</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                            <span class="k">pass</span>
+                    <span class="n">variable_value</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span> <span class="o">=</span> <span class="n">clean_value</span>
+                <span class="n">clean_data_set</span><span class="p">[</span><span class="n">io</span><span class="p">]</span> <span class="o">=</span> <span class="n">variable_value</span>
+            <span class="n">clean_test_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clean_data_set</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">clean_test_data</span>
+
+    <span class="k">def</span> <span class="nf">_verify_symbols_are_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ensures that all Symbol names associated with this model are</span>
+<span class="sd">        registered in the symbol registry.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: if a symbol is not registered, this error is raised</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_symbols</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Symbol &#39;</span><span class="si">{}</span><span class="s2">&#39; is not registered in &quot;</span>
+                               <span class="s2">&quot;symbol registry in model &#39;</span><span class="si">{}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_builtin</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Indicates whether the model is a propnet built-in.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: ``True`` if the model is a built-in, ``False``</span>
+<span class="sd">                if it is a custom-created model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_builtin</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">connections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">variable_unit_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_unit_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">variable_symbol_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_symbol_map</span>
+
+<div class="viewcode-block" id="Model.plug_in"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.plug_in">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">plug_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_value_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plugs in a variable to quantity dictionary</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            variable_value_dict (dict): a mapping</span>
+<span class="sd">                of variables to values to be substituted</span>
+<span class="sd">                into the model to yield output</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: output variables with associated</span>
+<span class="sd">                values generated from the input</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="Model.map_symbols_to_variables"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.map_symbols_to_variables">[docs]</a>    <span class="k">def</span> <span class="nf">map_symbols_to_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">symbols</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper method to convert symbol-keyed dictionary or list to</span>
+<span class="sd">        variable-keyed dictionary or list</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            symbols (list or dict): list of symbols or symbol-</span>
+<span class="sd">                keyed dictionary</span>
+
+<span class="sd">        Returns (list or dict):</span>
+<span class="sd">            list of variables or variable-keyed dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rev_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;variable_symbol_map&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="n">remap</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">rev_map</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Model.map_variables_to_symbols"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.map_variables_to_symbols">[docs]</a>    <span class="k">def</span> <span class="nf">map_variables_to_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper method to convert variable-keyed dictionary or list to</span>
+<span class="sd">        symbol-keyed dictionary or list</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            variables (`list`, `dict`, `set`): list of variables or variable-keyed</span>
+<span class="sd">                dictionary</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `list` or `dict` or `set: list of symbols or symbol-keyed dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">remap</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;variable_symbol_map&quot;</span><span class="p">,</span> <span class="p">{}))</span></div>
+
+    <span class="k">def</span> <span class="nf">_convert_inputs_for_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+        <span class="n">converted_inputs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">quantity</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">converted_inputs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantity</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_unit_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Units are being assumed by equation and we need to strip them</span>
+                <span class="c1"># or pint might get angry if it has to add or subtract quantities</span>
+                <span class="c1"># with unmatched dimensions</span>
+                <span class="n">converted_inputs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_unit_map</span><span class="p">[</span><span class="n">var</span><span class="p">])</span><span class="o">.</span><span class="n">magnitude</span>
+        <span class="k">return</span> <span class="n">converted_inputs</span>
+
+    <span class="k">def</span> <span class="nf">_convert_outputs_from_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+        <span class="n">converted_outputs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">quantity</span> <span class="ow">in</span> <span class="n">outputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_symbol_map</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_unit_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="ow">or</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">unit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">converted_outputs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantity</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">quantity</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">converted_outputs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">DimensionalityError</span><span class="p">:</span>
+                        <span class="c1"># If the equation multiplies by constants with dimensions,</span>
+                        <span class="c1"># we&#39;ll end up with an output with incorrect dimensions.</span>
+                        <span class="c1"># This forces the unit conversion until we can fix inclusion of constants</span>
+                        <span class="c1"># TODO: Fix when we add support for constants with dimensions</span>
+                        <span class="n">converted_outputs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">quantity</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                                                               <span class="n">units</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">converted_outputs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">quantity</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">converted_outputs</span>
+
+<div class="viewcode-block" id="Model.evaluate"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">symbol_quantity_dict</span><span class="p">,</span> <span class="n">allow_failure</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raise_timeout_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a set of symbol values, performs error checking to see</span>
+<span class="sd">        if the corresponding input variable values represents a valid</span>
+<span class="sd">        input set based on the self.connections() method. If so, returns</span>
+<span class="sd">        a dictionary representing the value of plug_in() applied to the</span>
+<span class="sd">        input. The dictionary contains a &quot;successful&quot; key</span>
+<span class="sd">        representing if plug_in() was successful.</span>
+
+<span class="sd">        The key distinction between evaluate() and plug_in() is symbols</span>
+<span class="sd">        in, symbols out vs. variables in, variables out.  In addition,</span>
+<span class="sd">        evaluate also handles any requisite unit mapping.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            symbol_quantity_dict (dict): a mapping of</span>
+<span class="sd">                symbol names (str) to quantities (BaseQuantity) to be substituted</span>
+<span class="sd">            allow_failure (bool): whether or not to catch</span>
+<span class="sd">                errors in model evaluation</span>
+<span class="sd">            raise_timeout_errors (bool): True ignores the value of &quot;allow_failure&quot;</span>
+<span class="sd">                and forces TimeoutError exceptions to be raised. This is so they</span>
+<span class="sd">                can be caught and handled by Graph, as timeouts are implemented there</span>
+<span class="sd">                and not in Model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: dictionary of output symbols with associated values</span>
+<span class="sd">                generated from the input, along with &quot;successful&quot; if the</span>
+<span class="sd">                substitution succeeds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Remap symbols and units if symbol map isn&#39;t none</span>
+
+        <span class="n">variable_quantity_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_symbols_to_variables</span><span class="p">(</span>
+            <span class="n">symbol_quantity_dict</span><span class="p">)</span>
+
+        <span class="n">input_variable_quantity_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variable_quantity_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                                        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraint_variables</span>
+                                                <span class="ow">and</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_input_variables</span><span class="p">)}</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">variable_quantity_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># replacing = self.variable_symbol_map.get(k, k)</span>
+            <span class="n">replacing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_symbol_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="c1"># to_quantity() returns original object if it&#39;s already a BaseQuantity</span>
+            <span class="c1"># unlike Quantity() which will return a deep copy</span>
+            <span class="n">variable_quantity_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">QuantityFactory</span><span class="o">.</span><span class="n">to_quantity</span><span class="p">(</span><span class="n">replacing</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+        <span class="c1"># TODO: Is it really necessary to strip these?</span>
+        <span class="c1"># TODO: maybe this only applies to pymodels or things with objects?</span>
+        <span class="c1"># strip units from input and keep for reassignment</span>
+
+        <span class="n">variable_value_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_inputs_for_plugin</span><span class="p">(</span><span class="n">variable_quantity_dict</span><span class="p">)</span>
+
+        <span class="n">contains_complex_input</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">NumQuantity</span><span class="o">.</span><span class="n">is_complex_type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variable_value_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">input_variable_value_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">variable_value_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">input_variable_quantity_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+
+        <span class="c1"># Plug in and check constraints</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">PrintToLogger</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">plog</span><span class="p">,</span> \
+                    <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">),</span> \
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+                <span class="c1"># Catch numpy warnings and log them</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">seterrcall</span><span class="p">(</span><span class="n">plog</span><span class="p">)</span>
+                <span class="c1"># Catch pint warning caused by numpy</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">UnitStrippedWarning</span><span class="p">)</span>
+                <span class="n">out</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plug_in</span><span class="p">(</span><span class="n">input_variable_value_dict</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="c1"># Because the Timeout() context raises a TimeoutError as a response to a</span>
+            <span class="c1"># signal from the os, the exception is raised wherever the program is</span>
+            <span class="c1"># at the time, which is usually in &quot;plug_in&quot;. We want to optionally raise</span>
+            <span class="c1"># TimeoutErrors so they are caught by Graph() or an error handler otherwise</span>
+            <span class="c1"># outside of this class.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">allow_failure</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">err</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">)</span> <span class="ow">and</span> <span class="n">raise_timeout_errors</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">err</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;successful&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> evaluation failed: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">err</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_constraints</span><span class="p">({</span><span class="o">**</span><span class="n">variable_value_dict</span><span class="p">,</span> <span class="o">**</span><span class="n">out</span><span class="p">}):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;successful&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Constraints not satisfied&quot;</span><span class="p">}</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_outputs_from_plugin</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_variables_to_symbols</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+        <span class="n">symbol_unit_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_variables_to_symbols</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_unit_map</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">symbol</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">provenance</span> <span class="o">=</span> <span class="n">ProvenanceElement</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">input_variable_quantity_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+                <span class="n">source</span><span class="o">=</span><span class="s2">&quot;propnet&quot;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">quantity</span> <span class="o">=</span> <span class="n">QuantityFactory</span><span class="o">.</span><span class="n">create_quantity</span><span class="p">(</span>
+                    <span class="n">symbol</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="n">symbol_unit_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span> <span class="ow">or</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">symbol</span><span class="p">),</span>
+                    <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">SymbolConstraintError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">allow_failure</span><span class="p">:</span>
+                    <span class="n">errmsg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> symbol constraint failed: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;successful&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">errmsg</span><span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">err</span>
+
+            <span class="k">if</span> <span class="n">quantity</span><span class="o">.</span><span class="n">contains_nan_value</span><span class="p">():</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;successful&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Evaluation returned invalid values (NaN)&quot;</span><span class="p">}</span>
+            <span class="c1"># TODO: Update when we figure out how we&#39;re going to handle complex quantities</span>
+            <span class="c1"># Model evaluation will fail if complex values are returned when no complex input was given</span>
+            <span class="c1"># Can surely handle this more gracefully, or assume that the users will apply constraints</span>
+            <span class="k">if</span> <span class="n">quantity</span><span class="o">.</span><span class="n">contains_imaginary_value</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">contains_complex_input</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;successful&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Evaluation returned invalid values (complex)&quot;</span><span class="p">}</span>
+
+            <span class="n">out</span><span class="p">[</span><span class="n">symbol</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantity</span>
+
+        <span class="n">out</span><span class="p">[</span><span class="s1">&#39;successful&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fancy formatted name, removes underscores and capitalizes</span>
+<span class="sd">        all words of name</span>
+
+<span class="sd">        Returns (str):</span>
+<span class="sd">            formatted title, e. g. &quot;band_gap_refractive_index&quot;</span>
+<span class="sd">            becomes &quot;Band Gap Refractive Index&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_names</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
+
+    <span class="c1"># Note: these are formulated in terms of symbols rather than variables</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">input_sets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of input symbol sets</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_variables_to_symbols</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]))</span>
+                <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_sets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of output symbol sets</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_variables_to_symbols</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">]))</span>
+                <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">all_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of all input symbols</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_sets</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">all_outputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of all output symbols</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_sets</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">all_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of all symbols</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_inputs</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_outputs</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;constraint_symbols&#39;</span><span class="p">,</span> <span class="nb">set</span><span class="p">()))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">input_variable_sets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of input variable sets</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_variable_sets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of output variable sets</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">all_input_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of all input variables</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_variable_sets</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">all_output_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of all output variables</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_variable_sets</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">all_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns (set): set of all variables</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_input_variables</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_output_variables</span><span class="p">,</span>
+                                              <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;constraint_variables&#39;</span><span class="p">,</span> <span class="nb">set</span><span class="p">()))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">evaluation_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets everything one needs to call the evaluate method, which</span>
+<span class="sd">        is all of the input symbols and constraints</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `list` of `set`: list of input sets with constraint symbols included</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">inputs</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraint_symbols</span> <span class="o">-</span> <span class="n">outputs</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_sets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_sets</span><span class="p">)]</span>
+
+<div class="viewcode-block" id="Model.test"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.test">[docs]</a>    <span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs a test of the model to determine whether its operation</span>
+<span class="sd">        is consistent with the specified inputs and outputs</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            inputs (dict): set of input names to values</span>
+<span class="sd">            outputs (dict): set of output names to values</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">             bool: True if test succeeds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">evaluate_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_variables_to_symbols</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">symbol</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">evaluate_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">magnitude</span><span class="p">,</span> <span class="n">unit</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="n">evaluate_inputs</span><span class="p">[</span><span class="n">symbol</span><span class="p">]</span> <span class="o">=</span> <span class="n">QuantityFactory</span><span class="o">.</span><span class="n">create_quantity</span><span class="p">(</span>
+                <span class="n">symbol</span><span class="p">,</span> <span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">units</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+        <span class="n">outputs_from_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">evaluate_inputs</span><span class="p">,</span> <span class="n">allow_failure</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">outputs_from_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_symbols_to_variables</span><span class="p">(</span><span class="n">outputs_from_model</span><span class="p">)</span>
+        <span class="n">errmsg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> model test failed on &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">errmsg</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">(test data) = </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">errmsg</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">(model output) = </span><span class="si">{}</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">known_output</span> <span class="ow">in</span> <span class="n">outputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_symbol_map</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">known_output</span><span class="p">,</span> <span class="n">BaseQuantity</span><span class="p">):</span>
+                <span class="n">known_quantity</span> <span class="o">=</span> <span class="n">known_output</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># It&#39;s a tuple from read-in test data</span>
+                <span class="n">magnitude</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="n">known_output</span>
+                <span class="n">known_quantity</span> <span class="o">=</span> <span class="n">QuantityFactory</span><span class="o">.</span><span class="n">create_quantity</span><span class="p">(</span>
+                    <span class="n">symbol</span><span class="p">,</span> <span class="n">magnitude</span><span class="p">,</span>
+                    <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">)</span>
+            <span class="n">evaluate_output</span> <span class="o">=</span> <span class="n">outputs_from_model</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">known_quantity</span><span class="o">.</span><span class="n">has_eq_value_to</span><span class="p">(</span><span class="n">evaluate_output</span><span class="p">):</span>
+                <span class="n">errmsg</span> <span class="o">=</span> <span class="n">errmsg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;evaluate&quot;</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">evaluate_output</span><span class="p">,</span>
+                                       <span class="n">var</span><span class="p">,</span> <span class="n">known_quantity</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">ModelEvaluationError</span><span class="p">(</span><span class="n">errmsg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Model.validate_from_preset_test"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.validate_from_preset_test">[docs]</a>    <span class="k">def</span> <span class="nf">validate_from_preset_test</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validates from test data based on the model name</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if validation completes successfully</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">for</span> <span class="n">test_dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">test</span><span class="p">(</span><span class="o">**</span><span class="n">test_dataset</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">constraint_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            set: set of constraint input symbols</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Constraints are defined only in terms of symbols</span>
+
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_variables_to_symbols</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constraint_variables</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">constraint_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            set: set of variables which are constrained</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Constraints are defined only in terms of variables</span>
+        <span class="n">all_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">all_inputs</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">all_vars</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Model.check_constraints"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.check_constraints">[docs]</a>    <span class="k">def</span> <span class="nf">check_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_symbols</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks the constraints based on input symbol set</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_symbols (dict): symbol-value</span>
+<span class="sd">                dictionary for input to constraints</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if constraints are satisfied, false if not</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">input_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_symbols_to_variables</span><span class="p">(</span><span class="n">input_symbols</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">constraint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">constraint</span><span class="o">.</span><span class="n">plug_in</span><span class="p">(</span><span class="n">input_vars</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Model.load_test_data"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Model.load_test_data">[docs]</a>    <span class="k">def</span> <span class="nf">load_test_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_data_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deserialize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads test data from preset or specified directory.</span>
+<span class="sd">        Finds a json or yaml file with the prefix &quot;name&quot; and</span>
+<span class="sd">        loads it.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            test_data_path (str): test data file location</span>
+<span class="sd">            deserialize (bool): whether or not to deserialize the test</span>
+<span class="sd">                data, primarily used for printing example code</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: Dictionary of test data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">test_data_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">test_data_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">TEST_DATA_LOC</span><span class="p">,</span>
+                                          <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.json&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">test_data_path</span><span class="p">):</span>
+            <span class="bp">cls</span> <span class="o">=</span> <span class="n">MontyDecoder</span> <span class="k">if</span> <span class="n">deserialize</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="n">loadfn</span><span class="p">(</span><span class="n">test_data_path</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="bp">cls</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">example_code</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates example code from test data, useful for</span>
+<span class="sd">        documentation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: example code for this model</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">example_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span>
+        <span class="c1"># Strip units from outputs</span>
+        <span class="n">example_outputs</span> <span class="o">=</span> <span class="nb">str</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+
+        <span class="n">variable_definitions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">evaluate_args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">imports</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">input_name</span><span class="p">,</span> <span class="n">input_value_and_unit</span> <span class="ow">in</span> <span class="n">example_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Strip units from inputs</span>
+            <span class="n">input_value</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">input_value_and_unit</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">input_value</span><span class="p">,</span> <span class="s1">&#39;as_dict&#39;</span><span class="p">):</span>
+                <span class="n">input_value</span> <span class="o">=</span> <span class="n">input_value</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+                <span class="c1"># temp fix for ComputedEntry pending pymatgen fix</span>
+                <span class="k">if</span> <span class="s1">&#39;composition&#39;</span> <span class="ow">in</span> <span class="n">input_value</span><span class="p">:</span>
+                    <span class="n">input_value</span><span class="p">[</span><span class="s1">&#39;composition&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">input_value</span><span class="p">[</span><span class="s1">&#39;composition&#39;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">input_value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;@module&quot;</span><span class="p">):</span>
+                <span class="n">input_value_string</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.from_dict(</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">input_value</span><span class="p">[</span><span class="s1">&#39;@class&#39;</span><span class="p">],</span> <span class="n">input_value</span><span class="p">)</span>
+                <span class="n">imports</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;from </span><span class="si">{}</span><span class="s2"> import </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">input_value</span><span class="p">[</span><span class="s1">&#39;@module&#39;</span><span class="p">],</span> <span class="n">input_value</span><span class="p">[</span><span class="s1">&#39;@class&#39;</span><span class="p">])]</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_value</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+                <span class="n">input_value_string</span> <span class="o">=</span> <span class="s1">&#39;&quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">input_value</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="n">input_value_string</span> <span class="o">=</span> <span class="n">input_value</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">input_value_string</span> <span class="o">=</span> <span class="n">input_value</span>
+            <span class="n">variable_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{input_name}</span><span class="s2"> = </span><span class="si">{input_value}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">input_name</span><span class="o">=</span><span class="n">input_name</span><span class="p">,</span>
+                <span class="n">input_value</span><span class="o">=</span><span class="n">input_value_string</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">variable_definitions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variable_str</span><span class="p">)</span>
+
+            <span class="n">evaluate_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&#39;</span><span class="si">{}</span><span class="s2">&#39;: </span><span class="si">{}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">input_name</span><span class="p">,</span> <span class="n">input_name</span><span class="p">)</span>
+            <span class="n">evaluate_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">evaluate_str</span><span class="p">)</span>
+
+        <span class="n">variable_definitions</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">variable_definitions</span><span class="p">)</span>
+        <span class="n">evaluate_args</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">evaluate_args</span><span class="p">)</span>
+
+        <span class="n">example_code</span> <span class="o">=</span> <span class="n">CODE_EXAMPLE_TEMPLATE</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">imports</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">imports</span><span class="p">),</span>
+            <span class="n">variable_definitions</span><span class="o">=</span><span class="n">variable_definitions</span><span class="p">,</span>
+            <span class="n">evaluate_args</span><span class="o">=</span><span class="n">evaluate_args</span><span class="p">,</span>
+            <span class="n">example_outputs</span><span class="o">=</span><span class="n">example_outputs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">example_code</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;Model: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">rhs</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">rhs</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span></div>
+
+
+<span class="n">CODE_EXAMPLE_TEMPLATE</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">from propnet.models import </span><span class="si">{model_name}</span><span class="s2"></span>
+<span class="si">{imports}</span><span class="s2"></span>
+
+<span class="si">{variable_definitions}</span><span class="s2"></span>
+
+<span class="si">{model_name}</span><span class="s2">.plug_in({{</span>
+<span class="si">{evaluate_args}</span><span class="s2"></span>
+<span class="s2">}})</span>
+<span class="se">\&quot;\&quot;\&quot;</span><span class="s2"></span>
+<span class="s2">returns </span><span class="si">{example_outputs}</span><span class="s2"></span>
+<span class="se">\&quot;\&quot;\&quot;</span><span class="s2"></span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="EquationModel"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.EquationModel">[docs]</a><span class="k">class</span> <span class="nc">EquationModel</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="n">MSONable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Equation model is a Model subclass which is invoked</span>
+<span class="sd">    from a list of equations</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">equations</span><span class="p">,</span> <span class="n">connections</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">constraints</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">variable_symbol_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">display_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">implemented_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">units_for_evaluation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">solve_for_all_variables</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">test_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">is_builtin</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">overwrite_registry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Instantiates an equation-based model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): title of the model</span>
+<span class="sd">            equations (`list` of `str`): list of string equations to parse</span>
+<span class="sd">            connections (`list` of `dict`): list of connections dictionaries,</span>
+<span class="sd">                which take the form {&quot;inputs&quot;: [variables], &quot;outputs&quot;: [variables]},</span>
+<span class="sd">                for example:</span>
+<span class="sd">                connections = [{&quot;inputs&quot;: [&quot;p&quot;, &quot;T&quot;], &quot;outputs&quot;: [&quot;V&quot;]},</span>
+<span class="sd">                               {&quot;inputs&quot;: [&quot;T&quot;, &quot;V&quot;], &quot;outputs&quot;: [&quot;p&quot;]}]</span>
+<span class="sd">                If no connections are specified (as default), EquationModel</span>
+<span class="sd">                attempts to find them by the convention that the variable</span>
+<span class="sd">                in front of the equals sign is the output and the variables</span>
+<span class="sd">                to the right are the inputs, e. g. OUTPUT = INPUT_1 + INPUT_2,</span>
+<span class="sd">                alternatively, using solve_for_all_variables will derive all</span>
+<span class="sd">                possible input-output connections</span>
+<span class="sd">            constraints (`list` of `str`, `list` of `Constraint`): constraints on models</span>
+<span class="sd">            display_names (`list` of `str`): optional, list of alternative names to use for</span>
+<span class="sd">                display</span>
+<span class="sd">            description (str): long form description of the model</span>
+<span class="sd">            categories (str): list of categories applicable to</span>
+<span class="sd">                the model</span>
+<span class="sd">            references (`list` of `str`): list of the informational links</span>
+<span class="sd">                explaining / supporting the model. See ``Model.__init__()`` for specifics.</span>
+<span class="sd">            test_data (`list` of `dict`): test data with</span>
+<span class="sd">                which to evaluate the model. See ``Model.__init__()`` for specifics.</span>
+<span class="sd">            is_builtin: See ``Model.__init__()``</span>
+<span class="sd">            register: See ``Model.__init__()``</span>
+<span class="sd">            overwrite_registry: See ``Model.__init__()``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">equations</span> <span class="o">=</span> <span class="n">equations</span>
+        <span class="n">sympy_expressions</span> <span class="o">=</span> <span class="p">[</span><span class="n">parse_expr</span><span class="p">(</span><span class="n">eq</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="s1">&#39;-(&#39;</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;)&#39;</span><span class="p">)</span>
+                             <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">equations</span><span class="p">]</span>
+        <span class="c1"># If no connections specified, derive connections</span>
+        <span class="k">if</span> <span class="n">connections</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">connections</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">solve_for_all_variables</span><span class="p">:</span>
+                <span class="n">connections</span><span class="p">,</span> <span class="n">equations</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">sympy_expressions</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">expr</span><span class="o">.</span><span class="n">free_symbols</span><span class="p">:</span>
+                        <span class="n">new</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+                        <span class="n">inputs</span> <span class="o">=</span> <span class="n">get_vars_from_expression</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+                        <span class="n">connections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="p">{</span><span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">inputs</span><span class="p">,</span>
+                             <span class="s2">&quot;outputs&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">)],</span>
+                             <span class="s2">&quot;_sympy_exprs&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">):</span> <span class="n">new</span><span class="p">}</span>
+                             <span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">eqn</span> <span class="ow">in</span> <span class="n">equations</span><span class="p">:</span>
+                    <span class="n">output_expr</span><span class="p">,</span> <span class="n">input_expr</span> <span class="o">=</span> <span class="n">eqn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
+                    <span class="n">inputs</span> <span class="o">=</span> <span class="n">get_vars_from_expression</span><span class="p">(</span><span class="n">input_expr</span><span class="p">)</span>
+                    <span class="n">outputs</span> <span class="o">=</span> <span class="n">get_vars_from_expression</span><span class="p">(</span><span class="n">output_expr</span><span class="p">)</span>
+                    <span class="n">connections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">{</span><span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">inputs</span><span class="p">,</span>
+                         <span class="s2">&quot;outputs&quot;</span><span class="p">:</span> <span class="n">outputs</span><span class="p">,</span>
+                         <span class="s2">&quot;_sympy_exprs&quot;</span><span class="p">:</span> <span class="p">{</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">parse_expr</span><span class="p">(</span><span class="n">input_expr</span><span class="p">)}</span>
+                         <span class="p">})</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># TODO: I don&#39;t think this needs to be supported necessarily</span>
+            <span class="c1">#       but it&#39;s causing problems with models with one input</span>
+            <span class="c1">#       and two outputs where you only want one connection</span>
+            <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="n">connections</span><span class="p">:</span>
+                <span class="n">new</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">sympy_expressions</span><span class="p">,</span> <span class="n">connection</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">])</span>
+                <span class="n">sympy_exprs</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">sym</span><span class="p">):</span> <span class="n">solved</span>
+                               <span class="k">for</span> <span class="n">sym</span><span class="p">,</span> <span class="n">solved</span> <span class="ow">in</span> <span class="n">new</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+                <span class="n">connection</span><span class="p">[</span><span class="s2">&quot;_sympy_exprs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sympy_exprs</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">EquationModel</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">connections</span><span class="p">,</span> <span class="n">constraints</span><span class="p">,</span> <span class="n">display_names</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span>
+            <span class="n">categories</span><span class="p">,</span> <span class="n">references</span><span class="p">,</span> <span class="n">implemented_by</span><span class="p">,</span>
+            <span class="n">variable_symbol_map</span><span class="p">,</span> <span class="n">units_for_evaluation</span><span class="p">,</span>
+            <span class="n">test_data</span><span class="o">=</span><span class="n">test_data</span><span class="p">,</span>
+            <span class="n">is_builtin</span><span class="o">=</span><span class="n">is_builtin</span><span class="p">,</span>
+            <span class="n">register</span><span class="o">=</span><span class="n">register</span><span class="p">,</span>
+            <span class="n">overwrite_registry</span><span class="o">=</span><span class="n">overwrite_registry</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_generate_lambdas</span><span class="p">()</span>
+
+<div class="viewcode-block" id="EquationModel.as_dict"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.EquationModel.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">k</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">v</span>
+             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__getstate__</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;units_for_evaluation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;unit_map&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">d</span></div>
+
+<div class="viewcode-block" id="EquationModel.from_dict"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.EquationModel.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">d_in</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">d_in</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">d_in</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">connections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="s1">&#39;_lambdas&#39;</span> <span class="ow">in</span> <span class="n">connection</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_generate_lambdas</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span>
+
+    <span class="k">def</span> <span class="nf">_generate_lambdas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">output_var</span><span class="p">,</span> <span class="n">sympy_expr</span> <span class="ow">in</span> <span class="n">connection</span><span class="p">[</span><span class="s1">&#39;_sympy_exprs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">sp_lambda</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">lambdify</span><span class="p">(</span><span class="n">connection</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">],</span> <span class="n">sympy_expr</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;_lambdas&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">connection</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">connection</span><span class="p">[</span><span class="s1">&#39;_lambdas&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+                <span class="n">connection</span><span class="p">[</span><span class="s1">&#39;_lambdas&#39;</span><span class="p">][</span><span class="n">output_var</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp_lambda</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;_connections&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="s1">&#39;_lambdas&#39;</span> <span class="ow">in</span> <span class="n">connection</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">del</span> <span class="n">connection</span><span class="p">[</span><span class="s1">&#39;_lambdas&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">d</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_generate_lambdas</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_convert_outputs_from_plugin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+        <span class="n">converted_outputs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">quantity</span> <span class="ow">in</span> <span class="n">outputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variable_symbol_map</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_unit_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="ow">or</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">unit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unit for &#39;</span><span class="si">{}</span><span class="s2">&#39; symbol is not specified by &quot;</span>
+                                 <span class="s2">&quot;the model or in the registry&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symbol</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">quantity</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">converted_outputs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">DimensionalityError</span><span class="p">:</span>
+                    <span class="c1"># If the equation multiplies by constants with dimensions,</span>
+                    <span class="c1"># we&#39;ll end up with an output with incorrect dimensions.</span>
+                    <span class="c1"># This forces the unit conversion until we can fix inclusion of constants</span>
+                    <span class="c1"># TODO: Fix when we add support for constants with dimensions</span>
+                    <span class="n">converted_outputs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">quantity</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                                                           <span class="n">units</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">converted_outputs</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">quantity</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">converted_outputs</span>
+
+<div class="viewcode-block" id="EquationModel.plug_in"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.EquationModel.plug_in">[docs]</a>    <span class="k">def</span> <span class="nf">plug_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_value_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Equation plug-in solves the equation for all input</span>
+<span class="sd">        and output combinations, returning the corresponding</span>
+<span class="sd">        output values</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            variable_value_dict (dict): variable-keyed</span>
+<span class="sd">                dict of values to be substituted</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: variable-keyed output dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">connection</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">variable_value_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">for</span> <span class="n">output_var</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">connection</span><span class="p">[</span><span class="s1">&#39;_lambdas&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">output_vals</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">**</span><span class="n">variable_value_dict</span><span class="p">)</span>
+                    <span class="c1"># TODO: this decision to only take max real values should</span>
+                    <span class="c1">#       should probably be reevaluated at some point</span>
+                    <span class="c1"># Scrub nan values and take max</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_vals</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">output_val</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">output_vals</span>
+                                              <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)])</span>
+                        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No real roots found for model </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">output_val</span> <span class="o">=</span> <span class="n">output_vals</span>
+                    <span class="n">output</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">output_var</span><span class="p">:</span> <span class="n">output_val</span><span class="p">})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No valid input set found in connections&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">output</span></div>
+
+<div class="viewcode-block" id="EquationModel.from_file"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.EquationModel.from_file">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">is_builtin</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">overwrite_registry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Invokes EquationModel from filename</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            filename (str): filename containing model</span>
+<span class="sd">            is_builtin (bool): See ``Model.__init__()``</span>
+<span class="sd">            register (bool): See ``Model.__init__()``</span>
+<span class="sd">            overwrite_registry (bool): See ``Model.__init__()``</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            EquationModel: model corresponding to contents of file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">loadfn</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">model</span><span class="p">[</span><span class="s1">&#39;is_builtin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">is_builtin</span>
+            <span class="n">model</span><span class="p">[</span><span class="s1">&#39;register&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">register</span>
+            <span class="n">model</span><span class="p">[</span><span class="s1">&#39;overwrite_registry&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">overwrite_registry</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span></div></div>
+
+
+<div class="viewcode-block" id="PyModel"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.PyModel">[docs]</a><span class="k">class</span> <span class="nc">PyModel</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Purely python based model which allows for a flexible &quot;plug_in&quot;</span>
+<span class="sd">    method as input, then invokes that method in the defined plug-in</span>
+<span class="sd">    method.  Note that PyModels scrub units by default, in contrast</span>
+<span class="sd">    to EquationModels</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">connections</span><span class="p">,</span> <span class="n">plug_in</span><span class="p">,</span> <span class="n">constraints</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">display_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">categories</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">implemented_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">variable_symbol_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">units_for_evaluation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">test_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_builtin</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">overwrite_registry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plug_in</span> <span class="o">=</span> <span class="n">plug_in</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PyModel</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">connections</span><span class="p">,</span> <span class="n">constraints</span><span class="p">,</span> <span class="n">display_names</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span>
+            <span class="n">categories</span><span class="p">,</span> <span class="n">references</span><span class="p">,</span> <span class="n">implemented_by</span><span class="p">,</span>
+            <span class="n">variable_symbol_map</span><span class="p">,</span> <span class="n">units_for_evaluation</span><span class="p">,</span>
+            <span class="n">test_data</span><span class="o">=</span><span class="n">test_data</span><span class="p">,</span> <span class="n">is_builtin</span><span class="o">=</span><span class="n">is_builtin</span><span class="p">,</span>
+            <span class="n">register</span><span class="o">=</span><span class="n">register</span><span class="p">,</span>
+            <span class="n">overwrite_registry</span><span class="o">=</span><span class="n">overwrite_registry</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PyModel.plug_in"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.PyModel.plug_in">[docs]</a>    <span class="k">def</span> <span class="nf">plug_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_value_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        plug_in for PyModel uses the attached _plug_in attribute</span>
+<span class="sd">        as a method with the input variable_value_dict</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            variable_value_dict ({variable: value}): dict containing</span>
+<span class="sd">                variable-keyed values to substitute</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: value of substituted expression</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plug_in</span><span class="p">(</span><span class="n">variable_value_dict</span><span class="p">)</span></div></div>
+
+
+<span class="c1"># Note that this class exists purely as a factory method for PyModel</span>
+<span class="c1"># which could be implemented as a class method of PyModel</span>
+<span class="c1"># but wouldn&#39;t serialize as cleanly</span>
+<div class="viewcode-block" id="PyModuleModel"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.PyModuleModel">[docs]</a><span class="k">class</span> <span class="nc">PyModuleModel</span><span class="p">(</span><span class="n">PyModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    PyModuleModel is a class instantiated by a model path only,</span>
+<span class="sd">    which exists primarily for the purpose of serializing python models</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_path</span><span class="p">,</span> <span class="n">is_builtin</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">overwrite_registry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            module_path (str): path to module to instantiate model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_module_path</span> <span class="o">=</span> <span class="n">module_path</span>
+        <span class="n">mod</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="n">module_path</span><span class="p">,</span> <span class="nb">globals</span><span class="p">(),</span> <span class="nb">locals</span><span class="p">(),</span> <span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PyModuleModel</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+                                            <span class="n">is_builtin</span><span class="o">=</span><span class="n">is_builtin</span><span class="p">,</span>
+                                            <span class="n">register</span><span class="o">=</span><span class="n">register</span><span class="p">,</span>
+                                            <span class="n">overwrite_registry</span><span class="o">=</span><span class="n">overwrite_registry</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PyModuleModel.as_dict"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.PyModuleModel.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;module_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module_path</span><span class="p">,</span>
+                <span class="s2">&quot;@module&quot;</span><span class="p">:</span> <span class="s2">&quot;propnet.core.model&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;@class&quot;</span><span class="p">:</span> <span class="s2">&quot;PyModuleModel&quot;</span><span class="p">}</span></div></div>
+
+
+<span class="c1"># TODO: filter might be unified with constraint</span>
+<span class="c1"># TODO: the implementation here is inherently difficult because</span>
+<span class="c1">#       it relies on iterative pairing.  A lookup-oriented strategy</span>
+<span class="c1">#       might be implemented in the future.</span>
+<div class="viewcode-block" id="CompositeModel"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.CompositeModel">[docs]</a><span class="k">class</span> <span class="nc">CompositeModel</span><span class="p">(</span><span class="n">PyModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Model based on deriving emerging properties (symbols) from collections of</span>
+<span class="sd">    materials of known properties (symbols).</span>
+
+<span class="sd">    Model requires the unambiguous assignment of materials to labels.</span>
+<span class="sd">    These labeled materials&#39; properties (symbols) are then referenced.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_registry_name</span> <span class="o">=</span> <span class="s2">&quot;composite_models&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">connections</span><span class="p">,</span> <span class="n">plug_in</span><span class="p">,</span> <span class="n">pre_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): title of the model</span>
+<span class="sd">            connections (`list` of `dict`): list of connections dictionaries,</span>
+<span class="sd">                which take the form {&quot;inputs&quot;: [variables],</span>
+<span class="sd">                                     &quot;outputs&quot;: [variables]}, e. g.:</span>
+<span class="sd">                connections = [{&quot;inputs&quot;: [&quot;p&quot;, &quot;T&quot;], &quot;outputs&quot;: [&quot;V&quot;]},</span>
+<span class="sd">                               {&quot;inputs&quot;: [&quot;T&quot;, &quot;V&quot;], &quot;outputs&quot;: [&quot;p&quot;]}]</span>
+<span class="sd">            pre_filter (callable): callable for filtering the input materials</span>
+<span class="sd">                into independent sets which are supplied as candidates</span>
+<span class="sd">                for inputs into the model, Defaults to None.  Signature</span>
+<span class="sd">                should be pre_filter(materials) where materials is a list</span>
+<span class="sd">                of materials, and returns a dictionary with the materials</span>
+<span class="sd">                keyed by the associated arguments to plug_in e. g.</span>
+<span class="sd">                {&#39;metal&#39;: [Materials], &#39;oxide&#39;: [Materials]}</span>
+<span class="sd">            filter (callable): callable for filtering pairs of materials</span>
+<span class="sd">                to ensure that valid pairings are supplied.  Takes</span>
+<span class="sd">                an input dictionary of key-value pairs corresponding to</span>
+<span class="sd">                input material candidates keyed by input kwarg to plug_in,</span>
+<span class="sd">                e. g. filter({&#39;metal&#39;: Material, &#39;oxide&#39;: Material})</span>
+<span class="sd">            **kwargs: model params, e. g. description, references, etc.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">PyModel</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">connections</span><span class="o">=</span><span class="n">connections</span><span class="p">,</span>
+                         <span class="n">plug_in</span><span class="o">=</span><span class="n">plug_in</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_filter</span> <span class="o">=</span> <span class="n">pre_filter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter</span> <span class="o">=</span> <span class="nb">filter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mat_inputs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">connection</span> <span class="ow">in</span> <span class="n">connections</span><span class="p">:</span>
+            <span class="k">for</span> <span class="nb">input</span> <span class="ow">in</span> <span class="n">connection</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]:</span>
+                <span class="n">mat</span> <span class="o">=</span> <span class="n">CompositeModel</span><span class="o">.</span><span class="n">get_material</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">mat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mat_inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mat</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_verify_symbols_are_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">composite_prop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_symbols</span><span class="p">:</span>
+            <span class="n">split_prop</span> <span class="o">=</span> <span class="n">composite_prop</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">split_prop</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">material_type</span><span class="p">,</span> <span class="n">prop</span> <span class="o">=</span> <span class="n">split_prop</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">material_type</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">prop</span> <span class="o">=</span> <span class="n">split_prop</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Symbol &#39;</span><span class="si">{}</span><span class="s2">&#39; of material &#39;</span><span class="si">{}</span><span class="s2">&#39; is not registered in &quot;</span>
+                               <span class="s2">&quot;symbol registry in model &#39;</span><span class="si">{}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">composite_prop</span><span class="p">,</span>
+                                                                       <span class="n">material_type</span><span class="p">,</span>
+                                                                       <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+<div class="viewcode-block" id="CompositeModel.get_material"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.CompositeModel.get_material">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_material</span><span class="p">(</span><span class="n">input_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            input_ (String): inputs entry from the connections instance variable.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            String or None only material identifiers from the input argument.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">separation</span> <span class="o">=</span> <span class="n">input_</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">separation</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">components</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">separation</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">components</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Connections can only contain 1 period separator.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="CompositeModel.get_variable"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.CompositeModel.get_variable">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_variable</span><span class="p">(</span><span class="n">input_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            input_value (String): inputs entry from the connections.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            String only variable identifiers from the input argument.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">separation</span> <span class="o">=</span> <span class="n">input_value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">separation</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">components</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">input_value</span>
+        <span class="k">elif</span> <span class="n">components</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">separation</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">components</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Connections can only contain 1 period separator.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="CompositeModel.gen_material_mappings"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.CompositeModel.gen_material_mappings">[docs]</a>    <span class="k">def</span> <span class="nf">gen_material_mappings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">materials</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a set of materials, returns a mapping from each material label</span>
+<span class="sd">        found in self.connections to a Material object.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            materials (list&lt;Material&gt;): list of candidate Material objects.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (list&lt;dict&lt;String, Material&gt;&gt;) mapping from material label</span>
+<span class="sd">                to Material object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Group by label all possible candidate materials in a</span>
+        <span class="c1"># dict&lt;String, list&lt;Material&gt;&gt;</span>
+        <span class="n">pre_process</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">material</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mat_inputs</span><span class="p">:</span>
+            <span class="n">pre_process</span><span class="p">[</span><span class="n">material</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_filter</span><span class="p">:</span>
+            <span class="n">cache</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_filter</span><span class="p">(</span><span class="n">materials</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cache</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pre_process</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;pre_filter method returned unrecognized &quot;</span>
+                                    <span class="s2">&quot;material name.&quot;</span><span class="p">)</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;pre_filter method did not return a list &quot;</span>
+                                    <span class="s2">&quot;of candidate materials.&quot;</span><span class="p">)</span>
+                <span class="n">pre_process</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pre_process</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">pre_process</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pre_process</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">materials</span>
+
+        <span class="c1"># Check if any combinations are possible - return if not.</span>
+        <span class="k">for</span> <span class="n">material</span> <span class="ow">in</span> <span class="n">pre_process</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pre_process</span><span class="p">[</span><span class="n">material</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="c1"># Create all combinatorial pairs.</span>
+        <span class="c1">## Setup helper variables.</span>
+        <span class="n">to_return</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">tracking</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">pre_process</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">materials</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">material</span> <span class="ow">in</span> <span class="n">pre_process</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">materials</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">material</span><span class="p">)</span>
+        <span class="n">overflow</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tracking</span><span class="p">)</span>
+
+        <span class="c1">## Setup helper functions.</span>
+        <span class="k">def</span> <span class="nf">gen_mat_mapping</span><span class="p">():</span>
+            <span class="sd">&quot;&quot;&quot;Generates a material mapping given current state&quot;&quot;&quot;</span>
+            <span class="n">to_return</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">materials</span><span class="p">)):</span>
+                <span class="n">to_return</span><span class="p">[</span><span class="n">materials</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pre_process</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">materials</span><span class="p">[</span><span class="n">i</span><span class="p">])[</span><span class="n">tracking</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="k">return</span> <span class="n">to_return</span>
+
+        <span class="k">def</span> <span class="nf">step</span><span class="p">():</span>
+            <span class="sd">&quot;&quot;&quot;Advances the state, returns a boolean as to whether the loop should continue&quot;&quot;&quot;</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tracking</span><span class="p">)</span> <span class="ow">and</span> <span class="n">inc</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">i</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tracking</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">inc</span><span class="p">(</span><span class="n">index</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Increments an index in tracking. Returns if index had to wrap back to zero.&quot;&quot;&quot;</span>
+            <span class="n">tracking</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">tracking</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">%=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pre_process</span><span class="p">[</span><span class="n">materials</span><span class="p">[</span><span class="n">index</span><span class="p">]])</span>
+            <span class="k">return</span> <span class="n">tracking</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
+
+        <span class="n">continue_loop</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">while</span> <span class="n">continue_loop</span><span class="p">:</span>
+            <span class="c1"># Generate the material mapping.</span>
+            <span class="n">cache</span> <span class="o">=</span> <span class="n">gen_mat_mapping</span><span class="p">()</span>
+            <span class="c1"># Queue up next iteration.</span>
+            <span class="n">continue_loop</span> <span class="o">=</span> <span class="n">step</span><span class="p">()</span>
+            <span class="c1"># Check for duplicate materials in the set - don&#39;t include these</span>
+            <span class="n">duplicates</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">cache</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">duplicates</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)):</span>
+                        <span class="k">if</span> <span class="n">vals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="n">vals</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span>
+                            <span class="n">duplicates</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">break</span>
+            <span class="k">if</span> <span class="n">duplicates</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c1"># Check if materials set is valid</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">cache</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="c1"># Accept the input set.</span>
+            <span class="n">to_return</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">to_return</span></div></div>
+
+
+<div class="viewcode-block" id="PyModuleCompositeModel"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.PyModuleCompositeModel">[docs]</a><span class="k">class</span> <span class="nc">PyModuleCompositeModel</span><span class="p">(</span><span class="n">CompositeModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    PyModuleModel is a class instantiated by a model path only,</span>
+<span class="sd">    which exists primarily for the purpose of serializing python models</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_path</span><span class="p">,</span> <span class="n">is_builtin</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">overwrite_registry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            module_path (str): path to module to instantiate model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_module_path</span> <span class="o">=</span> <span class="n">module_path</span>
+        <span class="n">mod</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="n">module_path</span><span class="p">,</span> <span class="nb">globals</span><span class="p">(),</span> <span class="nb">locals</span><span class="p">(),</span> <span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PyModuleCompositeModel</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+                                                     <span class="n">is_builtin</span><span class="o">=</span><span class="n">is_builtin</span><span class="p">,</span>
+                                                     <span class="n">register</span><span class="o">=</span><span class="n">register</span><span class="p">,</span>
+                                                     <span class="n">overwrite_registry</span><span class="o">=</span><span class="n">overwrite_registry</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PyModuleCompositeModel.as_dict"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.PyModuleCompositeModel.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;module_path&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module_path</span><span class="p">,</span>
+                <span class="s2">&quot;@module&quot;</span><span class="p">:</span> <span class="s2">&quot;propnet.core.model&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;@class&quot;</span><span class="p">:</span> <span class="s2">&quot;PyModuleCompositeModel&quot;</span><span class="p">}</span></div></div>
+
+
+<span class="c1"># Right now I don&#39;t see much of a use case for pythonic functionality</span>
+<span class="c1"># here but maybe there should be</span>
+<span class="c1"># TODO: Have this not inherit from Model because its functionality is</span>
+<span class="c1">#       fundamentally different</span>
+<div class="viewcode-block" id="Constraint"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Constraint">[docs]</a><span class="k">class</span> <span class="nc">Constraint</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constraint class, resembles a model, but should outputs</span>
+<span class="sd">    true or false based on a string expression containing</span>
+<span class="sd">    input variables</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            expression (str): str to be parsed to evaluate constraint</span>
+<span class="sd">            name (str): optional name for constraint, default None</span>
+<span class="sd">            **kwargs: kwargs for model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expression</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="c1"># Parse all the non-math variables and assign to inputs</span>
+        <span class="n">split</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;[+-/*&lt;&gt;=()]&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">split</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">will_it_float</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">and</span> <span class="n">s</span><span class="p">]</span>
+        <span class="n">connections</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">inputs</span><span class="p">,</span> <span class="s2">&quot;outputs&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;is_valid&quot;</span><span class="p">]}]</span>
+        <span class="n">Model</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">connections</span><span class="o">=</span><span class="n">connections</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_verify_symbols_are_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Is it possible to not have any outputs for these models instead of &quot;is_valid&quot;?</span>
+        <span class="c1"># If so, then we don&#39;t have to override this function</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_inputs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Symbol &#39;</span><span class="si">{}</span><span class="s2">&#39; is not registered in &quot;</span>
+                               <span class="s2">&quot;symbol registry for constraint &#39;</span><span class="si">{}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Constraint.register"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Constraint.register">[docs]</a>    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">overwrite_registry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Constraint.plug_in"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.Constraint.plug_in">[docs]</a>    <span class="k">def</span> <span class="nf">plug_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_value_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluates the expression with sympy and provided values</span>
+<span class="sd">        and returns the boolean of that expression</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            variable_value_dict (dict): dict containing</span>
+<span class="sd">                variable-keyed values to substitute</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: value of substituted expression</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">parse_expr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">variable_value_dict</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;Constraint: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">expression</span> <span class="o">==</span> <span class="n">rhs</span><span class="o">.</span><span class="n">expression</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">expression</span> <span class="o">==</span> <span class="n">rhs</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span></div>
+
+
+<div class="viewcode-block" id="will_it_float"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.will_it_float">[docs]</a><span class="k">def</span> <span class="nf">will_it_float</span><span class="p">(</span><span class="n">input_to_test</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function to determine if input string can be cast to float</span>
+
+<span class="sd">    &quot;If she weights the same as a duck... she&#39;s made of wood&quot;</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_to_test (str): input string to be tested</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">float</span><span class="p">(</span><span class="n">input_to_test</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="remap"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.remap">[docs]</a><span class="k">def</span> <span class="nf">remap</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper method to remap entries in a list or keys in a dictionary</span>
+<span class="sd">    based on an input map, used to translate variables to symbols</span>
+<span class="sd">    and vice-versa</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj (`list`, `dict`, `set`): an iterable of symbols or symbol-keyed</span>
+<span class="sd">            dictionary to be remapped using variables.</span>
+<span class="sd">        mapping (dict): dictionary of values to remap</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        `list`, `dict`, `set`: remapped list of items or item-keyed dictionary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="p">{</span><span class="n">mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">in_key</span><span class="p">)</span> <span class="ow">or</span> <span class="n">in_key</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">in_key</span><span class="p">)</span>
+               <span class="k">for</span> <span class="n">in_key</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="p">[</span><span class="n">mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">in_item</span><span class="p">)</span> <span class="ow">or</span> <span class="n">in_item</span> <span class="k">for</span> <span class="n">in_item</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">set</span><span class="p">):</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new</span></div>
+
+
+<div class="viewcode-block" id="get_vars_from_expression"><a class="viewcode-back" href="../../../source/propnet.core.models.html#propnet.core.models.get_vars_from_expression">[docs]</a><span class="k">def</span> <span class="nf">get_vars_from_expression</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function to get all sympy symbols (vars) from a string expression</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        expression (str or sympy expression): string or sympy expression</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+        <span class="n">expression</span> <span class="o">=</span> <span class="n">parse_expr</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">([</span><span class="n">get_vars_from_expression</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+                                        <span class="k">for</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">expression</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">free_symbols</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">out</span><span class="p">))</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

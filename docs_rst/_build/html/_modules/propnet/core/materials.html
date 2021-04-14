@@ -1,0 +1,408 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.materials &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.gov_modules/propnet/core/materials.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, rgba(23,162,135,1) 0%, rgba(0,192,136,1) 100%)" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>propnet.core.materials</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for propnet.core.materials</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module containing classes and methods for Material functionality in propnet code.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+
+<span class="kn">from</span> <span class="nn">propnet.core.quantity</span> <span class="kn">import</span> <span class="n">QuantityFactory</span><span class="p">,</span> <span class="n">NumQuantity</span>
+<span class="kn">from</span> <span class="nn">propnet.core.symbols</span> <span class="kn">import</span> <span class="n">Symbol</span>
+
+<span class="c1"># noinspection PyUnresolvedReferences</span>
+<span class="kn">import</span> <span class="nn">propnet.symbols</span>
+<span class="kn">from</span> <span class="nn">propnet.core.registry</span> <span class="kn">import</span> <span class="n">Registry</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Material"><a class="viewcode-back" href="../../../source/propnet.core.materials.html#propnet.core.materials.Material">[docs]</a><span class="k">class</span> <span class="nc">Material</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class containing methods for creating and interacting with Material objects.</span>
+
+<span class="sd">    Under the Propnet infrastructure, Materials are the medium through which properties are</span>
+<span class="sd">    communicated. While Model and Symbol nodes create a web of interconnected properties,</span>
+<span class="sd">    Materials, as collections of Quantity nodes, provide concrete numbers to those properties.</span>
+<span class="sd">    At runtime, a Material can be constructed and added to a Graph instance, merging the two</span>
+<span class="sd">    graphs and allowing for propagation of concrete numbers through the property web.</span>
+
+<span class="sd">    A unique hashcode is stored with each Material upon instantiation. This is used to</span>
+<span class="sd">    differentiate between different materials at runtime.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        symbol_quantities_dict (dict&lt;Symbol, set&lt;Quantity&gt;&gt;): data structure mapping Symbols to a list of corresponding</span>
+<span class="sd">                                                           Quantity objects of that type.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantities</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_default_quantities</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a Material instance, instantiating a trivial graph of one node.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quantities ([Quantity]): list of quantities to add to</span>
+<span class="sd">                the material</span>
+<span class="sd">            add_default_quantities (bool): whether to add default</span>
+<span class="sd">                quantities (e. g. room temperature) to the graph</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">quantities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">quantity</span> <span class="ow">in</span> <span class="n">quantities</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_quantity</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">add_default_quantities</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_default_quantities</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Material.add_quantity"><a class="viewcode-back" href="../../../source/propnet.core.materials.html#propnet.core.materials.Material.add_quantity">[docs]</a>    <span class="k">def</span> <span class="nf">add_quantity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds a property to this property collection.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quantity (Quantity): property to be bound to the material.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">[</span><span class="n">quantity</span><span class="o">.</span><span class="n">symbol</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Material.remove_quantity"><a class="viewcode-back" href="../../../source/propnet.core.materials.html#propnet.core.materials.Material.remove_quantity">[docs]</a>    <span class="k">def</span> <span class="nf">remove_quantity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes the Quantity object attached to this Material.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quantity (Quantity): Quantity object reference indicating</span>
+<span class="sd">            which property is to be removed from this Material.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">quantity</span><span class="o">.</span><span class="n">symbol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Attempting to remove quantity not present in &quot;</span>
+                            <span class="s2">&quot;the material.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">[</span><span class="n">quantity</span><span class="o">.</span><span class="n">symbol</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Material.add_default_quantities"><a class="viewcode-back" href="../../../source/propnet.core.materials.html#propnet.core.materials.Material.add_default_quantities">[docs]</a>    <span class="k">def</span> <span class="nf">add_default_quantities</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds any default symbols which are not present in the graph</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_syms</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbol_values&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">new_syms</span> <span class="o">-=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">sym</span> <span class="ow">in</span> <span class="n">new_syms</span><span class="p">:</span>
+            <span class="n">quantity</span> <span class="o">=</span> <span class="n">QuantityFactory</span><span class="o">.</span><span class="n">from_default</span><span class="p">(</span><span class="n">sym</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Adding default </span><span class="si">{}</span><span class="s2"> quantity with value </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                           <span class="n">sym</span><span class="p">,</span> <span class="n">quantity</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_quantity</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Material.remove_symbol"><a class="viewcode-back" href="../../../source/propnet.core.materials.html#propnet.core.materials.Material.remove_symbol">[docs]</a>    <span class="k">def</span> <span class="nf">remove_symbol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">symbol</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes all Quantity Nodes attached to this Material of type symbol.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            symbol (Symbol): object indicating which property type</span>
+<span class="sd">                is to be removed from this material.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">symbol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Attempting to remove Symbol not present in the material.&quot;</span><span class="p">)</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">[</span><span class="n">symbol</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Material.get_symbols"><a class="viewcode-back" href="../../../source/propnet.core.materials.html#propnet.core.materials.Material.get_symbols">[docs]</a>    <span class="k">def</span> <span class="nf">get_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtains all Symbol objects bound to this Material.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (set&lt;Symbol&gt;) set containing all symbols bound to this Material.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Material.get_quantities"><a class="viewcode-back" href="../../../source/propnet.core.materials.html#propnet.core.materials.Material.get_quantities">[docs]</a>    <span class="k">def</span> <span class="nf">get_quantities</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method obtains all Quantity objects bound to this Material.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (list&lt;Quantity&gt;) list of all Quantity objects bound to this Material.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span></div>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">symbol_quantities_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="Material.get_aggregated_quantities"><a class="viewcode-back" href="../../../source/propnet.core.materials.html#propnet.core.materials.Material.get_aggregated_quantities">[docs]</a>    <span class="k">def</span> <span class="nf">get_aggregated_quantities</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return mean values for all quantities for each symbol.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (dict&lt;Symbol, weighted_mean) mapping from a Symbol to</span>
+<span class="sd">            an aggregated statistic.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: proper weighting system, and more flexibility in object handling</span>
+        <span class="n">aggregated</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">symbol</span><span class="p">,</span> <span class="n">quantities</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">symbol</span><span class="o">.</span><span class="n">category</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span><span class="p">:</span>
+                <span class="n">aggregated</span><span class="p">[</span><span class="n">symbol</span><span class="p">]</span> <span class="o">=</span> <span class="n">NumQuantity</span><span class="o">.</span><span class="n">from_weighted_mean</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">quantities</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">aggregated</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">QUANTITY_LENGTH_CAP</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="n">building</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">building</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;Material: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">hex</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">))),</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">building</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">symbol</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">quantity</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">[</span><span class="n">symbol</span><span class="p">]:</span>
+                <span class="n">qs</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">qs</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">qs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">QUANTITY_LENGTH_CAP</span><span class="p">:</span>
+                    <span class="n">qs</span> <span class="o">=</span> <span class="s2">&quot;...&quot;</span>
+                <span class="n">building</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">qs</span><span class="p">]</span>
+            <span class="n">building</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">building</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Material</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">symbol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">[</span><span class="n">symbol</span><span class="p">])</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">[</span><span class="n">symbol</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">quantity</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">[</span><span class="n">symbol</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">quantity</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">[</span><span class="n">symbol</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">quantity_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantities_by_symbol</span><span class="p">[</span><span class="n">item</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="CompositeMaterial"><a class="viewcode-back" href="../../../source/propnet.core.materials.html#propnet.core.materials.CompositeMaterial">[docs]</a><span class="k">class</span> <span class="nc">CompositeMaterial</span><span class="p">(</span><span class="n">Material</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class representing a material composed of one or more sub-materials.</span>
+
+<span class="sd">    Useful for representing materials properties that arise from</span>
+<span class="sd">    multiple materials (i. e. contact voltage in metals)</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        symbol_quantities_dict (dict&lt;Symbol, set&lt;Quantity&gt;&gt;): data-structure</span>
+<span class="sd">            storing all properties / descriptors that arise from the</span>
+<span class="sd">            joining of multiple materials</span>
+<span class="sd">        materials (list&lt;Material&gt;): set of materials contained in the Composite</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">materials_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a Composite Material instance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            materials_list (list&lt;Material&gt;): list of materials contained</span>
+<span class="sd">                in the Composite</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">materials</span> <span class="o">=</span> <span class="n">materials_list</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CompositeMaterial</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

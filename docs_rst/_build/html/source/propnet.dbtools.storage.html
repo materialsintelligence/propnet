@@ -1,0 +1,549 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.dbtools.storage module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.dbtools.storage.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.dbtools.storage module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.dbtools.storage.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.dbtools.storage">
+<span id="propnet-dbtools-storage-module"></span><h1>propnet.dbtools.storage module<a class="headerlink" href="#module-propnet.dbtools.storage" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="propnet.dbtools.storage.ProvenanceStore">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.dbtools.storage.</span></code><code class="sig-name descname"><span class="pre">ProvenanceStore</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">provenance_in</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">monty.json.MSONable</span></code></p>
+<p>A class to hold provenance data for storage. It is held within a StorageQuantity
+or ProvenanceStoreQuantity object. The class provides methods to coerce ProvenanceElement
+objects for storage.</p>
+<p>This class does not inherit from ProvenanceElement in effort to remain autonomous as a storage
+container, and to strip any unwanted functionality from the ProvenanceElement class.</p>
+<p>The main purpose of these three classes is to prevent storing many copies of
+provenance quantity data (i.e. the values) in the database to save on document size.</p>
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStore.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStore.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStore.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts object to a dictionary representation for serialization. Can
+be reconstructed using from_dict()</p>
+<p>Returns: (dict) dictionary containing object information</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStore.from_dict">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_dict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStore.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStore.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs a ProvenanceStore object from its dictionary representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>d</strong> – (dict) dictionary representation of the object. Can contain the
+dictionary representation of other objects as long as they
+implement from_dict()</p>
+</dd>
+</dl>
+<p>Returns: (ProvenanceStore) new object constructed from dictionary values</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStore.from_provenance_element">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_provenance_element</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">provenance_in</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStore.from_provenance_element"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStore.from_provenance_element" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a ProvenanceStore from a ProvenanceElement. Differs from __init__()
+in that if a ProvenanceStore is input instead of a ProvenanceElement, a copy
+of the ProvenanceStore is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>provenance_in</strong> – (ProvenanceElement, ProvenanceStore) provenance object to
+convert or copy</p>
+</dd>
+</dl>
+<p>Returns: (ProvenanceStore) new provenance object for storage</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStore.get_missing_keys">
+<code class="sig-name descname"><span class="pre">get_missing_keys</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStore.get_missing_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStore.get_missing_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the inputs in the provenance tree that are missing values and reports
+their internal IDs.</p>
+<dl class="simple">
+<dt>Returns: (set) set of internal IDs whose values are missing. Empty set if</dt><dd><p>all values are present or no provenance tree exists.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStore.inputs">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">inputs</span></code><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStore.inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the input quantities stored in provenance. Returns a copy so they remain
+immutable.</p>
+<dl class="simple">
+<dt>Returns: (list&lt;ProvenanceStoreQuantity&gt;) list of input quantities, None if none</dt><dd><p>present.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStore.model">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">model</span></code><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStore.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the name of the model used to calculate the associated quantity.</p>
+<p>Returns: (str) name of the model</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStore.source">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">source</span></code><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStore.source" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the source information for the provenance.</p>
+<p>Returns: (dict) dictionary containing metadata about the provenance source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStore.to_provenance_element">
+<code class="sig-name descname"><span class="pre">to_provenance_element</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lookup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStore.to_provenance_element"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStore.to_provenance_element" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the current object to a ProvenanceElement object, looking up missing input
+values if needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>lookup</strong> – (dict or function) lookup container for missing provenance input information</p>
+</dd>
+</dl>
+<p>Returns: (ProvenanceElement) reconstructed provenance object</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.dbtools.storage.ProvenanceStoreQuantity">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.dbtools.storage.</span></code><code class="sig-name descname"><span class="pre">ProvenanceStoreQuantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantity_to_store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStoreQuantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStoreQuantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.dbtools.storage.StorageQuantity" title="propnet.dbtools.storage.StorageQuantity"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.dbtools.storage.StorageQuantity</span></code></a></p>
+<p>This class is the crux of the storage containers. It is the container for quantities
+which are stored as provenance inputs. Upon serialization, value, units, and uncertainty
+are explicitly omitted from the dictionary to save on space.</p>
+<p>When recreated from dictionary objects, the objects will be missing the above values.
+Before conversion to BaseQuantity-derived objects, these values must be replaced by providing
+a lookup dictionary or function. The lookup must take an internal ID as input and output
+a dictionary with ‘value’, ‘units’, and ‘uncertainty’ fields.</p>
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStoreQuantity.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStoreQuantity.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStoreQuantity.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives the dictionary representation of this object, excluding value,
+units, and uncertainty.</p>
+<p>Returns: (dict) dictionary representation of this object for serialization</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStoreQuantity.has_value">
+<code class="sig-name descname"><span class="pre">has_value</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStoreQuantity.has_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStoreQuantity.has_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the object has a value that is not None.</p>
+<p>If function evaluates True, it is most likely that the object has not had
+lookup_value() run with a valid lookup container. BaseQuantity-derived
+objects cannot hold of a value of None, so it should not be possible
+for the value to be None for another reason.</p>
+<p>Returns: (bool) False if the value is missing (is None). True otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStoreQuantity.lookup_value">
+<code class="sig-name descname"><span class="pre">lookup_value</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lookup</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStoreQuantity.lookup_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStoreQuantity.lookup_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Looks up and replaces the value, units, and uncertainty of this quantity.</p>
+<p>Lookup dictionaries should be keyed by internal ID, and have values which are
+dictionaries with the fields shown below. Lookup functions should take one argument,
+internal ID, and return a dictionary with the fields below.</p>
+<dl class="simple">
+<dt>Lookup return value construction:</dt><dd><p>value: (id) value of the quantity
+units: (str) units of quantity, None if no units
+uncertainty: (int, float, complex) uncertainty value, None if no uncertainty</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>lookup</strong> – (dict or function) container for looking up values</p>
+</dd>
+</dl>
+<p>Returns: (bool) True if the value was successfully located and replaced. False otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.ProvenanceStoreQuantity.to_quantity">
+<code class="sig-name descname"><span class="pre">to_quantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lookup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#ProvenanceStoreQuantity.to_quantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.ProvenanceStoreQuantity.to_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the object into a BaseQuantity-derived object, doing value lookup
+and replacement as needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>lookup</strong> – (dict or function) container for looking up values</p>
+</dd>
+</dl>
+<p>Returns: (BaseQuantity) current object as BaseQuantity-derived object</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.dbtools.storage.StorageQuantity">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.dbtools.storage.</span></code><code class="sig-name descname"><span class="pre">StorageQuantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantity_to_store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#StorageQuantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">monty.json.MSONable</span></code></p>
+<p>A class to hold quantity data intended for database storage.</p>
+<p>This class does not inherit from BaseQuantity in effort to remain autonomous as a storage
+container, and not implementing much of the functionality required by the BaseQuantity class.</p>
+<p>This class is the top-level object for storage. StorageQuantity objects contain a ProvenanceStore
+object for provenance which therein contains ProvenanceStoreQuantity objects as its inputs.</p>
+<dl>
+<dt>Hierarchy for non-storage objects:</dt><dd><p>BaseQuantity has a ProvenanceElement (self.provenance)
+ProvenanceElement has a list of BaseQuantity objects (self.provenance.inputs)
+Each input BaseQuantity object has a ProvenanceElement with BaseQuantity inputs, etc.</p>
+</dd>
+<dt>Hierarchy for non-storage objects:</dt><dd><p>StorageQuantity has a ProvenanceStore (self.provenance)
+ProvenanceStore has a list of ProvenanceStoreQuantity objects (self.provenance.inputs)
+Each input ProvenanceStoreQuantity object has a ProvenanceStore</p>
+<blockquote>
+<div><p>with ProvenanceStoreQuantity inputs, etc.</p>
+</div></blockquote>
+</dd>
+</dl>
+<p>The main purpose of these three classes is to prevent storing many copies of
+provenance quantity data (i.e. the values) in the database to save on document size.</p>
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#StorageQuantity.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns object instance as a dictionary. Object can be reconstituted from this
+dictionary using from_dict().</p>
+<p>Returns: (dict) dictionary representation of the object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.from_dict">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_dict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#StorageQuantity.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a StorageQuantity object from a dictionary of instance variable values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>d</strong> – (dict) dictionary of object instance variable values</p>
+</dd>
+</dl>
+<p>Returns: (StorageQuantity) StorageQuantity represented by the dictionary values</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.from_quantity">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_quantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantity_in</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#StorageQuantity.from_quantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.from_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a StorageQuantity object from a BaseQuantity-derived object
+or returns a deep copy of a StorageQuantity object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>quantity_in</strong> – (BaseQuantity, StorageQuantity) quantity to convert</p>
+</dd>
+</dl>
+<p>Returns: (StorageQuantity) converted or copied object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.get_missing_keys">
+<code class="sig-name descname"><span class="pre">get_missing_keys</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#StorageQuantity.get_missing_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.get_missing_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the inputs in the provenance tree that are missing values and reports
+their internal IDs.</p>
+<dl class="simple">
+<dt>Returns: (set) set of internal IDs whose values are missing. Empty set if</dt><dd><p>all values are present or no provenance tree exists.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.magnitude">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">magnitude</span></code><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.magnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the object’s value (same as self.value)</p>
+<p>Note: For numerical quantities, self.value already contains the unitless magnitude</p>
+<p>Returns: (id) object’s value</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.needs_lookup">
+<code class="sig-name descname"><span class="pre">needs_lookup</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#StorageQuantity.needs_lookup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.needs_lookup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks to see if this object requires a value lookup dictionary to be converted
+to a BaseQuantity-derived object. Inputs in the provenance tree
+may be missing if the object was created from a JSON-serialized dictionary.</p>
+<dl class="simple">
+<dt>Returns: True if there are inputs missing values in the provenance tree.</dt><dd><p>False if all values are present or there is no provenance tree.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.provenance">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">provenance</span></code><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.provenance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of this object’s provenance object</p>
+<p>Returns: (ProvenanceElement) provenance information</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.reconstruct_quantity">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">reconstruct_quantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#StorageQuantity.reconstruct_quantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.reconstruct_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recreates BaseQuantity-derived object from JSON-serialized dictionary
+representation of the equivalent StorageQuantity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d</strong> – (dict) dictionary representation of StorageQuantity object</p></li>
+<li><p><strong>lookup</strong> – (dict or function) lookup container for missing values,
+if they exist (see to_quantity() for more information)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns: (BaseQuantity) BaseQuantity-derived object representation</dt><dd><p>of the dictionary values</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.symbol">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">symbol</span></code><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.symbol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the object’s symbol representing the property stored</p>
+<p>Returns: (Symbol) Symbol property object of this object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.tags">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">tags</span></code><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.tags" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the object’s list of tags.</p>
+<p>Returns: (list&lt;str&gt;) tags for the object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.to_quantity">
+<code class="sig-name descname"><span class="pre">to_quantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lookup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/dbtools/storage.html#StorageQuantity.to_quantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.to_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the current StorageQuantity to the appropriate BaseQuantity-derived
+object.</p>
+<p>Verifies that the object’s provenance has complete values, which would be
+missing if read in from a JSON-serialized dictionary. If values are found
+to be missing, a lookup function/dictionary is required to reconstitute the data.</p>
+<p>Lookup dictionaries should be keyed by internal ID, and have values which are
+dictionaries with the fields shown below. Lookup functions should take one argument,
+internal ID, and return a dictionary with the fields below.</p>
+<dl class="simple">
+<dt>Lookup return value construction:</dt><dd><p>value: (id) value of the quantity
+units: (str) units of quantity, None if no units
+uncertainty: (int, float, complex) uncertainty value, None if no uncertainty</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>lookup</strong> – (dict or function) lookup container for missing values. Not required
+if self.needs_lookup() is False</p>
+</dd>
+</dl>
+<p>Returns: (BaseQuantity) converted BaseQuantity-derived object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.uncertainty">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">uncertainty</span></code><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns uncertainty as pint Quantity</p>
+<p>Returns: (pint.Quantity) uncertainty as pint object or None if does not exist</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.units">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">units</span></code><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the units of the object as a pint.Unit.</p>
+<p>Returns: (pint.Unit) units, None if no units</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.dbtools.storage.StorageQuantity.value">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">value</span></code><a class="headerlink" href="#propnet.dbtools.storage.StorageQuantity.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the object’s value.</p>
+<p>Returns: (id) object’s value</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

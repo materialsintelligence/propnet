@@ -1,0 +1,377 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.ext.matproj &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.gov_modules/propnet/ext/matproj.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, rgba(23,162,135,1) 0%, rgba(0,192,136,1) 100%)" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>propnet.ext.matproj</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for propnet.ext.matproj</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">propnet.core.materials</span> <span class="kn">import</span> <span class="n">Material</span>
+<span class="kn">from</span> <span class="nn">propnet.core.quantity</span> <span class="kn">import</span> <span class="n">QuantityFactory</span>
+<span class="kn">from</span> <span class="nn">propnet.core.provenance</span> <span class="kn">import</span> <span class="n">ProvenanceElement</span>
+
+<span class="kn">from</span> <span class="nn">pymatgen</span> <span class="kn">import</span> <span class="n">MPRester</span> <span class="k">as</span> <span class="n">_MPRester</span>
+
+<span class="c1"># noinspection PyUnresolvedReferences</span>
+<span class="kn">import</span> <span class="nn">propnet.symbols</span>
+<span class="kn">from</span> <span class="nn">propnet.core.registry</span> <span class="kn">import</span> <span class="n">Registry</span>
+
+
+<span class="c1"># TODO: Distinguish this from the MP rester proper</span>
+<span class="c1"># TODO: do we really need the duplicate methods for lists/single material?</span>
+<span class="c1"># TODO: a more or less universal query scheme</span>
+<div class="viewcode-block" id="MPRester"><a class="viewcode-back" href="../../../source/propnet.ext.matproj.html#propnet.ext.matproj.MPRester">[docs]</a><span class="k">class</span> <span class="nc">MPRester</span><span class="p">(</span><span class="n">_MPRester</span><span class="p">):</span>
+    <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;material_id&quot;</span><span class="p">:</span> <span class="s2">&quot;external_identifier_mp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;band_gap.search_gap.band_gap&quot;</span><span class="p">:</span> <span class="s2">&quot;band_gap_pbe&quot;</span><span class="p">,</span>
+        <span class="c1"># &quot;band_structure&quot;: &quot;null_symbol&quot;,</span>
+        <span class="c1"># &quot;band_structure_uniform&quot;: &quot;null_symbol&quot;,</span>
+        <span class="s2">&quot;computed_entry&quot;</span><span class="p">:</span> <span class="s2">&quot;computed_entry&quot;</span><span class="p">,</span>
+        <span class="c1"># &quot;dos&quot;: &quot;null_symbol&quot;,</span>
+        <span class="s2">&quot;diel.n&quot;</span><span class="p">:</span> <span class="s2">&quot;refractive_index&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;diel.poly_total&quot;</span><span class="p">:</span> <span class="s2">&quot;relative_permittivity&quot;</span><span class="p">,</span>
+        <span class="c1"># &quot;diel.e_electronic&quot;: &quot;null_symbol&quot;,</span>
+        <span class="s2">&quot;diel.e_total&quot;</span><span class="p">:</span> <span class="s2">&quot;dielectric_tensor&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;diel.poly_electronic&quot;</span><span class="p">:</span> <span class="s2">&quot;relative_permittivity_electronic&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;diel.pot_ferroelectric&quot;</span><span class="p">:</span> <span class="s2">&quot;potentially_ferroelectric&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;pretty_formula&quot;</span><span class="p">:</span> <span class="s2">&quot;formula&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;e_above_hull&quot;</span><span class="p">:</span> <span class="s2">&quot;energy_above_hull&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;elasticity.elastic_tensor_original&quot;</span><span class="p">:</span> <span class="s2">&quot;elastic_tensor_voigt&quot;</span><span class="p">,</span>
+        <span class="c1"># &quot;elasticity.G_Reuss&quot;: &quot;shear_modulus&quot;,</span>
+        <span class="c1"># &quot;elasticity.G_VRH&quot;: &quot;shear_modulus&quot;,</span>
+        <span class="c1"># &quot;elasticity.G_Voigt&quot;: &quot;shear_modulus&quot;,</span>
+        <span class="c1"># &quot;elasticity.K_Reuss&quot;: &quot;bulk_modulus&quot;,</span>
+        <span class="c1"># &quot;elasticity.K_VRH&quot;: &quot;bulk_modulus&quot;,</span>
+        <span class="c1"># &quot;elasticity.K_Voigt&quot;: &quot;bulk_modulus&quot;,</span>
+        <span class="s2">&quot;elasticity.elastic_anisotropy&quot;</span><span class="p">:</span> <span class="s2">&quot;elastic_anisotropy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;elasticity.universal_anisotropy&quot;</span><span class="p">:</span> <span class="s2">&quot;universal_anisotropy&quot;</span><span class="p">,</span>
+        <span class="c1"># &quot;elasticity.poisson_ratio&quot;: &quot;poisson_ratio&quot;,</span>
+        <span class="s2">&quot;formation_energy_per_atom&quot;</span><span class="p">:</span> <span class="s2">&quot;formation_energy_per_atom&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;magnetic_type&quot;</span><span class="p">:</span> <span class="s2">&quot;magnetic_order&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;oxide_type&quot;</span><span class="p">:</span> <span class="s2">&quot;oxide_type&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;piezo.piezoelectric_tensor&quot;</span><span class="p">:</span> <span class="s2">&quot;piezoelectric_tensor&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;piezo.v_max&quot;</span><span class="p">:</span> <span class="s2">&quot;piezoelectric_modulus_longitudinal_max_direction&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;piezo.eij_max&quot;</span><span class="p">:</span> <span class="s2">&quot;piezoelectric_modulus_longitudinal_max&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;structure&quot;</span><span class="p">:</span> <span class="s2">&quot;structure&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;magnetism.total_magnetization&quot;</span><span class="p">:</span> <span class="s2">&quot;total_magnetization&quot;</span><span class="p">,</span>
+        <span class="c1">#  TODO&quot;: &quot;add property total_magnetization_per_unit_cell</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">_MPRester</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MPRester.get_mpid_from_formula"><a class="viewcode-back" href="../../../source/propnet.ext.matproj.html#propnet.ext.matproj.MPRester.get_mpid_from_formula">[docs]</a>    <span class="k">def</span> <span class="nf">get_mpid_from_formula</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formula</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a Materials Project ID from a formula, assuming</span>
+<span class="sd">        the most stable structure for that formula.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            formula (str): formula string</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            mp-id string</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">criteria</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;pretty_formula&#39;</span><span class="p">:</span> <span class="n">formula</span><span class="p">},</span>
+                       <span class="n">properties</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;material_id&#39;</span><span class="p">,</span> <span class="s1">&#39;e_above_hull&#39;</span><span class="p">])</span>
+        <span class="c1"># Sort so that most stable is first</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;e_above_hull&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">q</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;material_id&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="MPRester.get_quantities_for_mpids"><a class="viewcode-back" href="../../../source/propnet.ext.matproj.html#propnet.ext.matproj.MPRester.get_quantities_for_mpids">[docs]</a>    <span class="k">def</span> <span class="nf">get_quantities_for_mpids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mpids</span><span class="p">,</span>
+                                 <span class="n">filter_null_values</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                 <span class="n">include_date_created</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve properties from the Materials Project</span>
+<span class="sd">        for a given list of Materials Project IDs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            mpids ([str]): a list of Materials Project IDs</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ([Dict]) a list of property dictionaries</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">all_symbols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">include_date_created</span><span class="p">:</span>
+            <span class="n">all_symbols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;created_at&#39;</span><span class="p">)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">criteria</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;material_id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$in&#39;</span><span class="p">:</span> <span class="n">mpids</span><span class="p">}},</span>
+                            <span class="n">properties</span><span class="o">=</span><span class="n">all_symbols</span><span class="p">)</span>
+
+        <span class="n">q</span> <span class="o">=</span> <span class="p">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;material_id&#39;</span><span class="p">]:</span> <span class="n">doc</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">}</span>
+
+        <span class="n">entry_query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_entries</span><span class="p">({</span><span class="s1">&#39;material_id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$in&#39;</span><span class="p">:</span> <span class="n">mpids</span><span class="p">}})</span>
+        <span class="n">computed_entries</span> <span class="o">=</span> <span class="p">{</span><span class="n">e</span><span class="o">.</span><span class="n">entry_id</span><span class="p">:</span> <span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">entry_query</span><span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">mpid</span><span class="p">,</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">q</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;computed_entry&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">computed_entries</span><span class="p">[</span><span class="n">mpid</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">filter_null_values</span><span class="p">:</span>
+                <span class="n">q</span><span class="p">[</span><span class="n">mpid</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">doc</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="MPRester.get_quantities_for_mpid"><a class="viewcode-back" href="../../../source/propnet.ext.matproj.html#propnet.ext.matproj.MPRester.get_quantities_for_mpid">[docs]</a>    <span class="k">def</span> <span class="nf">get_quantities_for_mpid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mpid</span><span class="p">,</span> <span class="n">filter_null_values</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A version of get_properties_for_mpids for a single</span>
+<span class="sd">        mpid.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            mpid (str): a Materials Project ID</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (Dict) a dictionary of property values keyed by property names</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_quantities_for_mpids</span><span class="p">([</span><span class="n">mpid</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_quantities_for_mpids</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">mpid</span><span class="p">],</span> <span class="n">filter_null_values</span><span class="o">=</span><span class="n">filter_null_values</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="MPRester.get_materials_for_mpids"><a class="viewcode-back" href="../../../source/propnet.ext.matproj.html#propnet.ext.matproj.MPRester.get_materials_for_mpids">[docs]</a>    <span class="k">def</span> <span class="nf">get_materials_for_mpids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mpids</span><span class="p">,</span> <span class="n">filter_null_values</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve a list of Materials from the materials</span>
+<span class="sd">        Project for a given list of Materials Project IDs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            mpids: a list of Materials Project IDs</span>
+
+<span class="sd">        Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">materials_quantities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_quantities_for_mpids</span><span class="p">(</span>
+            <span class="n">mpids</span><span class="p">,</span> <span class="n">filter_null_values</span><span class="o">=</span><span class="n">filter_null_values</span><span class="p">,</span>
+            <span class="n">include_date_created</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">materials</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">material_quantities</span> <span class="ow">in</span> <span class="n">materials_quantities</span><span class="p">:</span>
+            <span class="n">material</span> <span class="o">=</span> <span class="n">Material</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">date_created</span> <span class="o">=</span> <span class="n">material_quantities</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;created_at&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">date_created</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">symbol_name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">material_quantities</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">provenance</span> <span class="o">=</span> <span class="n">ProvenanceElement</span><span class="p">(</span>
+                    <span class="n">source</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;Materials Project&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;source_key&#39;</span><span class="p">:</span> <span class="n">material_quantities</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;material_id&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                            <span class="s1">&#39;date_created&#39;</span><span class="p">:</span> <span class="n">date_created</span><span class="p">})</span>
+                <span class="n">quantity</span> <span class="o">=</span> <span class="n">QuantityFactory</span><span class="o">.</span><span class="n">create_quantity</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">[</span><span class="n">symbol_name</span><span class="p">],</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="n">units</span><span class="o">=</span><span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">[</span><span class="n">symbol_name</span><span class="p">],</span> <span class="kc">None</span><span class="p">),</span>
+                    <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">)</span>
+                <span class="n">material</span><span class="o">.</span><span class="n">add_quantity</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span>
+            <span class="n">materials</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">material</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">materials</span></div>
+
+<div class="viewcode-block" id="MPRester.get_material_for_mpid"><a class="viewcode-back" href="../../../source/propnet.ext.matproj.html#propnet.ext.matproj.MPRester.get_material_for_mpid">[docs]</a>    <span class="k">def</span> <span class="nf">get_material_for_mpid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mpid</span><span class="p">,</span> <span class="n">filter_null_values</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A version of get_materials for a single mpid.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            mpid: a Materials Project ID</span>
+
+<span class="sd">        Returns: a Material object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_materials_for_mpids</span><span class="p">([</span><span class="n">mpid</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_materials_for_mpids</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">mpid</span><span class="p">],</span> <span class="n">filter_null_values</span><span class="o">=</span><span class="n">filter_null_values</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

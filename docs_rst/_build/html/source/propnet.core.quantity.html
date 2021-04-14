@@ -1,0 +1,1027 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.quantity module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.core.quantity.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.core.quantity module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.core.quantity.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.core.quantity">
+<span id="propnet-core-quantity-module"></span><h1>propnet.core.quantity module<a class="headerlink" href="#module-propnet.core.quantity" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="propnet.core.quantity.BaseQuantity">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.quantity.</span></code><code class="sig-name descname"><span class="pre">BaseQuantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">monty.json.MSONable</span></code></p>
+<p>Base class for storing the value of a property.</p>
+<p>Subclasses of BaseQuantity allow for different kind of information to be stored and interpreted.</p>
+<dl class="py attribute">
+<dt id="propnet.core.quantity.BaseQuantity.symbol_type">
+<code class="sig-name descname"><span class="pre">symbol_type</span></code><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.symbol_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>(Symbol or str) the type of information that is represented
+by the associated value.  If a string, assigns a symbol from
+the default symbols that has that string name</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.BaseQuantity.value">
+<code class="sig-name descname"><span class="pre">value</span></code><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>(id) the value associated with this symbol. This can be any object.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.BaseQuantity.tags">
+<code class="sig-name descname"><span class="pre">tags</span></code><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.tags" title="Permalink to this definition">¶</a></dt>
+<dd><p>(list&lt;str&gt;) tags associated with the quantity, typically
+related to its origin, e. g. “DFT” or “ML” or “experiment”</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.BaseQuantity.provenance">
+<code class="sig-name descname"><span class="pre">provenance</span></code><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.provenance" title="Permalink to this definition">¶</a></dt>
+<dd><p>(ProvenanceElement) provenance information of quantity origin</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes object as a dictionary. Object can be reconstructed with from_dict().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>representation of object as a dictionary</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(dict)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.contains_complex_type">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">contains_complex_type</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.contains_complex_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.contains_complex_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if value contains one or more complex-type values based on variable type.
+Should be implemented for numerical subclasses. Otherwise return False.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if value contains at least one complex-type value.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(bool)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.contains_imaginary_value">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">contains_imaginary_value</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.contains_imaginary_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.contains_imaginary_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if value has a non-zero imaginary component. Differs from
+contains_complex_type() in that it checks the imaginary component’s value.
+If zero or very small, returns True.</p>
+<p>Should be implemented for numerical subclasses. Otherwise return False.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if value contains at least one value with a non-zero imaginary component.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(bool)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.contains_nan_value">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">contains_nan_value</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.contains_nan_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.contains_nan_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if value contains a NaN (not a number) value.
+Should be implemented for numerical subclasses. Otherwise return False.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if value contains at least one NaN value.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(bool)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.draw_provenance_graph">
+<code class="sig-name descname"><span class="pre">draw_provenance_graph</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prog</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dot'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.draw_provenance_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.draw_provenance_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outputs the provenance graph for this quantity to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – (str) filename for output</p></li>
+<li><p><strong>prog</strong> – (str) pygraphviz layout method for drawing the graph</p></li>
+<li><p><strong>**kwargs</strong> – args to pygraphviz.AGraph.draw() method</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.from_dict">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_dict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.get_provenance_graph">
+<code class="sig-name descname"><span class="pre">get_provenance_graph</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_long_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.get_provenance_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.get_provenance_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets an nxgraph object corresponding to the provenance graph</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> (<em>nxgraph</em>) – starting graph to build from</p></li>
+<li><p><strong>filter_long_labels</strong> (<em>bool</em>) – true truncates long labels to just the symbol name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>graph representation of provenance</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(nxgraph)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.get_symbol_from_string">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">get_symbol_from_string</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.get_symbol_from_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.get_symbol_from_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Looks up Symbol from name in Registry(“symbols”) registry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – (str) the name of the Symbol object</p>
+</dd>
+</dl>
+<p>Returns: (Symbol) the Symbol object associated with the name</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.has_eq_value_to">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">has_eq_value_to</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.has_eq_value_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.has_eq_value_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the current quantity’s value is equal to that of another quantity.
+This ignores provenance of the quantity and compares the values only.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>rhs</strong> – (BaseQuantity) the quantity to which the current object will be compared</p>
+</dd>
+</dl>
+<p>Returns: (bool): True if the values are found to be equal (or equivalent)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.is_cyclic">
+<code class="sig-name descname"><span class="pre">is_cyclic</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.is_cyclic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.is_cyclic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Algorithm for determining if there are any cycles in
+the provenance tree, i. e. a repeated quantity in a
+tree branch</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>(bool) whether or not there is a cycle in the quantity</dt><dd><p>provenance, i. e. repeated value in a tree branch</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.magnitude">
+<em class="property"><span class="pre">abstract</span> <span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">magnitude</span></code><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.magnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the value of a quantity without any units.
+Should be implemented for numerical subclasses. Otherwise call self.value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>value without units (if numerical), otherwise just the value</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(id)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.pretty_string">
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">pretty_string</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#BaseQuantity.pretty_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.pretty_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a string representing the value of the object in a pretty format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>text string representing the value of an object</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id0">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">provenance</span></code><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the object containing the provenance information for the quantity</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Provenance object for the quantity</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(<a class="reference internal" href="propnet.core.provenance.html#propnet.core.provenance.ProvenanceElement" title="propnet.core.provenance.ProvenanceElement">ProvenanceElement</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.symbol">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">symbol</span></code><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.symbol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the Symbol object associated with the quantity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Symbol of the BaseQuantity</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(<a class="reference internal" href="propnet.core.symbols.html#propnet.core.symbols.Symbol" title="propnet.core.symbols.Symbol">Symbol</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id1">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">tags</span></code><a class="headerlink" href="#id1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the list of tags.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>tags of the BaseQuantity</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(list&lt;str&gt;)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.uncertainty">
+<em class="property"><span class="pre">abstract</span> <span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">uncertainty</span></code><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the pint object holding the uncertainty of a quantity.
+Should be implemented for numerical subclasses. Otherwise return None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>copy of uncertainty object stored in quantity</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(pint.Quantity)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.BaseQuantity.units">
+<em class="property"><span class="pre">abstract</span> <span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">units</span></code><a class="headerlink" href="#propnet.core.quantity.BaseQuantity.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the units of the quantity.
+Should be implemented for numerical subclasses. Otherwise return None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>units associated with the value</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(pint.unit)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id2">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">value</span></code><a class="headerlink" href="#id2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the value object stored in the quantity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>copy of value object stored in quantity</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(id)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.quantity.NumQuantity">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.quantity.</span></code><code class="sig-name descname"><span class="pre">NumQuantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uncertainty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.core.quantity.BaseQuantity" title="propnet.core.quantity.BaseQuantity"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.core.quantity.BaseQuantity</span></code></a></p>
+<p>Class extending BaseQuantity for storing numerical values, scalar and non-scalar.</p>
+<p>Allowed scalar types: int, float, complex, np.integer, np.floating, np.complexfloating
+Allowed array types: list, np.array</p>
+<p>Note: Array types must contain only allowed scalar types. Scalars with numpy types will
+be converted to python-native types.</p>
+<p>Types shown below are how the objects are stored. See __init__() for initialization.</p>
+<dl class="py attribute">
+<dt id="propnet.core.quantity.NumQuantity.symbol_type">
+<code class="sig-name descname"><span class="pre">symbol_type</span></code><a class="headerlink" href="#propnet.core.quantity.NumQuantity.symbol_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>(Symbol) the type of information that is represented
+by the associated value</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.NumQuantity.value">
+<code class="sig-name descname"><span class="pre">value</span></code><a class="headerlink" href="#propnet.core.quantity.NumQuantity.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>(pint.Quantity) the value of the property wrapped in a pint quantity
+for unit handling</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.NumQuantity.units">
+<code class="sig-name descname"><span class="pre">units</span></code><a class="headerlink" href="#propnet.core.quantity.NumQuantity.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>(pint.unit) units of the object</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.NumQuantity.tags">
+<code class="sig-name descname"><span class="pre">tags</span></code><a class="headerlink" href="#propnet.core.quantity.NumQuantity.tags" title="Permalink to this definition">¶</a></dt>
+<dd><p>(list&lt;str&gt;) tags associated with the quantity, typically
+related to its origin, e. g. “DFT” or “ML” or “experiment”</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.NumQuantity.provenance">
+<code class="sig-name descname"><span class="pre">provenance</span></code><a class="headerlink" href="#propnet.core.quantity.NumQuantity.provenance" title="Permalink to this definition">¶</a></dt>
+<dd><p>(ProvenanceElement) provenance associated with the
+object. See BaseQuantity.__init__() for more info.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.NumQuantity.uncertainty">
+<code class="sig-name descname"><span class="pre">uncertainty</span></code><a class="headerlink" href="#propnet.core.quantity.NumQuantity.uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd><p>(pint.Quantity) uncertainty associated with the value stored in the same units</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes object as a dictionary. Object can be reconstructed with from_dict().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>representation of object as a dictionary</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(dict)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.contains_complex_type">
+<code class="sig-name descname"><span class="pre">contains_complex_type</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.contains_complex_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.contains_complex_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the type of the variable holding the object’s magnitude is complex, if the
+object holds numerical data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(bool) true if the quantity is numerical and holds a complex scalar or array type as its value.
+false if the quantity is numerical and holds only real values OR if the quantity does not
+store numerical information</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.contains_imaginary_value">
+<code class="sig-name descname"><span class="pre">contains_imaginary_value</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.contains_imaginary_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.contains_imaginary_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the value of the object contains a non-zero imaginary
+value if the object holds numerical data.</p>
+<p>Note this function returns false if the values are of complex type,
+but the imaginary portions are (approximately) zero. To assess the
+type as complex, use is_complex_type().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(bool) true if the quantity is numerical and contains one
+or more non-zero imaginary values. false if the quantity is
+numerical and all imaginary values are zero OR if the quantity does not
+store numerical information.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.contains_nan_value">
+<code class="sig-name descname"><span class="pre">contains_nan_value</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.contains_nan_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.contains_nan_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the value of the object contains a NaN value if the
+object holds numerical data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(bool) true if the quantity is numerical and contains one
+or more NaN values. false if the quantity is numerical and
+does not contain any NaN values OR if the quantity does not
+store numerical information</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.from_weighted_mean">
+<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_weighted_mean</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantities</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.from_weighted_mean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.from_weighted_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to invoke weighted mean quantity from other
+quantities</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>quantities</strong> (<em>[</em><a class="reference internal" href="#propnet.core.quantity.NumQuantity" title="propnet.core.quantity.NumQuantity"><em>NumQuantity</em></a><em>]</em>) – list of quantities of the same type</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns: (NumQuantity) a quantity containing the weighted mean and</dt><dd><p>standard deviation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.has_eq_value_to">
+<code class="sig-name descname"><span class="pre">has_eq_value_to</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.has_eq_value_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.has_eq_value_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the current quantity’s value is equivalent to that of another quantity.
+This ignores provenance of the quantity and compares the values only.</p>
+<p>Equivalence is defined as having the same numerical value in the units defined by the
+quantities’ symbol, within an absolute tolerance of 1e-8 and relative tolerance of 1e-5.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>rhs</strong> – (NumQuantity) the quantity to which the current object will be compared</p>
+</dd>
+</dl>
+<p>Returns: (bool): True if the values are found to be equivalent</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.is_acceptable_type">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">is_acceptable_type</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_check</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.is_acceptable_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.is_acceptable_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks object to ensure it contains only numerical types, including numpy types.
+Works with nested lists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>to_check</strong> – (list) list of data to be checked</p>
+</dd>
+</dl>
+<p>Returns: (bool): true if all data contained in the list is numerical (float, int, complex)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.is_complex_type">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">is_complex_type</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.is_complex_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.is_complex_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the type of the argument is complex. If the argument is non-scalar, it determines
+if the ndarray type contains complex data types.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(bool) true if the argument holds a complex scalar or np.array.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.magnitude">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">magnitude</span></code><a class="headerlink" href="#propnet.core.quantity.NumQuantity.magnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the value of a quantity without any units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>value without units</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(int, float, complex, np.ndarray)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.pretty_string">
+<code class="sig-name descname"><span class="pre">pretty_string</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.pretty_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.pretty_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a string representing the value of the object in a pretty format with units.
+Note: units are omitted for non-scalar properties.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Keyword Arguments</dt>
+<dd class="field-odd"><p><strong>sigfigs</strong> – (int) how many significant figures to include. default: 4</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>text string representing the value of an object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.to">
+<code class="sig-name descname"><span class="pre">to</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">units</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to convert quantities between units, a la pint</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>units</strong> – (tuple or str) units to convert quantity to</p>
+</dd>
+</dl>
+<p>Returns:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id3">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">uncertainty</span></code><a class="headerlink" href="#id3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the pint object holding the uncertainty of a quantity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>copy of uncertainty object stored in quantity</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(pint.Quantity)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id4">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">units</span></code><a class="headerlink" href="#id4" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the units of the quantity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>units associated with the value</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(pint.unit)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.NumQuantity.values_close_in_units">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">values_close_in_units</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units_for_comparison</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#NumQuantity.values_close_in_units"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.NumQuantity.values_close_in_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compares two pint quantities in a given unit. The purpose is to
+ensure dimensional, small quantities (e.g. femtoseconds) don’t
+get discounted as small, close-to-zero quantities.</p>
+<p>If units are not specified explicitly, they are selected using the
+following criteria, in order of precedence:
+1. If one quantity has a value of exactly 0, the units of that quantity</p>
+<blockquote>
+<div><p>are used for comparison.</p>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><dl class="simple">
+<dt>The units of both quantities are rescaled such that the magnitude</dt><dd><p>of each quantity is between 1 and 1000, or where the unit is at the
+smallest (or largest) possible unit defined by pint. The smaller of
+the two units is then used to compare the values (i.e. gram would be
+selected over kilogram).</p>
+</dd>
+</dl>
+</li>
+</ol>
+<dl class="simple">
+<dt>Note: dimensionless quantities will NOT be scaled and will be treated</dt><dd><p>as bare numbers. This means dimensionless values that are small,
+but different will be treated as equal if abs(a-b) &lt;= 1e-8, e.g.
+1e-8 and 2e-8 will yield True, as will 1e-8 and 1e-20.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lhs</strong> – (pint.Quantity) quantity object to compare</p></li>
+<li><p><strong>rhs</strong> – (pint.Quantity) quantity object to compare</p></li>
+<li><p><strong>units_for_comparison</strong> – (str, pint.Units, tuple) units that the
+quantities will be compared in. Input can be any acceptable
+format for Quantity.to()</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns: (bool) True if the values are equal within an absolute tolerance</dt><dd><p>of 1e-8 and a relative tolerance of 1e-5. False if not equal within
+the tolerance bounds, or the dimensionality of the units are not equal.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.quantity.ObjQuantity">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.quantity.</span></code><code class="sig-name descname"><span class="pre">ObjQuantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#ObjQuantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.ObjQuantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.core.quantity.BaseQuantity" title="propnet.core.quantity.BaseQuantity"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.core.quantity.BaseQuantity</span></code></a></p>
+<p>Class extending BaseQuantity for storing any value type that does not require units.</p>
+<p>Types shown below are how the objects are stored. See __init__() for initialization.</p>
+<dl class="py attribute">
+<dt id="propnet.core.quantity.ObjQuantity.symbol_type">
+<code class="sig-name descname"><span class="pre">symbol_type</span></code><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.symbol_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>(Symbol) the type of information that is represented
+by the associated value</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.ObjQuantity.value">
+<code class="sig-name descname"><span class="pre">value</span></code><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>(id) the value of the property</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.ObjQuantity.tags">
+<code class="sig-name descname"><span class="pre">tags</span></code><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.tags" title="Permalink to this definition">¶</a></dt>
+<dd><p>(list&lt;str&gt;) tags associated with the quantity, typically
+related to its origin, e. g. “DFT” or “ML” or “experiment”</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.quantity.ObjQuantity.provenance">
+<code class="sig-name descname"><span class="pre">provenance</span></code><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.provenance" title="Permalink to this definition">¶</a></dt>
+<dd><p>(ProvenanceElement) provenance associated with the
+object. See BaseQuantity.__init__() for more info.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.ObjQuantity.as_dict">
+<code class="sig-name descname"><span class="pre">as_dict</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#ObjQuantity.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializes object as a dictionary. Object can be reconstructed with from_dict().</p>
+<p>Note: If value is not JSON serializable, this object will not be JSON serializable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>representation of object as a dictionary</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(dict)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.ObjQuantity.contains_complex_type">
+<code class="sig-name descname"><span class="pre">contains_complex_type</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#ObjQuantity.contains_complex_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.contains_complex_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns False because this class does not support numerical types.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>False</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(bool)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.ObjQuantity.contains_imaginary_value">
+<code class="sig-name descname"><span class="pre">contains_imaginary_value</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#ObjQuantity.contains_imaginary_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.contains_imaginary_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns False because this class does not support numerical types.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>False</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(bool)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.ObjQuantity.contains_nan_value">
+<code class="sig-name descname"><span class="pre">contains_nan_value</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#ObjQuantity.contains_nan_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.contains_nan_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns False because this class does not support numerical types.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>False</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(bool)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.ObjQuantity.has_eq_value_to">
+<code class="sig-name descname"><span class="pre">has_eq_value_to</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#ObjQuantity.has_eq_value_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.has_eq_value_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the value of another ObjQuantity is equivalent to the current.</p>
+<p>Equivalence is defined by the default __eq__() method for the object held in value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>rhs</strong> – (ObjQuantity) object for value comparison</p>
+</dd>
+</dl>
+<p>Returns: (bool) True if the values are equal.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.ObjQuantity.magnitude">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">magnitude</span></code><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.magnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the value of the quantity. Same as self.value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>value contained by quantity</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(id)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.ObjQuantity.pretty_string">
+<code class="sig-name descname"><span class="pre">pretty_string</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#ObjQuantity.pretty_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.pretty_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a string representing the value of the object in a pretty format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>text string representing the value of an object</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.ObjQuantity.uncertainty">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">uncertainty</span></code><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.uncertainty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns None because this class does not support uncertainty.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.ObjQuantity.units">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">units</span></code><a class="headerlink" href="#propnet.core.quantity.ObjQuantity.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns None because this class does not support units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.quantity.QuantityFactory">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.quantity.</span></code><code class="sig-name descname"><span class="pre">QuantityFactory</span></code><a class="reference internal" href="../_modules/propnet/core/quantity.html#QuantityFactory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.QuantityFactory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Helper class to construct BaseQuantity-derived objects using factory methods.</p>
+<p>Use create_quantity() to generate objects on the fly depending on the value type.</p>
+<dl class="py method">
+<dt id="propnet.core.quantity.QuantityFactory.create_quantity">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">create_quantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uncertainty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#QuantityFactory.create_quantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.QuantityFactory.create_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory method for BaseQuantity class, provides more intuitive call
+to create new BaseQuantity child objects and provide backwards
+compatibility. If BaseQuantity is passed in as value, a new object
+will be created. Use BaseQuantity.to_quantity() to return the same object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>symbol_type</strong> – (str or Symbol) represents the type of data being stored</p></li>
+<li><p><strong>value</strong> – (id) data to be stored</p></li>
+<li><p><strong>units</strong> – (str, ureg.Unit) units of the data being stored. Must be None
+for non-numerical values</p></li>
+<li><p><strong>tags</strong> – (list&lt;str&gt;) list of strings storing metadata from
+Quantity evaluation.</p></li>
+<li><p><strong>provenance</strong> – (ProvenanceElement) provenance associated with the
+object (e. g. inputs, model, see ProvenanceElement)</p></li>
+<li><p><strong>uncertainty</strong> – (id) uncertainty of the specified value</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns: (NumQuantity or ObjQuantity) constructed object of appropriate</dt><dd><p>type based on value’s type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.QuantityFactory.from_default">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">from_default</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#QuantityFactory.from_default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.QuantityFactory.from_default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to invoke a default quantity from a symbol name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>symbol</strong> (<a class="reference internal" href="propnet.core.symbols.html#propnet.core.symbols.Symbol" title="propnet.core.symbols.Symbol"><em>Symbol</em></a><em> or </em><em>str</em>) – symbol or string corresponding to
+the symbol name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>BaseQuantity corresponding to default quantity from default</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.QuantityFactory.from_dict">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">from_dict</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/quantity.html#QuantityFactory.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.QuantityFactory.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to construct BaseQuantity-derived objects from dictionaries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>d</strong> – (dict) input dictionary</p>
+</dd>
+</dl>
+<p>Returns: (NumQuantity, ObjQuantity) new object defined from dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.quantity.QuantityFactory.to_quantity">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">to_quantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">symbol:</span> <span class="pre">Union[str,</span> <span class="pre">propnet.core.symbols.Symbol],</span> <span class="pre">to_coerce:</span> <span class="pre">Union[float,</span> <span class="pre">numpy.ndarray,</span> <span class="pre">pint.quantity.build_quantity_class.&lt;locals&gt;.Quantity,</span> <span class="pre">propnet.core.quantity.BaseQuantity],</span> <span class="pre">**kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#propnet.core.quantity.BaseQuantity" title="propnet.core.quantity.BaseQuantity"><span class="pre">propnet.core.quantity.BaseQuantity</span></a><a class="reference internal" href="../_modules/propnet/core/quantity.html#QuantityFactory.to_quantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.quantity.QuantityFactory.to_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the argument into a BaseQuantity-derived object. If input is:
+- BaseQuantity-derived object -&gt; immediately returned without modification (same object, not copied)
+- Any other python object -&gt; passed to create_quantity() with keyword arguments</p>
+<blockquote>
+<div><p>to create a new BaseQuantity-derived object</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>symbol</strong> – a string or Symbol object representing the type of data stored</p></li>
+<li><p><strong>to_coerce</strong> – item to be converted into a BaseQuantity-derived object</p></li>
+<li><p><strong>kwargs</strong> – keyword arguments to create new object if to_coerce is not a BaseQuantity-derived object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(BaseQuantity) item as a BaseQuantity-derived object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.ext.matproj module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.ext.matproj.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.ext.matproj module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.ext.matproj.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.ext.matproj">
+<span id="propnet-ext-matproj-module"></span><h1>propnet.ext.matproj module<a class="headerlink" href="#module-propnet.ext.matproj" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="propnet.ext.matproj.MPRester">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.ext.matproj.</span></code><code class="sig-name descname"><span class="pre">MPRester</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/ext/matproj.html#MPRester"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.ext.matproj.MPRester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pymatgen.ext.matproj.MPRester</span></code></p>
+<dl class="py method">
+<dt id="propnet.ext.matproj.MPRester.get_material_for_mpid">
+<code class="sig-name descname"><span class="pre">get_material_for_mpid</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mpid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_null_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/ext/matproj.html#MPRester.get_material_for_mpid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.ext.matproj.MPRester.get_material_for_mpid" title="Permalink to this definition">¶</a></dt>
+<dd><p>A version of get_materials for a single mpid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mpid</strong> – a Materials Project ID</p>
+</dd>
+</dl>
+<p>Returns: a Material object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.ext.matproj.MPRester.get_materials_for_mpids">
+<code class="sig-name descname"><span class="pre">get_materials_for_mpids</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mpids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_null_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/ext/matproj.html#MPRester.get_materials_for_mpids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.ext.matproj.MPRester.get_materials_for_mpids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve a list of Materials from the materials
+Project for a given list of Materials Project IDs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mpids</strong> – a list of Materials Project IDs</p>
+</dd>
+</dl>
+<p>Returns:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.ext.matproj.MPRester.get_mpid_from_formula">
+<code class="sig-name descname"><span class="pre">get_mpid_from_formula</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">formula</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/ext/matproj.html#MPRester.get_mpid_from_formula"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.ext.matproj.MPRester.get_mpid_from_formula" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a Materials Project ID from a formula, assuming
+the most stable structure for that formula.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>formula</strong> (<em>str</em>) – formula string</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>mp-id string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.ext.matproj.MPRester.get_quantities_for_mpid">
+<code class="sig-name descname"><span class="pre">get_quantities_for_mpid</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mpid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_null_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/ext/matproj.html#MPRester.get_quantities_for_mpid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.ext.matproj.MPRester.get_quantities_for_mpid" title="Permalink to this definition">¶</a></dt>
+<dd><p>A version of get_properties_for_mpids for a single
+mpid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mpid</strong> (<em>str</em>) – a Materials Project ID</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(Dict) a dictionary of property values keyed by property names</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.ext.matproj.MPRester.get_quantities_for_mpids">
+<code class="sig-name descname"><span class="pre">get_quantities_for_mpids</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mpids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_null_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_date_created</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/ext/matproj.html#MPRester.get_quantities_for_mpids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.ext.matproj.MPRester.get_quantities_for_mpids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve properties from the Materials Project
+for a given list of Materials Project IDs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mpids</strong> (<em>[</em><em>str</em><em>]</em>) – a list of Materials Project IDs</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>([Dict]) a list of property dictionaries</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.ext.matproj.MPRester.mapping">
+<code class="sig-name descname"><span class="pre">mapping</span></code><em class="property"> <span class="pre">=</span> <span class="pre">{'band_gap.search_gap.band_gap':</span> <span class="pre">'band_gap_pbe',</span> <span class="pre">'computed_entry':</span> <span class="pre">'computed_entry',</span> <span class="pre">'diel.e_total':</span> <span class="pre">'dielectric_tensor',</span> <span class="pre">'diel.n':</span> <span class="pre">'refractive_index',</span> <span class="pre">'diel.poly_electronic':</span> <span class="pre">'relative_permittivity_electronic',</span> <span class="pre">'diel.poly_total':</span> <span class="pre">'relative_permittivity',</span> <span class="pre">'diel.pot_ferroelectric':</span> <span class="pre">'potentially_ferroelectric',</span> <span class="pre">'e_above_hull':</span> <span class="pre">'energy_above_hull',</span> <span class="pre">'elasticity.elastic_anisotropy':</span> <span class="pre">'elastic_anisotropy',</span> <span class="pre">'elasticity.elastic_tensor_original':</span> <span class="pre">'elastic_tensor_voigt',</span> <span class="pre">'elasticity.universal_anisotropy':</span> <span class="pre">'universal_anisotropy',</span> <span class="pre">'formation_energy_per_atom':</span> <span class="pre">'formation_energy_per_atom',</span> <span class="pre">'magnetic_type':</span> <span class="pre">'magnetic_order',</span> <span class="pre">'magnetism.total_magnetization':</span> <span class="pre">'total_magnetization',</span> <span class="pre">'material_id':</span> <span class="pre">'external_identifier_mp',</span> <span class="pre">'oxide_type':</span> <span class="pre">'oxide_type',</span> <span class="pre">'piezo.eij_max':</span> <span class="pre">'piezoelectric_modulus_longitudinal_max',</span> <span class="pre">'piezo.piezoelectric_tensor':</span> <span class="pre">'piezoelectric_tensor',</span> <span class="pre">'piezo.v_max':</span> <span class="pre">'piezoelectric_modulus_longitudinal_max_direction',</span> <span class="pre">'pretty_formula':</span> <span class="pre">'formula',</span> <span class="pre">'structure':</span> <span class="pre">'structure'}</span></em><a class="headerlink" href="#propnet.ext.matproj.MPRester.mapping" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

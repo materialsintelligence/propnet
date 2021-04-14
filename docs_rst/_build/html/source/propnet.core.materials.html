@@ -1,0 +1,363 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.materials module &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.govsource/propnet.core.materials.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, #FDC830 0%, #F37335 100%)" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>propnet.core.materials module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/materialsintelligence/propnet/blob/main/docs/source/propnet.core.materials.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-propnet.core.materials">
+<span id="propnet-core-materials-module"></span><h1>propnet.core.materials module<a class="headerlink" href="#module-propnet.core.materials" title="Permalink to this headline">¶</a></h1>
+<p>Module containing classes and methods for Material functionality in propnet code.</p>
+<dl class="py class">
+<dt id="propnet.core.materials.CompositeMaterial">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.materials.</span></code><code class="sig-name descname"><span class="pre">CompositeMaterial</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">materials_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/materials.html#CompositeMaterial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.materials.CompositeMaterial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#propnet.core.materials.Material" title="propnet.core.materials.Material"><code class="xref py py-class docutils literal notranslate"><span class="pre">propnet.core.materials.Material</span></code></a></p>
+<p>Class representing a material composed of one or more sub-materials.</p>
+<p>Useful for representing materials properties that arise from
+multiple materials (i. e. contact voltage in metals)</p>
+<dl class="py attribute">
+<dt id="propnet.core.materials.CompositeMaterial.symbol_quantities_dict">
+<code class="sig-name descname"><span class="pre">symbol_quantities_dict</span></code><a class="headerlink" href="#propnet.core.materials.CompositeMaterial.symbol_quantities_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>data-structure
+storing all properties / descriptors that arise from the
+joining of multiple materials</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict&lt;Symbol, set&lt;Quantity&gt;&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="propnet.core.materials.CompositeMaterial.materials">
+<code class="sig-name descname"><span class="pre">materials</span></code><a class="headerlink" href="#propnet.core.materials.CompositeMaterial.materials" title="Permalink to this definition">¶</a></dt>
+<dd><p>set of materials contained in the Composite</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list&lt;Material&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="propnet.core.materials.Material">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">propnet.core.materials.</span></code><code class="sig-name descname"><span class="pre">Material</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_default_quantities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/materials.html#Material"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.materials.Material" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class containing methods for creating and interacting with Material objects.</p>
+<p>Under the Propnet infrastructure, Materials are the medium through which properties are
+communicated. While Model and Symbol nodes create a web of interconnected properties,
+Materials, as collections of Quantity nodes, provide concrete numbers to those properties.
+At runtime, a Material can be constructed and added to a Graph instance, merging the two
+graphs and allowing for propagation of concrete numbers through the property web.</p>
+<p>A unique hashcode is stored with each Material upon instantiation. This is used to
+differentiate between different materials at runtime.</p>
+<dl class="py attribute">
+<dt id="propnet.core.materials.Material.symbol_quantities_dict">
+<code class="sig-name descname"><span class="pre">symbol_quantities_dict</span></code><a class="headerlink" href="#propnet.core.materials.Material.symbol_quantities_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>data structure mapping Symbols to a list of corresponding
+Quantity objects of that type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict&lt;Symbol, set&lt;Quantity&gt;&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.materials.Material.add_default_quantities">
+<code class="sig-name descname"><span class="pre">add_default_quantities</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/materials.html#Material.add_default_quantities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.materials.Material.add_default_quantities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds any default symbols which are not present in the graph</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.materials.Material.add_quantity">
+<code class="sig-name descname"><span class="pre">add_quantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantity</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/materials.html#Material.add_quantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.materials.Material.add_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a property to this property collection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>quantity</strong> (<em>Quantity</em>) – property to be bound to the material.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.materials.Material.get_aggregated_quantities">
+<code class="sig-name descname"><span class="pre">get_aggregated_quantities</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/materials.html#Material.get_aggregated_quantities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.materials.Material.get_aggregated_quantities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return mean values for all quantities for each symbol.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(dict&lt;Symbol, weighted_mean) mapping from a Symbol to
+an aggregated statistic.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.materials.Material.get_quantities">
+<code class="sig-name descname"><span class="pre">get_quantities</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/materials.html#Material.get_quantities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.materials.Material.get_quantities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method obtains all Quantity objects bound to this Material.
+:returns: (list&lt;Quantity&gt;) list of all Quantity objects bound to this Material.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.materials.Material.get_symbols">
+<code class="sig-name descname"><span class="pre">get_symbols</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/materials.html#Material.get_symbols"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.materials.Material.get_symbols" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtains all Symbol objects bound to this Material.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(set&lt;Symbol&gt;) set containing all symbols bound to this Material.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.materials.Material.quantity_types">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">quantity_types</span></code><a class="headerlink" href="#propnet.core.materials.Material.quantity_types" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.materials.Material.remove_quantity">
+<code class="sig-name descname"><span class="pre">remove_quantity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantity</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/materials.html#Material.remove_quantity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.materials.Material.remove_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the Quantity object attached to this Material.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>quantity</strong> (<em>Quantity</em>) – Quantity object reference indicating</p></li>
+<li><p><strong>property is to be removed from this Material.</strong> (<em>which</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="propnet.core.materials.Material.remove_symbol">
+<code class="sig-name descname"><span class="pre">remove_symbol</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/propnet/core/materials.html#Material.remove_symbol"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#propnet.core.materials.Material.remove_symbol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes all Quantity Nodes attached to this Material of type symbol.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>symbol</strong> (<a class="reference internal" href="propnet.core.symbols.html#propnet.core.symbols.Symbol" title="propnet.core.symbols.Symbol"><em>Symbol</em></a>) – object indicating which property type
+is to be removed from this material.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id0">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">symbol_quantities_dict</span></code><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

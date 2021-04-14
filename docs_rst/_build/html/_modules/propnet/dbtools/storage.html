@@ -1,0 +1,888 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.dbtools.storage &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.gov_modules/propnet/dbtools/storage.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, rgba(23,162,135,1) 0%, rgba(0,192,136,1) 100%)" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>propnet.dbtools.storage</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for propnet.dbtools.storage</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">monty.json</span> <span class="kn">import</span> <span class="n">MSONable</span>
+<span class="kn">from</span> <span class="nn">monty.serialization</span> <span class="kn">import</span> <span class="n">MontyDecoder</span>
+<span class="kn">from</span> <span class="nn">propnet.core.quantity</span> <span class="kn">import</span> <span class="n">BaseQuantity</span><span class="p">,</span> <span class="n">QuantityFactory</span>
+<span class="kn">from</span> <span class="nn">propnet.core.provenance</span> <span class="kn">import</span> <span class="n">ProvenanceElement</span>
+<span class="kn">from</span> <span class="nn">propnet</span> <span class="kn">import</span> <span class="n">ureg</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="c1"># noinspection PyUnresolvedReferences</span>
+<span class="kn">import</span> <span class="nn">propnet.symbols</span>
+<span class="kn">from</span> <span class="nn">propnet.core.registry</span> <span class="kn">import</span> <span class="n">Registry</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="StorageQuantity"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.StorageQuantity">[docs]</a><span class="k">class</span> <span class="nc">StorageQuantity</span><span class="p">(</span><span class="n">MSONable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to hold quantity data intended for database storage.</span>
+
+<span class="sd">    This class does not inherit from BaseQuantity in effort to remain autonomous as a storage</span>
+<span class="sd">    container, and not implementing much of the functionality required by the BaseQuantity class.</span>
+
+<span class="sd">    This class is the top-level object for storage. StorageQuantity objects contain a ProvenanceStore</span>
+<span class="sd">    object for provenance which therein contains ProvenanceStoreQuantity objects as its inputs.</span>
+
+<span class="sd">    Hierarchy for non-storage objects:</span>
+<span class="sd">        BaseQuantity has a ProvenanceElement (self.provenance)</span>
+<span class="sd">        ProvenanceElement has a list of BaseQuantity objects (self.provenance.inputs)</span>
+<span class="sd">        Each input BaseQuantity object has a ProvenanceElement with BaseQuantity inputs, etc.</span>
+
+<span class="sd">    Hierarchy for non-storage objects:</span>
+<span class="sd">        StorageQuantity has a ProvenanceStore (self.provenance)</span>
+<span class="sd">        ProvenanceStore has a list of ProvenanceStoreQuantity objects (self.provenance.inputs)</span>
+<span class="sd">        Each input ProvenanceStoreQuantity object has a ProvenanceStore</span>
+<span class="sd">            with ProvenanceStoreQuantity inputs, etc.</span>
+
+<span class="sd">    The main purpose of these three classes is to prevent storing many copies of</span>
+<span class="sd">    provenance quantity data (i.e. the values) in the database to save on document size.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity_to_store</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for StorageQuantity objects. Converts a BaseQuantity-derived object</span>
+<span class="sd">        into storage-ready object. See _initialize() for more information.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quantity_to_store: (BaseQuantity) BaseQuantity-derived object for storage</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_type</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tags</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">quantity_to_store</span><span class="p">,</span> <span class="n">BaseQuantity</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_initialize</span><span class="p">(</span>
+                <span class="n">data_type</span><span class="o">=</span><span class="n">quantity_to_store</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="n">symbol_type</span><span class="o">=</span><span class="n">quantity_to_store</span><span class="o">.</span><span class="n">symbol</span><span class="p">,</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">quantity_to_store</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                <span class="n">units</span><span class="o">=</span><span class="n">quantity_to_store</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">format_babel</span><span class="p">()</span> <span class="k">if</span> <span class="n">quantity_to_store</span><span class="o">.</span><span class="n">units</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">internal_id</span><span class="o">=</span><span class="n">quantity_to_store</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">,</span>
+                <span class="n">tags</span><span class="o">=</span><span class="n">quantity_to_store</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+                <span class="n">provenance</span><span class="o">=</span><span class="n">ProvenanceStore</span><span class="o">.</span><span class="n">from_provenance_element</span><span class="p">(</span><span class="n">quantity_to_store</span><span class="o">.</span><span class="n">provenance</span><span class="p">),</span>
+                <span class="n">uncertainty</span><span class="o">=</span><span class="n">quantity_to_store</span><span class="o">.</span><span class="n">uncertainty</span><span class="o">.</span><span class="n">magnitude</span> <span class="k">if</span> <span class="n">quantity_to_store</span><span class="o">.</span><span class="n">uncertainty</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">quantity_to_store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Initialization requires a BaseQuantity-derived object for storage. &quot;</span>
+                            <span class="s2">&quot;Instead received: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">quantity_to_store</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">_initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">symbol_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">internal_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">uncertainty</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Workhorse function for StorageQuantity constructor. This is a private method because this</span>
+<span class="sd">        class is intended to be constructed by passing in a BaseQuantity-derived object to</span>
+<span class="sd">        __init__() or from_quantity(). It is required to provide easy from_dict() functionality.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_type: (str) indicates what type of BaseQuantity object it was created from.</span>
+<span class="sd">                Must be &quot;NumQuantity&quot; or &quot;ObjQuantity&quot;.</span>
+<span class="sd">            symbol_type: (Symbol) symbol representing the type of data contained in the object</span>
+<span class="sd">            value: (id) the data stored in the object</span>
+<span class="sd">            units: (str) units of the value or None for non-numerical values</span>
+<span class="sd">            internal_id: (str) unique identifier. (Note: this is used for lookup when the</span>
+<span class="sd">                object is deserialized)</span>
+<span class="sd">            tags: (list&lt;str&gt;) tags associated with the quantity, typically</span>
+<span class="sd">                related to its origin, e. g. &quot;DFT&quot; or &quot;ML&quot; or &quot;experiment&quot;</span>
+<span class="sd">            provenance: (ProvenanceStore) provenance associated with the object as storage object.</span>
+<span class="sd">            uncertainty: (int, float, complex) uncertainty associated with the</span>
+<span class="sd">                value stored in the same units</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span> <span class="o">=</span> <span class="n">internal_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_type</span> <span class="o">=</span> <span class="n">data_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span> <span class="o">=</span> <span class="n">symbol_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tags</span> <span class="o">=</span> <span class="n">tags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="n">units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="n">uncertainty</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span> <span class="o">=</span> <span class="n">provenance</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">uncertainty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns uncertainty as pint Quantity</span>
+
+<span class="sd">        Returns: (pint.Quantity) uncertainty as pint object or None if does not exist</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">provenance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a copy of this object&#39;s provenance object</span>
+
+<span class="sd">        Returns: (ProvenanceElement) provenance information</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">symbol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a copy of the object&#39;s symbol representing the property stored</span>
+
+<span class="sd">        Returns: (Symbol) Symbol property object of this object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a copy of the object&#39;s list of tags.</span>
+
+<span class="sd">        Returns: (list&lt;str&gt;) tags for the object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tags</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a copy of the object&#39;s value.</span>
+
+<span class="sd">        Returns: (id) object&#39;s value</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Return copy so class member remains immutable</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">magnitude</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a copy of the object&#39;s value (same as self.value)</span>
+
+<span class="sd">        Note: For numerical quantities, self.value already contains the unitless magnitude</span>
+
+<span class="sd">        Returns: (id) object&#39;s value</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the units of the object as a pint.Unit.</span>
+
+<span class="sd">        Returns: (pint.Unit) units, None if no units</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="k">else</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="StorageQuantity.from_quantity"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.StorageQuantity.from_quantity">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_quantity</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">quantity_in</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a StorageQuantity object from a BaseQuantity-derived object</span>
+<span class="sd">        or returns a deep copy of a StorageQuantity object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quantity_in: (BaseQuantity, StorageQuantity) quantity to convert</span>
+
+<span class="sd">        Returns: (StorageQuantity) converted or copied object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">quantity_in</span><span class="p">,</span> <span class="n">StorageQuantity</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">quantity_in</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">quantity_in</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StorageQuantity.to_quantity"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.StorageQuantity.to_quantity">[docs]</a>    <span class="k">def</span> <span class="nf">to_quantity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts the current StorageQuantity to the appropriate BaseQuantity-derived</span>
+<span class="sd">        object.</span>
+
+<span class="sd">        Verifies that the object&#39;s provenance has complete values, which would be</span>
+<span class="sd">        missing if read in from a JSON-serialized dictionary. If values are found</span>
+<span class="sd">        to be missing, a lookup function/dictionary is required to reconstitute the data.</span>
+
+<span class="sd">        Lookup dictionaries should be keyed by internal ID, and have values which are</span>
+<span class="sd">        dictionaries with the fields shown below. Lookup functions should take one argument,</span>
+<span class="sd">        internal ID, and return a dictionary with the fields below.</span>
+
+<span class="sd">        Lookup return value construction:</span>
+<span class="sd">            value: (id) value of the quantity</span>
+<span class="sd">            units: (str) units of quantity, None if no units</span>
+<span class="sd">            uncertainty: (int, float, complex) uncertainty value, None if no uncertainty</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lookup: (dict or function) lookup container for missing values. Not required</span>
+<span class="sd">                if self.needs_lookup() is False</span>
+
+<span class="sd">        Returns: (BaseQuantity) converted BaseQuantity-derived object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">needs_lookup</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">lookup</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;StorageQuantity cannot be converted to BaseQuantity-derived&quot;</span>
+                             <span class="s2">&quot; object because it is missing values in provenance inputs. &quot;</span>
+                             <span class="s2">&quot;Please provide a lookup dictionary or function with the &quot;</span>
+                             <span class="s2">&quot;following keys: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_missing_keys</span><span class="p">()))</span>
+
+        <span class="n">provenance_in</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">to_provenance_element</span><span class="p">(</span><span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">)</span> \
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="n">QuantityFactory</span><span class="o">.</span><span class="n">create_quantity</span><span class="p">(</span><span class="n">symbol_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span><span class="p">,</span>
+                                              <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span>
+                                              <span class="n">units</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="p">,</span>
+                                              <span class="n">tags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tags</span><span class="p">,</span>
+                                              <span class="n">provenance</span><span class="o">=</span><span class="n">provenance_in</span><span class="p">,</span>
+                                              <span class="n">uncertainty</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span><span class="p">)</span>
+
+        <span class="n">out</span><span class="o">.</span><span class="n">_internal_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+<div class="viewcode-block" id="StorageQuantity.needs_lookup"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.StorageQuantity.needs_lookup">[docs]</a>    <span class="k">def</span> <span class="nf">needs_lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks to see if this object requires a value lookup dictionary to be converted</span>
+<span class="sd">        to a BaseQuantity-derived object. Inputs in the provenance tree</span>
+<span class="sd">        may be missing if the object was created from a JSON-serialized dictionary.</span>
+
+<span class="sd">        Returns: True if there are inputs missing values in the provenance tree.</span>
+<span class="sd">            False if all values are present or there is no provenance tree.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_missing_keys</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="StorageQuantity.get_missing_keys"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.StorageQuantity.get_missing_keys">[docs]</a>    <span class="k">def</span> <span class="nf">get_missing_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Finds the inputs in the provenance tree that are missing values and reports</span>
+<span class="sd">        their internal IDs.</span>
+
+<span class="sd">        Returns: (set) set of internal IDs whose values are missing. Empty set if</span>
+<span class="sd">            all values are present or no provenance tree exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">get_missing_keys</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+<div class="viewcode-block" id="StorageQuantity.as_dict"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.StorageQuantity.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns object instance as a dictionary. Object can be reconstituted from this</span>
+<span class="sd">        dictionary using from_dict().</span>
+
+<span class="sd">        Returns: (dict) dictionary representation of the object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span>
+        <span class="k">if</span> <span class="n">symbol</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">symbol</span> <span class="o">==</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)[</span><span class="n">symbol</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="ow">and</span> \
+                <span class="n">symbol</span><span class="o">.</span><span class="n">is_builtin</span><span class="p">:</span>
+            <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;@module&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span>
+                <span class="s2">&quot;@class&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="s2">&quot;internal_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">,</span>
+                <span class="s2">&quot;data_type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_type</span><span class="p">,</span>
+                <span class="s2">&quot;symbol_type&quot;</span><span class="p">:</span> <span class="n">symbol</span><span class="p">,</span>
+                <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="p">,</span>
+                <span class="s2">&quot;provenance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="p">,</span>
+                <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tags</span><span class="p">,</span>
+                <span class="s2">&quot;uncertainty&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="StorageQuantity.from_dict"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.StorageQuantity.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a StorageQuantity object from a dictionary of instance variable values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            d: (dict) dictionary of object instance variable values</span>
+
+<span class="sd">        Returns: (StorageQuantity) StorageQuantity represented by the dictionary values</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">d_in</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">MontyDecoder</span><span class="p">()</span><span class="o">.</span><span class="n">process_decoded</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d_in</span><span class="p">[</span><span class="s1">&#39;symbol_type&#39;</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">d_in</span><span class="p">[</span><span class="s1">&#39;symbol_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)[</span><span class="n">d_in</span><span class="p">[</span><span class="s1">&#39;symbol_type&#39;</span><span class="p">]]</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">_initialize</span><span class="p">(</span><span class="o">**</span><span class="n">d_in</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+<div class="viewcode-block" id="StorageQuantity.reconstruct_quantity"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.StorageQuantity.reconstruct_quantity">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">reconstruct_quantity</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recreates BaseQuantity-derived object from JSON-serialized dictionary</span>
+<span class="sd">        representation of the equivalent StorageQuantity.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            d: (dict) dictionary representation of StorageQuantity object</span>
+<span class="sd">            lookup: (dict or function) lookup container for missing values,</span>
+<span class="sd">                if they exist (see to_quantity() for more information)</span>
+
+<span class="sd">        Returns: (BaseQuantity) BaseQuantity-derived object representation</span>
+<span class="sd">            of the dictionary values</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">StorageQuantity</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="o">.</span><span class="n">to_quantity</span><span class="p">(</span><span class="n">lookup</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines equality between this object and a BaseQuantity-derived object,</span>
+<span class="sd">        StorageQuantity object, or ProvenanceStoreQuantity object.</span>
+
+<span class="sd">        Equality is defined as having the same internal ID and the same provenance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: (BaseQuantity, StorageQuantity, ProvenanceStoreQuantity)</span>
+<span class="sd">                quantity with which to determine equality</span>
+
+<span class="sd">        Returns: (bool) True if the objects represent the same information. False otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="n">StorageQuantity</span><span class="p">,</span> <span class="n">BaseQuantity</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_internal_id</span> <span class="ow">and</span> \
+                   <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">provenance</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span></div>
+
+
+<div class="viewcode-block" id="ProvenanceStore"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStore">[docs]</a><span class="k">class</span> <span class="nc">ProvenanceStore</span><span class="p">(</span><span class="n">MSONable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to hold provenance data for storage. It is held within a StorageQuantity</span>
+<span class="sd">    or ProvenanceStoreQuantity object. The class provides methods to coerce ProvenanceElement</span>
+<span class="sd">    objects for storage.</span>
+
+<span class="sd">    This class does not inherit from ProvenanceElement in effort to remain autonomous as a storage</span>
+<span class="sd">    container, and to strip any unwanted functionality from the ProvenanceElement class.</span>
+
+<span class="sd">    The main purpose of these three classes is to prevent storing many copies of</span>
+<span class="sd">    provenance quantity data (i.e. the values) in the database to save on document size.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">provenance_in</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for ProvenanceStore objects. Converts a ProvenanceElement object</span>
+<span class="sd">        into storage-ready object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            provenance_in: (ProvenanceElement) ProvenanceElement object for storage</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_source</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">provenance_in</span><span class="p">,</span> <span class="n">ProvenanceElement</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_initialize</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">provenance_in</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                             <span class="n">source</span><span class="o">=</span><span class="n">provenance_in</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+                             <span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="n">ProvenanceStoreQuantity</span><span class="o">.</span><span class="n">from_quantity</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                                     <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">provenance_in</span><span class="o">.</span><span class="n">inputs</span><span class="p">]</span>
+                             <span class="k">if</span> <span class="n">provenance_in</span><span class="o">.</span><span class="n">inputs</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">provenance_in</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Initialization requires a ProvenanceElement object for storage. &quot;</span>
+                            <span class="s2">&quot;Instead received: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">provenance_in</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">_initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes instance variables with values. Needed for deserialization from</span>
+<span class="sd">        a dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model: (str) name of the model used to derive the quantity</span>
+<span class="sd">            inputs: (list&lt;ProvenanceStoreQuantity&gt;) quantities used as inputs to model</span>
+<span class="sd">            source: (dict) information about how/when the quantity was derived</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_source</span> <span class="o">=</span> <span class="n">source</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span> <span class="o">=</span> <span class="n">inputs</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the input quantities stored in provenance. Returns a copy so they remain</span>
+<span class="sd">        immutable.</span>
+
+<span class="sd">        Returns: (list&lt;ProvenanceStoreQuantity&gt;) list of input quantities, None if none</span>
+<span class="sd">            present.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the name of the model used to calculate the associated quantity.</span>
+
+<span class="sd">        Returns: (str) name of the model</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">source</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the source information for the provenance.</span>
+
+<span class="sd">        Returns: (dict) dictionary containing metadata about the provenance source</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_source</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ProvenanceStore.from_provenance_element"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStore.from_provenance_element">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_provenance_element</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">provenance_in</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a ProvenanceStore from a ProvenanceElement. Differs from __init__()</span>
+<span class="sd">        in that if a ProvenanceStore is input instead of a ProvenanceElement, a copy</span>
+<span class="sd">        of the ProvenanceStore is returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            provenance_in: (ProvenanceElement, ProvenanceStore) provenance object to</span>
+<span class="sd">                convert or copy</span>
+
+<span class="sd">        Returns: (ProvenanceStore) new provenance object for storage</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">provenance_in</span><span class="p">,</span> <span class="n">ProvenanceStore</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">provenance_in</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">provenance_in</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ProvenanceStore.to_provenance_element"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStore.to_provenance_element">[docs]</a>    <span class="k">def</span> <span class="nf">to_provenance_element</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts the current object to a ProvenanceElement object, looking up missing input</span>
+<span class="sd">        values if needed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lookup: (dict or function) lookup container for missing provenance input information</span>
+
+<span class="sd">        Returns: (ProvenanceElement) reconstructed provenance object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span><span class="p">:</span>
+            <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">to_quantity</span><span class="p">(</span><span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">inputs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">ProvenanceElement</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                                 <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span>
+                                 <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ProvenanceStore.get_missing_keys"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStore.get_missing_keys">[docs]</a>    <span class="k">def</span> <span class="nf">get_missing_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Finds the inputs in the provenance tree that are missing values and reports</span>
+<span class="sd">        their internal IDs.</span>
+
+<span class="sd">        Returns: (set) set of internal IDs whose values are missing. Empty set if</span>
+<span class="sd">            all values are present or no provenance tree exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">rec_get_missing_keys</span><span class="p">(</span><span class="n">provenance</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">provenance</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">provenance</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="o">.</span><span class="n">has_value</span><span class="p">():</span>
+                        <span class="n">keys</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">)</span>
+                    <span class="n">rec_get_missing_keys</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">provenance</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>
+
+        <span class="n">missing_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span><span class="p">:</span>
+            <span class="n">rec_get_missing_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">missing_keys</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">missing_keys</span></div>
+
+<div class="viewcode-block" id="ProvenanceStore.as_dict"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStore.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts object to a dictionary representation for serialization. Can</span>
+<span class="sd">        be reconstructed using from_dict()</span>
+
+<span class="sd">        Returns: (dict) dictionary containing object information</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;@module&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span>
+                <span class="s1">&#39;@class&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="s1">&#39;model&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span>
+                <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_source</span><span class="p">,</span>
+                <span class="s1">&#39;inputs&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="ProvenanceStore.from_dict"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStore.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructs a ProvenanceStore object from its dictionary representation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            d: (dict) dictionary representation of the object. Can contain the</span>
+<span class="sd">                dictionary representation of other objects as long as they</span>
+<span class="sd">                implement from_dict()</span>
+
+<span class="sd">        Returns: (ProvenanceStore) new object constructed from dictionary values</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">d_in</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">MontyDecoder</span><span class="p">()</span><span class="o">.</span><span class="n">process_decoded</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)}</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">_initialize</span><span class="p">(</span><span class="o">**</span><span class="n">d_in</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines equality with another provenance container, either a ProvenanceStore</span>
+<span class="sd">        or ProvenanceElement object.</span>
+
+<span class="sd">        Equality is defined as having the same model and inputs. Note this comparison is</span>
+<span class="sd">        not as strict as comparisons between ProvenanceElement objects because input value</span>
+<span class="sd">        equality is not explicitly evaluated.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: (ProvenanceStore, ProvenanceElement) provenance object to compare</span>
+
+<span class="sd">        Returns: (bool) True if objects are equal, False otherwise. NotImplemented is returned</span>
+<span class="sd">            if the object is not a ProvenanceStore or ProvenanceElement object.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">model</span> <span class="ow">and</span> \
+                   <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">or</span> <span class="p">[])</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">or</span> <span class="p">[])</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ProvenanceElement</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">model</span> <span class="ow">and</span> \
+                   <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">or</span> <span class="p">[])</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_provenance_element</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="o">.</span><span class="n">inputs</span> <span class="ow">or</span> <span class="p">[])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span></div>
+
+
+<div class="viewcode-block" id="ProvenanceStoreQuantity"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStoreQuantity">[docs]</a><span class="k">class</span> <span class="nc">ProvenanceStoreQuantity</span><span class="p">(</span><span class="n">StorageQuantity</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class is the crux of the storage containers. It is the container for quantities</span>
+<span class="sd">    which are stored as provenance inputs. Upon serialization, value, units, and uncertainty</span>
+<span class="sd">    are explicitly omitted from the dictionary to save on space.</span>
+
+<span class="sd">    When recreated from dictionary objects, the objects will be missing the above values.</span>
+<span class="sd">    Before conversion to BaseQuantity-derived objects, these values must be replaced by providing</span>
+<span class="sd">    a lookup dictionary or function. The lookup must take an internal ID as input and output</span>
+<span class="sd">    a dictionary with &#39;value&#39;, &#39;units&#39;, and &#39;uncertainty&#39; fields.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity_to_store</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for ProvenanceStoreQuantity. Takes a BaseQuantity-derived object to convert</span>
+<span class="sd">        for storage.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quantity_to_store: (BaseQuantity) quantity to convert for storage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ProvenanceStoreQuantity</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">quantity_to_store</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ProvenanceStoreQuantity.as_dict"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStoreQuantity.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gives the dictionary representation of this object, excluding value,</span>
+<span class="sd">        units, and uncertainty.</span>
+
+<span class="sd">        Returns: (dict) dictionary representation of this object for serialization</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span>
+        <span class="k">if</span> <span class="n">symbol</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">symbol</span> <span class="o">==</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)[</span><span class="n">symbol</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="ow">and</span> \
+                <span class="n">symbol</span><span class="o">.</span><span class="n">is_builtin</span><span class="p">:</span>
+            <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;@module&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span>
+            <span class="s2">&quot;@class&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">&quot;data_type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_type</span><span class="p">,</span>
+            <span class="s2">&quot;symbol_type&quot;</span><span class="p">:</span> <span class="n">symbol</span><span class="p">,</span>
+            <span class="s2">&quot;internal_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">,</span>
+            <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tags</span><span class="p">,</span>
+            <span class="s2">&quot;provenance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="ProvenanceStoreQuantity.has_value"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStoreQuantity.has_value">[docs]</a>    <span class="k">def</span> <span class="nf">has_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the object has a value that is not None.</span>
+
+<span class="sd">        If function evaluates True, it is most likely that the object has not had</span>
+<span class="sd">        lookup_value() run with a valid lookup container. BaseQuantity-derived</span>
+<span class="sd">        objects cannot hold of a value of None, so it should not be possible</span>
+<span class="sd">        for the value to be None for another reason.</span>
+
+<span class="sd">        Returns: (bool) False if the value is missing (is None). True otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="ProvenanceStoreQuantity.lookup_value"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStoreQuantity.lookup_value">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Looks up and replaces the value, units, and uncertainty of this quantity.</span>
+
+<span class="sd">        Lookup dictionaries should be keyed by internal ID, and have values which are</span>
+<span class="sd">        dictionaries with the fields shown below. Lookup functions should take one argument,</span>
+<span class="sd">        internal ID, and return a dictionary with the fields below.</span>
+
+<span class="sd">        Lookup return value construction:</span>
+<span class="sd">            value: (id) value of the quantity</span>
+<span class="sd">            units: (str) units of quantity, None if no units</span>
+<span class="sd">            uncertainty: (int, float, complex) uncertainty value, None if no uncertainty</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lookup: (dict or function) container for looking up values</span>
+
+<span class="sd">        Returns: (bool) True if the value was successfully located and replaced. False otherwise.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lookup_fun</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lookup</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">lookup_fun</span> <span class="o">=</span> <span class="n">lookup</span><span class="o">.</span><span class="n">get</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">lookup</span><span class="p">)</span> <span class="ow">and</span> <span class="n">lookup_fun</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Specified lookup is not callable or a dict.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lookup_fun</span> <span class="o">=</span> <span class="n">lookup</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="n">lookup_fun</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">d</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Value not found for internal ID: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Expected dict, instead received: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">d</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="s1">&#39;uncertainty&#39;</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Callable does not return dict containing &#39;value&#39;, &quot;</span>
+                             <span class="s2">&quot;&#39;units&#39;, and &#39;uncertainty&#39; keys&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;uncertainty&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="ProvenanceStoreQuantity.to_quantity"><a class="viewcode-back" href="../../../source/propnet.dbtools.storage.html#propnet.dbtools.storage.ProvenanceStoreQuantity.to_quantity">[docs]</a>    <span class="k">def</span> <span class="nf">to_quantity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts the object into a BaseQuantity-derived object, doing value lookup</span>
+<span class="sd">        and replacement as needed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lookup: (dict or function) container for looking up values</span>
+
+<span class="sd">        Returns: (BaseQuantity) current object as BaseQuantity-derived object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># So self remains non-mutated unless lookup_value() is called explicitly</span>
+        <span class="n">copy_of_self</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="n">value_is_present</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">copy_of_self</span><span class="o">.</span><span class="n">has_value</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">lookup</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">value_is_present</span> <span class="o">=</span> <span class="n">copy_of_self</span><span class="o">.</span><span class="n">lookup_value</span><span class="p">(</span><span class="n">lookup</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">value_is_present</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">value_is_present</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No value has been looked up successfully for this quantity. &quot;</span>
+                             <span class="s2">&quot;Run lookup_value() first or make sure the specified lookup &quot;</span>
+                             <span class="s2">&quot;function or dict contains the internal ID of this quantity: </span><span class="si">{}</span><span class="s2">&quot;</span>
+                             <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">copy_of_self</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ProvenanceStoreQuantity</span><span class="p">,</span> <span class="n">copy_of_self</span><span class="p">)</span><span class="o">.</span><span class="n">to_quantity</span><span class="p">(</span><span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

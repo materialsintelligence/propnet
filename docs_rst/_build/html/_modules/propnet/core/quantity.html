@@ -1,0 +1,1486 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>propnet.core.quantity &mdash; Propnet  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+    <link rel="canonical" href="https://propnet.lbl.gov_modules/propnet/core/quantity.html"/>
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: linear-gradient(0deg, rgba(23,162,135,1) 0%, rgba(0,192,136,1) 100%)" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Propnet
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Propnet</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>propnet.core.quantity</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for propnet.core.quantity</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">monty.json</span> <span class="kn">import</span> <span class="n">MSONable</span>
+<span class="kn">from</span> <span class="nn">monty.serialization</span> <span class="kn">import</span> <span class="n">MontyDecoder</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="kn">from</span> <span class="nn">propnet</span> <span class="kn">import</span> <span class="n">ureg</span>
+<span class="kn">from</span> <span class="nn">pint</span> <span class="kn">import</span> <span class="n">DimensionalityError</span>
+<span class="kn">from</span> <span class="nn">propnet.core.symbols</span> <span class="kn">import</span> <span class="n">Symbol</span>
+<span class="kn">from</span> <span class="nn">propnet.core.provenance</span> <span class="kn">import</span> <span class="n">ProvenanceElement</span>
+
+<span class="c1"># noinspection PyUnresolvedReferences</span>
+<span class="kn">import</span> <span class="nn">propnet.symbols</span>
+<span class="kn">from</span> <span class="nn">propnet.core.registry</span> <span class="kn">import</span> <span class="n">Registry</span>
+
+<span class="kn">from</span> <span class="nn">propnet.core.exceptions</span> <span class="kn">import</span> <span class="n">SymbolConstraintError</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="BaseQuantity"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity">[docs]</a><span class="k">class</span> <span class="nc">BaseQuantity</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">MSONable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for storing the value of a property.</span>
+
+<span class="sd">    Subclasses of BaseQuantity allow for different kind of information to be stored and interpreted.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        symbol_type: (Symbol or str) the type of information that is represented</span>
+<span class="sd">            by the associated value.  If a string, assigns a symbol from</span>
+<span class="sd">            the default symbols that has that string name</span>
+<span class="sd">        value: (id) the value associated with this symbol. This can be any object.</span>
+<span class="sd">        tags: (list&lt;str&gt;) tags associated with the quantity, typically</span>
+<span class="sd">            related to its origin, e. g. &quot;DFT&quot; or &quot;ML&quot; or &quot;experiment&quot;</span>
+<span class="sd">        provenance: (ProvenanceElement) provenance information of quantity origin</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">symbol_type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parses inputs for constructing a BaseQuantity object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            symbol_type (Symbol or str): pointer to a Symbol</span>
+<span class="sd">                object in Registry(&quot;symbols&quot;) or string giving the name</span>
+<span class="sd">                of a Symbol object. Identifies the type of data</span>
+<span class="sd">                stored in the quantity.</span>
+<span class="sd">            value (id): value of the quantity.</span>
+<span class="sd">            tags (list&lt;str&gt;): list of strings storing metadata from</span>
+<span class="sd">                evaluation.</span>
+<span class="sd">            provenance (ProvenanceElement): provenance associated with the</span>
+<span class="sd">                object (e. g. inputs, model, see ProvenanceElement). If not specified,</span>
+<span class="sd">                a default object will be created. All objects will receive</span>
+<span class="sd">                the time created and the internal ID as fields &#39;source.date_created&#39;</span>
+<span class="sd">                and &#39;source.source_key&#39;, respectively, if the fields are not already</span>
+<span class="sd">                written.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">):</span>
+            <span class="n">symbol_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_symbol_from_string</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">provenance</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">provenance</span><span class="p">,</span> <span class="n">ProvenanceElement</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Expected ProvenanceElement for provenance. &quot;</span>
+                            <span class="s2">&quot;Instead received: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">provenance</span><span class="p">)))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span> <span class="o">=</span> <span class="n">symbol_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">tags</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tags</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span> <span class="o">=</span> <span class="n">provenance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">source</span><span class="p">}</span>
+
+            <span class="k">if</span> <span class="s1">&#39;date_created&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">or</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="s1">&#39;date_created&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="s1">&#39;date_created&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s1">&#39;source_key&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">or</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="s1">&#39;source_key&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="s1">&#39;source_key&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span> <span class="o">=</span> <span class="n">ProvenanceElement</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                                                         <span class="s2">&quot;source_key&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">,</span>
+                                                         <span class="s2">&quot;date_created&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)})</span>
+
+<div class="viewcode-block" id="BaseQuantity.get_symbol_from_string"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.get_symbol_from_string">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_symbol_from_string</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Looks up Symbol from name in Registry(&quot;symbols&quot;) registry.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: (str) the name of the Symbol object</span>
+
+<span class="sd">        Returns: (Symbol) the Symbol object associated with the name</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Invoke default symbol if symbol is a string</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Expected str, encountered </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Symbol type </span><span class="si">{}</span><span class="s2"> not recognized&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)[</span><span class="n">name</span><span class="p">]</span></div>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">magnitude</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the value of a quantity without any units.</span>
+<span class="sd">        Should be implemented for numerical subclasses. Otherwise call self.value.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (id): value without units (if numerical), otherwise just the value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">symbol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the Symbol object associated with the quantity.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (Symbol): Symbol of the BaseQuantity</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the list of tags.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (list&lt;str&gt;): tags of the BaseQuantity</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tags</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">provenance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the object containing the provenance information for the quantity</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (ProvenanceElement): Provenance object for the quantity</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provenance</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a copy of the value object stored in the quantity.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (id): copy of value object stored in quantity</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This returns a deep copy of the object holding the value</span>
+        <span class="c1"># in case it is a class instance and the user manipulates</span>
+        <span class="c1"># the object. This is particularly problematic if a user</span>
+        <span class="c1"># calls np.isclose(x.value, y.value) and x and/or y contain</span>
+        <span class="c1"># pint Quantities. pint automatically converts the magnitudes</span>
+        <span class="c1"># into ndarrays, even for scalars, which breaks the careful</span>
+        <span class="c1"># type controlling we do for NumQuantity.</span>
+        <span class="c1"># If this is problematic for large ndarrays or pymatgen objects,</span>
+        <span class="c1"># for example, then we can revisit this decision to copy.</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the units of the quantity.</span>
+<span class="sd">        Should be implemented for numerical subclasses. Otherwise return None.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (pint.unit): units associated with the value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">uncertainty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the pint object holding the uncertainty of a quantity.</span>
+<span class="sd">        Should be implemented for numerical subclasses. Otherwise return None.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (pint.Quantity): copy of uncertainty object stored in quantity</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="BaseQuantity.pretty_string"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.pretty_string">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">pretty_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a string representing the value of the object in a pretty format.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (str): text string representing the value of an object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="BaseQuantity.is_cyclic"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.is_cyclic">[docs]</a>    <span class="k">def</span> <span class="nf">is_cyclic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Algorithm for determining if there are any cycles in</span>
+<span class="sd">        the provenance tree, i. e. a repeated quantity in a</span>
+<span class="sd">        tree branch</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool) whether or not there is a cycle in the quantity</span>
+<span class="sd">                provenance, i. e. repeated value in a tree branch</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">model_is_in_tree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">model</span><span class="p">)</span> <span class="ow">or</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">symbol_is_in_tree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="BaseQuantity.get_provenance_graph"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.get_provenance_graph">[docs]</a>    <span class="k">def</span> <span class="nf">get_provenance_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filter_long_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets an nxgraph object corresponding to the provenance graph</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            start (nxgraph): starting graph to build from</span>
+<span class="sd">            filter_long_labels (bool): true truncates long labels to just the symbol name</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (nxgraph): graph representation of provenance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">start</span> <span class="ow">or</span> <span class="n">nx</span><span class="o">.</span><span class="n">MultiDiGraph</span><span class="p">()</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pretty_string</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">filter_long_labels</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">:</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">fillcolor</span><span class="o">=</span><span class="s2">&quot;#43A1F8&quot;</span><span class="p">,</span> <span class="n">fontcolor</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="p">,</span> <span class="s1">&#39;source&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="s2">&quot;Model: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+            <span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">fillcolor</span><span class="o">=</span><span class="s1">&#39;orange&#39;</span><span class="p">,</span>
+                           <span class="n">fontcolor</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="s1">&#39;rectangle&#39;</span><span class="p">)</span>
+            <span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">model_input</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                <span class="n">graph</span> <span class="o">=</span> <span class="n">model_input</span><span class="o">.</span><span class="n">get_provenance_graph</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">graph</span><span class="p">)</span>
+                <span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">model_input</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="s2">&quot;Source: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">source</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">])</span>
+            <span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">graph</span></div>
+
+<div class="viewcode-block" id="BaseQuantity.draw_provenance_graph"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.draw_provenance_graph">[docs]</a>    <span class="k">def</span> <span class="nf">draw_provenance_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">prog</span><span class="o">=</span><span class="s1">&#39;dot&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Outputs the provenance graph for this quantity to a file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            filename: (str) filename for output</span>
+<span class="sd">            prog: (str) pygraphviz layout method for drawing the graph</span>
+<span class="sd">            **kwargs: args to pygraphviz.AGraph.draw() method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">nx_graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_provenance_graph</span><span class="p">()</span>
+        <span class="n">a_graph</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">nx_agraph</span><span class="o">.</span><span class="n">to_agraph</span><span class="p">(</span><span class="n">nx_graph</span><span class="p">)</span>
+        <span class="n">a_graph</span><span class="o">.</span><span class="n">node_attr</span><span class="p">[</span><span class="s1">&#39;style&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;filled&#39;</span>
+        <span class="n">a_graph</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">prog</span><span class="o">=</span><span class="n">prog</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseQuantity.as_dict"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Serializes object as a dictionary. Object can be reconstructed with from_dict().</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (dict): representation of object as a dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span>
+        <span class="k">if</span> <span class="n">symbol</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">symbol</span> <span class="o">==</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbols&quot;</span><span class="p">)[</span><span class="n">symbol</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="ow">and</span> \
+                <span class="n">symbol</span><span class="o">.</span><span class="n">is_builtin</span><span class="p">:</span>
+            <span class="n">symbol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_symbol_type</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">symbol</span> <span class="o">=</span> <span class="n">symbol</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;symbol_type&quot;</span><span class="p">:</span> <span class="n">symbol</span><span class="p">,</span>
+                <span class="s2">&quot;provenance&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+                <span class="s2">&quot;internal_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal_id</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="BaseQuantity.from_dict"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="n">decoded</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">MontyDecoder</span><span class="p">()</span><span class="o">.</span><span class="n">process_decoded</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)}</span>
+        <span class="n">internal_id</span> <span class="o">=</span> <span class="n">decoded</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;internal_id&#39;</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">decoded</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+        <span class="n">symbol_type</span> <span class="o">=</span> <span class="n">decoded</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;symbol_type&#39;</span><span class="p">)</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">**</span><span class="n">decoded</span><span class="p">)</span>
+        <span class="n">q</span><span class="o">.</span><span class="n">_internal_id</span> <span class="o">=</span> <span class="n">internal_id</span>
+        <span class="k">return</span> <span class="n">q</span></div>
+
+<div class="viewcode-block" id="BaseQuantity.contains_nan_value"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.contains_nan_value">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">contains_nan_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if value contains a NaN (not a number) value.</span>
+<span class="sd">        Should be implemented for numerical subclasses. Otherwise return False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool): True if value contains at least one NaN value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="BaseQuantity.contains_complex_type"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.contains_complex_type">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">contains_complex_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if value contains one or more complex-type values based on variable type.</span>
+<span class="sd">        Should be implemented for numerical subclasses. Otherwise return False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool): True if value contains at least one complex-type value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="BaseQuantity.contains_imaginary_value"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.contains_imaginary_value">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">contains_imaginary_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if value has a non-zero imaginary component. Differs from</span>
+<span class="sd">        contains_complex_type() in that it checks the imaginary component&#39;s value.</span>
+<span class="sd">        If zero or very small, returns True.</span>
+
+<span class="sd">        Should be implemented for numerical subclasses. Otherwise return False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool): True if value contains at least one value with a non-zero imaginary component.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="BaseQuantity.has_eq_value_to"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.BaseQuantity.has_eq_value_to">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">has_eq_value_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the current quantity&#39;s value is equal to that of another quantity.</span>
+<span class="sd">        This ignores provenance of the quantity and compares the values only.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            rhs: (BaseQuantity) the quantity to which the current object will be compared</span>
+
+<span class="sd">        Returns: (bool): True if the values are found to be equal (or equivalent)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Hash function for this class.</span>
+
+<span class="sd">        Note: the hash function for this class does not hash the value,</span>
+<span class="sd">            so it cannot alone determine equality.</span>
+
+<span class="sd">        Returns: (int) hash value</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hash_value</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">^</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">:</span>
+            <span class="c1"># Sorting to ensure it is deterministic</span>
+            <span class="n">sorted_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">sorted_tags</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">sorted_tags</span><span class="p">:</span>
+                <span class="n">hash_value</span> <span class="o">=</span> <span class="n">hash_value</span> <span class="o">^</span> <span class="nb">hash</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hash_value</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines equality of common components of BaseQuantity-derived objects.</span>
+
+<span class="sd">        Note: Does not check for equivalence of value. Derived classes should</span>
+<span class="sd">            override this method to determine equivalence of values.</span>
+
+<span class="sd">        Note: __eq__() does not provide comparisons to other types, but does support</span>
+<span class="sd">            implied comparisons by returning NotImplemented for other types.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: (BaseQuantity-derived type) object for value comparison</span>
+
+<span class="sd">        Returns: (bool) True if the symbol, tags, and provenance are equal.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">symbol</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">tags</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">tags</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">provenance</span></div>
+
+
+<div class="viewcode-block" id="NumQuantity"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity">[docs]</a><span class="k">class</span> <span class="nc">NumQuantity</span><span class="p">(</span><span class="n">BaseQuantity</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class extending BaseQuantity for storing numerical values, scalar and non-scalar.</span>
+
+<span class="sd">    Allowed scalar types: int, float, complex, np.integer, np.floating, np.complexfloating</span>
+<span class="sd">    Allowed array types: list, np.array</span>
+
+<span class="sd">    Note: Array types must contain only allowed scalar types. Scalars with numpy types will</span>
+<span class="sd">    be converted to python-native types.</span>
+
+<span class="sd">    Types shown below are how the objects are stored. See __init__() for initialization.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        symbol_type: (Symbol) the type of information that is represented</span>
+<span class="sd">            by the associated value</span>
+<span class="sd">        value: (pint.Quantity) the value of the property wrapped in a pint quantity</span>
+<span class="sd">            for unit handling</span>
+<span class="sd">        units: (pint.unit) units of the object</span>
+<span class="sd">        tags: (list&lt;str&gt;) tags associated with the quantity, typically</span>
+<span class="sd">            related to its origin, e. g. &quot;DFT&quot; or &quot;ML&quot; or &quot;experiment&quot;</span>
+<span class="sd">        provenance: (ProvenanceElement) provenance associated with the</span>
+<span class="sd">                object. See BaseQuantity.__init__() for more info.</span>
+<span class="sd">        uncertainty: (pint.Quantity) uncertainty associated with the value stored in the same units</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Allowed types</span>
+    <span class="n">_ACCEPTABLE_SCALAR_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+    <span class="n">_ACCEPTABLE_ARRAY_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+    <span class="n">_ACCEPTABLE_DTYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">complexfloating</span><span class="p">)</span>
+    <span class="n">_ACCEPTABLE_TYPES</span> <span class="o">=</span> <span class="n">_ACCEPTABLE_ARRAY_TYPES</span> <span class="o">+</span> <span class="n">_ACCEPTABLE_SCALAR_TYPES</span> <span class="o">+</span> <span class="n">_ACCEPTABLE_DTYPES</span> <span class="o">+</span> <span class="p">(</span><span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">,)</span>
+    <span class="c1"># This must be checked for explicitly because bool is a subtype of int</span>
+    <span class="c1"># and isinstance(True/False, int) returns true</span>
+    <span class="n">_UNACCEPTABLE_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">symbol_type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">uncertainty</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Instantiates an instance of the NumQuantity class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            symbol_type: (Symbol or str) the type of information that is represented</span>
+<span class="sd">                by the associated value.  If a string, assigns a symbol from</span>
+<span class="sd">                the default symbols that has that string name</span>
+<span class="sd">            value: (int, float, complex, np.integer, np.floating, np.complexfloating,</span>
+<span class="sd">                list, np.ndarray, pint.Quantity) the value of the property</span>
+<span class="sd">            units: (str, tuple, list) desired units of the quantity. If value is a</span>
+<span class="sd">                pint.Quantity, the value will be converted to these units. Input can</span>
+<span class="sd">                be any acceptable unit format for pint.Quantity.</span>
+<span class="sd">            tags: (list&lt;str&gt;) tags associated with the quantity, typically</span>
+<span class="sd">                related to its origin, e. g. &quot;DFT&quot; or &quot;ML&quot; or &quot;experiment&quot;</span>
+<span class="sd">            provenance: (ProvenanceElement) provenance associated with the</span>
+<span class="sd">                object. See BaseQuantity.__init__() for more info.</span>
+<span class="sd">            uncertainty: (int, float, complex, np.integer, np.floating, np.complexfloating,</span>
+<span class="sd">                list, np.ndarray, pint.Quantity, tuple, NumQuantity) uncertainty</span>
+<span class="sd">                associated with the value stored in the same units. pint.Quantity,</span>
+<span class="sd">                tuple, and NumQuantity types will be converted to the units</span>
+<span class="sd">                specified in &#39;units&#39;. Other types will be assumed to be in the</span>
+<span class="sd">                specified units.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Test value on the shape dictated by symbol</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">symbol_type</span> <span class="o">=</span> <span class="n">BaseQuantity</span><span class="o">.</span><span class="n">get_symbol_from_string</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">)</span>
+
+        <span class="c1"># Set default units if not supplied</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">units</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">symbol_type</span><span class="o">.</span><span class="n">units</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No units specified as keyword and no &quot;</span>
+                                 <span class="s2">&quot;units provided by symbol for NumQuantity&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;WARNING: No units supplied, assuming default units from symbol.&quot;</span><span class="p">)</span>
+
+        <span class="n">units</span> <span class="o">=</span> <span class="n">units</span> <span class="ow">or</span> <span class="n">symbol_type</span><span class="o">.</span><span class="n">units</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ACCEPTABLE_DTYPES</span><span class="p">):</span>
+            <span class="n">value_in</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">units</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">):</span>
+            <span class="n">value_in</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_acceptable_type</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="n">value_in</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">units</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Invalid type passed to constructor for value:&#39;</span>
+                            <span class="s1">&#39; </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)))</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">NumQuantity</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="n">value_in</span><span class="p">,</span>
+                                          <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">uncertainty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">uncertainty</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ACCEPTABLE_DTYPES</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">uncertainty</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">units</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">uncertainty</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="n">uncertainty</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">uncertainty</span><span class="p">,</span> <span class="n">NumQuantity</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="n">uncertainty</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">uncertainty</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="o">.</span><span class="n">from_tuple</span><span class="p">(</span><span class="n">uncertainty</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_acceptable_type</span><span class="p">(</span><span class="n">uncertainty</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">uncertainty</span><span class="p">,</span> <span class="n">units</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Invalid type passed to constructor for uncertainty:&#39;</span>
+                                <span class="s1">&#39; </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">uncertainty</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># TODO: Symbol-level constraints are hacked together atm,</span>
+        <span class="c1">#       constraints as a whole need to be refactored and</span>
+        <span class="c1">#       put into a separate module. They also are only</span>
+        <span class="c1">#       available for numerical symbols because it uses</span>
+        <span class="c1">#       sympy to evaluate the constraints. Would be better</span>
+        <span class="c1">#       to make some class for symbol and/or model constraints</span>
+
+        <span class="n">symbol_constraint</span> <span class="o">=</span> <span class="n">symbol_type</span><span class="o">.</span><span class="n">constraint</span>
+        <span class="k">if</span> <span class="n">symbol_constraint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">symbol_constraint</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">symbol_type</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span><span class="p">}):</span>
+                <span class="k">raise</span> <span class="n">SymbolConstraintError</span><span class="p">(</span>
+                    <span class="s2">&quot;NumQuantity with </span><span class="si">{}</span><span class="s2"> value does not satisfy </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">value</span><span class="p">,</span> <span class="n">symbol_constraint</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_is_acceptable_dtype</span><span class="p">(</span><span class="n">this_dtype</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function checks a dtype against the allowed dtypes for this class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            this_dtype: (numpy.dtype) the dtype to check</span>
+
+<span class="sd">        Returns: True if this_dtype is a sub-dtype of the acceptable dtypes.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">this_dtype</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span> <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">NumQuantity</span><span class="o">.</span><span class="n">_ACCEPTABLE_DTYPES</span><span class="p">])</span>
+
+<div class="viewcode-block" id="NumQuantity.to"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.to">[docs]</a>    <span class="k">def</span> <span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to convert quantities between units, a la pint</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            units: (tuple or str) units to convert quantity to</span>
+
+<span class="sd">        Returns:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Calling deepcopy() instead of ctor preserves internal_id</span>
+        <span class="c1"># while returning a new object (as is desired?)</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">q</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">q</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">_uncertainty</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">q</span></div>
+
+<div class="viewcode-block" id="NumQuantity.from_weighted_mean"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.from_weighted_mean">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_weighted_mean</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">quantities</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to invoke weighted mean quantity from other</span>
+<span class="sd">        quantities</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quantities ([NumQuantity]): list of quantities of the same type</span>
+
+<span class="sd">        Returns: (NumQuantity) a quantity containing the weighted mean and</span>
+<span class="sd">            standard deviation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">quantities</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Weighted mean cannot be applied to non-NumQuantity objects&quot;</span><span class="p">)</span>
+
+        <span class="n">input_symbol</span> <span class="o">=</span> <span class="n">quantities</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">symbol</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">input_symbol</span> <span class="o">==</span> <span class="n">q</span><span class="o">.</span><span class="n">symbol</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">quantities</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can only calculate a weighted mean if &quot;</span>
+                             <span class="s2">&quot;all quantities refer to the same symbol.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># TODO: an actual weighted mean; just a simple mean at present</span>
+        <span class="c1"># TODO: support propagation of uncertainties (this will only work</span>
+        <span class="c1"># once at present)</span>
+
+        <span class="c1"># # TODO: test this with units, not magnitudes ... remember units</span>
+        <span class="c1"># # may not be canonical units(?)</span>
+        <span class="c1"># if isinstance(quantities[0].value, list):</span>
+        <span class="c1">#     # hack to get arrays working for now</span>
+        <span class="c1">#     vals = [q.value for q in quantities]</span>
+        <span class="c1"># else:</span>
+        <span class="c1">#     vals = [q.value.magnitude for q in quantities]</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">quantities</span><span class="p">]</span>
+
+        <span class="c1"># Explicit formulas for mean / standard dev for pint support</span>
+        <span class="n">new_value</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+        <span class="n">std_dev</span> <span class="o">=</span> <span class="p">(</span><span class="nb">sum</span><span class="p">([(</span><span class="n">v</span> <span class="o">-</span> <span class="n">new_value</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vals</span><span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">))</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># Accumulate provenance and tags for new quantities</span>
+        <span class="n">new_tags</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">quantity</span> <span class="ow">in</span> <span class="n">quantities</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">quantity</span><span class="o">.</span><span class="n">tags</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">quantity</span><span class="o">.</span><span class="n">tags</span><span class="p">:</span>
+                    <span class="n">new_tags</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+            <span class="n">inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span>
+
+        <span class="n">new_provenance</span> <span class="o">=</span> <span class="n">ProvenanceElement</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;aggregation&#39;</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">symbol_type</span><span class="o">=</span><span class="n">input_symbol</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">new_value</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">new_value</span><span class="o">.</span><span class="n">units</span><span class="p">,</span>
+                   <span class="n">tags</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">new_tags</span><span class="p">),</span> <span class="n">provenance</span><span class="o">=</span><span class="n">new_provenance</span><span class="p">,</span>
+                   <span class="n">uncertainty</span><span class="o">=</span><span class="n">std_dev</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">magnitude</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the value of a quantity without any units.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (int, float, complex, np.ndarray): value without units</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">magnitude</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the units of the quantity.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (pint.unit): units associated with the value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">units</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">uncertainty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the pint object holding the uncertainty of a quantity.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (pint.Quantity): copy of uncertainty object stored in quantity</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># See note on BaseQuantity.value about why this is a deep copy</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span><span class="p">)</span>
+
+<div class="viewcode-block" id="NumQuantity.is_acceptable_type"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.is_acceptable_type">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">is_acceptable_type</span><span class="p">(</span><span class="n">to_check</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks object to ensure it contains only numerical types, including numpy types.</span>
+<span class="sd">        Works with nested lists.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            to_check: (list) list of data to be checked</span>
+
+<span class="sd">        Returns: (bool): true if all data contained in the list is numerical (float, int, complex)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">recursive_list_type_check</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+            <span class="n">nested_lists</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">l</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">)]</span>
+            <span class="n">np_arrays</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">l</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)]</span>
+            <span class="n">ureg_quantities</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">l</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">)]</span>
+            <span class="n">regular_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">l</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))]</span>
+
+            <span class="n">regular_data_is_type</span> <span class="o">=</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">NumQuantity</span><span class="o">.</span><span class="n">_ACCEPTABLE_TYPES</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span>
+                                        <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">NumQuantity</span><span class="o">.</span><span class="n">_UNACCEPTABLE_TYPES</span><span class="p">)</span>
+                                        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">regular_data</span><span class="p">])</span>
+            <span class="c1"># If nested_lists is empty, all() returns true automatically</span>
+            <span class="n">nested_lists_is_type</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">recursive_list_type_check</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">nested_lists</span><span class="p">)</span>
+            <span class="n">np_arrays_is_type</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">NumQuantity</span><span class="o">.</span><span class="n">_is_acceptable_dtype</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                                    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">np_arrays</span><span class="p">)</span>
+
+            <span class="n">ureg_quantities_is_type</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">recursive_list_type_check</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">magnitude</span><span class="p">])</span>
+                                          <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ureg_quantities</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">regular_data_is_type</span> <span class="ow">and</span> <span class="n">nested_lists_is_type</span> \
+                   <span class="ow">and</span> <span class="n">np_arrays_is_type</span> <span class="ow">and</span> <span class="n">ureg_quantities_is_type</span>
+
+        <span class="k">return</span> <span class="n">recursive_list_type_check</span><span class="p">([</span><span class="n">to_check</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="NumQuantity.pretty_string"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.pretty_string">[docs]</a>    <span class="k">def</span> <span class="nf">pretty_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a string representing the value of the object in a pretty format with units.</span>
+<span class="sd">        Note: units are omitted for non-scalar properties.</span>
+
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            sigfigs: (int) how many significant figures to include. default: 4</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (str): text string representing the value of an object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># TODO: maybe support a rounding kwarg?</span>
+        <span class="k">if</span> <span class="s1">&#39;sigfigs&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">sigfigs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sigfigs&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sigfigs</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ACCEPTABLE_SCALAR_TYPES</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="s2">&quot;{1:.</span><span class="si">{0}</span><span class="s2">g}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sigfigs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\u00B1</span><span class="si">{0:.4g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertainty</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span> <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;dimensionless&#39;</span><span class="p">:</span>
+            <span class="c1"># The format str is specific to pint units. ~ invokes abbreviations, P is &quot;pretty&quot; format</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot; {:~P}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">out</span></div>
+
+<div class="viewcode-block" id="NumQuantity.contains_nan_value"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.contains_nan_value">[docs]</a>    <span class="k">def</span> <span class="nf">contains_nan_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the value of the object contains a NaN value if the</span>
+<span class="sd">        object holds numerical data.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">             (bool) true if the quantity is numerical and contains one</span>
+<span class="sd">             or more NaN values. false if the quantity is numerical and</span>
+<span class="sd">             does not contain any NaN values OR if the quantity does not</span>
+<span class="sd">             store numerical information</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="NumQuantity.contains_complex_type"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.contains_complex_type">[docs]</a>    <span class="k">def</span> <span class="nf">contains_complex_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the type of the variable holding the object&#39;s magnitude is complex, if the</span>
+<span class="sd">        object holds numerical data.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">             (bool) true if the quantity is numerical and holds a complex scalar or array type as its value.</span>
+<span class="sd">             false if the quantity is numerical and holds only real values OR if the quantity does not</span>
+<span class="sd">             store numerical information</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_complex_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NumQuantity.is_complex_type"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.is_complex_type">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">is_complex_type</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the type of the argument is complex. If the argument is non-scalar, it determines</span>
+<span class="sd">        if the ndarray type contains complex data types.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">             (bool) true if the argument holds a complex scalar or np.array.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">complexfloating</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">BaseQuantity</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">contains_complex_type</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">NumQuantity</span><span class="o">.</span><span class="n">is_complex_type</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NumQuantity.contains_imaginary_value"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.contains_imaginary_value">[docs]</a>    <span class="k">def</span> <span class="nf">contains_imaginary_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the value of the object contains a non-zero imaginary</span>
+<span class="sd">        value if the object holds numerical data.</span>
+
+<span class="sd">        Note this function returns false if the values are of complex type,</span>
+<span class="sd">        but the imaginary portions are (approximately) zero. To assess the</span>
+<span class="sd">        type as complex, use is_complex_type().</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">             (bool) true if the quantity is numerical and contains one</span>
+<span class="sd">             or more non-zero imaginary values. false if the quantity is</span>
+<span class="sd">             numerical and all imaginary values are zero OR if the quantity does not</span>
+<span class="sd">             store numerical information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">contains_complex_type</span><span class="p">():</span>
+            <span class="c1"># Calling as static methods allows for evaluation of both scalars and arrays</span>
+            <span class="k">return</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span><span class="p">),</span> <span class="mi">0</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="NumQuantity.as_dict"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Serializes object as a dictionary. Object can be reconstructed with from_dict().</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (dict): representation of object as a dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">NumQuantity</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+
+        <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;@module&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span>
+                  <span class="s2">&quot;@class&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                  <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span>
+                  <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">format_babel</span><span class="p">(),</span>
+                  <span class="s2">&quot;uncertainty&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty</span> <span class="k">else</span> <span class="kc">None</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">d</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if another NumQuantity object is equivalent to this object.</span>
+
+<span class="sd">        Equivalence is defined as having the same symbol name, tags, provenance, and</span>
+<span class="sd">        equal (within tolerance) value and uncertainty in the default units of the symbol.</span>
+
+<span class="sd">        Note: __eq__() does not provide comparisons to other types, but does support</span>
+<span class="sd">            implied comparisons by returning NotImplemented for other types.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: (NumQuantity) the object to compare to</span>
+
+<span class="sd">        Returns: (bool) True if the objects are equivalent</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Use has_eq_value_to() to compare only values.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">NumQuantity</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">other</span><span class="o">.</span><span class="n">uncertainty</span><span class="p">:</span>
+            <span class="n">uncertainty_is_close</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertainty</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">uncertainty</span><span class="p">:</span>
+            <span class="n">uncertainty_is_close</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">values_close_in_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertainty</span><span class="p">,</span>
+                                                              <span class="n">other</span><span class="o">.</span><span class="n">uncertainty</span><span class="p">,</span>
+                                                              <span class="n">units_for_comparison</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uncertainty</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">value_is_close</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">values_close_in_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                                                    <span class="n">units_for_comparison</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
+
+        <span class="k">return</span> \
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="n">uncertainty_is_close</span> <span class="ow">and</span> \
+            <span class="n">value_is_close</span>
+
+<div class="viewcode-block" id="NumQuantity.has_eq_value_to"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.has_eq_value_to">[docs]</a>    <span class="k">def</span> <span class="nf">has_eq_value_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the current quantity&#39;s value is equivalent to that of another quantity.</span>
+<span class="sd">        This ignores provenance of the quantity and compares the values only.</span>
+
+<span class="sd">        Equivalence is defined as having the same numerical value in the units defined by the</span>
+<span class="sd">        quantities&#39; symbol, within an absolute tolerance of 1e-8 and relative tolerance of 1e-5.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            rhs: (NumQuantity) the quantity to which the current object will be compared</span>
+
+<span class="sd">        Returns: (bool): True if the values are found to be equivalent</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;This method requires two </span><span class="si">{}</span><span class="s2"> objects&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">values_close_in_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">rhs</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                                          <span class="n">units_for_comparison</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="o">.</span><span class="n">units</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NumQuantity.values_close_in_units"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.NumQuantity.values_close_in_units">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">values_close_in_units</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">units_for_comparison</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compares two pint quantities in a given unit. The purpose is to</span>
+<span class="sd">        ensure dimensional, small quantities (e.g. femtoseconds) don&#39;t</span>
+<span class="sd">        get discounted as small, close-to-zero quantities.</span>
+
+<span class="sd">        If units are not specified explicitly, they are selected using the</span>
+<span class="sd">        following criteria, in order of precedence:</span>
+<span class="sd">        1. If one quantity has a value of exactly 0, the units of that quantity</span>
+<span class="sd">            are used for comparison.</span>
+<span class="sd">        2. The units of both quantities are rescaled such that the magnitude</span>
+<span class="sd">            of each quantity is between 1 and 1000, or where the unit is at the</span>
+<span class="sd">            smallest (or largest) possible unit defined by pint. The smaller of</span>
+<span class="sd">            the two units is then used to compare the values (i.e. gram would be</span>
+<span class="sd">            selected over kilogram).</span>
+
+<span class="sd">        Note: dimensionless quantities will NOT be scaled and will be treated</span>
+<span class="sd">            as bare numbers. This means dimensionless values that are small,</span>
+<span class="sd">            but different will be treated as equal if abs(a-b) &lt;= 1e-8, e.g.</span>
+<span class="sd">            1e-8 and 2e-8 will yield True, as will 1e-8 and 1e-20.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lhs: (pint.Quantity) quantity object to compare</span>
+<span class="sd">            rhs: (pint.Quantity) quantity object to compare</span>
+<span class="sd">            units_for_comparison: (str, pint.Units, tuple) units that the</span>
+<span class="sd">                quantities will be compared in. Input can be any acceptable</span>
+<span class="sd">                format for Quantity.to()</span>
+
+<span class="sd">        Returns: (bool) True if the values are equal within an absolute tolerance</span>
+<span class="sd">            of 1e-8 and a relative tolerance of 1e-5. False if not equal within</span>
+<span class="sd">            the tolerance bounds, or the dimensionality of the units are not equal.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;This method requires two pint Quantity objects. &quot;</span>
+                            <span class="s2">&quot;Received:</span><span class="se">\n</span><span class="si">{}</span><span class="s2"> == </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">lhs</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="n">rhs</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">lhs</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">dimensionality</span> <span class="o">!=</span> <span class="n">rhs</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">dimensionality</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">units_for_comparison</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lhs</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">lhs</span><span class="o">.</span><span class="n">magnitude</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">rhs</span><span class="o">.</span><span class="n">magnitude</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                <span class="k">elif</span> <span class="n">lhs</span><span class="o">.</span><span class="n">magnitude</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># Compare using the units of whatever the zero value is</span>
+                    <span class="n">units_for_comparison</span> <span class="o">=</span> <span class="n">lhs</span><span class="o">.</span><span class="n">units</span>
+                <span class="k">elif</span> <span class="n">rhs</span><span class="o">.</span><span class="n">magnitude</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">units_for_comparison</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">.</span><span class="n">units</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Select smallest unit that brings values close to 1</span>
+                    <span class="c1"># Add a +1 buffer so that instead of 999.99999... micrograms</span>
+                    <span class="c1"># we get 1 milligram instead.</span>
+                    <span class="n">lhs_compact</span> <span class="o">=</span> <span class="n">lhs</span><span class="o">.</span><span class="n">to_compact</span><span class="p">()</span>
+                    <span class="n">lhs_compact_units</span> <span class="o">=</span> <span class="p">(</span><span class="n">lhs_compact</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">lhs_compact</span><span class="o">.</span><span class="n">units</span><span class="p">)</span><span class="o">.</span><span class="n">to_compact</span><span class="p">()</span><span class="o">.</span><span class="n">units</span>
+                    <span class="n">rhs_compact</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">.</span><span class="n">to_compact</span><span class="p">()</span>
+                    <span class="n">rhs_compact_units</span> <span class="o">=</span> <span class="p">(</span><span class="n">rhs_compact</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">rhs_compact</span><span class="o">.</span><span class="n">units</span><span class="p">)</span><span class="o">.</span><span class="n">to_compact</span><span class="p">()</span><span class="o">.</span><span class="n">units</span>
+                    <span class="k">if</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">lhs_compact_units</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">rhs_compact_units</span><span class="p">:</span>
+                        <span class="n">units_for_comparison</span> <span class="o">=</span> <span class="n">lhs_compact_units</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">units_for_comparison</span> <span class="o">=</span> <span class="n">rhs_compact_units</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">lhs</span><span class="o">.</span><span class="n">units</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">rhs</span><span class="o">.</span><span class="n">units</span><span class="p">:</span>
+                        <span class="n">units_for_comparison</span> <span class="o">=</span> <span class="n">lhs</span><span class="o">.</span><span class="n">units</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">units_for_comparison</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">.</span><span class="n">units</span>
+                <span class="k">except</span> <span class="n">DimensionalityError</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">lhs_convert</span> <span class="o">=</span> <span class="n">lhs</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">units_for_comparison</span><span class="p">)</span>
+            <span class="n">rhs_convert</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">units_for_comparison</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">DimensionalityError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">lhs_convert</span><span class="o">.</span><span class="n">magnitude</span><span class="p">,</span> <span class="n">rhs_convert</span><span class="o">.</span><span class="n">magnitude</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Hash function for this class.</span>
+
+<span class="sd">        Note: the hash function for this class does not hash the value,</span>
+<span class="sd">            so it cannot alone determine equality.</span>
+
+<span class="sd">        Returns: (int) hash value</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;_value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;_value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">d</span><span class="p">[</span><span class="s1">&#39;_uncertainty&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;_uncertainty&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">d</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="o">.</span><span class="n">from_tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span> <span class="o">=</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="o">.</span><span class="n">from_tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_uncertainty</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ObjQuantity"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.ObjQuantity">[docs]</a><span class="k">class</span> <span class="nc">ObjQuantity</span><span class="p">(</span><span class="n">BaseQuantity</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class extending BaseQuantity for storing any value type that does not require units.</span>
+
+<span class="sd">    Types shown below are how the objects are stored. See __init__() for initialization.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        symbol_type: (Symbol) the type of information that is represented</span>
+<span class="sd">            by the associated value</span>
+<span class="sd">        value: (id) the value of the property</span>
+<span class="sd">        tags: (list&lt;str&gt;) tags associated with the quantity, typically</span>
+<span class="sd">            related to its origin, e. g. &quot;DFT&quot; or &quot;ML&quot; or &quot;experiment&quot;</span>
+<span class="sd">        provenance: (ProvenanceElement) provenance associated with the</span>
+<span class="sd">                object. See BaseQuantity.__init__() for more info.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">symbol_type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Instantiates an instance of the ObjQuantity class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            symbol_type: (Symbol or str) the type of information that is represented</span>
+<span class="sd">                by the associated value.  If a string, assigns a symbol from</span>
+<span class="sd">                the default symbols that has that string name</span>
+<span class="sd">            value: (id) the value of the property, can be any type except None.</span>
+<span class="sd">                Ideally, numerical values should be stored in NumQuantity objects,</span>
+<span class="sd">                because ObjQuantity does not support units.</span>
+<span class="sd">            tags: (list&lt;str&gt;) tags associated with the quantity, typically</span>
+<span class="sd">                related to its origin, e. g. &quot;DFT&quot; or &quot;ML&quot; or &quot;experiment&quot;</span>
+<span class="sd">            provenance: (ProvenanceElement) provenance associated with the</span>
+<span class="sd">                object. See BaseQuantity.__init__() for more info.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ObjQuantity must hold a non-NoneType object for its value.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">symbol_type</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_symbol_from_string</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">symbol_type</span><span class="o">.</span><span class="n">is_correct_object_type</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="n">old_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">target_module</span> <span class="o">=</span> <span class="n">symbol_type</span><span class="o">.</span><span class="n">object_module</span>
+            <span class="n">target_class</span> <span class="o">=</span> <span class="n">symbol_type</span><span class="o">.</span><span class="n">object_class</span>
+            <span class="k">if</span> <span class="n">target_module</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span> <span class="ow">and</span> \
+                    <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">target_module</span><span class="p">],</span> <span class="n">target_class</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">cls_</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">target_module</span><span class="p">],</span> <span class="n">target_class</span><span class="p">)</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">cls_</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Mismatch in type of value (</span><span class="si">{}</span><span class="s2">) and type specified &quot;</span>
+                                    <span class="s2">&quot;by &#39;</span><span class="si">{}</span><span class="s2">&#39; object symbol (</span><span class="si">{}</span><span class="s2">).</span><span class="se">\n</span><span class="s2">Typecasting failed.&quot;</span>
+                                    <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">old_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                              <span class="n">symbol_type</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                              <span class="n">symbol_type</span><span class="o">.</span><span class="n">object_class</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Do not try to import the module for security reasons.</span>
+                <span class="c1"># We don&#39;t want malicious modules to be automatically imported.</span>
+                <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s2">&quot;Mismatch in type of value (</span><span class="si">{}</span><span class="s2">) and type specified &quot;</span>
+                                <span class="s2">&quot;by &#39;</span><span class="si">{}</span><span class="s2">&#39; object symbol (</span><span class="si">{}</span><span class="s2">).</span><span class="se">\n</span><span class="s2">Cannot typecast because &quot;</span>
+                                <span class="s2">&quot;&#39;</span><span class="si">{}</span><span class="s2">&#39; is not imported or does not exist.&quot;</span>
+                                <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">old_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                          <span class="n">symbol_type</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                          <span class="n">symbol_type</span><span class="o">.</span><span class="n">object_class</span><span class="p">,</span>
+                                          <span class="n">symbol_type</span><span class="o">.</span><span class="n">object_type</span><span class="p">))</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;WARNING: Mismatch in type of value (</span><span class="si">{}</span><span class="s2">) &quot;</span>
+                           <span class="s2">&quot;and type specified by &#39;</span><span class="si">{}</span><span class="s2">&#39; object symbol (</span><span class="si">{}</span><span class="s2">). &quot;</span>
+                           <span class="s2">&quot;Value cast as &#39;</span><span class="si">{}</span><span class="s2">&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">old_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                                        <span class="n">symbol_type</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                                        <span class="n">symbol_type</span><span class="o">.</span><span class="n">object_class</span><span class="p">,</span>
+                                                        <span class="n">symbol_type</span><span class="o">.</span><span class="n">object_type</span><span class="p">))</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">ObjQuantity</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">magnitude</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the value of the quantity. Same as self.value.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (id): value contained by quantity</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns None because this class does not support units.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">uncertainty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns None because this class does not support uncertainty.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ObjQuantity.pretty_string"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.ObjQuantity.pretty_string">[docs]</a>    <span class="k">def</span> <span class="nf">pretty_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a string representing the value of the object in a pretty format.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (str): text string representing the value of an object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+    <span class="c1"># TODO: Determine whether it&#39;s necessary to define these for ObjQuantity</span>
+    <span class="c1"># we could just assess this if models return NumQuantity</span>
+<div class="viewcode-block" id="ObjQuantity.contains_nan_value"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.ObjQuantity.contains_nan_value">[docs]</a>    <span class="k">def</span> <span class="nf">contains_nan_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns False because this class does not support numerical types.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool): False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="ObjQuantity.contains_complex_type"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.ObjQuantity.contains_complex_type">[docs]</a>    <span class="k">def</span> <span class="nf">contains_complex_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns False because this class does not support numerical types.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool): False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="ObjQuantity.contains_imaginary_value"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.ObjQuantity.contains_imaginary_value">[docs]</a>    <span class="k">def</span> <span class="nf">contains_imaginary_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns False because this class does not support numerical types.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (bool): False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="ObjQuantity.has_eq_value_to"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.ObjQuantity.has_eq_value_to">[docs]</a>    <span class="k">def</span> <span class="nf">has_eq_value_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the value of another ObjQuantity is equivalent to the current.</span>
+
+<span class="sd">        Equivalence is defined by the default __eq__() method for the object held in value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            rhs: (ObjQuantity) object for value comparison</span>
+
+<span class="sd">        Returns: (bool) True if the values are equal.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;This method requires two </span><span class="si">{}</span><span class="s2"> objects&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">rhs</span><span class="o">.</span><span class="n">value</span></div>
+
+<div class="viewcode-block" id="ObjQuantity.as_dict"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.ObjQuantity.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Serializes object as a dictionary. Object can be reconstructed with from_dict().</span>
+
+<span class="sd">        Note: If value is not JSON serializable, this object will not be JSON serializable.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (dict): representation of object as a dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+
+        <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;@module&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span>
+                  <span class="s2">&quot;@class&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                  <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">d</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the value of another ObjQuantity is equivalent to the current.</span>
+
+<span class="sd">        Equivalence is defined by equivalence of symbol name, tags, provenance, and</span>
+<span class="sd">            value as indicated by the default __eq__() method for the object held</span>
+<span class="sd">            in value.</span>
+
+<span class="sd">        Note: __eq__() does not provide comparisons to other types, but does support</span>
+<span class="sd">            implied comparisons by returning NotImplemented for other types.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: (ObjQuantity) object for value comparison</span>
+
+<span class="sd">        Returns: (bool) True if the objects are equal.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Use has_eq_value_to() to compare only values.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ObjQuantity</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Hash function for this class.</span>
+
+<span class="sd">        Note: the hash function for this class does not hash the value,</span>
+<span class="sd">            so it cannot alone determine equality.</span>
+
+<span class="sd">        Returns: (int) hash value</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="QuantityFactory"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.QuantityFactory">[docs]</a><span class="k">class</span> <span class="nc">QuantityFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper class to construct BaseQuantity-derived objects using factory methods.</span>
+
+<span class="sd">    Use create_quantity() to generate objects on the fly depending on the value type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="QuantityFactory.create_quantity"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.QuantityFactory.create_quantity">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">create_quantity</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">provenance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">uncertainty</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Factory method for BaseQuantity class, provides more intuitive call</span>
+<span class="sd">        to create new BaseQuantity child objects and provide backwards</span>
+<span class="sd">        compatibility. If BaseQuantity is passed in as value, a new object</span>
+<span class="sd">        will be created. Use BaseQuantity.to_quantity() to return the same object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            symbol_type: (str or Symbol) represents the type of data being stored</span>
+<span class="sd">            value: (id) data to be stored</span>
+<span class="sd">            units: (str, ureg.Unit) units of the data being stored. Must be None</span>
+<span class="sd">                for non-numerical values</span>
+<span class="sd">            tags: (list&lt;str&gt;) list of strings storing metadata from</span>
+<span class="sd">                    Quantity evaluation.</span>
+<span class="sd">            provenance: (ProvenanceElement) provenance associated with the</span>
+<span class="sd">                    object (e. g. inputs, model, see ProvenanceElement)</span>
+<span class="sd">            uncertainty: (id) uncertainty of the specified value</span>
+
+<span class="sd">        Returns: (NumQuantity or ObjQuantity) constructed object of appropriate</span>
+<span class="sd">            type based on value&#39;s type</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot initialize a BaseQuantity object with a value of None.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">BaseQuantity</span><span class="p">):</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="n">units</span> <span class="ow">or</span> <span class="n">value</span><span class="o">.</span><span class="n">units</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span> <span class="ow">or</span> <span class="n">value</span><span class="o">.</span><span class="n">tags</span>
+            <span class="n">provenance</span> <span class="o">=</span> <span class="n">provenance</span> <span class="ow">or</span> <span class="n">value</span><span class="o">.</span><span class="n">provenance</span>
+            <span class="n">uncertainty</span> <span class="o">=</span> <span class="n">uncertainty</span> <span class="ow">or</span> <span class="n">value</span><span class="o">.</span><span class="n">uncertainty</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="c1"># TODO: This sort of thing probably indicates Symbol objects need to be split</span>
+        <span class="c1">#       into different categories, like Quantity has been</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">):</span>
+            <span class="n">symbol_type</span> <span class="o">=</span> <span class="n">BaseQuantity</span><span class="o">.</span><span class="n">get_symbol_from_string</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">)</span>
+
+        <span class="n">symbol_is_object</span> <span class="o">=</span> <span class="n">symbol_type</span><span class="o">.</span><span class="n">category</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">symbol_is_object</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">NumQuantity</span><span class="o">.</span><span class="n">is_acceptable_type</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">NumQuantity</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span>
+                                   <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span>
+                                   <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">,</span>
+                                   <span class="n">uncertainty</span><span class="o">=</span><span class="n">uncertainty</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Cannot initialize a </span><span class="si">{}</span><span class="s2">-type symbol with a non-numerical&quot;</span>
+                                <span class="s2">&quot; value type.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symbol_type</span><span class="o">.</span><span class="n">category</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Cannot assign units to object-type symbol &#39;</span><span class="si">{}</span><span class="s2">&#39;. &quot;</span>
+                           <span class="s2">&quot;Ignoring units.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symbol_type</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">uncertainty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Cannot assign uncertainty to object-type symbol &#39;</span><span class="si">{}</span><span class="s2">&#39;. &quot;</span>
+                           <span class="s2">&quot;Ignoring uncertainty.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symbol_type</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">ObjQuantity</span><span class="p">(</span><span class="n">symbol_type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span>
+                           <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span>
+                           <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="QuantityFactory.from_default"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.QuantityFactory.from_default">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_default</span><span class="p">(</span><span class="n">symbol</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to invoke a default quantity from a symbol name</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            symbol (Symbol or str): symbol or string corresponding to</span>
+<span class="sd">                the symbol name</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            BaseQuantity corresponding to default quantity from default</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="s2">&quot;symbol_values&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No default value for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symbol</span><span class="p">))</span>
+        <span class="n">prov</span> <span class="o">=</span> <span class="n">ProvenanceElement</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">QuantityFactory</span><span class="o">.</span><span class="n">create_quantity</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">provenance</span><span class="o">=</span><span class="n">prov</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="QuantityFactory.to_quantity"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.QuantityFactory.to_quantity">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">to_quantity</span><span class="p">(</span><span class="n">symbol</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">],</span>
+                    <span class="n">to_coerce</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ureg</span><span class="o">.</span><span class="n">Quantity</span><span class="p">,</span> <span class="s2">&quot;BaseQuantity&quot;</span><span class="p">],</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseQuantity&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts the argument into a BaseQuantity-derived object. If input is:</span>
+<span class="sd">        - BaseQuantity-derived object -&gt; immediately returned without modification (same object, not copied)</span>
+<span class="sd">        - Any other python object -&gt; passed to create_quantity() with keyword arguments</span>
+<span class="sd">            to create a new BaseQuantity-derived object</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            symbol: a string or Symbol object representing the type of data stored</span>
+<span class="sd">            to_coerce: item to be converted into a BaseQuantity-derived object</span>
+<span class="sd">            kwargs: keyword arguments to create new object if to_coerce is not a BaseQuantity-derived object</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (BaseQuantity) item as a BaseQuantity-derived object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If a quantity is passed in, return the quantity.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">to_coerce</span><span class="p">,</span> <span class="n">BaseQuantity</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">to_coerce</span>
+
+        <span class="c1"># Else</span>
+        <span class="c1"># Return the correct BaseQuantity - warns if units are assumed.</span>
+        <span class="k">return</span> <span class="n">QuantityFactory</span><span class="o">.</span><span class="n">create_quantity</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">to_coerce</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="QuantityFactory.from_dict"><a class="viewcode-back" href="../../../source/propnet.core.quantity.html#propnet.core.quantity.QuantityFactory.from_dict">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to construct BaseQuantity-derived objects from dictionaries.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            d: (dict) input dictionary</span>
+
+<span class="sd">        Returns: (NumQuantity, ObjQuantity) new object defined from dictionary</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;@class&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;NumQuantity&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">NumQuantity</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;@class&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;ObjQuantity&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ObjQuantity</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot build non-BaseQuantity objects!&quot;</span><span class="p">)</span></div></div>
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2018, Propnet Development Team.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
