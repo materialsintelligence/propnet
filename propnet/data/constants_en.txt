@@ -12,7 +12,7 @@ Z_0 = mu_0 * c = impedance_of_free_space = characteristic_impedance_of_vacuum
 
 # 0.000 000 29 e-34
 planck_constant = 6.62606957e-34 J s = h
-hbar = planck_constant / (2 * pi) = ħ
+reduced_planck_constant = planck_constant / (2 * pi) = ħ = hbar
 
 # 0.000 80 e-11
 newtonian_constant_of_gravitation = 6.67384e-11 m^3 kg^-1 s^-2
