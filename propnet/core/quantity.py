@@ -553,6 +553,12 @@ class NumQuantity(BaseQuantity):
         return q
 
     @classmethod
+    def from_key_value(cls, key, value):
+        for symbol_type, prop in DEFAULT_SYMBOLS.items():
+            if key == symbol_type or key in prop.display_symbols:
+                return cls(symbol_type, ureg.parse_expression(value))
+
+    @classmethod
     def from_weighted_mean(cls, quantities):
         """
         Function to invoke weighted mean quantity from other

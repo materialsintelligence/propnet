@@ -1,0 +1,7 @@
+name: formation_enthalpy_per_mole
+units: eV / mol
+display_names: [Formation Enthalpy per Mole]
+display_symbols: ["ΔH"]
+shape: 1
+comment: ''
+category: property
