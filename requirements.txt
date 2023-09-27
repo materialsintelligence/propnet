@@ -6,7 +6,7 @@ frozendict>=1.2
 monty==2.0.2
 networkx>=2.0
 Pint>=0.8.1
-pydash==4.5.0
+pydash==7.0.6
 scikit-learn>=0.20.0
 uncertainties>=3.0.2
 pymongo>=3.7.2 # database building
